@@ -27,6 +27,7 @@ namespace Deckle.Anytype;
 public sealed class ReadGestures(NameResolver resolver, AnytypeV2Client v2)
 {
     readonly AnytypeV2ObjectReader _reader = new(v2);
+    readonly AnytypeV2Searcher _searcher = new(v2);
 
     // The task template's two sections. The notes heading is the template's
     // today; « À savoir » is the name proposed for it. Both are read so the
@@ -47,8 +48,48 @@ public sealed class ReadGestures(NameResolver resolver, AnytypeV2Client v2)
         AppendIdentity(sb, obj, done: obj.Props.Checkbox(DevSpace.Props.Done));
         await AppendPropertiesAsync(sb, obj, DevSpace.Types.Task, ct);
 
+        // An orchestration task carries the state of its orchestration: the
+        // tasks that point to it through « Orchestré par », so a new orchestrator
+        // recovers the whole picture from this one read. The link lives on the
+        // orchestrated task, so it is found by a search on that property.
+        if (DevSpace.TaskType.Resolve(obj.Props.Select(DevSpace.Props.TaskType) ?? "")
+            == DevSpace.TaskType.Orchestration)
+            await AppendOrchestratedTasksAsync(sb, obj.Id, ct);
+
         DeckleAnytypeSource.Log.GestureCompleted("task_properties", Elapsed(started));
         return sb.ToString();
+    }
+
+    // Archived tasks count as settled, like done ones: the orchestration is
+    // finished when every task listed here is ticked or archived.
+    async Task AppendOrchestratedTasksAsync(StringBuilder sb, string orchestrationId, CancellationToken ct)
+    {
+        IReadOnlyList<AnytypeV2SearchRow> rows = await _searcher.SearchAllAsync(
+            new AnytypeV2SearchRequest
+            {
+                Type = DevSpace.Types.Task,
+                Filters = [AnytypeV2SearchFilter.In(DevSpace.Props.OrchestratedBy, [orchestrationId])],
+                Fields = [DevSpace.Props.Done, DevSpace.Props.Archive, DevSpace.Props.TaskType, DevSpace.Props.Priority],
+            }, ct);
+
+        if (rows.Count == 0)
+        {
+            sb.Append("\nTâches orchestrées : aucune.");
+            return;
+        }
+
+        int open = 0;
+        var lines = new StringBuilder();
+        foreach (AnytypeV2SearchRow t in rows)
+        {
+            bool archived = t.Properties.Checkbox(DevSpace.Props.Archive);
+            bool done = t.Properties.Checkbox(DevSpace.Props.Done);
+            if (!done && !archived) open++;
+            lines.Append('\n').Append(done ? "[x] " : "[ ] ").Append(t.Name.Length > 0 ? t.Name : "(sans titre)");
+            if (archived) lines.Append(" · archivée");
+            lines.Append(" · id : ").Append(t.Id);
+        }
+        sb.Append("\nTâches orchestrées : ").Append(rows.Count).Append(", ouvertes : ").Append(open).Append(lines);
     }
 
     public async Task<string> TaskChecklistAsync(string task, CancellationToken ct = default)

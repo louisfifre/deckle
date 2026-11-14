@@ -69,7 +69,7 @@ public static class ToolCatalog
 
             new(
                 "task_properties",
-                "A task's id, title with its done box, and properties: type, priority, due date, slot, project by name, Définition de fini, estimated and real time. No body.",
+                "A task's id, title with its done box, and properties: type, priority, due date, slot, project by name, « Orchestré par », Définition de fini, estimated and real time. No body. For an orchestration task (type Orchestrer) it also lists the tasks it orchestrates, with their done box and id, and how many are still open.",
                 Schema(required: [Prop("task", "string", "Task, name or id.")]),
                 async (args, ct) => await reads.TaskPropertiesAsync(Str(args, "task"), ct),
                 ToolExecutionContract.ReadOnly),
@@ -153,7 +153,7 @@ public static class ToolCatalog
                     [
                         Prop("project", "string", "Parent project, name or id."),
                         Prop("name", "string", "Task title."),
-                        Prop("type", "string", "Task type, key or display name. Keys: production (build, deliver), research (investigate), organizing (structure, tidy), exchange (discuss, decide with someone), management (manage, admin), monitoring (watch for a measured recurrence)."),
+                        Prop("type", "string", "Task type, key or display name. Keys: orchestration (a long-running task that orchestrates other tasks and carries the orchestrator's report; done when every task it orchestrates is ticked or archived), production (build, deliver), research (investigate), organizing (structure, tidy), exchange (discuss, decide with someone), management (manage, admin), monitoring (watch for a measured recurrence)."),
                     ],
                     optional:
                     [
@@ -164,13 +164,15 @@ public static class ToolCatalog
                         Prop("time_estimated", "number", "Estimated time in hours, e.g. 1 or 0.5."),
                         Prop("due_date", "string", "The day the task is placed on, YYYY-MM-DD. Omit while it is not placed in the week."),
                         Prop("slot", "string", "Créneau, key or display name: Cap, Passion, Entraînement. Default Cap."),
+                        Prop("orchestrated_by", "string", "The orchestration task this task reports to (« Orchestré par »), name or id. One value. Omit for a task nobody orchestrates."),
                     ]),
                 async (args, ct) =>
                     await tasks.CreateAsync(
                         Str(args, "project"), Str(args, "name"), Str(args, "type"),
                         IntOpt(args, "priority"), StrArrayOpt(args, "checklist"), StrOpt(args, "notes"),
                         dueDate: StrOpt(args, "due_date"), timeEstimated: NumOpt(args, "time_estimated"),
-                        doneDefinition: StrOpt(args, "done_definition"), slot: StrOpt(args, "slot"), ct: ct),
+                        doneDefinition: StrOpt(args, "done_definition"), slot: StrOpt(args, "slot"),
+                        orchestratedBy: StrOpt(args, "orchestrated_by"), ct: ct),
                 ToolExecutionContract.AdditiveRequiresDeduplication),
 
             new(

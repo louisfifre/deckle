@@ -176,8 +176,8 @@ public sealed class PmSchemaManifestTests
              "effort_estimated", "effort_actual", "epic", "depends_on", "documents", "contacts", "archive"],
             PropertiesOf(manifest, "project"));
         Assert.Equal(
-            ["done", "task_type", "priority", "due_date", "slot", "done_definition", "projects", "documents",
-             "contacts", "time_estimated", "time_actual", "files", "status", "archive"],
+            ["done", "task_type", "priority", "due_date", "slot", "done_definition", "projects", "orchestrated_by",
+             "documents", "contacts", "time_estimated", "time_actual", "files", "status", "archive"],
             PropertiesOf(manifest, "task"));
     }
 

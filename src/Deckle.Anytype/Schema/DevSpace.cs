@@ -103,7 +103,8 @@ public static class DevSpace
         public const string Epic              = "epic";              // objects — the project's epic, zero or one
         public const string DependsOn         = "depends_on";        // objects — projects
         public const string Projects          = "projects";          // objects — a task's projects, one or more
-        public const string Tasks             = "tasks";             // objects — a report's tasks, one or more
+        public const string OrchestratedBy    = "orchestrated_by";   // objects — an orchestrated task's orchestration task, zero or one
+        public const string Tasks             = "tasks";           // objects — a report's tasks, one or more
         public const string Documents         = "documents";         // objects
         public const string Contacts          = "contacts";          // objects — people or companies
         public const string Company           = "company";           // objects — a person's company, zero or one
@@ -205,8 +206,14 @@ public static class DevSpace
     // ── Type de tâche (select on Props.TaskType) ──────────────────────────────
     public static class TaskType
     {
+        public const string Orchestration = "orchestration";
+
         public static readonly TagOption[] All =
         [
+            // First: orchestration tasks are the most important ones. Their
+            // done definition is that every task they orchestrate is ticked or
+            // archived.
+            new(Orchestration, "Orchestrer"),
             new("research", "Chercher"),
             new("production", "Produire"),
             new("organizing", "Organiser"),
@@ -329,6 +336,7 @@ public static class DevSpace
         new(Props.Slot, "Créneau", "select", Slot.All),
         new(Props.DoneDefinition, "Définition de fini", "text"),
         new(Props.Projects, "Projets", "objects"),
+        new(Props.OrchestratedBy, "Orchestré par", "objects"),
         new(Props.Documents, "Documents", "objects"),
         new(Props.Contacts, "Contacts", "objects"),
         new(Props.TimeEstimated, "Temps estimé", "number"),

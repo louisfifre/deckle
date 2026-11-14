@@ -336,6 +336,17 @@ public sealed class QueryGestures(AnytypeApiClient api, NameResolver resolver, A
 
                 JsonObject entry = await BuildEntryAsync(key, format, value, ct);
 
+                // « Orchestré par » holds one orchestration task, never the task itself.
+                if (key == DevSpace.Props.OrchestratedBy && entry["objects"] is JsonArray orchestrators)
+                {
+                    if (orchestrators.Count > 1)
+                        throw new InvalidOperationException(
+                            $"Refusé : {QueryProp.Name(obj)} n'a qu'un orchestrateur, {orchestrators.Count} donnés. Rien n'a bougé.");
+                    if (orchestrators.Any(o => o?.GetValue<string>() == id))
+                        throw new InvalidOperationException(
+                            $"Refusé : {QueryProp.Name(obj)} ne peut pas s'orchestrer lui-même. Rien n'a bougé.");
+                }
+
                 // update writes the same checkbox and the same links as archive
                 // and unlink, so it keeps their refusals: without them the guard
                 // of one tool is bypassed through the other.
@@ -618,6 +629,9 @@ public sealed class QueryGestures(AnytypeApiClient api, NameResolver resolver, A
     {
         if (sourceType == DevSpace.Types.Task && targetType == DevSpace.Types.Project) return new(DevSpace.Props.Projects);
         if (sourceType == DevSpace.Types.Report && targetType == DevSpace.Types.Task) return new(DevSpace.Props.Tasks);
+        // A task points to the orchestration task that orchestrates it: one value.
+        if (sourceType == DevSpace.Types.Task && targetType == DevSpace.Types.Task)
+            return new(DevSpace.Props.OrchestratedBy, Single: true);
         if (sourceType == DevSpace.Types.Project && targetType == DevSpace.Types.Project) return new(DevSpace.Props.DependsOn);
         if (sourceType == DevSpace.Types.Project && targetType == DevSpace.Types.Epic)
             return new(DevSpace.Props.Epic, Single: true, AlsoCollection: true);
@@ -637,7 +651,7 @@ public sealed class QueryGestures(AnytypeApiClient api, NameResolver resolver, A
 
     static string SupportedPairsError(string sourceType, string targetType) =>
         $"Lien non supporté : {sourceType} → {targetType}. " +
-        "Paires supportées : task→project, report→task(s), project→project, project→epic, "
+        "Paires supportées : task→project, task→task (Orchestré par), report→task(s), project→project, project→epic, "
         + "project, task ou report→person ou company, project, task, epic ou idea→document, person→company.";
 
     // The body's headings, quoted, for the « introuvable » error — it tells the

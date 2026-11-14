@@ -141,6 +141,23 @@ public class TaskGesturesTests
         Assert.All(server.Requests, r => Assert.Equal($"/v1/spaces/{FakeAnytypeServer.Space}/properties", r.Path));
     }
 
+    // A task born under an orchestration task points to it through « Orchestré par »,
+    // and an orchestration task is created with the new type option, named.
+    [Fact]
+    public async Task CreateTakesTheOrchestratorAndTheOrchestrationType()
+    {
+        using var server = new FakeAnytypeServer();
+        FakeV2Handler v2 = CreateReply();
+        const string OrchestratorId = "bafyreiorchestratoraaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa";
+
+        await NewGestures(server, v2).CreateAsync(
+            ProjectId, "Ma tâche", type: "orchestration", orchestratedBy: OrchestratorId, ct: Ct);
+
+        JsonObject props = ((JsonObject)JsonNode.Parse(Assert.Single(v2.Requests).Body!)!)["properties"]!.AsObject();
+        Assert.Equal("Orchestrer", props[DevSpace.Props.TaskType]!.AsArray().Single()!.GetValue<string>());
+        Assert.Equal(OrchestratorId, props[DevSpace.Props.OrchestratedBy]!.AsArray().Single()!.GetValue<string>());
+    }
+
     const string SlotPropertyId = "bafyreislotpropertyaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa";
 
     [Fact]
