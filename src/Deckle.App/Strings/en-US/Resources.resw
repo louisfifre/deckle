@@ -623,7 +623,7 @@
     <value>The text file beside the audio can't be written. Copy the text to keep it.</value>
   </data>
   <data name="TranscribeRewriteEditor.PlaceholderText" xml:space="preserve">
-    <value>Paste a text, or transcribe an audio file.</value>
+    <value>Paste text, or transcribe audio files.</value>
   </data>
   <data name="TranscribeRewrite_Undo" xml:space="preserve">
     <value>Undo</value>
