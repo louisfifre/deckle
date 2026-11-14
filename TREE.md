@@ -531,6 +531,17 @@ _Generated from `git ls-files` — do not edit by hand._
 │   │   │   ├── SelectValueGestures.cs
 │   │   │   ├── SessionGestures.cs
 │   │   │   └── TaskGestures.cs
+│   │   ├── Plan/
+│   │   │   ├── PlanApi.cs
+│   │   │   ├── PlanJson.cs
+│   │   │   ├── PlanViews.cs
+│   │   │   ├── PlanViewsDiff.cs
+│   │   │   ├── SpacePlan.cs
+│   │   │   ├── SpacePlanExecutor.cs
+│   │   │   ├── SpacePlanGestures.cs
+│   │   │   ├── SpacePlanPlanner.cs
+│   │   │   ├── SpacePlanReader.cs
+│   │   │   └── SpacePlanValidator.cs
 │   │   ├── Schema/
 │   │   │   ├── AnytypeSpaceAliases.cs
 │   │   │   ├── DevSpace.cs
