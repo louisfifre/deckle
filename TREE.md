@@ -696,6 +696,9 @@ _Generated from `git ls-files` — do not edit by hand._
 │   │   ├── CrashSupervisor.cs
 │   │   ├── Deckle.App.csproj
 │   │   ├── FileTranscriptionRun.cs
+│   │   ├── FileTranscriptionWindow.Capture.cs
+│   │   ├── FileTranscriptionWindow.xaml
+│   │   ├── FileTranscriptionWindow.xaml.cs
 │   │   ├── global.json
 │   │   ├── LogWindow.Chrome.cs
 │   │   ├── LogWindow.Interaction.cs

@@ -378,6 +378,32 @@ public partial class App
             report.Save(outputFolder);
         }
 
+        if (Wants("file-transcription"))
+        {
+            // The file assistant on sample files, one image per step
+            // (FileTranscriptionWindow.Capture.cs).
+            Step("file-transcription");
+            FileTranscriptionWindow files = EnsureFileTranscriptionWindow();
+            OffscreenWindow.ShowInactive(files);
+            await WaitUntilLoadedAsync(files);
+            string? onlyStep = target?.View;
+            if (onlyStep is not null && !FileTranscriptionWindow.CaptureStates.Contains(onlyStep))
+                report.Views = [.. FileTranscriptionWindow.CaptureStates];
+            else
+            {
+                foreach (string state in FileTranscriptionWindow.CaptureStates)
+                {
+                    if (onlyStep is not null && state != onlyStep) continue;
+                    Step($"file-transcription/{state}");
+                    files.ShowStateForCapture(state);
+                    await Task.Delay(600);
+                    report.Surfaces.Add(await CaptureWindowFrameAsync(
+                        run, files, "file-transcription", state, null, loaded: true, ms: 0));
+                }
+            }
+            report.Save(outputFolder);
+        }
+
         if (Wants("mail"))
         {
             // The Mail window on its built-in sample: the window once, then each
