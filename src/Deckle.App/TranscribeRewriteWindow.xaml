@@ -2,11 +2,14 @@
     x:Class="Deckle.App.TranscribeRewriteWindow"
     xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
     xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+    xmlns:local="using:Deckle.App"
     Title="Transcribe and rewrite">
 
     <!-- specs/deckle-transcribe-and-rewrite.md, form C: one text field at the
          centre, the way in (a file) top left, what to do with the text top
-         right, the rewrite bottom left and its settings alone bottom right. -->
+         right, the rewrite bottom left and its settings alone bottom right.
+         Several files chosen at once put the list of those files where the
+         field was (TranscribeRewriteWindow.Files.cs); the rows around it stay. -->
     <Grid x:Name="RootGrid">
         <Grid.KeyboardAccelerators>
             <KeyboardAccelerator Modifiers="Control" Key="S" Invoked="OnSaveAccelerator" />
@@ -38,14 +41,28 @@
                     <ColumnDefinition Width="Auto" />
                 </Grid.ColumnDefinitions>
 
-                <Button x:Name="TranscribeFileButton" Grid.Column="0" Click="OnTranscribeFileClick">
-                    <StackPanel Orientation="Horizontal" Spacing="8">
-                        <FontIcon Glyph="&#xE8E5;" FontSize="16" />
-                        <TextBlock x:Uid="TranscribeRewriteTranscribeFileLabel" />
-                    </StackPanel>
-                </Button>
+                <StackPanel Grid.Column="0" Orientation="Horizontal" Spacing="8">
+                    <!-- Back to the list, while the field shows one of its files. -->
+                    <Button x:Name="BackToFilesButton"
+                            Style="{StaticResource SubtleButtonStyle}"
+                            Click="OnBackToFilesClick"
+                            Visibility="Collapsed">
+                        <StackPanel Orientation="Horizontal" Spacing="8">
+                            <FontIcon Glyph="&#xE72B;" FontSize="16" />
+                            <TextBlock x:Uid="TranscribeRewriteBackToFilesLabel" />
+                        </StackPanel>
+                    </Button>
+                    <Button x:Name="TranscribeFileButton" Click="OnTranscribeFileClick">
+                        <StackPanel Orientation="Horizontal" Spacing="8">
+                            <FontIcon Glyph="&#xE8E5;" FontSize="16" />
+                            <TextBlock x:Uid="TranscribeRewriteTranscribeFileLabel" />
+                        </StackPanel>
+                    </Button>
+                </StackPanel>
 
-                <StackPanel Grid.Column="1" Orientation="Horizontal" Spacing="4">
+                <!-- What to do with the field's text: nothing to do on the list,
+                     where each file is already saved beside its audio. -->
+                <StackPanel x:Name="TextCommands" Grid.Column="1" Orientation="Horizontal" Spacing="4">
                     <Button x:Name="UndoButton" Click="OnUndoClick" IsEnabled="False">
                         <FontIcon Glyph="&#xE7A7;" FontSize="16" />
                     </Button>
@@ -76,7 +93,7 @@
                  Its border is one even line in every state (Louis, 2026-11-14):
                  the stronger bottom line and the accent bar of focus belong
                  to a single-line box, not to a page of text. -->
-            <Grid Grid.Row="2">
+            <Grid x:Name="EditorArea" Grid.Row="2">
                 <RichEditBox x:Name="Editor"
                              x:Uid="TranscribeRewriteEditor"
                              CornerRadius="{ThemeResource OverlayCornerRadius}"
@@ -111,6 +128,61 @@
                 <Grid x:Name="OutlineHost" IsHitTestVisible="False" />
             </Grid>
 
+            <!-- The files of one choice, each with its state, where its .txt
+                 went and the opening of its text; "Show more" opens the whole
+                 text in the field. A line shows three lines of text at most:
+                 a long transcript is read in the field, which scrolls. -->
+            <ListView x:Name="FileList"
+                      Grid.Row="2"
+                      SelectionMode="None"
+                      Visibility="Collapsed">
+                <ListView.ItemTemplate>
+                    <DataTemplate x:DataType="local:FileTranscriptionItem">
+                        <Grid ColumnSpacing="12" Padding="0,8">
+                            <Grid.ColumnDefinitions>
+                                <ColumnDefinition Width="20" />
+                                <ColumnDefinition Width="*" />
+                                <ColumnDefinition Width="Auto" />
+                            </Grid.ColumnDefinitions>
+                            <ProgressRing Width="16" Height="16"
+                                          VerticalAlignment="Top"
+                                          Margin="0,2,0,0"
+                                          IsActive="{x:Bind IsWorking, Mode=OneWay}" />
+                            <StackPanel Grid.Column="1" Spacing="2">
+                                <Grid ColumnSpacing="8">
+                                    <Grid.ColumnDefinitions>
+                                        <ColumnDefinition Width="*" />
+                                        <ColumnDefinition Width="Auto" />
+                                    </Grid.ColumnDefinitions>
+                                    <TextBlock Text="{x:Bind Name}" TextTrimming="CharacterEllipsis" />
+                                    <TextBlock Grid.Column="1"
+                                               Text="{x:Bind DurationText, Mode=OneWay}"
+                                               Foreground="{ThemeResource TextFillColorSecondaryBrush}" />
+                                </Grid>
+                                <TextBlock Text="{x:Bind local:TranscribeRewriteWindow.StatusOf(State, RewriteFailed, OutputPath), Mode=OneWay}"
+                                           Style="{StaticResource CaptionTextBlockStyle}"
+                                           Foreground="{ThemeResource TextFillColorSecondaryBrush}"
+                                           TextTrimming="CharacterEllipsis" />
+                                <TextBlock Text="{x:Bind Preview, Mode=OneWay}"
+                                           Visibility="{x:Bind HasText, Mode=OneWay}"
+                                           Margin="0,6,0,0"
+                                           MaxLines="3"
+                                           TextWrapping="Wrap"
+                                           TextTrimming="CharacterEllipsis" />
+                                <HyperlinkButton x:Uid="TranscribeRewriteShowMoreButton"
+                                                 Visibility="{x:Bind HasText, Mode=OneWay}"
+                                                 Click="OnShowMoreClick" />
+                            </StackPanel>
+                            <Button Grid.Column="2"
+                                    x:Uid="TranscribeRewriteOpenFolderButton"
+                                    VerticalAlignment="Top"
+                                    Visibility="{x:Bind IsDone, Mode=OneWay}"
+                                    Click="OnOpenFolderClick" />
+                        </Grid>
+                    </DataTemplate>
+                </ListView.ItemTemplate>
+            </ListView>
+
             <Grid Grid.Row="3" ColumnSpacing="8">
                 <Grid.ColumnDefinitions>
                     <ColumnDefinition Width="Auto" />
@@ -124,7 +196,8 @@
                         Style="{StaticResource AccentButtonStyle}"
                         Click="OnRewriteClick"
                         IsEnabled="False">
-                    <TextBlock x:Uid="TranscribeRewriteRewriteLabel" />
+                    <!-- Rewrite on the field, Rewrite all on the list: set in code. -->
+                    <TextBlock x:Name="RewriteLabel" />
                 </Button>
                 <ComboBox x:Name="ProfileBox"
                           Grid.Column="1"

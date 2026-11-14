@@ -19,8 +19,8 @@ namespace Deckle.App;
 // a text pasted or transcribed from a file, rewritten on demand by the profile
 // shown. The App hands in the engines as callbacks, as it does for LogWindow,
 // so the window never builds a service of its own. The commands live in
-// TranscribeRewriteWindow.Commands.cs, the field in .Editor.cs and the HUD
-// outline around it in .Outline.cs.
+// TranscribeRewriteWindow.Commands.cs, the field in .Editor.cs, the HUD
+// outline around it in .Outline.cs and the list of several files in .Files.cs.
 public sealed partial class TranscribeRewriteWindow : Window
 {
     private readonly IntPtr _hwnd;
@@ -67,6 +67,17 @@ public sealed partial class TranscribeRewriteWindow : Window
         presenter.PreferredMinimumHeight = (int)(320 * dpiScale);
         AppWindow.SetPresenter(presenter);
 
+        // A run outlives a close: the window hides and the work goes on, so a
+        // batch of files keeps coming and the tray entry brings it back with
+        // its progress.
+        AppWindow.Closing += (_, args) =>
+        {
+            if (!_running) return;
+            args.Cancel = true;
+            AppWindow.Hide();
+        };
+
+        FileList.ItemsSource = _files;
         LabelIconButtons();
         LoadProfiles();
         LlmSettingsService.Instance.Changed += OnLlmSettingsChanged;

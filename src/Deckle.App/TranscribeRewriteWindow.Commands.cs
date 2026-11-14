@@ -25,6 +25,7 @@ public sealed partial class TranscribeRewriteWindow
     // folder; null for a pasted text.
     private string? _sourceAudioPath;
 
+    // One file goes into the field; several at once go to the file list.
     private async void OnTranscribeFileClick(object sender, RoutedEventArgs e)
     {
         try
@@ -42,37 +43,13 @@ public sealed partial class TranscribeRewriteWindow
             };
             foreach (string extension in AudioExtensions)
                 picker.FileTypeFilter.Add(extension);
-            PickFileResult? picked = await picker.PickSingleFileAsync();
-            if (picked is null) return;
+            IReadOnlyList<PickFileResult> picked = await picker.PickMultipleFilesAsync();
+            if (picked.Count == 0) return;
 
-            string before = ReadText();
-            _history.Record(before);
-            BeginRun(ProcessingVariant.Transcribing);
-            WriteText("");
-
-            // Each utterance reaches the end of the field as it comes, joined
-            // as the engine joins them: a space, or a blank line after a pause.
-            StartUtteranceFeed();
-            string? text = await TranscribeFile(picked.Path, utterance =>
-                DispatcherQueue.TryEnqueue(() => QueueUtterance(utterance)));
-            StopUtteranceFeed();
-
-            EndRun();
-            if (string.IsNullOrWhiteSpace(text))
-            {
-                _history.Withdraw();
-                WriteText(before);
-                ShowNotice(InfoBarSeverity.Error,
-                    "TranscribeRewrite_TranscribeFailed_Title", "TranscribeRewrite_TranscribeFailed_Body");
-            }
+            if (picked.Count > 1)
+                await TranscribeFilesAsync([.. picked.Select(p => p.Path)]);
             else
-            {
-                // The whole text once more: the field holds exactly what the
-                // engine delivered, whatever the utterances showed.
-                WriteText(text);
-                _sourceAudioPath = picked.Path;
-                HideNotice();
-            }
+                await TranscribeIntoFieldAsync(picked[0].Path);
         }
         catch (Exception ex)
         {
@@ -83,6 +60,42 @@ public sealed partial class TranscribeRewriteWindow
         finally
         {
             UpdateCommands();
+        }
+    }
+
+    private async Task TranscribeIntoFieldAsync(string audioPath)
+    {
+        if (TranscribeFile is null) return;
+
+        // The list stays one click away while the field shows this file.
+        ShowField(fromList: _files.Count > 0);
+        string before = ReadText();
+        _history.Record(before);
+        BeginRun(ProcessingVariant.Transcribing);
+        WriteText("");
+
+        // Each utterance reaches the end of the field as it comes, joined
+        // as the engine joins them: a space, or a blank line after a pause.
+        StartUtteranceFeed();
+        string? text = await TranscribeFile(audioPath, utterance =>
+            DispatcherQueue.TryEnqueue(() => QueueUtterance(utterance)));
+        StopUtteranceFeed();
+
+        EndRun();
+        if (string.IsNullOrWhiteSpace(text))
+        {
+            _history.Withdraw();
+            WriteText(before);
+            ShowNotice(InfoBarSeverity.Error,
+                "TranscribeRewrite_TranscribeFailed_Title", "TranscribeRewrite_TranscribeFailed_Body");
+        }
+        else
+        {
+            // The whole text once more: the field holds exactly what the
+            // engine delivered, whatever the utterances showed.
+            WriteText(text);
+            _sourceAudioPath = audioPath;
+            HideNotice();
         }
     }
 
@@ -102,8 +115,14 @@ public sealed partial class TranscribeRewriteWindow
                 return;
             }
 
-            string before = ReadText();
             s_lastProfileId = profile.Id;
+            if (_showingFiles)
+            {
+                await RewriteFilesAsync(profile);
+                return;
+            }
+
+            string before = ReadText();
             BeginRun(ProcessingVariant.Rewriting);
             Func<string, RewriteProfile, GenerationResult> rewrite = Rewrite;
             GenerationResult result = await Task.Run(() => rewrite(before, profile));
@@ -220,13 +239,16 @@ public sealed partial class TranscribeRewriteWindow
         UpdateCommands();
     }
 
-    // Copy, Save and Rewrite need a text; nothing that changes the field runs
-    // during a run.
+    // Copy, Save and Rewrite need a text, Rewrite all a file with one; nothing
+    // that changes the field or the files runs during a run.
     private void UpdateCommands()
     {
-        bool hasText = ReadText().Trim().Length > 0;
+        bool hasText = !_showingFiles && ReadText().Trim().Length > 0;
+        bool filesHaveText = _showingFiles && _files.Any(f => f.HasText);
         TranscribeFileButton.IsEnabled = !_running;
-        RewriteButton.IsEnabled = !_running && hasText;
+        BackToFilesButton.IsEnabled = !_running;
+        RewriteLabel.Text = Loc.Get(_showingFiles ? "TranscribeRewrite_RewriteAll" : "TranscribeRewrite_Rewrite");
+        RewriteButton.IsEnabled = !_running && (hasText || filesHaveText);
         ProfileBox.IsEnabled = !_running;
         UndoButton.IsEnabled = !_running && _history.CanUndo;
         RedoButton.IsEnabled = !_running && _history.CanRedo;
