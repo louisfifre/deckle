@@ -47,17 +47,11 @@ internal static class SpacePlanValidator
             if (extras is not null)
             {
                 foreach (string key in extras.Featured.Concat(extras.Hidden))
-                {
-                    if (!KnownProperty(key))
-                        problems.Add($"type {type.Key} : la propriété « {key} » du panneau n'est pas déclarée.");
-                    own.Add(key);
-                }
+                    if (!type.Properties.Contains(key, StringComparer.Ordinal))
+                        problems.Add($"type {type.Key} : « {key} » est dans « panel » mais pas dans « properties » ; une propriété d'en-tête ou masquée est d'abord une propriété du type.");
                 foreach (string key in extras.Featured)
                     if (extras.Hidden.Contains(key))
                         problems.Add($"type {type.Key} : « {key} » est à la fois en en-tête et masquée.");
-                foreach (string key in type.Properties)
-                    if (extras.Featured.Contains(key) || extras.Hidden.Contains(key))
-                        problems.Add($"type {type.Key} : « {key} » est dans « properties » et dans « panel » : une propriété a une seule section.");
 
                 if (extras.DefaultTemplate is { } template
                     && !plan.Templates.Any(t => Name(t) == template && Str(t, "for") == type.Key))

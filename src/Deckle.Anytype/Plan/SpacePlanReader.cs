@@ -102,6 +102,7 @@ internal sealed class SpacePlanReader(AnytypeApiClient api)
             .Where(p => SchemaPlanner.IsTagFormat(p.Format)).Select(p => p.Key).ToArray();
         SchemaSnapshot snapshot = await snapshotReader.ReadAsync(spaceId, tagKeys, ct).ConfigureAwait(false);
 
+        var notes = new JsonArray();
         var properties = new JsonArray();
         foreach (SchemaPropertyInfo prop in snapshot.Properties.Values.OrderBy(p => p.Key, StringComparer.Ordinal))
         {
@@ -110,8 +111,12 @@ internal sealed class SpacePlanReader(AnytypeApiClient api)
             if (snapshot.TagsByProperty.TryGetValue(prop.Key, out var tags) && tags.Count > 0)
             {
                 var list = new JsonArray();
-                foreach (SchemaTagInfo tag in tags.Values.OrderBy(t => t.Name, StringComparer.Ordinal))
-                    list.Add(new JsonObject { ["name"] = tag.Name, ["color"] = tag.Color });
+                foreach (var byName in tags.Values.GroupBy(t => t.Name, StringComparer.Ordinal).OrderBy(g => g.Key, StringComparer.Ordinal))
+                {
+                    if (byName.Count() > 1)
+                        notes.Add($"propriété {prop.Key} : l'option « {byName.Key} » existe {byName.Count()} fois ; une seule est lue");
+                    list.Add(new JsonObject { ["name"] = byName.Key, ["color"] = byName.First().Color });
+                }
                 node["tags"] = list;
             }
             properties.Add(node);
@@ -146,9 +151,14 @@ internal sealed class SpacePlanReader(AnytypeApiClient api)
             if (id.Length == 0 || name.Length == 0 || forKey.Length == 0) continue;
             liveTemplates.Add(new LiveTemplate(id, name, forKey, row["default"]?.GetValue<bool>() == true));
             if (SystemTypeKeys.Contains(forKey)) continue;
+            if (templates.OfType<JsonObject>().Any(t => Str0(t, "name") == name && Str0(t, "for") == forKey))
+            {
+                notes.Add($"modèle « {name} » ({forKey}) existe plusieurs fois ; le premier est lu");
+                continue;
+            }
             JsonObject doc = await v2.GetAsync($"objects/{id}", ct).ConfigureAwait(false);
             var template = new JsonObject { ["name"] = name, ["for"] = forKey };
-            template["blocks"] = PlanViews.BodyFromWire(doc["blocks"] as JsonArray, refs);
+            template["blocks"] = DropEmptyViews(PlanViews.BodyFromWire(doc["blocks"] as JsonArray, refs), $"modèle « {name} » ({forKey})", notes);
             templates.Add(template);
         }
 
@@ -204,7 +214,7 @@ internal sealed class SpacePlanReader(AnytypeApiClient api)
             pages.Add(new JsonObject
             {
                 ["name"] = pageName,
-                ["blocks"] = PlanViews.BodyFromWire(doc["blocks"] as JsonArray, refs),
+                ["blocks"] = DropEmptyViews(PlanViews.BodyFromWire(doc["blocks"] as JsonArray, refs), $"page « {pageName} »", notes),
             });
         }
 
@@ -221,6 +231,7 @@ internal sealed class SpacePlanReader(AnytypeApiClient api)
         }
 
         var plan = new JsonObject { ["plan_version"] = SpacePlan.CurrentVersion };
+        if (notes.Count > 0) plan["reader_notes"] = notes;
         plan["properties"] = properties;
         plan["types"] = types;
         plan["templates"] = templates;
@@ -233,6 +244,49 @@ internal sealed class SpacePlanReader(AnytypeApiClient api)
             plan, refs, typeIds, liveTemplates,
             snapshot.Properties.ToDictionary(p => p.Key, p => p.Value.Id, StringComparer.Ordinal));
     }
+
+    // A view block with no source shows nothing and names nothing: a shell the
+    // app left behind. A plan cannot state it, so it is left out and said.
+    private static JsonArray DropEmptyViews(JsonArray body, string label, JsonArray notes)
+    {
+        var kept = new JsonArray();
+        foreach (JsonNode? block in body)
+        {
+            if (block is JsonObject obj && Str0(obj, "type") == "dataview" && Str0(obj, "source").Length == 0)
+            {
+                notes.Add($"{label} : un bloc de vues sans source est ignoré ({(obj["views"] as JsonArray)?.Count ?? 0} vue(s) vide(s))");
+                continue;
+            }
+            kept.Add(block?.DeepClone());
+        }
+        return PruneEmptyContainers(kept);
+    }
+
+    // The server drops a row with no column and a column with nothing in it when
+    // a body is written, so a plan that keeps them never reads back equal.
+    private static JsonArray PruneEmptyContainers(JsonArray body)
+    {
+        var blocks = body.OfType<JsonObject>().ToList();
+        bool removed;
+        do
+        {
+            removed = false;
+            for (int i = 0; i < blocks.Count; i++)
+            {
+                string type = Str0(blocks[i], "type");
+                if (type is not ("row" or "column")) continue;
+                int indent = blocks[i]["indent"]?.GetValue<int>() ?? 0;
+                bool hasChild = i + 1 < blocks.Count && (blocks[i + 1]["indent"]?.GetValue<int>() ?? 0) > indent;
+                if (hasChild) continue;
+                blocks.RemoveAt(i);
+                removed = true;
+                break;
+            }
+        } while (removed);
+        return new JsonArray(blocks.Select(b => (JsonNode?)b.DeepClone()).ToArray());
+    }
+
+    private static string Str0(JsonObject node, string key) => node[key]?.GetValue<string>() ?? "";
 
     private static JsonArray TypeKeys(JsonArray ids, LivePlanRefs refs)
     {
@@ -270,21 +324,31 @@ internal sealed class SpacePlanReader(AnytypeApiClient api)
             type["description"] = description;
         if (doc["icon"] is JsonObject icon) type["icon"] = icon.DeepClone();
 
+        // Membership and order come from the v1 link list, which is what the
+        // schema stage compares against; the v2 definitions only say which
+        // properties sit in the header or in the hidden section.
         var regular = new JsonArray();
+        if (snapshot.Types.TryGetValue(key, out SchemaTypeInfo? live))
+            foreach (SchemaPropertyLinkInfo link in live.PropertyLinks)
+            {
+                string linkKey = link.Key.Length > 0
+                    ? link.Key
+                    : snapshot.Properties.Values.FirstOrDefault(p => p.Id == link.Id)?.Key ?? "";
+                if (linkKey.Length > 0 && !SystemHeader.Contains(linkKey)) regular.Add(linkKey);
+            }
         var featured = new JsonArray();
         var hidden = new JsonArray();
         foreach (JsonObject def in (settings["property_definitions"] as JsonArray ?? []).OfType<JsonObject>())
         {
             string property = SchemaApiJson.Str(def, "property");
+            if (SystemHeader.Contains(property) || SystemHidden.Contains(property)) continue;
             string section = SchemaApiJson.Str(def, "section");
-            if (section == "featured") { if (!SystemHeader.Contains(property)) featured.Add(property); }
-            else if (section == "hidden") { if (!SystemHidden.Contains(property)) hidden.Add(property); }
-            else if (!SystemHidden.Contains(property) && !SystemHeader.Contains(property)) regular.Add(property);
+            if (section == "featured") featured.Add(property);
+            else if (section == "hidden") hidden.Add(property);
         }
         type["properties"] = regular;
         if (featured.Count > 0 || hidden.Count > 0)
             type["panel"] = new JsonObject { ["featured"] = featured, ["hidden"] = hidden };
-
         string defaultId = settings["default_template"]?.GetValue<string>() ?? "";
         LiveTemplate? defaultTemplate = templates.FirstOrDefault(t => t.Id == defaultId)
             ?? templates.FirstOrDefault(t => t.For == key && t.IsDefault);

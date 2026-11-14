@@ -31,7 +31,7 @@ internal sealed record SpacePlan(
 
     // Top-level members the manifest grammar does not own.
     internal static readonly string[] PlanOnlyMembers =
-        ["plan_version", "space", "templates", "collections", "queries", "pages", "widgets", "objects"];
+        ["plan_version", "reader_notes", "templates", "collections", "queries", "pages", "widgets", "objects"];
 
     private static readonly string[] TypeOnlyMembers = ["panel", "default_template", "views"];
 
