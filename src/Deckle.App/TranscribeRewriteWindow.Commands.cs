@@ -130,7 +130,7 @@ public sealed partial class TranscribeRewriteWindow
 
             if (string.IsNullOrWhiteSpace(result.Text))
             {
-                ShowNotice(InfoBarSeverity.Error,
+                ShowNotice(InfoBarSeverity.Warning,
                     "TranscribeRewrite_RewriteFailed_Title", "TranscribeRewrite_RewriteFailed_Body",
                     withSettings: true);
                 return;

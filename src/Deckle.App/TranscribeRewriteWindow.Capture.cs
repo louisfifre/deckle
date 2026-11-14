@@ -131,7 +131,7 @@ public sealed partial class TranscribeRewriteWindow
                 break;
             case "failed":
                 WriteText(SampleText);
-                ShowNotice(InfoBarSeverity.Error,
+                ShowNotice(InfoBarSeverity.Warning,
                     "TranscribeRewrite_RewriteFailed_Title", "TranscribeRewrite_RewriteFailed_Body",
                     withSettings: true);
                 break;

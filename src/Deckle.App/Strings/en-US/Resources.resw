@@ -656,7 +656,7 @@
     <value>Choose its provider and model on the Rewriting page.</value>
   </data>
   <data name="TranscribeRewrite_RewriteFailed_Title" xml:space="preserve">
-    <value>The rewrite didn't come back</value>
+    <value>The text couldn't be rewritten</value>
   </data>
   <data name="TranscribeRewrite_RewriteFailed_Body" xml:space="preserve">
     <value>Your text is unchanged. Check the profile's provider on the Rewriting page.</value>
@@ -682,7 +682,7 @@
     <value>Rewritten</value>
   </data>
   <data name="FileTranscription_StateRewriteKept" xml:space="preserve">
-    <value>Rewrite didn't come back, transcript kept</value>
+    <value>Couldn't rewrite, transcript kept</value>
   </data>
   <data name="FileTranscription_StateStopped" xml:space="preserve">
     <value>Not transcribed</value>
