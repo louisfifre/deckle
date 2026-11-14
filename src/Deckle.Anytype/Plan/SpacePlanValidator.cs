@@ -43,11 +43,11 @@ internal static class SpacePlanValidator
         foreach (TypeSpec type in plan.Manifest.Types)
         {
             plan.TypeExtras.TryGetValue(type.Key, out PlanTypeExtras? extras);
-            var own = new HashSet<string>(type.Properties, StringComparer.Ordinal);
+            var own = new HashSet<string>(extras?.AllProperties ?? type.Properties, StringComparer.Ordinal);
             if (extras is not null)
             {
                 foreach (string key in extras.Featured.Concat(extras.Hidden))
-                    if (!type.Properties.Contains(key, StringComparer.Ordinal))
+                    if (!extras.AllProperties.Contains(key, StringComparer.Ordinal))
                         problems.Add($"type {type.Key} : « {key} » est dans « panel » mais pas dans « properties » ; une propriété d'en-tête ou masquée est d'abord une propriété du type.");
                 foreach (string key in extras.Featured)
                     if (extras.Hidden.Contains(key))
@@ -195,9 +195,12 @@ internal static class SpacePlanValidator
                 Check("filtre", property);
                 if (Str(filter, "condition") is { Length: > 0 } cond && !Conditions.Contains(cond))
                     problems.Add($"{viewLabel} : condition de filtre « {cond} » inconnue.");
-                foreach (string name in OptionNames(filter["value"]))
-                    if (!tags.TryGetValue(property, out var options) || !options.Contains(name))
-                        problems.Add($"{viewLabel} : l'option « {name} » n'existe pas pour la propriété « {property} » dans le plan.");
+                // A filter on a select property declared here names its options; a
+                // name that is not one is a typo that matches nothing.
+                if (tags.TryGetValue(property, out var options))
+                    foreach (string name in OptionNames(filter["value"]))
+                        if (!options.Contains(name))
+                            problems.Add($"{viewLabel} : l'option « {name} » n'existe pas pour la propriété « {property} » dans le plan.");
             }
         }
     }
@@ -209,9 +212,8 @@ internal static class SpacePlanValidator
             foreach (JsonNode? item in array)
                 foreach (string name in OptionNames(item)) yield return name;
         }
-        else if (value is JsonValue scalar && scalar.TryGetValue<string>(out string? text)
-            && text.StartsWith(PlanViews.OptionPrefix, StringComparison.Ordinal))
-            yield return text[PlanViews.OptionPrefix.Length..];
+        else if (value is JsonValue scalar && scalar.TryGetValue<string>(out string? text) && text != PlanViews.SelfValue)
+            yield return text;
     }
 
     private static void Unique(List<string> problems, IEnumerable<string> keys, string label)

@@ -9,7 +9,7 @@ namespace Deckle.Anytype;
 // everything points at something else by a symbolic reference.
 //
 //   type:<key>               a type            object:<name>   an object, by name
-//   option:<prop>/<name>     a select option   $self           the object a view lives in
+//   $self                    the object a view lives in (a filter value)
 //
 // The first three sections (properties, types, sections) are the schema
 // manifest's own grammar and still go through SchemaPlanner. A plan adds, on
@@ -50,8 +50,14 @@ internal sealed record SpacePlan(
             foreach (JsonObject type in types.OfType<JsonObject>())
             {
                 string key = type["key"]?.GetValue<string>() ?? "";
-                extras[key] = PlanTypeExtras.Parse(key, type);
+                PlanTypeExtras typeExtras = PlanTypeExtras.Parse(key, type);
+                extras[key] = typeExtras;
                 foreach (string member in TypeOnlyMembers) type.Remove(member);
+                // A property in the hidden section is out of the type's regular
+                // list: the schema stage, which compares that list, must not see it.
+                if (typeExtras.Hidden.Count > 0 && type["properties"] is JsonArray regular)
+                    for (int i = regular.Count - 1; i >= 0; i--)
+                        if (typeExtras.Hidden.Contains(regular[i]?.GetValue<string>() ?? "")) regular.RemoveAt(i);
             }
 
         JsonObject schemaOnly = manifestNode;
@@ -85,7 +91,8 @@ internal sealed record PlanTypeExtras(
     IReadOnlyList<string> Featured,
     IReadOnlyList<string> Hidden,
     string? DefaultTemplate,
-    JsonArray? Views)
+    JsonArray? Views,
+    IReadOnlyList<string> AllProperties)
 {
     public static PlanTypeExtras Parse(string typeKey, JsonObject type)
     {
@@ -104,7 +111,10 @@ internal sealed record PlanTypeExtras(
         if (type["views"] is not null and not JsonArray)
             throw new ArgumentException($"Le champ « views » du type « {typeKey} » doit être un tableau.");
 
-        return new PlanTypeExtras(featured, hidden, template, type["views"] as JsonArray);
+        // Every property the type holds, the hidden ones included: the manifest the
+        // schema stage reads has the hidden ones taken out.
+        var all = Keys(type["properties"], $"type {typeKey}.properties").ToList();
+        return new PlanTypeExtras(featured, hidden, template, type["views"] as JsonArray, all);
     }
 
     private static IEnumerable<string> Keys(JsonNode? node, string label)

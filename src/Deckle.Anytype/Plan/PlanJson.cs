@@ -70,6 +70,7 @@ internal static class PlanJson
         JsonArray array => array.Count == 0,
         JsonObject obj => obj.Count == 0,
         JsonValue scalar when scalar.TryGetValue<bool>(out bool b) => !b,
+        JsonValue scalar when scalar.TryGetValue<string>(out string? s) => s.Length == 0,
         _ => false,
     };
 

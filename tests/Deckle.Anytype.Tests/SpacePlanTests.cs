@@ -25,7 +25,7 @@ public sealed class SpacePlanTests
           "default_template": "Ticket default",
           "views": [
             { "name": "Open", "type": "table",
-              "filters": [ { "property": "state", "condition": "in", "value": [ "option:Open" ] } ],
+              "filters": [ { "property": "state", "condition": "in", "value": [ "Open" ] } ],
               "sorts": [ { "property": "name", "direction": "asc" } ],
               "columns": [ { "property": "name", "width": 300 }, { "property": "state" } ] },
             { "name": "Board", "type": "kanban", "group_by": "state", "columns": [ { "property": "name" } ] }
@@ -50,9 +50,6 @@ public sealed class SpacePlanTests
     {
         public string TypeId(string key) => "id-of-" + key;
         public string? TypeKey(string id) => id.StartsWith("id-of-", StringComparison.Ordinal) ? id[6..] : null;
-        public string OptionId(string property, string name) => $"opt-{property}-{name}";
-        public string? OptionName(string property, string id) =>
-            id.StartsWith($"opt-{property}-", StringComparison.Ordinal) ? id[$"opt-{property}-".Length..] : null;
         public string ObjectId(string name) => "obj-" + name;
         public string? ObjectName(string id) => id.StartsWith("obj-", StringComparison.Ordinal) ? id[4..] : null;
     }
@@ -64,7 +61,10 @@ public sealed class SpacePlanTests
 
         Assert.Equal(3, plan.Manifest.Properties.Count);
         TypeSpec type = Assert.Single(plan.Manifest.Types);
-        Assert.Equal(["state", "owner_note", "projects"], type.Properties);
+        // A hidden property is out of the regular list the schema stage compares,
+        // and still one of the type's own for the plan.
+        Assert.Equal(["state", "projects"], type.Properties);
+        Assert.Equal(["state", "owner_note", "projects"], plan.TypeExtras["ticket"].AllProperties);
         PlanTypeExtras extras = plan.TypeExtras["ticket"];
         Assert.Equal(["state"], extras.Featured);
         Assert.Equal(["owner_note"], extras.Hidden);
@@ -101,7 +101,7 @@ public sealed class SpacePlanTests
     public void Validate_RefusesAnOptionTheFilterPropertyLacks()
     {
         JsonObject root = SamplePlan();
-        root["types"]![0]!["views"]![0]!["filters"]![0]!["value"] = new JsonArray("option:Blocked");
+        root["types"]![0]!["views"]![0]!["filters"]![0]!["value"] = new JsonArray("Blocked");
         Assert.Contains(SpacePlanValidator.Validate(SpacePlan.Parse(root)), p => p.Contains("Blocked"));
     }
 
@@ -144,7 +144,7 @@ public sealed class SpacePlanTests
     }
 
     [Fact]
-    public void ToWire_GivesEverySortAndFilterItsOwn24HexId_AndResolvesOptions()
+    public void ToWire_GivesEverySortAndFilterItsOwn24HexId_AndKeepsOptionNames()
     {
         JsonObject view = SamplePlan()["types"]![0]!["views"]![0]!.AsObject();
         view["sorts"]!.AsArray().Add(new JsonObject { ["property"] = "state", ["direction"] = "desc" });
@@ -156,7 +156,7 @@ public sealed class SpacePlanTests
         Assert.Equal(3, ids.Length);
         Assert.Equal(3, ids.Distinct().Count());
         Assert.All(ids, id => Assert.Matches("^[0-9a-f]{24}$", id));
-        Assert.Equal("opt-state-Open", wire["filters"]![0]!["value"]![0]!.GetValue<string>());
+        Assert.Equal("Open", wire["filters"]![0]!["value"]![0]!.GetValue<string>());
     }
 
     [Fact]
@@ -176,7 +176,7 @@ public sealed class SpacePlanTests
 
         Assert.Empty(PlanViewsDiff.Differences(view, back));
         Assert.Null(back["sorts"]![0]!["id"]);
-        Assert.Equal("option:Open", back["filters"]![0]!["value"]![0]!.GetValue<string>());
+        Assert.Equal("Open", back["filters"]![0]!["value"]![0]!.GetValue<string>());
     }
 
     [Fact]

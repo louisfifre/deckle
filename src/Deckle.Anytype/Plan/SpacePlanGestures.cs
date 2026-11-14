@@ -37,6 +37,8 @@ public sealed record SpacePlanPreview(
 // preview that stops there and writes nothing.
 public sealed class SpacePlanGestures(AnytypeApiClient api, AnytypeSpaceAliases aliases)
 {
+    private static readonly TimeSpan SearchIndexSettle = TimeSpan.FromSeconds(10);
+
     private readonly SchemaAdminGestures _schema = new(api, aliases);
 
     public async Task<SpacePlanPreview> PreviewAsync(
@@ -116,6 +118,12 @@ public sealed class SpacePlanGestures(AnytypeApiClient api, AnytypeSpaceAliases 
                 await StepsAsync(spaceId, plan, stages, ct).ConfigureAwait(false);
             var executor = new SpacePlanExecutor(api, new PlanApi(api.V2, spaceId), live.Refs, live.Templates);
             await executor.RunAsync(steps, log, ct).ConfigureAwait(false);
+
+            // The search index lags a few seconds behind a write (runbook, 2026-11-12), and
+            // the reader finds pages, collections and queries through it: wait before
+            // anyone reads the space again, or a created page reads as missing.
+            if (steps.Any(s => s.Kind is "page_create" or "collection_create" or "query_create" or "object_create"))
+                await Task.Delay(SearchIndexSettle, ct).ConfigureAwait(false);
         }
         catch (Exception ex) when (ex is not OperationCanceledException)
         {
@@ -153,6 +161,8 @@ public sealed class SpacePlanGestures(AnytypeApiClient api, AnytypeSpaceAliases 
             {
                 string type = obj["type"]?.GetValue<string>() ?? "";
                 string name = obj["name"]?.GetValue<string>() ?? "";
+                // A type the plan has yet to create holds no object, and a search on it is refused.
+                if (!live.TypeIds.ContainsKey(type)) continue;
                 IReadOnlyList<AnytypeV2SearchRow> hits = await new AnytypeV2Searcher(api.V2, spaceId)
                     .SearchAllAsync(new AnytypeV2SearchRequest { Type = type, Query = name }, ct).ConfigureAwait(false);
                 if (hits.Any(h => h.Name == name)) existingObjects.Add(type + "|" + name);

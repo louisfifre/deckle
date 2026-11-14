@@ -10,15 +10,15 @@ internal interface IPlanRefs
 {
     string TypeId(string key);
     string? TypeKey(string id);
-    string OptionId(string property, string name);
-    string? OptionName(string property, string id);
     string ObjectId(string name);
     string? ObjectName(string id);
 }
 
 // The two shapes of a view. The plan form is what a person writes and what the
-// reader returns: no id, symbolic values. The wire form is what the API takes
-// and serves: ids on sorts and filters, option and object ids in values.
+// reader returns: no id, `$self` for the object a view lives in. The wire form is
+// what the API takes and serves: ids on sorts and filters and the template
+// placeholder. An option is its name in both forms: the v2 API takes and serves
+// the name of a select option in a filter value (measured 2026-11-14), not an id.
 //
 // Why ids are generated here: a sort or a filter sent without an id read back
 // right, then collapsed into the first one when the object was loaded again
@@ -32,7 +32,6 @@ internal static class PlanViews
     public const string TemplatePlaceholder = "_filter_template_1_";
     // How a plan spells it.
     public const string SelfValue = "$self";
-    public const string OptionPrefix = "option:";
 
     // A view column the API cannot hide or remove (runbook, Limits). It is left
     // out of both sides, so a view never reads as different because of it.
@@ -119,8 +118,6 @@ internal static class PlanViews
         if (value is JsonValue scalar && scalar.TryGetValue<string>(out string? text))
         {
             if (text == SelfValue) return selfValue ?? TemplatePlaceholder;
-            if (text.StartsWith(OptionPrefix, StringComparison.Ordinal))
-                return refs.OptionId(property, text[OptionPrefix.Length..]);
         }
         return value.DeepClone();
     }
@@ -197,7 +194,6 @@ internal static class PlanViews
         if (value is JsonValue scalar && scalar.TryGetValue<string>(out string? text))
         {
             if (text == TemplatePlaceholder) return SelfValue;
-            if (refs.OptionName(property, text) is { } name) return OptionPrefix + name;
         }
         return value.DeepClone();
     }

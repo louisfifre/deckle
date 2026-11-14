@@ -9,20 +9,10 @@ internal sealed class LivePlanRefs : IPlanRefs
 {
     private readonly Dictionary<string, string> _typeIds = new(StringComparer.Ordinal);
     private readonly Dictionary<string, string> _typeKeys = new(StringComparer.Ordinal);
-    private readonly Dictionary<string, Dictionary<string, string>> _optionIds = new(StringComparer.Ordinal);
-    private readonly Dictionary<string, Dictionary<string, string>> _optionNames = new(StringComparer.Ordinal);
     private readonly Dictionary<string, string> _objectIds = new(StringComparer.Ordinal);
     private readonly Dictionary<string, string> _objectNames = new(StringComparer.Ordinal);
 
     public void SetType(string key, string id) { _typeIds[key] = id; _typeKeys[id] = key; }
-
-    public void SetOption(string property, string name, string id)
-    {
-        if (!_optionIds.TryGetValue(property, out var ids)) _optionIds[property] = ids = new(StringComparer.Ordinal);
-        if (!_optionNames.TryGetValue(property, out var names)) _optionNames[property] = names = new(StringComparer.Ordinal);
-        ids[name] = id;
-        names[id] = name;
-    }
 
     public void SetObject(string name, string id) { _objectIds[name] = id; _objectNames[id] = name; }
 
@@ -32,14 +22,6 @@ internal sealed class LivePlanRefs : IPlanRefs
         _typeIds.TryGetValue(key, out string? id) ? id : throw new InvalidOperationException($"Type « {key} » inconnu de l'espace.");
 
     public string? TypeKey(string id) => _typeKeys.GetValueOrDefault(id);
-
-    public string OptionId(string property, string name) =>
-        _optionIds.TryGetValue(property, out var ids) && ids.TryGetValue(name, out string? id)
-            ? id
-            : throw new InvalidOperationException($"Option « {name} » inconnue pour la propriété « {property} ».");
-
-    public string? OptionName(string property, string id) =>
-        _optionNames.TryGetValue(property, out var names) ? names.GetValueOrDefault(id) : null;
 
     public string ObjectId(string name) =>
         _objectIds.TryGetValue(name, out string? id) ? id : throw new InvalidOperationException($"Objet « {name} » inconnu de l'espace.");
@@ -121,8 +103,6 @@ internal sealed class SpacePlanReader(AnytypeApiClient api)
             }
             properties.Add(node);
         }
-        foreach (var (propKey, tags) in snapshot.TagsByProperty)
-            foreach (SchemaTagInfo tag in tags.Values) refs.SetOption(propKey, tag.Name, tag.Id);
 
         // Types.
         var typeRows = await v2.ListAsync("types", null, ct).ConfigureAwait(false);
@@ -225,8 +205,12 @@ internal sealed class SpacePlanReader(AnytypeApiClient api)
             string target = SchemaApiJson.Str(row, "target");
             string symbol = refs.TypeKey(target) is { } tk ? "type:" + tk : refs.ObjectName(target) is { } on ? "object:" + on : target;
             var widget = new JsonObject { ["target"] = symbol };
-            foreach (string field in new[] { "layout", "limit", "view_id" })
-                if (row[field] is { } value) widget[field == "view_id" ? "view" : field] = value.DeepClone();
+            foreach (string field in new[] { "layout", "limit" })
+                if (row[field] is { } value) widget[field] = value.DeepClone();
+            // A plan names a view by its name; the sidebar stores its id.
+            if (SchemaApiJson.Str(row, "view_id") is { Length: > 0 } viewId
+                && await ViewNameAsync(v2, target, viewId, typeDocs, refs, ct).ConfigureAwait(false) is { } viewName)
+                widget["view"] = viewName;
             widgets.Add(widget);
         }
 
@@ -288,6 +272,21 @@ internal sealed class SpacePlanReader(AnytypeApiClient api)
 
     private static string Str0(JsonObject node, string key) => node[key]?.GetValue<string>() ?? "";
 
+    private static async Task<string?> ViewNameAsync(
+        PlanApi v2, string targetId, string viewId, Dictionary<string, JsonObject> typeDocs, LivePlanRefs refs, CancellationToken ct)
+    {
+        JsonObject? doc = refs.TypeKey(targetId) is { } typeKey && typeDocs.TryGetValue(typeKey, out JsonObject? typeDoc)
+            ? typeDoc
+            : await v2.TryGetAsync($"objects/{targetId}", ct).ConfigureAwait(false);
+        JsonObject? dataview = (doc?["blocks"] as JsonArray ?? []).OfType<JsonObject>()
+            .FirstOrDefault(b => Str0(b, "type") == "dataview");
+        JsonObject? view = (dataview?["views"] as JsonArray ?? []).OfType<JsonObject>()
+            // The API shows a view by a short id and the sidebar keeps the long one: the
+            // short id is the end of the long one.
+            .FirstOrDefault(v => Str0(v, "id") is { Length: > 0 } id && (id == viewId || viewId.EndsWith(id, StringComparison.Ordinal)));
+        return view is null ? null : Str0(view, "name");
+    }
+
     private static JsonArray TypeKeys(JsonArray ids, LivePlanRefs refs)
     {
         var result = new JsonArray();
@@ -346,6 +345,8 @@ internal sealed class SpacePlanReader(AnytypeApiClient api)
             if (section == "featured") featured.Add(property);
             else if (section == "hidden") hidden.Add(property);
         }
+        // A hidden property is not in the v1 link list; the plan still counts it as the type's own.
+        foreach (JsonNode? hiddenKey in hidden) regular.Add(hiddenKey?.DeepClone());
         type["properties"] = regular;
         if (featured.Count > 0 || hidden.Count > 0)
             type["panel"] = new JsonObject { ["featured"] = featured, ["hidden"] = hidden };

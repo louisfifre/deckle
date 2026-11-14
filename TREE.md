@@ -532,6 +532,7 @@ _Generated from `git ls-files` — do not edit by hand._
 │   │   │   ├── SessionGestures.cs
 │   │   │   └── TaskGestures.cs
 │   │   ├── Plan/
+│   │   │   ├── example.space-plan.json
 │   │   │   ├── PlanApi.cs
 │   │   │   ├── PlanJson.cs
 │   │   │   ├── PlanViews.cs

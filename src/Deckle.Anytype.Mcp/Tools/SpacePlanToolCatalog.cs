@@ -110,7 +110,7 @@ public static class SpacePlanToolCatalog
     {
         ["type"] = "object",
         ["description"] =
-            "A space plan: the schema manifest's `properties`, `types` (each may add `panel` {featured, hidden}, `default_template` and `views`) and `sections`, plus `templates`, `collections`, `queries`, `pages`, `widgets` and `objects`. Keys are snake_case ASCII; nothing holds an Anytype id; references are `type:<key>`, `object:<name>`, `option:<name>` in a filter value and `$self` for the object a view lives in.",
+            "A space plan: the schema manifest's `properties`, `types` (each may add `panel` {featured, hidden}, `default_template` and `views`) and `sections`, plus `templates`, `collections`, `queries`, `pages`, `widgets` and `objects`. Keys are snake_case ASCII; nothing holds an Anytype id; references are `type:<key>`, `object:<name>`, and `$self` for the object a view lives in (a filter value). A select option is its name.",
     };
 
     private static JsonObject PreviewContent(SpacePlanPreview preview)
