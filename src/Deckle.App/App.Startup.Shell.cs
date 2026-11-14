@@ -172,7 +172,7 @@ public partial class App
         // read from the top: the switches (the background ones, set once and
         // left on or off, then Ambient Light, a visual thing one actually
         // launches, in the same group), then the actions (Record or Stop
-        // recording, Transcribe audio to text…), then the app's own commands at
+        // recording, Transcribe and rewrite…), then the app's own commands at
         // the very bottom (Settings, Quit), where a tray menu keeps them. Logs
         // and Restart live in the developer menu (TrayDeveloperMenu) (Louis,
         // 2026-10-14, 2026-11-11 and 2026-11-14). A switch is a row with a pill
@@ -192,10 +192,10 @@ public partial class App
         {
             // Record runs the exact path of the transcription hotkey; the menu
             // closes first, as for any command. Its label follows the engine
-            // state at each open. Transcribe and rewrite opens its window, for
-            // one text to work on (App.TranscribeRewrite.cs). Transcribe audio
-            // to text opens the file assistant, which writes each file's .txt
-            // beside it, rewritten or not (App.FileTranscription.cs).
+            // state at each open. Transcribe and rewrite opens its window, the
+            // one way in for a text or audio files: one file goes into its
+            // field, several into its file list, each .txt beside its audio
+            // (Louis, 2026-11-14; App.TranscribeRewrite.cs).
             if (actions.Count > 0) actions.Add(new TrayMenuSeparator());
             actions.Add(new TrayMenuCommand(
                 "record",
@@ -205,10 +205,6 @@ public partial class App
                 "transcribe-rewrite",
                 () => Loc.Get("TrayMenu_TranscribeRewrite"),
                 () => ShowTranscribeRewriteWindowLazy()));
-            actions.Add(new TrayMenuCommand(
-                "transcribe-files",
-                () => Loc.Get("TrayMenu_TranscribeFile"),
-                () => ShowFileTranscriptionWindowLazy()));
         }
         // The app's own commands, always present.
         if (actions.Count > 0) actions.Add(new TrayMenuSeparator());

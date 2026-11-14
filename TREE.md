@@ -652,7 +652,6 @@ _Generated from `git ls-files` — do not edit by hand._
 │   │   ├── App.Autocorrect.cs
 │   │   ├── App.Autocorrect.Lifecycle.cs
 │   │   ├── App.DeveloperAccess.cs
-│   │   ├── App.FileTranscription.cs
 │   │   ├── App.Hotkeys.Actions.cs
 │   │   ├── App.Hotkeys.cs
 │   │   ├── App.Input.cs
@@ -697,9 +696,6 @@ _Generated from `git ls-files` — do not edit by hand._
 │   │   ├── CrashSupervisor.cs
 │   │   ├── Deckle.App.csproj
 │   │   ├── FileTranscriptionRun.cs
-│   │   ├── FileTranscriptionWindow.Capture.cs
-│   │   ├── FileTranscriptionWindow.xaml
-│   │   ├── FileTranscriptionWindow.xaml.cs
 │   │   ├── global.json
 │   │   ├── LogWindow.Chrome.cs
 │   │   ├── LogWindow.Interaction.cs
@@ -715,6 +711,7 @@ _Generated from `git ls-files` — do not edit by hand._
 │   │   ├── TranscribeRewriteWindow.Commands.cs
 │   │   ├── TranscribeRewriteWindow.Editor.cs
 │   │   ├── TranscribeRewriteWindow.Feed.cs
+│   │   ├── TranscribeRewriteWindow.Files.cs
 │   │   ├── TranscribeRewriteWindow.Outline.cs
 │   │   ├── TranscribeRewriteWindow.xaml
 │   │   ├── TranscribeRewriteWindow.xaml.cs

@@ -10,7 +10,17 @@ public sealed partial class TranscribeRewriteWindow
 {
     internal const string EmptyState = "empty";
 
-    internal static readonly string[] CaptureStates = ["text", "transcribing", "rewriting", "failed"];
+    internal static readonly string[] CaptureStates = ["text", "transcribing", "rewriting", "failed", "files"];
+
+    // The list of several files, every state a file can be in.
+    private static readonly (string Name, string Duration, FileTranscriptionState State, bool RewriteFailed, bool HasText)[] SampleFiles =
+    [
+        ("Team meeting.m4a", "48:12", FileTranscriptionState.Done, false, true),
+        ("Interview, part 1.mp3", "1:12:40", FileTranscriptionState.Done, true, true),
+        ("Interview, part 2.mp3", "1:03:05", FileTranscriptionState.Transcribing, false, false),
+        ("Voice memo.wav", "2:31", FileTranscriptionState.Waiting, false, false),
+        ("Corrupted.ogg", "", FileTranscriptionState.TranscriptionFailed, false, false),
+    ];
 
     // A neutral sample, long enough to wrap and to show the field's scroll.
     private const string SampleText =
@@ -31,6 +41,8 @@ public sealed partial class TranscribeRewriteWindow
     {
         if (_running) EndRun();
         HideNotice();
+        _files.Clear();
+        ShowField(fromList: false);
         WriteText("");
         BeginRun(ProcessingVariant.Transcribing);
 
@@ -69,6 +81,13 @@ public sealed partial class TranscribeRewriteWindow
     {
         if (_running) EndRun();
         HideNotice();
+        if (state == "files")
+        {
+            ShowSampleFiles();
+            return;
+        }
+        _files.Clear();
+        ShowField(fromList: false);
         switch (state)
         {
             case EmptyState:
@@ -93,5 +112,22 @@ public sealed partial class TranscribeRewriteWindow
                 break;
         }
         UpdateCommands();
+    }
+
+    private void ShowSampleFiles()
+    {
+        _files.Clear();
+        string folder = Path.Combine(Path.GetTempPath(), "Recordings");
+        foreach (var sample in SampleFiles)
+        {
+            var item = new FileTranscriptionItem(Path.Combine(folder, sample.Name)) { DurationText = sample.Duration };
+            if (sample.HasText) item.Text = SampleText;
+            if (sample.State == FileTranscriptionState.Done)
+                item.OutputPath = Path.ChangeExtension(item.Path, ".txt");
+            item.RewriteFailed = sample.RewriteFailed;
+            item.State = sample.State;
+            _files.Add(item);
+        }
+        ShowFiles();
     }
 }

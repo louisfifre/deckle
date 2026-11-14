@@ -542,9 +542,6 @@
   <data name="Tray_Tooltip_Format" xml:space="preserve">
     <value>Deckle - {0}</value>
   </data>
-  <data name="TrayMenu_TranscribeFile" xml:space="preserve">
-    <value>Transcribe audio to text…</value>
-  </data>
   <data name="TrayMenu_TranscribeRewrite" xml:space="preserve">
     <value>Transcribe and rewrite…</value>
   </data>
@@ -564,8 +561,21 @@
   <data name="TranscribeRewriteSaveLabel.Text" xml:space="preserve">
     <value>Save</value>
   </data>
-  <data name="TranscribeRewriteRewriteLabel.Text" xml:space="preserve">
+  <data name="TranscribeRewrite_Rewrite" xml:space="preserve">
     <value>Rewrite</value>
+  </data>
+  <data name="TranscribeRewrite_RewriteAll" xml:space="preserve">
+    <value>Rewrite all</value>
+    <comment>On the list of several files: rewrites every file and saves each rewrite over its text file.</comment>
+  </data>
+  <data name="TranscribeRewriteBackToFilesLabel.Text" xml:space="preserve">
+    <value>All files</value>
+  </data>
+  <data name="TranscribeRewriteShowMoreButton.Content" xml:space="preserve">
+    <value>Show more</value>
+  </data>
+  <data name="TranscribeRewriteOpenFolderButton.Content" xml:space="preserve">
+    <value>Open folder</value>
   </data>
   <data name="TranscribeRewriteEditor.PlaceholderText" xml:space="preserve">
     <value>Paste a text, or transcribe an audio file.</value>
@@ -612,68 +622,8 @@
   <data name="TranscribeRewrite_TextFileType" xml:space="preserve">
     <value>Text</value>
   </data>
-  <!-- File assistant (specs/deckle-transcribe-and-rewrite.md, File assistant). -->
-  <data name="FileTranscription_WindowTitle" xml:space="preserve">
-    <value>Transcribe audio to text</value>
-  </data>
-  <data name="FileTranscriptionTitleBar.Title" xml:space="preserve">
-    <value>Transcribe audio to text</value>
-  </data>
-  <data name="FileTranscription_StepFormat" xml:space="preserve">
-    <value>{0}  {1}</value>
-    <comment>{0} = step number, {1} = step name.</comment>
-  </data>
-  <data name="FileTranscription_StepFiles" xml:space="preserve">
-    <value>Files</value>
-  </data>
-  <data name="FileTranscription_StepRewrite" xml:space="preserve">
-    <value>Rewrite</value>
-  </data>
-  <data name="FileTranscription_StepResult" xml:space="preserve">
-    <value>Result</value>
-  </data>
-  <data name="FileTranscriptionFilesTitle.Text" xml:space="preserve">
-    <value>Choose the audio to transcribe</value>
-  </data>
-  <data name="FileTranscriptionAddFilesLabel.Text" xml:space="preserve">
-    <value>Add files…</value>
-  </data>
-  <data name="FileTranscriptionFilesEmpty.Text" xml:space="preserve">
-    <value>Each file gets its own text file, saved in the same folder.</value>
-  </data>
-  <data name="FileTranscriptionRemoveButton.[using:Microsoft.UI.Xaml.Controls]ToolTipService.ToolTip" xml:space="preserve">
-    <value>Remove</value>
-  </data>
-  <data name="FileTranscriptionRemoveButton.[using:Microsoft.UI.Xaml.Automation]AutomationProperties.Name" xml:space="preserve">
-    <value>Remove</value>
-  </data>
-  <data name="FileTranscriptionRewriteTitle.Text" xml:space="preserve">
-    <value>Rewrite the transcripts?</value>
-  </data>
-  <data name="FileTranscriptionRewriteSwitch.Header" xml:space="preserve">
-    <value>Rewrite</value>
-  </data>
-  <data name="FileTranscriptionProfileBox.Header" xml:space="preserve">
-    <value>Profile</value>
-  </data>
-  <data name="FileTranscriptionResultTitle.Text" xml:space="preserve">
-    <value>Transcripts</value>
-  </data>
-  <data name="FileTranscriptionOpenFolderButton.Content" xml:space="preserve">
-    <value>Open folder</value>
-  </data>
-  <data name="FileTranscription_Back" xml:space="preserve">
-    <value>Back</value>
-  </data>
-  <data name="FileTranscription_Next" xml:space="preserve">
-    <value>Next</value>
-  </data>
-  <data name="FileTranscription_Start" xml:space="preserve">
-    <value>Transcribe</value>
-  </data>
-  <data name="FileTranscription_Close" xml:space="preserve">
-    <value>Close</value>
-  </data>
+  <!-- A file's state on the window's list of several files
+       (specs/deckle-transcribe-and-rewrite.md, Several files). -->
   <data name="FileTranscription_StateWaiting" xml:space="preserve">
     <value>Waiting</value>
   </data>

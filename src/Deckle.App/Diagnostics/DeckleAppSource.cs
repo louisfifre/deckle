@@ -95,8 +95,7 @@ public sealed partial class DeckleAppSource : DeckleEventSource
     public const int EvtRestartSpawnSkipped            = 80;
     public const int EvtRestartSpawned                 = 81;
     public const int EvtHotkeyRegistrationFailed       = 82;
-    // 83 retired.
-    public const int EvtFileTranscriptionEntryFailed   = 84;
+    // 83 and 84 retired.
     public const int EvtWindowOperationFailed          = 85;
     public const int EvtCrashRelaunched                = 86;
     public const int EvtDictationRecoveryUnreadable    = 87;

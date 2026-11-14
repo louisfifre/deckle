@@ -63,17 +63,6 @@ public sealed partial class DeckleAppSource
         if (IsEnabled()) WriteEvent(EvtWindowOpenFailed, window, ex_type, ex_message);
     }
 
-    // The file picker or the queueing failed: no file is transcribed and
-    // nothing tells the person, so this Warning is the only trace.
-    [Event(EvtFileTranscriptionEntryFailed,
-           Level = EventLevel.Warning,
-           Keywords = (EventKeywords)Keywords.Lifecycle,
-           Message = "File transcription could not start, so no file is transcribed\nex_type={0} | ex_message={1}")]
-    public void FileTranscriptionEntryFailed(string ex_type, string ex_message)
-    {
-        if (IsEnabled()) WriteEvent(EvtFileTranscriptionEntryFailed, ex_type, ex_message);
-    }
-
     // toggle is the TrayToggle id; the hotkey path also logs HotkeyToggle.
     [Event(EvtTrayToggleChanged,
            Level = EventLevel.Informational,
