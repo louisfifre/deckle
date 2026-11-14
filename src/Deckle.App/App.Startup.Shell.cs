@@ -172,7 +172,7 @@ public partial class App
         // read from the top: the switches (the background ones, set once and
         // left on or off, then Ambient Light, a visual thing one actually
         // launches, in the same group), then the actions (Record or Stop
-        // recording, Transcribe audio files…), then the app's own commands at
+        // recording, Transcribe audio to text…), then the app's own commands at
         // the very bottom (Settings, Quit), where a tray menu keeps them. Logs
         // and Restart live in the developer menu (TrayDeveloperMenu) (Louis,
         // 2026-10-14, 2026-11-11 and 2026-11-14). A switch is a row with a pill

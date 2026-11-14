@@ -46,7 +46,9 @@ public sealed partial class TranscribeRewriteWindow : Window
 
         ExtendsContentIntoTitleBar = true;
         SetTitleBar(AppTitleBar);
-        AppWindow.TitleBar.PreferredHeightOption = TitleBarHeightOption.Tall;
+        // Standard, not Tall (Louis, 2026-11-14): the bar holds nothing but the
+        // title, and tall caption buttons reached down over the toolbar row.
+        AppWindow.TitleBar.PreferredHeightOption = TitleBarHeightOption.Standard;
         CaptionInsetCorrection.Attach(AppTitleBar, AppWindow);
         SystemBackdrop = new MicaBackdrop();
         Title = Loc.Get("TranscribeRewrite_WindowTitle");

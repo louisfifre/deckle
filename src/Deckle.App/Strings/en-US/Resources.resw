@@ -543,7 +543,7 @@
     <value>Deckle - {0}</value>
   </data>
   <data name="TrayMenu_TranscribeFile" xml:space="preserve">
-    <value>Transcribe audio files…</value>
+    <value>Transcribe audio to text…</value>
   </data>
   <data name="TrayMenu_TranscribeRewrite" xml:space="preserve">
     <value>Transcribe and rewrite…</value>
@@ -556,7 +556,7 @@
     <value>Transcribe and rewrite</value>
   </data>
   <data name="TranscribeRewriteTranscribeFileLabel.Text" xml:space="preserve">
-    <value>Transcribe a file…</value>
+    <value>Transcribe audio…</value>
   </data>
   <data name="TranscribeRewriteCopyLabel.Text" xml:space="preserve">
     <value>Copy</value>

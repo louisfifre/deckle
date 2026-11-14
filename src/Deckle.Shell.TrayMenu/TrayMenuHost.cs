@@ -11,7 +11,7 @@ namespace Deckle.Shell.TrayMenu;
 //
 // Both tray surfaces are instances of this host: the context menu on right
 // click (the rare items) and the quick-actions menu on left click (Record,
-// Transcribe audio files…, one toggle item per switchable module). Each is a
+// Transcribe audio to text…, one toggle item per switchable module). Each is a
 // plain WinUI MenuFlyout at its natural size: WinUI measures it, places it
 // beside its anchor and draws it in a popup window of its own (a MenuFlyout is
 // unconstrained to its root by default). Nothing here measures, primes or
