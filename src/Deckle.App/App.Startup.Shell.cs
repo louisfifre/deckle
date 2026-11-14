@@ -168,13 +168,14 @@ public partial class App
         _tray.RightClickRequested += ShowRightClickTray;
         WireDeveloperAccess(Microsoft.UI.Dispatching.DispatcherQueue.GetForCurrentThread());
 
-        // Left click, the menu of every day, four groups behind separators,
-        // read from the top: the background switches (set once, left on or
-        // off), then Ambient Light on its own (a visual thing one actually
-        // launches), then the actions (Record or Stop recording, Transcribe
-        // audio files…), then the app's own commands at the very bottom
-        // (Settings, Logs, Restart, Quit), where a tray menu keeps them
-        // (Louis, 2026-10-14 and 2026-11-11). A switch is a row with a pill
+        // Left click, the menu of every day, three groups behind separators,
+        // read from the top: the switches (the background ones, set once and
+        // left on or off, then Ambient Light, a visual thing one actually
+        // launches, in the same group), then the actions (Record or Stop
+        // recording, Transcribe audio files…), then the app's own commands at
+        // the very bottom (Settings, Quit), where a tray menu keeps them. Logs
+        // and Restart live in the developer menu (TrayDeveloperMenu) (Louis,
+        // 2026-10-14, 2026-11-11 and 2026-11-14). A switch is a row with a pill
         // (TraySwitchMenuItem); a click flips its module and closes the menu,
         // like any menu item. Every module entry follows module presence: an
         // absent module has no switch, no Record item, no file action.
@@ -185,12 +186,8 @@ public partial class App
         IReadOnlyList<TrayToggle> trayToggles = BuildTrayToggles(context);
         IReadOnlyList<TrayToggle> trayFooterToggles = BuildTrayFooterToggles(context);
         var actions = new List<TrayMenuEntry>();
-        foreach (IReadOnlyList<TrayToggle> group in new[] { trayToggles, trayFooterToggles })
-        {
-            if (group.Count == 0) continue;
-            if (actions.Count > 0) actions.Add(new TrayMenuSeparator());
-            actions.AddRange(group);
-        }
+        actions.AddRange(trayToggles);
+        actions.AddRange(trayFooterToggles);
         if (context.TranscriptionPresent)
         {
             // Record runs the exact path of the transcription hotkey; the menu
@@ -211,8 +208,6 @@ public partial class App
         // The app's own commands, always present.
         if (actions.Count > 0) actions.Add(new TrayMenuSeparator());
         actions.Add(new TrayMenuCommand("settings", () => Loc.Get("TrayMenu_Settings"), () => ShowSettingsWindowLazy()));
-        actions.Add(new TrayMenuCommand("logs", () => Loc.Get("TrayMenu_Logs"), () => ShowLogWindowLazy()));
-        actions.Add(new TrayMenuCommand("restart", () => Loc.Get("TrayMenu_Restart"), () => RestartAppFromTray()));
         actions.Add(new TrayMenuCommand("quit", () => Loc.Get("TrayMenu_Quit"), () => QuitApp()));
         _trayActions = new TrayMenuHost(_messageHost.Hwnd, "tray-actions")
         {

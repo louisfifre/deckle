@@ -34,7 +34,9 @@ public partial class App
             key => Loc.Get(key),
             () => ShowAtelierWindowLazy(),
             () => ShowMailLazy(),
-            () => CaptureInterfaceFromTray());
+            () => CaptureInterfaceFromTray(),
+            () => ShowLogWindowLazy(),
+            () => RestartAppFromTray());
 
     // Right click: the developer menu while the mode is on, read at each
     // click so it follows the setting without a restart. With the mode off it
