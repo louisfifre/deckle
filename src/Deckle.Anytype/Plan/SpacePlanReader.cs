@@ -93,7 +93,9 @@ internal sealed class SpacePlanReader(AnytypeApiClient api)
             if (snapshot.TagsByProperty.TryGetValue(prop.Key, out var tags) && tags.Count > 0)
             {
                 var list = new JsonArray();
-                foreach (var byName in tags.Values.GroupBy(t => t.Name, StringComparer.Ordinal).OrderBy(g => g.Key, StringComparer.Ordinal))
+                // The snapshot indexes an option under more than one key, so its values
+                // list it more than once: one option is one id.
+                foreach (var byName in tags.Values.DistinctBy(t => t.Id).GroupBy(t => t.Name, StringComparer.Ordinal).OrderBy(g => g.Key, StringComparer.Ordinal))
                 {
                     if (byName.Count() > 1)
                         notes.Add($"propriété {prop.Key} : l'option « {byName.Key} » existe {byName.Count()} fois ; une seule est lue");
@@ -173,7 +175,13 @@ internal sealed class SpacePlanReader(AnytypeApiClient api)
                 {
                     var items = new JsonArray();
                     foreach (JsonNode? member in doc["collection_items"] as JsonArray ?? [])
-                        items.Add(refs.TypeKey(member?.GetValue<string>() ?? "") is { } tk ? "type:" + tk : member?.DeepClone());
+                    {
+                        string memberId = member?.GetValue<string>() ?? "";
+                        if (refs.TypeKey(memberId) is { } tk) items.Add("type:" + tk);
+                        else if (refs.ObjectName(memberId) is { } on) items.Add("object:" + on);
+                        // A plan holds no opaque id (ADR-0003): a member that is neither a type nor a named object is left out.
+                        else notes.Add($"collection « {row.Name} » : un membre qui n'est ni un type ni un objet connu est ignoré");
+                    }
                     item["items"] = items;
                 }
                 item["views"] = ViewsOf(doc, refs);
