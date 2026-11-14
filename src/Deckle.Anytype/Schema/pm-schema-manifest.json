@@ -35,7 +35,7 @@
       "icon": {"format": "icon", "name": "checkbox", "color": "lime"},
       "properties": [
         "done", "task_type", "priority", "due_date", "slot", "done_definition",
-        "projects", "documents", "contacts",
+        "projects", "orchestrated_by", "documents", "contacts",
         "time_estimated", "time_actual", "files", "status", "archive"
       ]
     },
@@ -100,6 +100,7 @@
     {"key": "done", "name": "Done", "format": "checkbox"},
     {"key": "task_type", "name": "Type de tâche", "format": "select",
       "tags": [
+      {"key": "orchestration", "name": "Orchestrer"},
       {"key": "research", "name": "Chercher"}, {"key": "production", "name": "Produire"},
       {"key": "organizing", "name": "Organiser"}, {"key": "exchange", "name": "Échanger"},
       {"key": "management", "name": "Gérer"}, {"key": "monitoring", "name": "Surveiller"}]},
@@ -130,6 +131,7 @@
     {"key": "epic", "name": "Epic", "format": "objects"},
     {"key": "depends_on", "name": "Dépend de", "format": "objects"},
     {"key": "projects", "name": "Projets", "format": "objects"},
+    {"key": "orchestrated_by", "name": "Orchestré par", "format": "objects"},
     {"key": "tasks", "name": "Tâches", "format": "objects"},
     {"key": "documents", "name": "Documents", "format": "objects"},
     {"key": "contacts", "name": "Contacts", "format": "objects"},
