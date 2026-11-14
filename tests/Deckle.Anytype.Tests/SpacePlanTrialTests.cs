@@ -22,6 +22,8 @@ public sealed class SpacePlanTrialTests
     public const string ApiUrlVariable = "DECKLE_PLAN_TRIAL_API_URL";
     public const string KeyFileVariable = "DECKLE_PLAN_TRIAL_KEY_FILE";
     public const string SpaceIdVariable = "DECKLE_PLAN_TRIAL_SPACE_ID";
+    public const string UseVaultVariable = "DECKLE_PLAN_TRIAL_USE_VAULT";
+    public const string TypeFileVariable = "DECKLE_PLAN_TYPE_FILE";
     public const string PlanFileVariable = "DECKLE_PLAN_FILE";
     public const string StagesVariable = "DECKLE_PLAN_STAGES";
     public const string ReadAliasVariable = "DECKLE_PLAN_READ_ALIAS";
@@ -48,9 +50,17 @@ public sealed class SpacePlanTrialTests
         string? url = Variable(ApiUrlVariable);
         string? keyFile = Variable(KeyFileVariable);
         string? spaceId = Variable(SpaceIdVariable);
-        if (url is null || keyFile is null || spaceId is null || !File.Exists(keyFile)) return null;
+        if (spaceId is null) return null;
 
-        var credentials = new AnytypeCredentials(url, "2025-11-08", File.ReadAllText(keyFile).Trim(), spaceId);
+        AnytypeCredentials credentials;
+        if (Variable(UseVaultVariable) == "1")
+            // The bot's key stays in memory, read from the machine vault, and only the
+            // throwaway space's id replaces the machine's space: no key file on disk.
+            credentials = AnytypeCredentials.Load() with { SpaceId = spaceId };
+        else if (url is not null && keyFile is not null && File.Exists(keyFile))
+            credentials = new AnytypeCredentials(url, "2025-11-08", File.ReadAllText(keyFile).Trim(), spaceId);
+        else
+            return null;
         var aliases = new AnytypeSpaceAliases(new Dictionary<string, string> { [TrialAlias] = spaceId });
         var api = new AnytypeApiClient(credentials);
         return (api, new SpacePlanGestures(api, aliases));
@@ -121,6 +131,35 @@ public sealed class SpacePlanTrialTests
         SpacePlanPreview again = await gestures.CheckAsync(TrialAlias, plan, stages, Ct);
         Write("SECOND PREVIEW\n" + again.Rendered);
         Assert.Empty(again.Actions);
+    }
+
+    // The create_type gesture end to end: preview, apply, then preview again, which
+    // must be empty. The type comes from a JSON file ({key, name, properties, ...}).
+    [Fact(Explicit = true)]
+    public async Task CreateTypeOnTrialSpace()
+    {
+        var trial = TrialGestures();
+        string? typeFile = Variable(TypeFileVariable);
+        Assert.SkipWhen(trial is null || typeFile is null,
+            $"Not run: set the trial space variables and {TypeFileVariable}.");
+        using AnytypeApiClient api = trial!.Value.Api;
+        SpacePlanGestures gestures = trial.Value.Gestures;
+        JsonObject type = JsonNode.Parse(File.ReadAllText(typeFile!))!.AsObject();
+
+        (SpacePlanPreview preview, JsonObject plan) = await gestures.PreviewTypeAsync(TrialAlias, type, Ct);
+        Write("PLAN\n" + plan.ToJsonString(new JsonSerializerOptions { WriteIndented = true }));
+        Write("PREVIEW\n" + preview.Rendered);
+        Assert.Empty(preview.Problems);
+
+        string outcome = await gestures.ApplyTypeAsync(TrialAlias, preview.PreviewId, type, confirm: true, Ct);
+        Write("APPLY\n" + outcome);
+
+        (SpacePlanPreview again, _) = await gestures.PreviewTypeAsync(TrialAlias, type, Ct);
+        Write("SECOND PREVIEW\n" + again.Rendered);
+        Assert.Empty(again.Actions);
+
+        string second = await gestures.ApplyTypeAsync(TrialAlias, again.PreviewId, type, confirm: true, Ct);
+        Write("SECOND APPLY\n" + second);
     }
 
     [Fact(Explicit = true)]

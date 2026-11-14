@@ -541,6 +541,7 @@ _Generated from `git ls-files` — do not edit by hand._
 │   │   │   ├── PlanViewsDiff.cs
 │   │   │   ├── SpacePlan.cs
 │   │   │   ├── SpacePlanExecutor.cs
+│   │   │   ├── SpacePlanFragments.cs
 │   │   │   ├── SpacePlanGestures.cs
 │   │   │   ├── SpacePlanPlanner.cs
 │   │   │   ├── SpacePlanReader.cs
@@ -2371,6 +2372,7 @@ _Generated from `git ls-files` — do not edit by hand._
 │   │   ├── SchemaAdminGesturesTests.cs
 │   │   ├── SessionGesturesBugNotes.md
 │   │   ├── SessionGesturesTests.cs
+│   │   ├── SpacePlanFragmentsTests.cs
 │   │   ├── SpacePlanTests.cs
 │   │   ├── SpacePlanTrialTests.cs
 │   │   ├── SpaceWriteLockBugNotes.md

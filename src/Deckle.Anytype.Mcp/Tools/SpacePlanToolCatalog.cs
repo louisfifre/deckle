@@ -35,7 +35,10 @@ public static class SpacePlanToolCatalog
                         Str(args, "space"), Obj(args, "plan"), Stages(args), ct);
                     return new ToolOutput(preview.Rendered, PreviewContent(preview));
                 },
-                ToolExecutionContract.ReadOnly),
+                ToolExecutionContract.ReadOnly)
+            {
+                OutputSchema = PreviewOutputSchema(),
+            },
 
             new(
                 "space_plan_apply",
@@ -52,7 +55,10 @@ public static class SpacePlanToolCatalog
                 async (args, ct) =>
                     await plans.ApplyAsync(
                         Str(args, "space"), Str(args, "preview_id"), Obj(args, "plan"), Stages(args), Bool(args, "confirm"), ct),
-                ToolExecutionContract.AdditiveVerifiableWithStableTarget),
+                // A plan also rewrites views, templates and a type's property list to match
+                // itself, and deletes a type's default view: not the additive write that
+                // schema_apply's create-only manifest is.
+                ToolExecutionContract.OverwritingVerifiableWithStableTarget),
 
             new(
                 "space_plan_read",
@@ -77,8 +83,50 @@ public static class SpacePlanToolCatalog
                     return plan.ToJsonString(Indented);
                 },
                 ToolExecutionContract.ReadOnly),
+
+            new(
+                "create_type_preview",
+                "Preview the creation of one type, read only, through the space plan engine. Give the type's key and name, and the property keys it carries; the properties are taken from the space's own list, so each is declared as the space holds it, and a key the space does not hold is refused with the list of those it does. `panel` sets the header (`featured`) and the hidden section (`hidden`) in one go; its keys count as the type's own. Returns a preview id for create_type; a type that already matches says so.",
+                Schema(
+                    required:
+                    [
+                        Prop("space", "string", "Configured space alias, for example home or pm."),
+                        ("type", TypeProp()),
+                    ]),
+                async (args, ct) =>
+                {
+                    (SpacePlanPreview preview, _) = await plans.PreviewTypeAsync(Str(args, "space"), Obj(args, "type"), ct);
+                    return new ToolOutput(preview.Rendered, PreviewContent(preview));
+                },
+                ToolExecutionContract.ReadOnly)
+            {
+                OutputSchema = PreviewOutputSchema(),
+            },
+
+            new(
+                "create_type",
+                "Create one type from a previous create_type_preview: repeat the same `type` and the preview_id. The live properties must still match what was reviewed. Idempotent: a second run does nothing. Only adds: a type that exists with another property list or panel is refused (a conflict) instead of rewritten; use schema_apply or space_plan_apply for that. Requires confirm:true.",
+                Schema(
+                    required:
+                    [
+                        Prop("space", "string", "Configured space alias used by the preview."),
+                        Prop("preview_id", "string", "Preview id returned by create_type_preview."),
+                        ("type", TypeProp()),
+                        Prop("confirm", "boolean", "Must be true; omit or false refuses the write."),
+                    ]),
+                async (args, ct) =>
+                    await plans.ApplyTypeAsync(
+                        Str(args, "space"), Str(args, "preview_id"), Obj(args, "type"), Bool(args, "confirm"), ct),
+                ToolExecutionContract.AdditiveVerifiableWithStableTarget),
         };
     }
+
+    private static JsonObject TypeProp() => new()
+    {
+        ["type"] = "object",
+        ["description"] =
+            "One type: `key` (snake_case ASCII) and `name` are required; optional `plural_name`, `layout` (basic, profile, action, note), `description`, `icon`, `properties` (property keys), `panel` {featured, hidden} (property keys) and `views` (plan views, names inline in one language).",
+    };
 
     private static SpacePlanStages Stages(JsonObject? args)
     {
@@ -113,11 +161,14 @@ public static class SpacePlanToolCatalog
             "A space plan: the schema manifest's `properties`, `types` (each may add `panel` {featured, hidden}, `default_template` and `views`) and `sections`, plus `templates`, `collections`, `queries`, `pages`, `widgets` and `objects`. Keys are snake_case ASCII; nothing holds an Anytype id; references are `type:<key>`, `object:<name>`, and `$self` for the object a view lives in (a filter value). A select option is its name.",
     };
 
-    private static JsonObject PreviewContent(SpacePlanPreview preview)
+    // The same shape schema_preview returns (kind, key, name per action; conflicts;
+    // skipped_conflicts), plus `problems`: the reasons a plan is refused before any
+    // read of the space. The preview id is empty when there are problems.
+    internal static JsonObject PreviewContent(SpacePlanPreview preview)
     {
         var actions = new JsonArray();
         foreach (SchemaPreviewAction action in preview.Actions)
-            actions.Add(new JsonObject { ["kind"] = action.Kind, ["key"] = action.Key, ["detail"] = action.Name });
+            actions.Add(new JsonObject { ["kind"] = action.Kind, ["key"] = action.Key, ["name"] = action.Name });
         return new JsonObject
         {
             ["preview_id"] = preview.PreviewId,
@@ -125,7 +176,44 @@ public static class SpacePlanToolCatalog
             ["actions"] = actions,
             ["problems"] = new JsonArray(preview.Problems.Select(p => (JsonNode?)JsonValue.Create(p)).ToArray()),
             ["conflicts"] = new JsonArray(preview.Conflicts.Select(p => (JsonNode?)JsonValue.Create(p)).ToArray()),
-            ["notes"] = new JsonArray(preview.Notes.Select(p => (JsonNode?)JsonValue.Create(p)).ToArray()),
+            ["skipped_conflicts"] = new JsonArray(preview.Notes.Select(p => (JsonNode?)JsonValue.Create(p)).ToArray()),
+        };
+    }
+
+    // An action kind is open here: the structure stage adds its own (views, page_create,
+    // type_panel_add, ...) to the schema stage's, and the list grows with the engine.
+    internal static JsonObject PreviewOutputSchema()
+    {
+        JsonObject Strings() => new() { ["type"] = "array", ["items"] = new JsonObject { ["type"] = "string" } };
+        return new JsonObject
+        {
+            ["type"] = "object",
+            ["properties"] = new JsonObject
+            {
+                ["preview_id"] = new JsonObject { ["type"] = "string", ["pattern"] = "^([0-9a-f]{64})?$" },
+                ["space"] = new JsonObject { ["type"] = "string", ["minLength"] = 1 },
+                ["actions"] = new JsonObject
+                {
+                    ["type"] = "array",
+                    ["items"] = new JsonObject
+                    {
+                        ["type"] = "object",
+                        ["properties"] = new JsonObject
+                        {
+                            ["kind"] = new JsonObject { ["type"] = "string", ["minLength"] = 1 },
+                            ["key"] = new JsonObject { ["type"] = "string" },
+                            ["name"] = new JsonObject { ["type"] = "string" },
+                        },
+                        ["required"] = new JsonArray { "kind", "key", "name" },
+                        ["additionalProperties"] = false,
+                    },
+                },
+                ["problems"] = Strings(),
+                ["conflicts"] = Strings(),
+                ["skipped_conflicts"] = Strings(),
+            },
+            ["required"] = new JsonArray { "preview_id", "space", "actions", "problems", "conflicts", "skipped_conflicts" },
+            ["additionalProperties"] = false,
         };
     }
 

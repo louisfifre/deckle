@@ -19,9 +19,9 @@ public class SpacePlanToolCatalogTests
     }
 
     [Fact]
-    public void ExposesPreviewApplyAndRead() =>
+    public void ExposesPlanToolsAndTypeCreation() =>
         Assert.Equal(
-            new[] { "space_plan_apply", "space_plan_preview", "space_plan_read" },
+            new[] { "create_type", "create_type_preview", "space_plan_apply", "space_plan_preview", "space_plan_read" },
             BuildCatalog().Select(t => t.Name).OrderBy(n => n).ToArray());
 
     [Fact]
@@ -34,10 +34,41 @@ public class SpacePlanToolCatalogTests
     }
 
     [Fact]
+    public void PlanApplyDeclaresItOverwritesAndCreateTypeOnlyAdds()
+    {
+        IReadOnlyList<ToolDescriptor> tools = BuildCatalog();
+        Assert.Equal(ToolChangeKind.Overwriting, tools.Single(t => t.Name == "space_plan_apply").Execution.Change);
+        Assert.Equal(ToolChangeKind.Additive, tools.Single(t => t.Name == "create_type").Execution.Change);
+    }
+
+    [Fact]
     public void EveryInputSchemaForbidsAdditionalProperties()
     {
         foreach (ToolDescriptor tool in BuildCatalog())
             Assert.False(tool.InputSchema["additionalProperties"]!.GetValue<bool>(), tool.Name);
+    }
+
+    [Fact]
+    public void BothPreviewsAdvertiseTheStructuredOutputTheyReturn()
+    {
+        foreach (string name in new[] { "space_plan_preview", "create_type_preview" })
+            Assert.NotNull(BuildCatalog().Single(t => t.Name == name).OutputSchema);
+    }
+
+    [Fact]
+    public void PreviewProjectionMatchesItsAdvertisedOutputSchema()
+    {
+        var contract = new McpJsonSchemaContract(SpacePlanToolCatalog.PreviewOutputSchema());
+        var planned = new SpacePlanPreview(
+            new string('a', 64), "dev",
+            [new SchemaPreviewAction("type_panel_add", "ticket:state", "featured"), new SchemaPreviewAction("views", "type:ticket", "")],
+            [], ["conflict"], ["skipped"], "rendered");
+        // A refused plan carries no preview id.
+        var refused = new SpacePlanPreview(string.Empty, "dev", [], ["a view on a property nobody declared"], [], [], "rendered");
+
+        Assert.True(contract.Accepts(SpacePlanToolCatalog.PreviewContent(planned)));
+        Assert.True(contract.Accepts(SpacePlanToolCatalog.PreviewContent(refused)));
+        Assert.Equal("featured", SpacePlanToolCatalog.PreviewContent(planned)["actions"]![0]!["name"]!.GetValue<string>());
     }
 
     [Fact]
