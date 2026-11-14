@@ -612,6 +612,91 @@
   <data name="TranscribeRewrite_TextFileType" xml:space="preserve">
     <value>Text</value>
   </data>
+  <!-- File assistant (specs/deckle-transcribe-and-rewrite.md, File assistant). -->
+  <data name="FileTranscription_WindowTitle" xml:space="preserve">
+    <value>Transcribe audio to text</value>
+  </data>
+  <data name="FileTranscriptionTitleBar.Title" xml:space="preserve">
+    <value>Transcribe audio to text</value>
+  </data>
+  <data name="FileTranscription_StepFormat" xml:space="preserve">
+    <value>{0}  {1}</value>
+    <comment>{0} = step number, {1} = step name.</comment>
+  </data>
+  <data name="FileTranscription_StepFiles" xml:space="preserve">
+    <value>Files</value>
+  </data>
+  <data name="FileTranscription_StepRewrite" xml:space="preserve">
+    <value>Rewrite</value>
+  </data>
+  <data name="FileTranscription_StepResult" xml:space="preserve">
+    <value>Result</value>
+  </data>
+  <data name="FileTranscriptionFilesTitle.Text" xml:space="preserve">
+    <value>Choose the audio to transcribe</value>
+  </data>
+  <data name="FileTranscriptionAddFilesLabel.Text" xml:space="preserve">
+    <value>Add files…</value>
+  </data>
+  <data name="FileTranscriptionFilesEmpty.Text" xml:space="preserve">
+    <value>Each file gets its own text file, saved in the same folder.</value>
+  </data>
+  <data name="FileTranscriptionRemoveButton.[using:Microsoft.UI.Xaml.Controls]ToolTipService.ToolTip" xml:space="preserve">
+    <value>Remove</value>
+  </data>
+  <data name="FileTranscriptionRemoveButton.[using:Microsoft.UI.Xaml.Automation]AutomationProperties.Name" xml:space="preserve">
+    <value>Remove</value>
+  </data>
+  <data name="FileTranscriptionRewriteTitle.Text" xml:space="preserve">
+    <value>Rewrite the transcripts?</value>
+  </data>
+  <data name="FileTranscriptionRewriteSwitch.Header" xml:space="preserve">
+    <value>Rewrite</value>
+  </data>
+  <data name="FileTranscriptionProfileBox.Header" xml:space="preserve">
+    <value>Profile</value>
+  </data>
+  <data name="FileTranscriptionResultTitle.Text" xml:space="preserve">
+    <value>Transcripts</value>
+  </data>
+  <data name="FileTranscriptionOpenFolderButton.Content" xml:space="preserve">
+    <value>Open folder</value>
+  </data>
+  <data name="FileTranscription_Back" xml:space="preserve">
+    <value>Back</value>
+  </data>
+  <data name="FileTranscription_Next" xml:space="preserve">
+    <value>Next</value>
+  </data>
+  <data name="FileTranscription_Start" xml:space="preserve">
+    <value>Transcribe</value>
+  </data>
+  <data name="FileTranscription_Close" xml:space="preserve">
+    <value>Close</value>
+  </data>
+  <data name="FileTranscription_StateWaiting" xml:space="preserve">
+    <value>Waiting</value>
+  </data>
+  <data name="FileTranscription_StateTranscribing" xml:space="preserve">
+    <value>Transcribing…</value>
+  </data>
+  <data name="FileTranscription_StateRewriting" xml:space="preserve">
+    <value>Rewriting…</value>
+  </data>
+  <data name="FileTranscription_StateSaved" xml:space="preserve">
+    <value>Saved as {0}</value>
+    <comment>{0} = file name of the .txt, beside its audio.</comment>
+  </data>
+  <data name="FileTranscription_StateSavedNotRewritten" xml:space="preserve">
+    <value>The rewrite didn't come back. Transcript saved as {0}</value>
+    <comment>{0} = file name of the .txt, beside its audio.</comment>
+  </data>
+  <data name="FileTranscription_StateTranscriptionFailed" xml:space="preserve">
+    <value>Couldn't transcribe this file</value>
+  </data>
+  <data name="FileTranscription_StateWriteFailed" xml:space="preserve">
+    <value>Couldn't save the text beside the audio</value>
+  </data>
   <data name="TrayMenu_Logs" xml:space="preserve">
     <value>Logs</value>
   </data>

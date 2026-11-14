@@ -5,8 +5,9 @@ namespace Deckle.Transcription;
 // Writes a file-transcription result beside its source audio. A collision takes
 // the Windows Explorer duplicate name ("name (2).txt", …) so a re-run never
 // overwrites an earlier transcript. IOExceptions surface to the engine, which
-// maps them to the WriteFailed feedback; nothing is swallowed here.
-internal static class TranscriptFileWriter
+// maps them to the WriteFailed feedback, and to the file assistant
+// (Deckle.App), which marks that file failed; nothing is swallowed here.
+public static class TranscriptFileWriter
 {
     // UTF-8 without BOM (File.WriteAllText's default). A failed write surfaces
     // to the engine instead of silently moving the transcript away from its

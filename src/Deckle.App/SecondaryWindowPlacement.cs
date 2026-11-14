@@ -13,6 +13,7 @@ internal static class SecondaryWindowPlacement
     public const string Mail = "mail";
     public const string Atelier = "atelier";
     public const string TranscribeRewrite = "transcribe-rewrite";
+    public const string FileTranscription = "file-transcription";
 
     private const int SW_SHOWNORMAL = 1;
     private const int SW_SHOWMINIMIZED = 2;

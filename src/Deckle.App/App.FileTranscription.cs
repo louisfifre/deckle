@@ -1,73 +1,65 @@
-using System;
-using System.Collections.Generic;
-using Deckle.App;
-using Deckle.Transcription;
-using Microsoft.UI.Xaml;
-using Windows.Storage;
-using Windows.Storage.Pickers;
-using WinRT.Interop;
+using System.Diagnostics;
+using Deckle.Diagnostics;
+using Deckle.Llm.Rewrite;
 
 namespace Deckle.App;
 
+// The file assistant, opened from the tray's "Transcribe audio to text…": audio
+// files in, a .txt beside each out (FileTranscriptionWindow). While speech is
+// not set up, the entry says so instead of opening a window that could not run.
 public partial class App
 {
-    // The selection goes to the engine as one batch: it returns to Idle only
-    // after the whole selection drains.
-    private async void TranscribeFilesFromTray()
+    private FileTranscriptionWindow? _fileTranscriptionWindow;
+
+    private void ShowFileTranscriptionWindowLazy()
     {
-        // async void with no awaiter, so the whole body is guarded: an exception
-        // here must never bubble out and take the tray down with it.
+        // Called from a tray click: nothing here may take the tray down.
         try
         {
             if (_engine is null)
             {
-                // No engine means speech is not provisioned.
                 EmitSpeechNotSetUp();
                 return;
             }
-
-            // The picker needs an owner HWND and none fits at tray-click time: the
-            // tray carrier is already hidden, and a message-only HWND is not a
-            // valid dialog owner. This Window only lends its HWND; it is never
-            // activated, so nothing flashes on screen.
-            var ownerWindow = new Window();
-            IReadOnlyList<StorageFile> files;
-            try
-            {
-                IntPtr hwnd = WindowNative.GetWindowHandle(ownerWindow);
-
-                var picker = new FileOpenPicker
-                {
-                    SuggestedStartLocation = PickerLocationId.MusicLibrary,
-                };
-                picker.FileTypeFilter.Add(".mp3");
-                picker.FileTypeFilter.Add(".m4a");
-                picker.FileTypeFilter.Add(".aac");
-                picker.FileTypeFilter.Add(".wav");
-                picker.FileTypeFilter.Add(".flac");
-                picker.FileTypeFilter.Add(".wma");
-                picker.FileTypeFilter.Add(".ogg");
-                picker.FileTypeFilter.Add(".opus");
-                InitializeWithWindow.Initialize(picker, hwnd);
-
-                files = await picker.PickMultipleFilesAsync();
-            }
-            finally
-            {
-                ownerWindow.Close();
-            }
-
-            if (files.Count == 0) return; // user cancelled — nothing to do
-
-            var paths = new string[files.Count];
-            for (int i = 0; i < files.Count; i++)
-                paths[i] = files[i].Path;
-
-            _engine.EnqueueFileTranscriptions(paths);
+            EnsureFileTranscriptionWindow().ShowAndActivate();
+            DeckleAppSource.Log.WindowOpened("file-transcription");
         }
         catch (Exception ex)
         {
             DeckleAppSource.Log.FileTranscriptionEntryFailed(ex.GetType().Name, ex.Message);
         }
+    }
+
+    // The window created and wired, not shown: the self-check shows it without
+    // activating it (SelfCheck/OffscreenWindow.cs).
+    private FileTranscriptionWindow EnsureFileTranscriptionWindow()
+    {
+        if (_fileTranscriptionWindow is null)
+        {
+            var sw = Stopwatch.StartNew();
+            _windowRewriteService ??= new RewriteService();
+            RewriteService rewriter = _windowRewriteService;
+            var window = CreateWindowOrLog("file-transcription", () => new FileTranscriptionWindow
+            {
+                TranscribeFile = _engine is { } engine
+                    ? path => engine.TranscribeFileToTextAsync(path)
+                    : null,
+                Rewrite = rewriter.Rewrite,
+                OnShowRewriteSettingsRequested = () => ShowSettingsWindowLazy(
+                    Llm.Rewrite.Views.LlmSettingsModule.PageTag),
+            });
+            SecondaryWindowPlacement.Restore(window, SecondaryWindowPlacement.FileTranscription);
+            window.AppWindow.Closing += (_, _) =>
+                SecondaryWindowPlacement.Save(window, SecondaryWindowPlacement.FileTranscription);
+            window.Closed += (_, _) =>
+            {
+                if (ReferenceEquals(_fileTranscriptionWindow, window)) _fileTranscriptionWindow = null;
+            };
+
+            _fileTranscriptionWindow = window;
+            ApplyThemeToSingle(window);
+            DeckleWindowingSource.Log.WindowLoadComplete("file-transcription", sw.ElapsedMilliseconds);
+        }
+        return _fileTranscriptionWindow;
     }
 }

@@ -18,7 +18,7 @@ Louis has a text to rework or an audio file to turn into text, outside a dictati
 
 ### Tray menu
 
-1. The left-click menu holds "Transcribe and rewrite…", which opens the window, in the actions group after Record. "Transcribe audio to text…" stays under it, writing each .txt beside its audio, until the file assistant exists.
+1. The left-click menu holds "Transcribe and rewrite…", which opens the window, in the actions group after Record. "Transcribe audio to text…", under it, opens the file assistant.
 2. The developer menu (right click, Developer mode on) holds Logs and Restart at its bottom; the left-click menu ends on Settings and Quit.
 
 ### Transcribe and rewrite window
@@ -42,6 +42,8 @@ Louis has a text to rework or an audio file to turn into text, outside a dictati
 3. ② Rewrite: a "Rewrite" switch and, when it is on, the profile.
 4. ③ Result: each file's state (waiting, transcribing, rewriting, done, failed) and where its .txt is saved, with "Open folder".
 5. The assistant takes one file as well as many: it is the way to produce files, not a batch mode.
+6. A file that fails stops only itself. A rewrite that does not come back still saves the raw transcript, and its line says so.
+7. Closing the assistant while it works hides it; the files keep coming, and the tray entry brings it back with their progress.
 
 ## Behaviours
 
@@ -50,7 +52,7 @@ Louis has a text to rework or an audio file to turn into text, outside a dictati
 - Changing the profile does nothing by itself; only Rewrite applies it.
 - The transcription follows the pipeline set in Settings (model, language, preprocessing); the window has no transcription setting of its own.
 - Save opens "Save as" with a .txt name: the audio's name in its folder when the text came from a file, a neutral name otherwise. Ctrl+S does the same.
-- In the assistant, each .txt is saved next to its audio file, as "Transcribe audio file" does today.
+- In the assistant, each .txt is saved next to its audio file under the audio's name; a name already taken gets " (2)", as Explorer names a copy.
 
 ## Limits
 
@@ -63,4 +65,3 @@ Louis has a text to rework or an audio file to turn into text, outside a dictati
 - **Dropping files on the window.** Dropping audio files shows a drop zone over the whole window, a faint accent veil with a dashed outline that grows a little. Does it offer two halves, "Transcribe here" (into the field) and "Transcribe to file" (the assistant), or a single target? Depends on it: whether the assistant can be reached by drop.
 - **Line width when maximised.** Cap the width of the text's lines when the window is very wide, as Word does, or let them run the full width? To judge on a capture.
 - **"Show in Deckle Folders"** in the assistant's Result step, once Deckle Folders exists.
-- **The tray entries once the assistant exists**: does "Transcribe audio to text…" open the assistant, or does the window offer the assistant itself, leaving one entry?
