@@ -695,6 +695,7 @@ _Generated from `git ls-files` — do not edit by hand._
 │   │   ├── AutocorrectNotifications.cs
 │   │   ├── CrashSupervisor.cs
 │   │   ├── Deckle.App.csproj
+│   │   ├── FileTranscriptionRun.cs
 │   │   ├── global.json
 │   │   ├── LogWindow.Chrome.cs
 │   │   ├── LogWindow.Interaction.cs
@@ -2382,6 +2383,7 @@ _Generated from `git ls-files` — do not edit by hand._
 │   ├── Deckle.App.Tests/
 │   │   ├── Deckle.App.Tests.csproj
 │   │   ├── DictationRecoveryBugNotes.md
+│   │   ├── FileTranscriptionRunTests.cs
 │   │   ├── HudFeedbackSinkTests.cs
 │   │   ├── MessageTemplateDoctrineTests.cs
 │   │   ├── MilestoneClosersTests.cs
