@@ -366,7 +366,7 @@ _Generated from `git ls-files` — do not edit by hand._
 │   │   ├── terminal-interaction.psm1
 │   │   └── version.ps1
 │   ├── maintenance/
-│   │   ├── apply-anytype-schema.ps1  — Apply a schema manifest to an Anytype space Brings an Anytype space to a schema manifest through the running Deckle's schem…
+│   │   ├── apply-anytype-schema.ps1  — Apply a schema manifest or a space plan to an Anytype space, or read a space into a plan With -Plan, builds a whole space from one plan file, in creation order: propert…
 │   │   ├── clean-native.ps1  — Clean the native folder Brings the whisper.cpp native folder under the user data root back to the curre…
 │   │   ├── clean.ps1  — Clean build outputs Removes the build output folders of every language present in the repository, e…
 │   │   ├── README.md  — Maintenance Previews and cleanups of the build outputs, the machine's .NET build servers an…
@@ -567,6 +567,7 @@ _Generated from `git ls-files` — do not edit by hand._
 │   │   │   ├── AnytypeUtilityToolCatalog.cs
 │   │   │   ├── ManagementToolCatalog.cs
 │   │   │   ├── SchemaAdminToolCatalog.cs
+│   │   │   ├── SpacePlanToolCatalog.cs
 │   │   │   ├── ToolCatalog.cs
 │   │   │   ├── ToolDescriptor.cs
 │   │   │   └── ToolExecutionContract.cs
@@ -2281,6 +2282,7 @@ _Generated from `git ls-files` — do not edit by hand._
 │   │   ├── ProviderKeywordsBugNotes.md
 │   │   ├── ProviderKeywordsTests.cs
 │   │   ├── SchemaAdminToolCatalogTests.cs
+│   │   ├── SpacePlanToolCatalogTests.cs
 │   │   └── ToolCatalogTests.cs
 │   ├── Deckle.Anytype.Tests/
 │   │   ├── Fixtures/
