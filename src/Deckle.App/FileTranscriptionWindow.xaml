@@ -38,7 +38,8 @@
                       Grid.Column="0"
                       SelectionMode="Single"
                       IsHitTestVisible="False"
-                      IsTabStop="False" />
+                      IsTabStop="False"
+                      AutomationProperties.AccessibilityView="Raw" />
 
             <!-- ① Files -->
             <Grid x:Name="FilesPanel" Grid.Column="1" RowSpacing="12">
@@ -99,6 +100,7 @@
                           x:Uid="FileTranscriptionProfileBox"
                           MinWidth="200"
                           DisplayMemberPath="Name"
+                          SelectionChanged="OnProfileChanged"
                           Visibility="Collapsed" />
                 <InfoBar x:Name="Notice" IsOpen="False" IsClosable="True" />
             </StackPanel>

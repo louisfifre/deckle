@@ -101,6 +101,10 @@ public sealed partial class FileTranscriptionWindow : Window
 
     public void ShowAndActivate()
     {
+        // A batch that finished while the window was hidden: the tray entry
+        // opens a new one, the .txt files are already beside their audio.
+        if (_finished) StartOver();
+
         if (AppWindow.Presenter is OverlappedPresenter op &&
             op.State == OverlappedPresenterState.Minimized)
         {
@@ -209,6 +213,8 @@ public sealed partial class FileTranscriptionWindow : Window
         UpdateCommands();
     }
 
+    private void OnProfileChanged(object sender, SelectionChangedEventArgs e) => UpdateCommands();
+
     private void OnBackClick(object sender, RoutedEventArgs e)
     {
         if (_step > FilesStep && !_running && !_finished) ShowStep(_step - 1);
@@ -251,7 +257,8 @@ public sealed partial class FileTranscriptionWindow : Window
                 rewrite = text => rewriteWith(text, profile).Text ?? "";
             }
 
-            var run = new FileTranscriptionRun(transcribe, rewrite, TranscriptFileWriter.Write);
+            var run = new FileTranscriptionRun(
+                transcribe, rewrite, TranscriptFileWriter.Write, File.WriteAllText);
             _running = true;
             ShowStep(ResultStep);
             await run.RunAsync([.. _items]);
@@ -270,6 +277,13 @@ public sealed partial class FileTranscriptionWindow : Window
                 UpdateCommands();
             }
         }
+    }
+
+    private void StartOver()
+    {
+        _finished = false;
+        _items.Clear();
+        ShowStep(FilesStep);
     }
 
     private void ShowNoProvider()
@@ -323,6 +337,8 @@ public sealed partial class FileTranscriptionWindow : Window
         ProfileBox.SelectedItem =
             profiles.FirstOrDefault(p => p.Id == (selectedId ?? s_lastProfileId))
             ?? profiles.FirstOrDefault();
+        // A profile added in Settings while the Rewrite step shows enables Next.
+        UpdateCommands();
     }
 
     // The last profile used, for the next opening of the assistant in this run.
