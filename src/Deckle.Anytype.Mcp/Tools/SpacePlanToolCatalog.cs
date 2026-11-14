@@ -55,7 +55,10 @@ public static class SpacePlanToolCatalog
                 async (args, ct) =>
                     await plans.ApplyAsync(
                         Str(args, "space"), Str(args, "preview_id"), Obj(args, "plan"), Stages(args), Bool(args, "confirm"), ct),
-                ToolExecutionContract.AdditiveVerifiableWithStableTarget),
+                // A plan also rewrites views, templates and a type's property list to match
+                // itself, and deletes a type's default view: not the additive write that
+                // schema_apply's create-only manifest is.
+                ToolExecutionContract.OverwritingVerifiableWithStableTarget),
 
             new(
                 "space_plan_read",

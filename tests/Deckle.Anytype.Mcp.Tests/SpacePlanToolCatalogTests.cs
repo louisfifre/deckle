@@ -34,6 +34,14 @@ public class SpacePlanToolCatalogTests
     }
 
     [Fact]
+    public void PlanApplyDeclaresItOverwritesAndCreateTypeOnlyAdds()
+    {
+        IReadOnlyList<ToolDescriptor> tools = BuildCatalog();
+        Assert.Equal(ToolChangeKind.Overwriting, tools.Single(t => t.Name == "space_plan_apply").Execution.Change);
+        Assert.Equal(ToolChangeKind.Additive, tools.Single(t => t.Name == "create_type").Execution.Change);
+    }
+
+    [Fact]
     public void EveryInputSchemaForbidsAdditionalProperties()
     {
         foreach (ToolDescriptor tool in BuildCatalog())

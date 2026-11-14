@@ -71,6 +71,13 @@ public sealed record ToolExecutionContract(
             AmbiguousOutcomePolicy.SafeToRetry,
             RequiresStableTarget: true);
 
+    public static ToolExecutionContract OverwritingVerifiableWithStableTarget { get; } =
+        new(
+            ToolEffect.Mutating,
+            ToolChangeKind.Overwriting,
+            AmbiguousOutcomePolicy.VerifyBeforeRetry,
+            RequiresStableTarget: true);
+
     public static ToolExecutionContract OverwritingUncertain { get; } =
         new(ToolEffect.Mutating, ToolChangeKind.Overwriting, AmbiguousOutcomePolicy.Uncertain);
 
