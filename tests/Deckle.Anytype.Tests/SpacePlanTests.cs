@@ -385,6 +385,14 @@ public sealed class SpacePlanTests
         Assert.False(set.ContainsKey(PlanTypeDisplay.WidthProperty));
     }
 
+    [Fact, Trait("Category", "regression")]
+    public void Validate_RefusesATemplateForANoteType()
+    {
+        JsonObject root = SamplePlan();
+        root["types"]![0]!["layout"] = "note";
+        Assert.Contains(SpacePlanValidator.Validate(SpacePlan.Parse(root)), p => p.Contains("note"));
+    }
+
     [Fact]
     public void Parse_RefusesADisplayOutsideItsValues()
     {
