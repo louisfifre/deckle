@@ -64,6 +64,9 @@ public static class TakeOutcomes
     // The transcript was written beside its source audio.
     public const string SavedToFile = "saved_to_file";
 
+    // The transcript went back to the window that asked for it.
+    public const string ReturnedToCaller = "returned_to_caller";
+
     // Nothing to deliver and nothing wrong: no audio, or no speech.
     public const string None = "none";
 
@@ -77,7 +80,8 @@ public static class TakeOutcomes
 // Closed `reason` vocabulary of TakeEnded.
 public static class TakeEndReasons
 {
-    // The text was delivered (outcome clipboard_only, saved_to_file).
+    // The text was delivered (outcome clipboard_only, saved_to_file,
+    // returned_to_caller).
     public const string Delivered = "delivered";
 
     // The capture ended on a microphone error.

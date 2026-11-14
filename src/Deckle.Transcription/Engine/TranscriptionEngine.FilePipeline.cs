@@ -63,6 +63,7 @@ public sealed partial class TranscriptionEngine
             bool stoppedByPrime = ConsumePreparedFilesAsync(
                 preparedFiles.Reader,
                 files,
+                batch.ReturnText,
                 primeTask,
                 () => transcribingStarted,
                 () => transcribingStarted = true,
@@ -122,7 +123,13 @@ public sealed partial class TranscriptionEngine
             {
                 DeckleWhispSource.Log.TeardownExceptionIgnored("file_decode_producer", ex.GetType().Name, ex.Message);
             }
-            SettleWorkerToIdle("file", primeTask, recordCts, drainCts);
+            try { SettleWorkerToIdle("file", primeTask, recordCts, drainCts); }
+            finally
+            {
+                // After Idle, so the caller can start its next run; a no-op when
+                // the text was already delivered.
+                batch.ReturnText?.Settle();
+            }
         }
     }
 
@@ -153,6 +160,7 @@ public sealed partial class TranscriptionEngine
     private async Task<bool> ConsumePreparedFilesAsync(
         ChannelReader<PreparedFileTranscription> reader,
         int files,
+        FileTextReturn? returnText,
         Task<bool> primeTask,
         Func<bool> hasStarted,
         Action markStarted,
@@ -207,15 +215,27 @@ public sealed partial class TranscriptionEngine
                     SafeFileLength(prepared.SourcePath));
             }
 
+            // The caller's utterance feed is attached only while this file
+            // crosses the consumer (TranscriptionEngine.FileToText.cs).
+            Action<TranscribedUtterance>? feed = returnText?.OnUtterance;
+            if (feed is not null) UtteranceTranscribed += feed;
             try
             {
-                PipelineProduction? production = await TranscribePreparedFileAsync(
-                    prepared,
-                    files,
-                    file,
-                    primeTask,
-                    first,
-                    cancellationToken).ConfigureAwait(false);
+                PipelineProduction? production;
+                try
+                {
+                    production = await TranscribePreparedFileAsync(
+                        prepared,
+                        files,
+                        file,
+                        primeTask,
+                        first,
+                        cancellationToken).ConfigureAwait(false);
+                }
+                finally
+                {
+                    if (feed is not null) UtteranceTranscribed -= feed;
+                }
                 if (production is null)
                 {
                     if (ReadPrimeFailure() == PrimeFailure.None)
@@ -223,6 +243,16 @@ public sealed partial class TranscriptionEngine
 
                     stopProducer();
                     return true;
+                }
+
+                if (returnText is not null)
+                {
+                    // Raw text back to the caller: no .txt, no clipboard, no
+                    // rewrite. The batch's outcome stays None, so the HUD
+                    // announces no saved file.
+                    returnText.Deliver(production.Value.RawText);
+                    EndTake(TakeOutcomes.ReturnedToCaller, TakeEndReasons.Delivered);
+                    continue;
                 }
 
                 TranscriptionOutcome outcome = FinalizeTranscription(

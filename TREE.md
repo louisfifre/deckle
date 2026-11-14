@@ -2111,6 +2111,7 @@ _Generated from `git ls-files` — do not edit by hand._
 │   │   │   ├── TranscriptionEngine.BatchRewrite.cs
 │   │   │   ├── TranscriptionEngine.cs
 │   │   │   ├── TranscriptionEngine.FilePipeline.cs
+│   │   │   ├── TranscriptionEngine.FileToText.cs
 │   │   │   ├── TranscriptionEngine.Finalize.cs
 │   │   │   ├── TranscriptionEngine.Finalize.Observability.cs
 │   │   │   ├── TranscriptionEngine.Finalize.Rewrite.cs
@@ -2987,6 +2988,7 @@ _Generated from `git ls-files` — do not edit by hand._
 │   │   ├── DictationTableTemplateTests.cs
 │   │   ├── EnergySegmenterTests.cs
 │   │   ├── FileBatchLifecycleTests.cs
+│   │   ├── FileToTextTests.cs
 │   │   ├── FileTranscriptionQueueTests.cs
 │   │   ├── FileTranscriptionResultTests.cs
 │   │   ├── LiveTranscriptionPipelineTests.cs
