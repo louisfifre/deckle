@@ -42,7 +42,7 @@ public static class SpacePlanToolCatalog
 
             new(
                 "space_plan_apply",
-                "Apply a previous space_plan_preview. Repeat the exact plan, the same stages and the preview_id; the live state must still match what was reviewed. Builds in creation order, and is idempotent: a second run on a built space does nothing. A page that exists and differs has its body rewritten in place, in one edit, keeping its id. With the prune stage it also removes what the preview listed as absent from the plan; a removal the server refuses (an object another key created, a native) is reported and the others go on. Requires confirm:true. The sidebar stage (stages including widgets) is written only with the space owner's key; an editor's key is refused.",
+                "Apply a previous space_plan_preview. Repeat the exact plan, the same stages and the preview_id; the live state must still match what was reviewed. Builds in creation order, and is idempotent: a second run on a built space does nothing. A page that exists and differs has its body rewritten in place, in one edit, keeping its id (its block and view ids are new). With the prune stage it also removes what the preview listed as absent from the plan; a removal the server refuses with 403, 404 or 409 (an object another key or the app created) is reported and the others go on, and the next preview lists it again since the space still holds it; any other failure stops the run. Requires confirm:true. The sidebar stage (stages including widgets) is written only with the space owner's key; an editor's key is refused.",
                 Schema(
                     required:
                     [
@@ -146,7 +146,7 @@ public static class SpacePlanToolCatalog
         ("stages", new JsonObject
         {
             ["type"] = "array",
-            ["description"] = "Which parts of the plan to cover: schema (properties, options and their colours, types), structure (panels, type display, collections, queries, templates, views, pages), objects, widgets (the sidebar, owner only). Add prune to also remove, within those stages, what the space holds and a section the plan states leaves out: widgets, collection members, templates, queries, collections, types, properties and options; natives are never removed, and a section the plan omits is left alone. Default: schema and structure, no prune.",
+            ["description"] = "Which parts of the plan to cover: schema (properties, options and their colours, types), structure (panels, type display, collections, queries, templates, views, pages), objects, widgets (the sidebar, owner only). Add prune to also remove, within those stages, what the space holds and a section the plan states leaves out: widgets, collection members, templates, queries, collections, types, properties and options. A section the plan omits is left alone, but a stated empty one (`types: []`) removes everything in it. The app's own types (page, note, collection…, plus project and task) and the properties a fresh space ships are never removed; templates, widgets and options have no such guard. Default: schema and structure, no prune.",
             ["items"] = new JsonObject
             {
                 ["type"] = "string",
