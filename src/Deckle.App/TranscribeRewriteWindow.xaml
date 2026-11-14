@@ -169,7 +169,10 @@
                                            MaxLines="3"
                                            TextWrapping="Wrap"
                                            TextTrimming="CharacterEllipsis" />
+                                <!-- No padding: the link starts at the text's left edge. -->
                                 <HyperlinkButton x:Uid="TranscribeRewriteShowMoreButton"
+                                                 Padding="0"
+                                                 Margin="0,4,0,0"
                                                  Visibility="{x:Bind HasText, Mode=OneWay}"
                                                  Click="OnShowMoreClick" />
                             </StackPanel>
