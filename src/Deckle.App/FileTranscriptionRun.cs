@@ -62,53 +62,87 @@ public enum FileTranscriptionState
     WriteFailed,
 }
 
-// The assistant's run: each file in turn, transcribed, rewritten when a
-// rewrite was asked, and written beside its audio. A file that fails never
-// stops the others. A rewrite that comes back empty still saves the raw
-// transcript, so hours of transcription are never lost to a provider error.
+// The assistant's run: each file in turn, transcribed, written beside its
+// audio, then rewritten in place when a rewrite was asked. A file that fails,
+// whatever throws, never stops the others. The raw transcript reaches the disk
+// before the rewrite starts: a rewrite that comes back empty or throws, or a
+// Deckle that quits during a rewrite of several minutes, still leaves it there,
+// so hours of transcription are never lost to a provider.
 //
 // The steps are handed in, so the run is plain code a test drives: transcribe
 // returns null for a failed run, as TranscriptionEngine.TranscribeFileToTextAsync
 // does; rewrite returns the rewritten text or blank; write returns the path it
-// wrote and throws on a failed write, as TranscriptFileWriter.Write does.
-// Started on the UI thread, every change of an item lands back on it.
+// wrote and throws on a failed write, as TranscriptFileWriter.Write does;
+// overwrite replaces that file's text. Started on the UI thread, every change
+// of an item lands back on it.
 internal sealed class FileTranscriptionRun(
     Func<string, Task<string?>> transcribe,
     Func<string, string>? rewrite,
-    Func<string, string, string> write)
+    Func<string, string, string> write,
+    Action<string, string> overwrite)
 {
     public async Task RunAsync(IReadOnlyList<FileTranscriptionItem> items)
     {
         foreach (FileTranscriptionItem item in items)
         {
-            item.State = FileTranscriptionState.Transcribing;
-            string? text = await transcribe(item.Path);
-            if (string.IsNullOrWhiteSpace(text))
-            {
-                item.State = FileTranscriptionState.TranscriptionFailed;
-                continue;
-            }
-
-            if (rewrite is { } rewriteText)
-            {
-                item.State = FileTranscriptionState.Rewriting;
-                string transcript = text;
-                string rewritten = await Task.Run(() => rewriteText(transcript));
-                if (string.IsNullOrWhiteSpace(rewritten)) item.RewriteFailed = true;
-                else text = rewritten;
-            }
-
             try
             {
-                item.OutputPath = write(text, item.Path);
-                item.State = FileTranscriptionState.Done;
+                await RunOneAsync(item);
             }
-            catch (Exception ex) when (ex is IOException or UnauthorizedAccessException)
+            catch (Exception ex)
             {
                 DeckleAppSource.Log.WindowOperationFailed(
-                    "file-transcription", "write", "exception", ex.GetType().Name, ex.Message);
-                item.State = FileTranscriptionState.WriteFailed;
+                    "file-transcription", "file", "exception", ex.GetType().Name, ex.Message);
+                item.State = item.State == FileTranscriptionState.Transcribing
+                    ? FileTranscriptionState.TranscriptionFailed
+                    : FileTranscriptionState.WriteFailed;
             }
         }
+    }
+
+    private async Task RunOneAsync(FileTranscriptionItem item)
+    {
+        item.State = FileTranscriptionState.Transcribing;
+        string? text = await transcribe(item.Path);
+        if (string.IsNullOrWhiteSpace(text))
+        {
+            item.State = FileTranscriptionState.TranscriptionFailed;
+            return;
+        }
+
+        string path;
+        try
+        {
+            path = write(text, item.Path);
+        }
+        catch (Exception ex) when (ex is IOException or UnauthorizedAccessException)
+        {
+            DeckleAppSource.Log.WindowOperationFailed(
+                "file-transcription", "write", "exception", ex.GetType().Name, ex.Message);
+            item.State = FileTranscriptionState.WriteFailed;
+            return;
+        }
+        item.OutputPath = path;
+
+        if (rewrite is { } rewriteText)
+        {
+            item.State = FileTranscriptionState.Rewriting;
+            string rewritten;
+            try
+            {
+                rewritten = await Task.Run(() => rewriteText(text));
+            }
+            catch (Exception ex)
+            {
+                DeckleAppSource.Log.WindowOperationFailed(
+                    "file-transcription", "rewrite", "exception", ex.GetType().Name, ex.Message);
+                rewritten = "";
+            }
+
+            if (string.IsNullOrWhiteSpace(rewritten)) item.RewriteFailed = true;
+            else overwrite(path, rewritten);
+        }
+
+        item.State = FileTranscriptionState.Done;
     }
 }
