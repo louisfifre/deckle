@@ -65,6 +65,24 @@ public class SpacePlanFragmentsTests
     }
 
     [Fact]
+    public void CreateType_RefusesToRemoveAnythingFromAnExistingType()
+    {
+        var actions = new[]
+        {
+            new SchemaPreviewAction("create_type", "recipe", "Recette"),
+            new SchemaPreviewAction("attach_property", "recipe:kind", "kind"),
+            new SchemaPreviewAction("detach_property", "recipe:owner", "owner"),
+            new SchemaPreviewAction("type_panel_remove", "recipe:kind", "featured"),
+        };
+
+        IReadOnlyList<string> conflicts = SpacePlanGestures.RemovalConflicts(actions);
+
+        Assert.Equal(2, conflicts.Count);
+        Assert.Contains("detach_property recipe:owner", conflicts[0]);
+        Assert.Empty(SpacePlanGestures.RemovalConflicts(actions.Take(2).ToArray()));
+    }
+
+    [Fact]
     public void ForType_RefusesAPropertyTheSpaceDoesNotHold()
     {
         ArgumentException error = Assert.Throws<ArgumentException>(() => SpacePlanFragments.ForType(SpaceProperties(), Args(

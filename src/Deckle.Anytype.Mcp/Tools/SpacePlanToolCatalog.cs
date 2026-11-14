@@ -102,7 +102,7 @@ public static class SpacePlanToolCatalog
 
             new(
                 "create_type",
-                "Create one type from a previous create_type_preview: repeat the same `type` and the preview_id. The live properties must still match what was reviewed. Idempotent: a second run does nothing. Requires confirm:true.",
+                "Create one type from a previous create_type_preview: repeat the same `type` and the preview_id. The live properties must still match what was reviewed. Idempotent: a second run does nothing. Only adds: a type that exists with another property list or panel is refused (a conflict) instead of rewritten; use schema_apply or space_plan_apply for that. Requires confirm:true.",
                 Schema(
                     required:
                     [
