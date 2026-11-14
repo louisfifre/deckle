@@ -707,6 +707,7 @@ _Generated from `git ls-files` — do not edit by hand._
 │   │   ├── Program.cs
 │   │   ├── SecondaryWindowPlacement.cs
 │   │   ├── TranscribeRewriteHistory.cs
+│   │   ├── TranscribeRewriteWindow.AutoSave.cs
 │   │   ├── TranscribeRewriteWindow.Capture.cs
 │   │   ├── TranscribeRewriteWindow.Commands.cs
 │   │   ├── TranscribeRewriteWindow.Editor.cs

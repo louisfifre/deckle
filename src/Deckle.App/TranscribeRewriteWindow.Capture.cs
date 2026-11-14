@@ -1,4 +1,7 @@
 using Deckle.Composition;
+using Deckle.Core;
+using Deckle.Shell;
+using Deckle.Shell.WindowChrome;
 using Microsoft.UI.Xaml.Controls;
 
 namespace Deckle.App;
@@ -10,16 +13,25 @@ public sealed partial class TranscribeRewriteWindow
 {
     internal const string EmptyState = "empty";
 
-    internal static readonly string[] CaptureStates = ["text", "transcribing", "rewriting", "failed", "files"];
+    // files-start: the moment after the choice; files-full: forty files with
+    // long names; files-narrow: the list at the window's minimum width;
+    // file-from-list: one file of the list opened in the field.
+    internal static readonly string[] CaptureStates =
+        ["text", "transcribing", "rewriting", "failed", "files", "files-start", "files-full", "files-narrow", "file-from-list"];
+
+    // A long, realistic recording name, to see how a line holds it.
+    private const string LongName =
+        "2026-11-12 Client workshop with the product team about the spring roadmap, recording 3";
 
     // The list of several files, every state a file can be in.
-    private static readonly (string Name, string Duration, FileTranscriptionState State, bool RewriteFailed, bool HasText)[] SampleFiles =
+    // Durations go through DurationOf, as the window writes a real file's.
+    private static readonly (string Name, TimeSpan? Duration, FileTranscriptionState State, bool RewriteFailed, bool HasText)[] SampleFiles =
     [
-        ("Team meeting.m4a", "48:12", FileTranscriptionState.Done, false, true),
-        ("Interview, part 1.mp3", "1:12:40", FileTranscriptionState.Done, true, true),
-        ("Interview, part 2.mp3", "1:03:05", FileTranscriptionState.Transcribing, false, false),
-        ("Voice memo.wav", "2:31", FileTranscriptionState.Waiting, false, false),
-        ("Corrupted.ogg", "", FileTranscriptionState.TranscriptionFailed, false, false),
+        ("Team meeting.m4a", new TimeSpan(0, 48, 12), FileTranscriptionState.Done, false, true),
+        ("Interview, part 1.mp3", new TimeSpan(1, 12, 40), FileTranscriptionState.Done, true, true),
+        ("Interview, part 2.mp3", new TimeSpan(1, 3, 5), FileTranscriptionState.Transcribing, false, false),
+        ("Voice memo.wav", new TimeSpan(0, 2, 31), FileTranscriptionState.Waiting, false, false),
+        ("Corrupted.ogg", null, FileTranscriptionState.TranscriptionFailed, false, false),
     ];
 
     // A neutral sample, long enough to wrap and to show the field's scroll.
@@ -40,9 +52,10 @@ public sealed partial class TranscribeRewriteWindow
     internal async Task<string> MeasureLongTranscriptAsync()
     {
         if (_running) EndRun();
+        ResetFilesRun();
         HideNotice();
         _files.Clear();
-        ShowField(fromList: false);
+        ShowField();
         WriteText("");
         BeginRun(ProcessingVariant.Transcribing);
 
@@ -80,14 +93,27 @@ public sealed partial class TranscribeRewriteWindow
     internal void ShowStateForCapture(string state)
     {
         if (_running) EndRun();
+        ResetFilesRun();
         HideNotice();
-        if (state == "files")
+        ResizeForCapture(state == "files-narrow" ? 520 : 640);
+        switch (state)
         {
-            ShowSampleFiles();
-            return;
+            case "files" or "files-narrow":
+                ShowSampleFiles();
+                return;
+            case "files-start":
+                ShowGeneratedFiles(5, running: 0, done: 0);
+                return;
+            case "files-full":
+                ShowGeneratedFiles(40, running: 8, done: 7);
+                return;
+            case "file-from-list":
+                ShowSampleFiles();
+                OpenFile(_files[0]);
+                return;
         }
         _files.Clear();
-        ShowField(fromList: false);
+        ShowField();
         switch (state)
         {
             case EmptyState:
@@ -106,7 +132,7 @@ public sealed partial class TranscribeRewriteWindow
                 break;
             case "failed":
                 WriteText(SampleText);
-                ShowNotice(InfoBarSeverity.Error,
+                ShowNotice(InfoBarSeverity.Warning,
                     "TranscribeRewrite_RewriteFailed_Title", "TranscribeRewrite_RewriteFailed_Body",
                     withSettings: true);
                 break;
@@ -120,7 +146,7 @@ public sealed partial class TranscribeRewriteWindow
         string folder = Path.Combine(Path.GetTempPath(), "Recordings");
         foreach (var sample in SampleFiles)
         {
-            var item = new FileTranscriptionItem(Path.Combine(folder, sample.Name)) { DurationText = sample.Duration };
+            var item = new FileTranscriptionItem(Path.Combine(folder, sample.Name)) { DurationText = sample.Duration is { } d ? DurationOf(d) : "" };
             if (sample.HasText) item.Text = SampleText;
             if (sample.State == FileTranscriptionState.Done)
                 item.OutputPath = Path.ChangeExtension(item.Path, ".txt");
@@ -129,5 +155,42 @@ public sealed partial class TranscribeRewriteWindow
             _files.Add(item);
         }
         ShowFiles();
+    }
+
+    // count files named after LongName: the first `done` saved, the next one
+    // transcribing when running > done, the rest waiting with no duration yet.
+    private void ShowGeneratedFiles(int count, int running, int done)
+    {
+        _files.Clear();
+        string folder = Path.Combine(Path.GetTempPath(), "Recordings");
+        for (int i = 0; i < count; i++)
+        {
+            var item = new FileTranscriptionItem(Path.Combine(folder, $"{LongName} - {i + 1:00}.m4a"));
+            if (i < done)
+            {
+                item.DurationText = DurationOf(new TimeSpan(1, i % 10, 12));
+                item.Text = SampleText;
+                item.OutputPath = Path.ChangeExtension(item.Path, ".txt");
+                item.State = FileTranscriptionState.Done;
+            }
+            else if (i == done && running > done)
+            {
+                item.DurationText = DurationOf(new TimeSpan(0, 58, 40));
+                item.State = FileTranscriptionState.Transcribing;
+            }
+            else if (i == 0)
+            {
+                item.State = FileTranscriptionState.Transcribing;
+            }
+            _files.Add(item);
+        }
+        ShowFiles();
+        BeginFilesRun(rewriting: false);
+    }
+
+    private void ResizeForCapture(int widthDip)
+    {
+        double scale = Dpi.ScaleOf(NativeMethods.GetDpiForWindow(_hwnd));
+        AppWindow.Resize(new Windows.Graphics.SizeInt32((int)(widthDip * scale), (int)(480 * scale)));
     }
 }

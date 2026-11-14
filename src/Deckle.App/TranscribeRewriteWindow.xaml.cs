@@ -69,15 +69,17 @@ public sealed partial class TranscribeRewriteWindow : Window
 
         // A run outlives a close: the window hides and the work goes on, so a
         // batch of files keeps coming and the tray entry brings it back with
-        // its progress.
+        // its progress. A file of the list open in the field is saved first,
+        // whether the window closes or hides.
         AppWindow.Closing += (_, args) =>
         {
-            if (!_running) return;
+            SaveOpenFile();
+            if (!_running && !_filesRunning) return;
             args.Cancel = true;
             AppWindow.Hide();
         };
 
-        FileList.ItemsSource = _files;
+        InitializeFiles();
         LabelIconButtons();
         LoadProfiles();
         LlmSettingsService.Instance.Changed += OnLlmSettingsChanged;
@@ -85,6 +87,7 @@ public sealed partial class TranscribeRewriteWindow : Window
         Closed += (_, _) =>
         {
             LlmSettingsService.Instance.Changed -= OnLlmSettingsChanged;
+            _autoSaveTimer?.Stop();
             DisposeOutline();
         };
 
@@ -113,6 +116,8 @@ public sealed partial class TranscribeRewriteWindow : Window
         Label(UndoButton, "TranscribeRewrite_Undo");
         Label(RedoButton, "TranscribeRewrite_Redo");
         Label(RewriteSettingsButton, "TranscribeRewrite_RewriteSettings");
+        StopLabel.Text = Loc.Get("TranscribeRewrite_Stop");
+        ToolTipService.SetToolTip(StopButton, Loc.Get("TranscribeRewrite_StopTip"));
 
         static void Label(Button button, string key)
         {
