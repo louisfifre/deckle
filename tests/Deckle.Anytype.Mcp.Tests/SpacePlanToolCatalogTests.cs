@@ -41,6 +41,29 @@ public class SpacePlanToolCatalogTests
     }
 
     [Fact]
+    public void BothPreviewsAdvertiseTheStructuredOutputTheyReturn()
+    {
+        foreach (string name in new[] { "space_plan_preview", "create_type_preview" })
+            Assert.NotNull(BuildCatalog().Single(t => t.Name == name).OutputSchema);
+    }
+
+    [Fact]
+    public void PreviewProjectionMatchesItsAdvertisedOutputSchema()
+    {
+        var contract = new McpJsonSchemaContract(SpacePlanToolCatalog.PreviewOutputSchema());
+        var planned = new SpacePlanPreview(
+            new string('a', 64), "dev",
+            [new SchemaPreviewAction("type_panel_add", "ticket:state", "featured"), new SchemaPreviewAction("views", "type:ticket", "")],
+            [], ["conflict"], ["skipped"], "rendered");
+        // A refused plan carries no preview id.
+        var refused = new SpacePlanPreview(string.Empty, "dev", [], ["a view on a property nobody declared"], [], [], "rendered");
+
+        Assert.True(contract.Accepts(SpacePlanToolCatalog.PreviewContent(planned)));
+        Assert.True(contract.Accepts(SpacePlanToolCatalog.PreviewContent(refused)));
+        Assert.Equal("featured", SpacePlanToolCatalog.PreviewContent(planned)["actions"]![0]!["name"]!.GetValue<string>());
+    }
+
+    [Fact]
     public void ApplyDemandsAConfirmation()
     {
         ToolDescriptor apply = BuildCatalog().Single(t => t.Name == "space_plan_apply");

@@ -35,7 +35,10 @@ public static class SpacePlanToolCatalog
                         Str(args, "space"), Obj(args, "plan"), Stages(args), ct);
                     return new ToolOutput(preview.Rendered, PreviewContent(preview));
                 },
-                ToolExecutionContract.ReadOnly),
+                ToolExecutionContract.ReadOnly)
+            {
+                OutputSchema = PreviewOutputSchema(),
+            },
 
             new(
                 "space_plan_apply",
@@ -92,7 +95,10 @@ public static class SpacePlanToolCatalog
                     (SpacePlanPreview preview, _) = await plans.PreviewTypeAsync(Str(args, "space"), Obj(args, "type"), ct);
                     return new ToolOutput(preview.Rendered, PreviewContent(preview));
                 },
-                ToolExecutionContract.ReadOnly),
+                ToolExecutionContract.ReadOnly)
+            {
+                OutputSchema = PreviewOutputSchema(),
+            },
 
             new(
                 "create_type",
@@ -152,11 +158,14 @@ public static class SpacePlanToolCatalog
             "A space plan: the schema manifest's `properties`, `types` (each may add `panel` {featured, hidden}, `default_template` and `views`) and `sections`, plus `templates`, `collections`, `queries`, `pages`, `widgets` and `objects`. Keys are snake_case ASCII; nothing holds an Anytype id; references are `type:<key>`, `object:<name>`, and `$self` for the object a view lives in (a filter value). A select option is its name.",
     };
 
-    private static JsonObject PreviewContent(SpacePlanPreview preview)
+    // The same shape schema_preview returns (kind, key, name per action; conflicts;
+    // skipped_conflicts), plus `problems`: the reasons a plan is refused before any
+    // read of the space. The preview id is empty when there are problems.
+    internal static JsonObject PreviewContent(SpacePlanPreview preview)
     {
         var actions = new JsonArray();
         foreach (SchemaPreviewAction action in preview.Actions)
-            actions.Add(new JsonObject { ["kind"] = action.Kind, ["key"] = action.Key, ["detail"] = action.Name });
+            actions.Add(new JsonObject { ["kind"] = action.Kind, ["key"] = action.Key, ["name"] = action.Name });
         return new JsonObject
         {
             ["preview_id"] = preview.PreviewId,
@@ -164,7 +173,44 @@ public static class SpacePlanToolCatalog
             ["actions"] = actions,
             ["problems"] = new JsonArray(preview.Problems.Select(p => (JsonNode?)JsonValue.Create(p)).ToArray()),
             ["conflicts"] = new JsonArray(preview.Conflicts.Select(p => (JsonNode?)JsonValue.Create(p)).ToArray()),
-            ["notes"] = new JsonArray(preview.Notes.Select(p => (JsonNode?)JsonValue.Create(p)).ToArray()),
+            ["skipped_conflicts"] = new JsonArray(preview.Notes.Select(p => (JsonNode?)JsonValue.Create(p)).ToArray()),
+        };
+    }
+
+    // An action kind is open here: the structure stage adds its own (views, page_create,
+    // type_panel_add, ...) to the schema stage's, and the list grows with the engine.
+    internal static JsonObject PreviewOutputSchema()
+    {
+        JsonObject Strings() => new() { ["type"] = "array", ["items"] = new JsonObject { ["type"] = "string" } };
+        return new JsonObject
+        {
+            ["type"] = "object",
+            ["properties"] = new JsonObject
+            {
+                ["preview_id"] = new JsonObject { ["type"] = "string", ["pattern"] = "^([0-9a-f]{64})?$" },
+                ["space"] = new JsonObject { ["type"] = "string", ["minLength"] = 1 },
+                ["actions"] = new JsonObject
+                {
+                    ["type"] = "array",
+                    ["items"] = new JsonObject
+                    {
+                        ["type"] = "object",
+                        ["properties"] = new JsonObject
+                        {
+                            ["kind"] = new JsonObject { ["type"] = "string", ["minLength"] = 1 },
+                            ["key"] = new JsonObject { ["type"] = "string" },
+                            ["name"] = new JsonObject { ["type"] = "string" },
+                        },
+                        ["required"] = new JsonArray { "kind", "key", "name" },
+                        ["additionalProperties"] = false,
+                    },
+                },
+                ["problems"] = Strings(),
+                ["conflicts"] = Strings(),
+                ["skipped_conflicts"] = Strings(),
+            },
+            ["required"] = new JsonArray { "preview_id", "space", "actions", "problems", "conflicts", "skipped_conflicts" },
+            ["additionalProperties"] = false,
         };
     }
 
