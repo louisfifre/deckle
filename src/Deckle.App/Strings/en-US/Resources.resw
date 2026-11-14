@@ -545,6 +545,73 @@
   <data name="TrayMenu_TranscribeFile" xml:space="preserve">
     <value>Transcribe audio files…</value>
   </data>
+  <data name="TrayMenu_TranscribeRewrite" xml:space="preserve">
+    <value>Transcribe and rewrite…</value>
+  </data>
+  <!-- Transcribe and rewrite window (specs/deckle-transcribe-and-rewrite.md). -->
+  <data name="TranscribeRewrite_WindowTitle" xml:space="preserve">
+    <value>Transcribe and rewrite</value>
+  </data>
+  <data name="TranscribeRewriteTitleBar.Title" xml:space="preserve">
+    <value>Transcribe and rewrite</value>
+  </data>
+  <data name="TranscribeRewriteTranscribeFileLabel.Text" xml:space="preserve">
+    <value>Transcribe a file…</value>
+  </data>
+  <data name="TranscribeRewriteCopyLabel.Text" xml:space="preserve">
+    <value>Copy</value>
+  </data>
+  <data name="TranscribeRewriteSaveLabel.Text" xml:space="preserve">
+    <value>Save</value>
+  </data>
+  <data name="TranscribeRewriteRewriteLabel.Text" xml:space="preserve">
+    <value>Rewrite</value>
+  </data>
+  <data name="TranscribeRewriteEditor.PlaceholderText" xml:space="preserve">
+    <value>Paste a text, or transcribe an audio file.</value>
+  </data>
+  <data name="TranscribeRewrite_Undo" xml:space="preserve">
+    <value>Undo</value>
+  </data>
+  <data name="TranscribeRewrite_Redo" xml:space="preserve">
+    <value>Redo</value>
+  </data>
+  <data name="TranscribeRewrite_RewriteSettings" xml:space="preserve">
+    <value>Rewriting settings</value>
+  </data>
+  <data name="TranscribeRewrite_OpenRewriteSettings" xml:space="preserve">
+    <value>Open Rewriting settings</value>
+  </data>
+  <data name="TranscribeRewrite_SpeechNotSetUp_Title" xml:space="preserve">
+    <value>Transcription isn't set up</value>
+  </data>
+  <data name="TranscribeRewrite_SpeechNotSetUp_Body" xml:space="preserve">
+    <value>Set up transcription in Settings to transcribe a file.</value>
+  </data>
+  <data name="TranscribeRewrite_TranscribeFailed_Title" xml:space="preserve">
+    <value>No text came out of this file</value>
+  </data>
+  <data name="TranscribeRewrite_TranscribeFailed_Body" xml:space="preserve">
+    <value>It couldn't be read or holds no speech. Your text is unchanged.</value>
+  </data>
+  <data name="TranscribeRewrite_NoProvider_Title" xml:space="preserve">
+    <value>This profile has no provider</value>
+  </data>
+  <data name="TranscribeRewrite_NoProvider_Body" xml:space="preserve">
+    <value>Choose its provider and model on the Rewriting page.</value>
+  </data>
+  <data name="TranscribeRewrite_RewriteFailed_Title" xml:space="preserve">
+    <value>The rewrite didn't come back</value>
+  </data>
+  <data name="TranscribeRewrite_RewriteFailed_Body" xml:space="preserve">
+    <value>Your text is unchanged. Check the profile's provider on the Rewriting page.</value>
+  </data>
+  <data name="TranscribeRewrite_DefaultFileName" xml:space="preserve">
+    <value>Text</value>
+  </data>
+  <data name="TranscribeRewrite_TextFileType" xml:space="preserve">
+    <value>Text</value>
+  </data>
   <data name="TrayMenu_Logs" xml:space="preserve">
     <value>Logs</value>
   </data>

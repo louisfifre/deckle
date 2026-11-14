@@ -23,7 +23,7 @@ internal sealed class FileTranscriptionQueue
         get { lock (_gate) return _fileCount; }
     }
 
-    public int Enqueue(IEnumerable<string> paths)
+    public int Enqueue(IEnumerable<string> paths, FileTextReturn? returnText = null)
     {
         ArgumentNullException.ThrowIfNull(paths);
 
@@ -35,7 +35,7 @@ internal sealed class FileTranscriptionQueue
 
         lock (_gate)
         {
-            if (!_batches.Writer.TryWrite(new FileTranscriptionBatch(accepted)))
+            if (!_batches.Writer.TryWrite(new FileTranscriptionBatch(accepted, returnText)))
                 return 0;
 
             _fileCount += accepted.Length;
@@ -84,4 +84,8 @@ internal sealed class FileTranscriptionQueue
     }
 }
 
-internal sealed record FileTranscriptionBatch(IReadOnlyList<string> AudioFilePaths);
+// ReturnText set: the transcript goes back to the caller instead of a .txt
+// beside the audio (TranscriptionEngine.FileToText.cs).
+internal sealed record FileTranscriptionBatch(
+    IReadOnlyList<string> AudioFilePaths,
+    FileTextReturn? ReturnText = null);

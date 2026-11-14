@@ -68,6 +68,7 @@ public class SelfCheckTests
         var report = new SelfCheckReport { Completed = true };
         report.Surfaces.Add(new SelfCheckSurface("settings", "general", "General", true, 300, @"captures\settings-general.png"));
         report.Surfaces.Add(new SelfCheckSurface("log", null, null, true, 400, @"captures\log.png"));
+        report.Surfaces.Add(new SelfCheckSurface("transcribe-rewrite", null, null, true, 300, @"captures\transcribe-rewrite.png"));
         report.Surfaces.Add(new SelfCheckSurface("mail", "triage", "Triage", true, 300, @"captures\mail-triage.png"));
         report.Surfaces.Add(new SelfCheckSurface("atelier", "files", null, true, 400, @"captures\atelier-files.png"));
         report.Microphone = new SelfCheckMicrophone(SelfCheckMicrophone.Ok, null, "OK", "0");
@@ -156,6 +157,7 @@ public class SelfCheckTests
     [Theory]
     [InlineData("settings")]
     [InlineData("log")]
+    [InlineData("transcribe-rewrite")]
     [InlineData("mail")]
     [InlineData("atelier")]
     [Trait("Category", "unit")]
