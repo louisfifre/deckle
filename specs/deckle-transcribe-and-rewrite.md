@@ -1,6 +1,6 @@
 # Deckle — Transcribe and rewrite
 
-Written on 2026-11-14 from the forms Louis settled that day over ASCII wireframes: one text field at the centre for a single text, a step-by-step assistant for producing files.
+Written on 2026-11-14 from the forms Louis settled that day over ASCII wireframes: one text field at the centre for a single text. Revised the same day (Louis): the step-by-step assistant for producing files is gone, its entry with it; several files chosen in the window turn its centre into the list of those files.
 
 ## Intention
 
@@ -12,13 +12,13 @@ Louis has a text to rework or an audio file to turn into text, outside a dictati
 
 **Transcribe an audio file, then rewrite it.** Louis clicks "Transcribe audio…", picks a recording. The field fills with the transcript as it comes, utterance by utterance, inside the animated outline the HUD shows while it works. He corrects a word by hand, clicks Rewrite, then Save, which offers the audio's name as a .txt in its folder.
 
-**Produce files.** Louis wants transcripts of five recordings without reading them. The assistant takes him through numbered steps: Files, Rewrite, Result. He adds the files, decides whether they are rewritten and by which profile, then follows each file's progress and opens the folder where the .txt files landed.
+**Produce files.** Louis wants transcripts of five recordings. In the same window he clicks "Transcribe audio…" and picks the five. The field gives way to the list of the five files, each saved as a .txt beside its audio as soon as its text comes. He reads the opening of a transcript on its line, clicks "Show more" to read it whole in the field, comes back with "All files", then clicks "Rewrite all" with a profile and opens the folder where the .txt files landed.
 
 ## Surfaces
 
 ### Tray menu
 
-1. The left-click menu holds "Transcribe and rewrite…", which opens the window, in the actions group after Record. "Transcribe audio to text…", under it, opens the file assistant.
+1. The left-click menu holds "Transcribe and rewrite…", which opens the window, in the actions group after Record. It is the one entry for a text and for audio files.
 2. The developer menu (right click, Developer mode on) holds Logs and Restart at its bottom; the left-click menu ends on Settings and Quit.
 
 ### Transcribe and rewrite window
@@ -35,15 +35,16 @@ Louis has a text to rework or an audio file to turn into text, outside a dictati
 10. The window opens small the first time, then at the size and place Louis left it.
 11. Maximised, the window keeps the same rows: the field grows, the controls stay at their corners.
 
-### File assistant
+### Several files
 
-1. One screen per step, the numbered steps listed on the side, Back and Next at the bottom, as in a Windows setup.
-2. ① Files: the list of files, each with its duration and a remove button, and "Add files…".
-3. ② Rewrite: a "Rewrite" switch and, when it is on, the profile.
-4. ③ Result: each file's state (waiting, transcribing, rewriting, done, failed) and where its .txt is saved, with "Open folder".
-5. The assistant takes one file as well as many: it is the way to produce files, not a batch mode.
-6. A file that fails stops only itself. A rewrite that does not come back still saves the raw transcript, and its line says so.
-7. Closing the assistant while it works hides it; the files keep coming, and the tray entry brings it back with their progress.
+1. "Transcribe audio…" takes one file or several. One file goes into the field, as above. Several replace the field with the list of those files; the top and bottom rows stay where they are.
+2. Each line: the file's name and duration, its state (waiting, transcribing, rewriting, saved, failed) and, once saved, the opening of its text on three lines at most, with "Show more" and "Open folder".
+3. Each file is saved as a .txt beside its audio as soon as its transcript comes, before anything else happens to it.
+4. "Show more" puts the file's whole text in the field, one step of Undo like any replacement; a long text scrolls there. An "All files" button, top left, goes back to the list.
+5. On the list, Undo, Redo, Copy and Save are hidden: each file is already saved. The Rewrite button reads "Rewrite all": it rewrites every saved file with the profile shown and writes each rewrite over its .txt.
+6. A file that fails stops only itself. A rewrite that does not come back keeps the file's text, on disk and on screen, and its line says so.
+7. A new choice of several files replaces the list; the earlier files are already on disk. One file chosen while a list exists goes into the field, and "All files" stays.
+8. Closing the window while it works hides it; the work goes on, and the tray entry brings it back with its progress.
 
 ## Behaviours
 
@@ -52,7 +53,7 @@ Louis has a text to rework or an audio file to turn into text, outside a dictati
 - Changing the profile does nothing by itself; only Rewrite applies it.
 - The transcription follows the pipeline set in Settings (model, language, preprocessing); the window has no transcription setting of its own.
 - Save opens "Save as" with a .txt name: the audio's name in its folder when the text came from a file, a neutral name otherwise. Ctrl+S does the same.
-- In the assistant, each .txt is saved next to its audio file under the audio's name; a name already taken gets " (2)", as Explorer names a copy.
+- On the list, each .txt is saved next to its audio file under the audio's name; a name already taken gets " (2)", as Explorer names a copy.
 
 ## Limits
 
@@ -62,6 +63,6 @@ Louis has a text to rework or an audio file to turn into text, outside a dictati
 
 ## Open
 
-- **Dropping files on the window.** Dropping audio files shows a drop zone over the whole window, a faint accent veil with a dashed outline that grows a little. Does it offer two halves, "Transcribe here" (into the field) and "Transcribe to file" (the assistant), or a single target? Depends on it: whether the assistant can be reached by drop.
+- **Dropping files on the window.** Dropping audio files shows a drop zone over the whole window, a faint accent veil with a dashed outline that grows a little. With the assistant gone, a single target seems enough: one file into the field, several into the list, as "Transcribe audio…" does. To confirm with Louis.
 - **Line width when maximised.** Cap the width of the text's lines when the window is very wide, as Word does, or let them run the full width? To judge on a capture.
-- **"Show in Deckle Folders"** in the assistant's Result step, once Deckle Folders exists.
+- **"Show in Deckle Folders"** on the list's lines, once Deckle Folders exists.
