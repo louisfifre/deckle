@@ -8,7 +8,7 @@ The goal: through Deckle's MCP, build a space from zero, reorganise it, remove w
 
 The space plan engine is `src/Deckle.Anytype/Plan/` plus the schema stage in `src/Deckle.Anytype/Gestures/SchemaPlanner.cs`. Its tools sit on the schema-admin surface only (`SpacePlanToolCatalog.cs`: `space_plan_preview`, `space_plan_apply`, `space_plan_read`, `create_type_preview`, `create_type`). The everyday tools (`create_task`, `create_project`…) carry no plan gesture.
 
-"Remove" happens only in the `prune` stage, asked for explicitly beside the others (`stages: ["schema", "structure", "prune"]`). It removes, within the stages asked for, what the space holds and a section the plan states leaves out. A section the plan omits is left alone, natives are never removed, and every removal is listed in the preview before the apply.
+"Remove" happens only in the `prune` stage, asked for explicitly beside the others (`stages: ["schema", "structure", "prune"]`). It removes, within the stages asked for, what the space holds and a section the plan states leaves out. A section the plan omits is left alone, but a stated empty one (`"types": []`) removes everything in it. The app's own types (page, note, collection… plus project and task) and the properties a fresh space ships are never removed. Templates, widgets and options have no such guard: an app-made template is protected only by the server's refusal below. Every removal is listed in the preview before the apply. A plan read by `space_plan_read` states every section the space holds, so pruning with it removes nothing.
 
 ## The checklist
 
@@ -37,7 +37,7 @@ The space plan engine is `src/Deckle.Anytype/Plan/` plus the schema stage in `sr
 
 ## A removal the server refuses
 
-`DELETE objects/{id}` bins only objects the deleting key created. Templates, collections and queries made in the app, or before the API recorded a creator, answer 403. The prune reports each refusal and goes on with the others, and the next preview lists it again: the space still holds it. Archive it in the app to end it.
+`DELETE objects/{id}` bins only objects the deleting key created. Templates, collections and queries made in the app, or before the API recorded a creator, answer 403. The prune reports each refusal (403, 404 or 409) and goes on with the others, and the next preview lists it again: the space still holds it, so a check keeps reporting a difference until it is archived in the app. Any other failure (a 5xx, a dropped connection) stops the run like any write. A removal targets an object by its kind and name, so a query and a collection of the same name are never confused.
 
 ## The proof
 

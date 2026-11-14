@@ -466,4 +466,30 @@ public sealed class SpacePlanTests
         // Types go before the properties they may carry.
         Assert.True(kinds.IndexOf("type_delete old_kind") < kinds.IndexOf("property_delete old_note"));
     }
+
+    // A query and a collection may share a name; a removal names the kind it
+    // means, so it never bins the one the plan keeps.
+    [Fact, Trait("Category", "regression")]
+    public void Planner_NamesTheKindOfTheObjectItPrunes()
+    {
+        JsonObject root = SamplePlan();
+        SpacePlan plan = SpacePlan.Parse(root);
+        JsonObject live = LiveEqualTo(root);
+        live["queries"]!.AsArray().Add(JsonNode.Parse("""{ "name": "All tickets", "source": { "types": [ "ticket" ] } }"""));
+
+        PlanStep step = Assert.Single(SpacePlanPlanner.Plan(plan, live, new HashSet<string>(), false, false, prune: true),
+            s => s.Kind == "object_delete");
+        Assert.Equal("query", step.Data!["kind"]!.GetValue<string>());
+        Assert.Equal("All tickets", step.Data!["name"]!.GetValue<string>());
+    }
+
+    [Fact]
+    public void Parse_RefusesADisplayValueOfTheWrongType()
+    {
+        JsonObject root = SamplePlan();
+        root["types"]![0]!["display"] = JsonNode.Parse("""{ "width": "0.5" }""");
+        Assert.Throws<ArgumentException>(() => SpacePlan.Parse(root));
+        root["types"]![0]!["display"] = JsonNode.Parse("""{ "header": 1 }""");
+        Assert.Throws<ArgumentException>(() => SpacePlan.Parse(root));
+    }
 }

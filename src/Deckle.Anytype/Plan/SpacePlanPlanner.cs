@@ -255,7 +255,7 @@ internal static class SpacePlanPlanner
                 if (!wanted.Any(w => Str(w, "name") == Str(item, "name")))
                     steps.Add(new PlanStep("object_delete", Str(item, "name"),
                         $"{(section == "queries" ? "requête" : "collection")} « {Str(item, "name")} » absente du plan",
-                        new JsonObject { ["name"] = Str(item, "name") }));
+                        new JsonObject { ["kind"] = section == "queries" ? "query" : "collection", ["name"] = Str(item, "name") }));
         }
 
         if (!includeSchema) return;
