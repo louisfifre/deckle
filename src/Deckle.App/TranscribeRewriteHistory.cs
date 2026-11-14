@@ -30,6 +30,15 @@ internal sealed class TranscribeRewriteHistory
         if (_undo.Count > 0) _undo.Pop();
     }
 
+    // A new text to work on (a file of the list opened in the field): its
+    // Undo must never bring back another file's text, which would then be
+    // saved over this file.
+    public void Clear()
+    {
+        _undo.Clear();
+        _redo.Clear();
+    }
+
     // Returns the text to show, or null when there is nothing to undo.
     public string? Undo(string current)
     {

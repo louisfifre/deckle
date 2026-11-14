@@ -9,9 +9,9 @@ namespace Deckle.App;
 public sealed class FileTranscriptionItem(string path) : INotifyPropertyChanged
 {
     // The opening of the text a line shows, cut here so a three-hour
-    // transcript never reaches a TextBlock whole: the line shows three lines
-    // of it, and "Show more" opens the whole text in the field.
-    private const int PreviewLength = 600;
+    // transcript never reaches a TextBlock whole: the line shows two lines
+    // of it, and a click on the line opens the whole text in the field.
+    private const int PreviewLength = 400;
 
     public string Path { get; } = path;
 
@@ -57,6 +57,10 @@ public sealed class FileTranscriptionItem(string path) : INotifyPropertyChanged
     public bool RewriteFailed { get => _rewriteFailed; set => Set(ref _rewriteFailed, value); }
     private bool _rewriteFailed;
 
+    // The .txt holds a rewrite, no longer the raw transcript.
+    public bool Rewritten { get => _rewritten; set => Set(ref _rewritten, value); }
+    private bool _rewritten;
+
     public bool IsWorking => State is FileTranscriptionState.Transcribing or FileTranscriptionState.Rewriting;
 
     public bool IsDone => State == FileTranscriptionState.Done;
@@ -82,6 +86,8 @@ public enum FileTranscriptionState
     Done,
     TranscriptionFailed,
     WriteFailed,
+    // Stop came before its turn: the file was never transcribed.
+    Stopped,
 }
 
 // The file list's run: each file in turn, transcribed, written beside its
@@ -103,10 +109,21 @@ internal sealed class FileTranscriptionRun(
     Func<string, string, string> write,
     Action<string, string> overwrite)
 {
-    public async Task RunAsync(IReadOnlyList<FileTranscriptionItem> items)
+    // Every waiting file, in order. The list is read live, by index, so files
+    // added during the run join its end. Stop lets the file in progress
+    // finish (the engine has no way to drop a file halfway) and marks the
+    // ones still waiting as Stopped.
+    public async Task RunAsync(IReadOnlyList<FileTranscriptionItem> items, CancellationToken stop = default)
     {
-        foreach (FileTranscriptionItem item in items)
+        for (int i = 0; i < items.Count; i++)
         {
+            FileTranscriptionItem item = items[i];
+            if (item.State != FileTranscriptionState.Waiting) continue;
+            if (stop.IsCancellationRequested)
+            {
+                item.State = FileTranscriptionState.Stopped;
+                continue;
+            }
             try
             {
                 await RunOneAsync(item);
@@ -159,10 +176,12 @@ internal sealed class FileTranscriptionRun(
     public static async Task RewriteAllAsync(
         IReadOnlyList<FileTranscriptionItem> items,
         Func<string, string> rewrite,
-        Action<string, string> overwrite)
+        Action<string, string> overwrite,
+        CancellationToken stop = default)
     {
         foreach (FileTranscriptionItem item in items)
         {
+            if (stop.IsCancellationRequested) return;
             if (item.State != FileTranscriptionState.Done || !item.HasText || item.OutputPath is null) continue;
             try
             {
@@ -203,5 +222,6 @@ internal sealed class FileTranscriptionRun(
         }
         overwrite(item.OutputPath!, rewritten);
         item.Text = rewritten;
+        item.Rewritten = true;
     }
 }
