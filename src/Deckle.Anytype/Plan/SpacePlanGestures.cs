@@ -146,6 +146,28 @@ public sealed class SpacePlanGestures(AnytypeApiClient api, AnytypeSpaceAliases 
         return read.Plan;
     }
 
+    // A one-type plan: the space's own property list fills `properties` and the
+    // panel, then the plan goes through the same preview and apply as any other.
+    public async Task<(SpacePlanPreview Preview, JsonObject Plan)> PreviewTypeAsync(
+        string space, JsonObject typeArgs, CancellationToken ct = default)
+    {
+        JsonObject plan = await TypePlanAsync(space, typeArgs, ct).ConfigureAwait(false);
+        return (await PreviewAsync(space, plan, SpacePlanStages.Default, ct).ConfigureAwait(false), plan);
+    }
+
+    public async Task<string> ApplyTypeAsync(
+        string space, string previewId, JsonObject typeArgs, bool confirm, CancellationToken ct = default)
+    {
+        JsonObject plan = await TypePlanAsync(space, typeArgs, ct).ConfigureAwait(false);
+        return await ApplyAsync(space, previewId, plan, SpacePlanStages.Default, confirm, ct).ConfigureAwait(false);
+    }
+
+    private async Task<JsonObject> TypePlanAsync(string space, JsonObject typeArgs, CancellationToken ct)
+    {
+        JsonObject live = await ReadAsync(space, null, ct).ConfigureAwait(false);
+        return SpacePlanFragments.ForType(live["properties"] as JsonArray ?? [], typeArgs);
+    }
+
     private static bool HasSchema(SpacePlan plan) =>
         plan.Manifest.Types.Count > 0 || plan.Manifest.Properties.Count > 0 || plan.Manifest.Sections.Count > 0;
 

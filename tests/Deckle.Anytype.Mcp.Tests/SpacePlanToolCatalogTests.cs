@@ -19,9 +19,9 @@ public class SpacePlanToolCatalogTests
     }
 
     [Fact]
-    public void ExposesPreviewApplyAndRead() =>
+    public void ExposesPlanToolsAndTypeCreation() =>
         Assert.Equal(
-            new[] { "space_plan_apply", "space_plan_preview", "space_plan_read" },
+            new[] { "create_type", "create_type_preview", "space_plan_apply", "space_plan_preview", "space_plan_read" },
             BuildCatalog().Select(t => t.Name).OrderBy(n => n).ToArray());
 
     [Fact]

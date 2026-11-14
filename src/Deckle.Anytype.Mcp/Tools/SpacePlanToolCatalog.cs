@@ -77,8 +77,47 @@ public static class SpacePlanToolCatalog
                     return plan.ToJsonString(Indented);
                 },
                 ToolExecutionContract.ReadOnly),
+
+            new(
+                "create_type_preview",
+                "Preview the creation of one type, read only, through the space plan engine. Give the type's key and name, and the property keys it carries; the properties are taken from the space's own list, so each is declared as the space holds it, and a key the space does not hold is refused with the list of those it does. `panel` sets the header (`featured`) and the hidden section (`hidden`) in one go; its keys count as the type's own. Returns a preview id for create_type; a type that already matches says so.",
+                Schema(
+                    required:
+                    [
+                        Prop("space", "string", "Configured space alias, for example home or pm."),
+                        ("type", TypeProp()),
+                    ]),
+                async (args, ct) =>
+                {
+                    (SpacePlanPreview preview, _) = await plans.PreviewTypeAsync(Str(args, "space"), Obj(args, "type"), ct);
+                    return new ToolOutput(preview.Rendered, PreviewContent(preview));
+                },
+                ToolExecutionContract.ReadOnly),
+
+            new(
+                "create_type",
+                "Create one type from a previous create_type_preview: repeat the same `type` and the preview_id. The live properties must still match what was reviewed. Idempotent: a second run does nothing. Requires confirm:true.",
+                Schema(
+                    required:
+                    [
+                        Prop("space", "string", "Configured space alias used by the preview."),
+                        Prop("preview_id", "string", "Preview id returned by create_type_preview."),
+                        ("type", TypeProp()),
+                        Prop("confirm", "boolean", "Must be true; omit or false refuses the write."),
+                    ]),
+                async (args, ct) =>
+                    await plans.ApplyTypeAsync(
+                        Str(args, "space"), Str(args, "preview_id"), Obj(args, "type"), Bool(args, "confirm"), ct),
+                ToolExecutionContract.AdditiveVerifiableWithStableTarget),
         };
     }
+
+    private static JsonObject TypeProp() => new()
+    {
+        ["type"] = "object",
+        ["description"] =
+            "One type: `key` (snake_case ASCII) and `name` are required; optional `plural_name`, `layout` (basic, profile, action, note), `description`, `icon`, `properties` (property keys), `panel` {featured, hidden} (property keys) and `views` (plan views, names inline in one language).",
+    };
 
     private static SpacePlanStages Stages(JsonObject? args)
     {
