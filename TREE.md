@@ -442,7 +442,8 @@ _Generated from `git ls-files` — do not edit by hand._
 ├── specs/
 │   ├── atelier.md
 │   ├── deckle-dictation-rewriting.md
-│   └── deckle-mail.md
+│   ├── deckle-mail.md
+│   └── deckle-transcribe-and-rewrite.md
 ├── src/
 │   ├── Deckle.Anytype/
 │   │   ├── Api/
