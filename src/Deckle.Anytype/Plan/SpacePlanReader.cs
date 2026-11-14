@@ -39,7 +39,8 @@ internal sealed record SpacePlanRead(
     LivePlanRefs Refs,
     IReadOnlyDictionary<string, string> TypeIds,
     IReadOnlyList<LiveTemplate> Templates,
-    IReadOnlyDictionary<string, string> PropertyIds);
+    IReadOnlyDictionary<string, string> PropertyIds,
+    IReadOnlyDictionary<string, string> TagIds);
 
 // Reads a live space into the plan that would rebuild it: the reverse of the
 // builder. The plan it returns is in the form a person writes, so a space can be
@@ -148,7 +149,13 @@ internal sealed class SpacePlanReader(AnytypeApiClient api)
         foreach ((string key, JsonObject doc) in typeDocs.OrderBy(kv => kv.Key, StringComparer.Ordinal))
         {
             if (SystemTypeKeys.Contains(key)) continue;
-            types.Add(TypeToPlan(key, doc, snapshot, liveTemplates, refs));
+            JsonObject type = TypeToPlan(key, doc, snapshot, liveTemplates, refs);
+            // A type is also an object, and its own display settings are properties of
+            // that object, absent from GET types/{key}.
+            JsonObject? asObject = await v2.TryGetAsync($"objects/{typeIds[key]}", ct).ConfigureAwait(false);
+            if (asObject is not null)
+                type["display"] = PlanTypeDisplay.FromWire(asObject["properties"] as JsonObject).ToPlan();
+            types.Add(type);
         }
 
         // Collections and queries, found by their type.
@@ -232,9 +239,17 @@ internal sealed class SpacePlanReader(AnytypeApiClient api)
         if (pages.Count > 0) plan["pages"] = pages;
         if (widgets.Count > 0) plan["widgets"] = widgets;
 
+        // An option is written by its id (v1), and a plan names it: property key and
+        // option name lead to the id.
+        var tagIds = new Dictionary<string, string>(StringComparer.Ordinal);
+        foreach ((string propertyKey, var byKey) in snapshot.TagsByProperty)
+            foreach (SchemaTagInfo tag in byKey.Values.DistinctBy(t => t.Id))
+                tagIds.TryAdd(propertyKey + "|" + tag.Name, tag.Id);
+
         return new SpacePlanRead(
             plan, refs, typeIds, liveTemplates,
-            snapshot.Properties.ToDictionary(p => p.Key, p => p.Value.Id, StringComparer.Ordinal));
+            snapshot.Properties.ToDictionary(p => p.Key, p => p.Value.Id, StringComparer.Ordinal),
+            tagIds);
     }
 
     // A view block with no source shows nothing and names nothing: a shell the

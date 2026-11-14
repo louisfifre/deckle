@@ -12,7 +12,9 @@
     an id reads right at once and collapses when the object is loaded again.
     -Stages names what a run covers: schema, structure (the default pair),
     objects, widgets. The sidebar (widgets) is the space owner's: run that stage
-    with the owner's key, not the bot's.
+    with the owner's key, not the bot's. Add prune to also remove, within those
+    stages, what the space holds and a section the plan states leaves out; the
+    preview lists every removal before the typed yes.
 
     With -ReadTo, reads the space (-Space) into a plan file, the reverse
     command: -Pages names the pages to read with their body. Objects are never
@@ -67,7 +69,7 @@ param(
     # templates, collections, queries, pages, widgets and objects.
     [string]$Plan,
     # With -Plan: which parts a run covers. Default: schema and structure.
-    [ValidateSet('schema', 'structure', 'objects', 'widgets')]
+    [ValidateSet('schema', 'structure', 'objects', 'widgets', 'prune')]
     [string[]]$Stages = @('schema', 'structure'),
     # With -Plan: read only. Exit 0 when the space is the plan, 3 when it is not.
     [switch]$Check,

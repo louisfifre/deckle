@@ -10,10 +10,11 @@ namespace Deckle.Anytype;
 internal sealed class SpacePlanExecutor(
     AnytypeApiClient api,
     PlanApi v2,
-    LivePlanRefs refs,
-    IReadOnlyList<LiveTemplate> liveTemplates)
+    SpacePlanRead live)
 {
-    private readonly Dictionary<string, string> _templateIds = liveTemplates
+    private readonly LivePlanRefs refs = live.Refs;
+
+    private readonly Dictionary<string, string> _templateIds = live.Templates
         .GroupBy(t => t.For + "/" + t.Name, StringComparer.Ordinal)
         .ToDictionary(g => g.Key, g => g.First().Id, StringComparer.Ordinal);
 
@@ -37,7 +38,28 @@ internal sealed class SpacePlanExecutor(
                 case "object_create": await CreateObjectAsync(step, log, ct); break;
                 case "widget_create": await CreateWidgetAsync(step, log, ct); break;
                 case "widget_update": await UpdateWidgetAsync(step, log, ct); break;
-                case "page_differs":
+                case "option_color": await RecolourOptionAsync(step, log, ct); break;
+                case "type_display": await SetTypeDisplayAsync(step, log, ct); break;
+                case "page_rewrite": await RewritePageAsync(step, log, ct); break;
+                case "widget_delete": await DeleteWidgetAsync(step, log, ct); break;
+                case "collection_remove": await RemoveFromCollectionAsync(step, log, ct); break;
+                case "template_delete":
+                    await RefusableAsync(step, log, () => v2.SendAsync(HttpMethod.Delete,
+                        $"objects/{_templateIds[Str(step.Data, "for") + "/" + Str(step.Data, "name")]}", null, ct)).ConfigureAwait(false);
+                    break;
+                case "object_delete":
+                    await RefusableAsync(step, log, () => v2.SendAsync(HttpMethod.Delete,
+                        $"objects/{refs.ObjectId(Str(step.Data, "name"))}", null, ct)).ConfigureAwait(false);
+                    break;
+                case "type_delete":
+                    await RefusableAsync(step, log, () => v2.SendAsync(HttpMethod.Delete,
+                        $"types/{Uri.EscapeDataString(Str(step.Data, "type"))}", null, ct)).ConfigureAwait(false);
+                    break;
+                case "property_delete":
+                    await RefusableAsync(step, log, () => v2.SendAsync(HttpMethod.Delete,
+                        $"properties/{Uri.EscapeDataString(Str(step.Data, "property"))}", null, ct)).ConfigureAwait(false);
+                    break;
+                case "option_delete": await DeleteOptionAsync(step, log, ct); break;
                 case "query_source_differs":
                     log.Add($"laissé tel quel : {step.Detail}");
                     break;
@@ -395,6 +417,119 @@ internal sealed class SpacePlanExecutor(
             body["view_id"] = await ViewIdAsync(Str(widget, "target"), viewName, ct).ConfigureAwait(false);
         await v2.SendAsync(HttpMethod.Patch, $"widgets/{SchemaApiJson.Id(row)}", body, ct).ConfigureAwait(false);
         log.Add(step.Detail);
+    }
+
+    // ── Options and type display ────────────────────────────────────────────
+
+    private (string PropertyId, string TagId) OptionIds(JsonObject data)
+    {
+        string property = Str(data, "property");
+        string name = Str(data, "name");
+        if (!live.PropertyIds.TryGetValue(property, out string? propertyId))
+            throw new InvalidOperationException($"Propriété « {property} » introuvable pour son option « {name} ».");
+        if (!live.TagIds.TryGetValue(property + "|" + name, out string? tagId))
+            throw new InvalidOperationException($"Option « {name} » de « {property} » introuvable.");
+        return (propertyId, tagId);
+    }
+
+    // v2 writes a colour only when it creates an option; v1 changes one in place,
+    // name and colour together (runbook, color-options.ps1, 2026-11-12).
+    private async Task RecolourOptionAsync(PlanStep step, List<string> log, CancellationToken ct)
+    {
+        var (propertyId, tagId) = OptionIds(step.Data!);
+        await api.UpdatePropertyTagAsync(v2.SpaceId, propertyId, tagId,
+            new JsonObject { ["name"] = Str(step.Data, "name"), ["color"] = Str(step.Data, "color") }, ct).ConfigureAwait(false);
+        log.Add(step.Detail);
+    }
+
+    private async Task DeleteOptionAsync(PlanStep step, List<string> log, CancellationToken ct)
+    {
+        var (propertyId, tagId) = OptionIds(step.Data!);
+        await RefusableAsync(step, log, () => api.DeletePropertyTagAsync(v2.SpaceId, propertyId, tagId, ct)).ConfigureAwait(false);
+    }
+
+    private async Task SetTypeDisplayAsync(PlanStep step, List<string> log, CancellationToken ct)
+    {
+        string typeId = refs.TypeId(Str(step.Data, "type"));
+        await v2.PatchOpsAsync($"objects/{typeId}",
+            [new JsonObject { ["op"] = "set_properties", ["set"] = step.Data!["set"]!.DeepClone() }], ct).ConfigureAwait(false);
+        log.Add(step.Detail);
+    }
+
+    // ── Rewrite and prune ───────────────────────────────────────────────────
+
+    // One edit: every top-level block goes with its subtree, then the plan's body
+    // comes in at the end. Applied as a whole or refused as a whole, so a page is
+    // never left half written. The page keeps its id.
+    private async Task RewritePageAsync(PlanStep step, List<string> log, CancellationToken ct)
+    {
+        JsonObject page = step.Data!;
+        string id = refs.ObjectId(Str(page, "name"));
+        JsonObject doc = await v2.GetAsync($"objects/{id}", ct).ConfigureAwait(false);
+        var ops = new List<JsonObject>();
+        foreach (JsonObject block in (doc["blocks"] as JsonArray ?? []).OfType<JsonObject>())
+            if ((block["indent"]?.GetValue<int>() ?? 0) == 0 && Str(block, "id").Length > 0)
+                ops.Add(new JsonObject { ["op"] = "delete_block", ["id"] = Str(block, "id"), ["recursive"] = true });
+        if (page["blocks"] is JsonArray blocks && blocks.Count > 0)
+            ops.Add(new JsonObject { ["op"] = "insert_blocks", ["blocks"] = InsertForm(PlanViews.BodyToWire(blocks, refs)) });
+        if (ops.Count > 0) await v2.PatchOpsAsync($"objects/{id}", ops, ct).ConfigureAwait(false);
+        await ReplacePlaceholderAsync(id, log, ct).ConfigureAwait(false);
+        log.Add(step.Detail);
+    }
+
+    // A creation body nests by `indent`; insert_blocks by `relative_indent`, which
+    // at the end of a document is the same depth.
+    private static JsonArray InsertForm(JsonArray wire)
+    {
+        foreach (JsonObject block in wire.OfType<JsonObject>())
+            if (block["indent"] is { } indent)
+            {
+                block.Remove("indent");
+                block["relative_indent"] = indent;
+            }
+        return wire;
+    }
+
+    private async Task DeleteWidgetAsync(PlanStep step, List<string> log, CancellationToken ct)
+    {
+        string target = Str(step.Data, "target");
+        string targetId = target.Contains(':', StringComparison.Ordinal) ? ResolveMember(target) : target;
+        JsonObject? row = (await v2.ListAsync("widgets", [new("scope", "space")], ct).ConfigureAwait(false))
+            .FirstOrDefault(w => Str(w, "target") == targetId);
+        if (row is null) { log.Add($"déjà absent : {step.Detail}"); return; }
+        await v2.SendAsync(HttpMethod.Delete, $"widgets/{SchemaApiJson.Id(row)}", null, ct).ConfigureAwait(false);
+        log.Add($"supprimé : {step.Detail}");
+    }
+
+    private async Task RemoveFromCollectionAsync(PlanStep step, List<string> log, CancellationToken ct)
+    {
+        JsonObject data = step.Data!;
+        var items = new JsonArray();
+        foreach (JsonNode? item in data["items"] as JsonArray ?? []) items.Add(ResolveMember(item!.GetValue<string>()));
+        await v2.PatchOpsAsync($"objects/{refs.ObjectId(Str(data, "name"))}",
+            [new JsonObject { ["op"] = "remove_items", ["items"] = items }], ct).ConfigureAwait(false);
+        log.Add(step.Detail);
+    }
+
+    // A removal the server refuses (a 403 on an object another key created, a
+    // native the app keeps, a 404 already gone) is said and the run goes on: a
+    // prune is a list of independent removals, and one refusal blocks none of the
+    // others.
+    private static async Task RefusableAsync(PlanStep step, List<string> log, Func<Task> remove)
+    {
+        try
+        {
+            await remove().ConfigureAwait(false);
+            log.Add($"supprimé : {step.Detail}");
+        }
+        catch (AnytypeV2Exception ex) when (ex.Status is 403 or 404 or 409)
+        {
+            log.Add($"refusé ({ex.Status}) : {step.Detail} — {ex.ApiMessage ?? ex.Message}");
+        }
+        catch (HttpRequestException ex) when (ex is not AnytypeV2Exception)
+        {
+            log.Add($"refusé : {step.Detail} — {ex.Message}");
+        }
     }
 
     private static string Str(JsonObject? node, string key) => node?[key]?.GetValue<string>() ?? "";

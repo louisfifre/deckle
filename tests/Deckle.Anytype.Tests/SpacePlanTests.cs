@@ -284,6 +284,8 @@ public sealed class SpacePlanTests
         live["templates"] = plan["templates"]!.DeepClone();
         live["collections"] = plan["collections"]!.DeepClone();
         live["queries"] = plan["queries"]!.DeepClone();
+        live["properties"] = plan["properties"]!.DeepClone();
+        if (plan["pages"] is { } pages) live["pages"] = pages.DeepClone();
         return live;
     }
 
@@ -359,5 +361,101 @@ public sealed class SpacePlanTests
         SpacePlan plan = SpacePlan.Parse(root);
         IReadOnlyList<PlanStep> steps = SpacePlanPlanner.Plan(plan, new JsonObject(), new HashSet<string> { "ticket|First" }, true, false);
         Assert.DoesNotContain(steps, s => s.Kind == "object_create");
+    }
+
+    // The type's own display was in no plan, so every rebuilt type drew its header
+    // inline (2026-11-14, the lost headers of Project management).
+    [Fact, Trait("Category", "regression")]
+    public void Planner_WritesATypeDisplayThatDiffers_AndOnlyWhatThePlanStates()
+    {
+        JsonObject root = SamplePlan();
+        root["types"]![0]!["display"] = JsonNode.Parse("""{ "header": "list" }""");
+        SpacePlan plan = SpacePlan.Parse(root);
+        JsonObject live = LiveEqualTo(root);
+        live["queries"]![0]!.AsObject()["views"] = new JsonArray();
+        root["queries"]![0]!.AsObject().Remove("views");
+        live["types"]![0]!["display"] = JsonNode.Parse("""{ "header": "inline", "width": 0.3 }""");
+
+        PlanStep step = Assert.Single(SpacePlanPlanner.Plan(plan, live, new HashSet<string>(), false, false));
+
+        Assert.Equal("type_display", step.Kind);
+        JsonObject set = step.Data!["set"]!.AsObject();
+        Assert.Equal(1, set[PlanTypeDisplay.HeaderProperty]!.GetValue<int>());
+        // The width the plan does not state is left as the space has it.
+        Assert.False(set.ContainsKey(PlanTypeDisplay.WidthProperty));
+    }
+
+    [Fact]
+    public void Parse_RefusesADisplayOutsideItsValues()
+    {
+        JsonObject root = SamplePlan();
+        root["types"]![0]!["display"] = JsonNode.Parse("""{ "header": "grid" }""");
+        Assert.Throws<ArgumentException>(() => SpacePlan.Parse(root));
+        root["types"]![0]!["display"] = JsonNode.Parse("""{ "width": 2 }""");
+        Assert.Throws<ArgumentException>(() => SpacePlan.Parse(root));
+    }
+
+    [Fact]
+    public void Planner_RecoloursAnOptionThatExists_OnlyWithTheSchemaStage()
+    {
+        JsonObject root = SamplePlan();
+        SpacePlan plan = SpacePlan.Parse(root);
+        JsonObject live = LiveEqualTo(root);
+        live["properties"]![0]!["tags"]![0]!["color"] = "red";
+
+        Assert.DoesNotContain(SpacePlanPlanner.Plan(plan, live, new HashSet<string>(), false, false), s => s.Kind == "option_color");
+        PlanStep step = Assert.Single(SpacePlanPlanner.Plan(plan, live, new HashSet<string>(), false, false, includeSchema: true),
+            s => s.Kind == "option_color");
+        Assert.Equal("state:Open", step.Key);
+        Assert.Equal("lime", step.Data!["color"]!.GetValue<string>());
+    }
+
+    [Fact]
+    public void Planner_RewritesAPageThatDiffers()
+    {
+        JsonObject root = SamplePlan();
+        root["pages"] = JsonNode.Parse("""[ { "name": "Home", "blocks": [ { "type": "paragraph", "text": "New" } ] } ]""");
+        SpacePlan plan = SpacePlan.Parse(root);
+        JsonObject live = LiveEqualTo(root);
+        live["pages"]![0]!["blocks"]![0]!["text"] = "Old";
+
+        PlanStep step = Assert.Single(SpacePlanPlanner.Plan(plan, live, new HashSet<string>(), false, false), s => s.Kind.StartsWith("page_", StringComparison.Ordinal));
+        Assert.Equal("page_rewrite", step.Kind);
+        Assert.Equal("New", step.Data!["blocks"]![0]!["text"]!.GetValue<string>());
+    }
+
+    [Fact]
+    public void Planner_PrunesOnlyWhenAsked_AndOnlyFromSectionsThePlanStates()
+    {
+        JsonObject root = SamplePlan();
+        SpacePlan plan = SpacePlan.Parse(root);
+        JsonObject live = LiveEqualTo(root);
+        live["properties"]!.AsArray().Add(JsonNode.Parse("""{ "key": "old_note", "name": "Old", "format": "text" }"""));
+        live["properties"]!.AsArray().Add(JsonNode.Parse("""{ "key": "status", "name": "État", "format": "select" }"""));
+        live["properties"]![0]!["tags"]!.AsArray().Add(JsonNode.Parse("""{ "name": "Stale", "color": "red" }"""));
+        live["types"]!.AsArray().Add(JsonNode.Parse("""{ "key": "old_kind", "name": "Old kind" }"""));
+        live["types"]!.AsArray().Add(JsonNode.Parse("""{ "key": "task", "name": "Tâche" }"""));
+        live["templates"]!.AsArray().Add(JsonNode.Parse("""{ "name": "Old template", "for": "ticket" }"""));
+        live["collections"]![0]!["items"]!.AsArray().Add("object:Stray");
+        live["widgets"] = JsonNode.Parse("""[ { "target": "type:ticket" } ]""");
+
+        Assert.DoesNotContain(SpacePlanPlanner.Plan(plan, live, new HashSet<string>(), false, true, includeSchema: true),
+            s => s.Kind.EndsWith("_delete", StringComparison.Ordinal) || s.Kind == "collection_remove");
+
+        var kinds = SpacePlanPlanner.Plan(plan, live, new HashSet<string>(), false, true, includeSchema: true, prune: true)
+            .Select(s => s.Kind + " " + s.Key).ToList();
+
+        Assert.Contains("property_delete old_note", kinds);
+        Assert.Contains("option_delete state:Stale", kinds);
+        Assert.Contains("type_delete old_kind", kinds);
+        Assert.Contains("template_delete ticket/Old template", kinds);
+        Assert.Contains("collection_remove All tickets", kinds);
+        // The plan has no `widgets`: it says nothing about the sidebar.
+        Assert.DoesNotContain(kinds, k => k.StartsWith("widget_delete", StringComparison.Ordinal));
+        // What the space brings itself stays.
+        Assert.DoesNotContain("property_delete status", kinds);
+        Assert.DoesNotContain("type_delete task", kinds);
+        // Types go before the properties they may carry.
+        Assert.True(kinds.IndexOf("type_delete old_kind") < kinds.IndexOf("property_delete old_note"));
     }
 }
