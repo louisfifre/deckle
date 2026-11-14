@@ -2356,6 +2356,7 @@ _Generated from `git ls-files` — do not edit by hand._
 │   │   ├── SchemaAdminGesturesTests.cs
 │   │   ├── SessionGesturesBugNotes.md
 │   │   ├── SessionGesturesTests.cs
+│   │   ├── SpacePlanTests.cs
 │   │   ├── SpacePlanTrialTests.cs
 │   │   ├── SpaceWriteLockBugNotes.md
 │   │   ├── SpaceWriteLockTests.cs
