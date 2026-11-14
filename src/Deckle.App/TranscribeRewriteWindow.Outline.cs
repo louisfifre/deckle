@@ -49,6 +49,14 @@ public sealed partial class TranscribeRewriteWindow
         bool animations = new Windows.UI.ViewManagement.UISettings().AnimationsEnabled;
         _outline = HudComposition.CreateProcessingStroke(
             compositor, new Vector2(w, h), IsDark, new HudComposition.ConicArcStrokeConfig(), animations);
+        // The stroke straddles its host's edge (negative InsetDip): in the HUD
+        // the window's own edge cuts its outer half away. Here nothing would,
+        // so the clip does, rounded like the field and the stroke (8 dip).
+        float radius = (float)Editor.CornerRadius.TopLeft;
+        var clipShape = compositor.CreateRoundedRectangleGeometry();
+        clipShape.Size = new Vector2(w, h);
+        clipShape.CornerRadius = new Vector2(radius, radius);
+        _outline.Visual.Clip = compositor.CreateGeometricClip(clipShape);
         ElementCompositionPreview.SetElementChildVisual(OutlineHost, _outline.Visual);
         _outline.ApplyVariant(variant, IsDark);
     }

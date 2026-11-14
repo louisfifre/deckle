@@ -70,10 +70,16 @@
             <InfoBar x:Name="Notice" Grid.Row="1" IsOpen="False" IsClosable="True" />
 
             <!-- The outline host lies over the field and takes no input: the
-                 HUD's processing stroke is attached to it while a run works. -->
+                 HUD's processing stroke is attached to it while a run works.
+                 The field takes the overlay radius, 8 dip, the one the stroke
+                 is drawn with, so field, stroke and clip share their corners.
+                 Its border is one even line in every state (Louis, 2026-11-14):
+                 the stronger bottom line and the accent bar of focus belong
+                 to a single-line box, not to a page of text. -->
             <Grid Grid.Row="2">
                 <RichEditBox x:Name="Editor"
                              x:Uid="TranscribeRewriteEditor"
+                             CornerRadius="{ThemeResource OverlayCornerRadius}"
                              AcceptsReturn="True"
                              TextWrapping="Wrap"
                              IsSpellCheckEnabled="True"
@@ -81,7 +87,27 @@
                              DisabledFormattingAccelerators="All"
                              ScrollViewer.VerticalScrollBarVisibility="Auto"
                              TextChanged="OnEditorTextChanged"
-                             Paste="OnEditorPaste" />
+                             Paste="OnEditorPaste">
+                    <!-- Per theme, so a theme switch swaps the brushes; High
+                         Contrast keeps the system's own text-box border. -->
+                    <RichEditBox.Resources>
+                        <ResourceDictionary>
+                            <ResourceDictionary.ThemeDictionaries>
+                                <ResourceDictionary x:Key="Default">
+                                    <StaticResource x:Key="TextControlBorderBrush" ResourceKey="ControlStrokeColorDefaultBrush" />
+                                    <StaticResource x:Key="TextControlBorderBrushPointerOver" ResourceKey="ControlStrokeColorDefaultBrush" />
+                                    <StaticResource x:Key="TextControlBorderBrushFocused" ResourceKey="ControlStrokeColorDefaultBrush" />
+                                </ResourceDictionary>
+                                <ResourceDictionary x:Key="Light">
+                                    <StaticResource x:Key="TextControlBorderBrush" ResourceKey="ControlStrokeColorDefaultBrush" />
+                                    <StaticResource x:Key="TextControlBorderBrushPointerOver" ResourceKey="ControlStrokeColorDefaultBrush" />
+                                    <StaticResource x:Key="TextControlBorderBrushFocused" ResourceKey="ControlStrokeColorDefaultBrush" />
+                                </ResourceDictionary>
+                            </ResourceDictionary.ThemeDictionaries>
+                            <Thickness x:Key="TextControlBorderThemeThicknessFocused">1</Thickness>
+                        </ResourceDictionary>
+                    </RichEditBox.Resources>
+                </RichEditBox>
                 <Grid x:Name="OutlineHost" IsHitTestVisible="False" />
             </Grid>
 
