@@ -4,7 +4,7 @@ description: Deckle provisions specialized Anytype spaces from versioned compose
 
 # ADR-0003 — Provision specialized Anytype spaces from versioned plans
 
-**Status** — accepted 2026-07-28
+**Status** — accepted 2026-07-28; its exclusion of templates and views and its localized names are superseded by [ADR-0010](0010-put-templates-views-and-one-language-names-in-space-plans.md)
 
 ## Context
 

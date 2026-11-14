@@ -130,7 +130,8 @@ _Generated from `git ls-files` — do not edit by hand._
 │   │   ├── 0006-signal-user-incidents-as-tray-state.md  — A degraded state the person can fix is declared in a registry and shown as tray…
 │   │   ├── 0007-write-message-shape-per-level-in-the-template.md  — Every event's message template carries the shape its level calls for, a sentenc…
 │   │   ├── 0008-run-anytype-mcp-in-a-supervised-gateway-process.md  — The Anytype MCP host runs in its own gateway process that Deckle stages by cont…
-│   │   └── 0009-own-animation-setting-defaulting-to-windows.md  — Deckle's own animations follow a Deckle setting, Same as Windows by default, be…
+│   │   ├── 0009-own-animation-setting-defaulting-to-windows.md  — Deckle's own animations follow a Deckle setting, Same as Windows by default, be…
+│   │   └── 0010-put-templates-views-and-one-language-names-in-space-plans.md  — Space plans carry templates, views, collections, queries and pages, and write t…
 │   ├── media/
 │   │   ├── board-ambient.png
 │   │   ├── board-autocorrect.png
@@ -366,7 +367,7 @@ _Generated from `git ls-files` — do not edit by hand._
 │   │   ├── terminal-interaction.psm1
 │   │   └── version.ps1
 │   ├── maintenance/
-│   │   ├── apply-anytype-schema.ps1  — Apply a schema manifest to an Anytype space Brings an Anytype space to a schema manifest through the running Deckle's schem…
+│   │   ├── apply-anytype-schema.ps1  — Apply a schema manifest or a space plan to an Anytype space, or read a space into a plan With -Plan, builds a whole space from one plan file, in creation order: propert…
 │   │   ├── clean-native.ps1  — Clean the native folder Brings the whisper.cpp native folder under the user data root back to the curre…
 │   │   ├── clean.ps1  — Clean build outputs Removes the build output folders of every language present in the repository, e…
 │   │   ├── README.md  — Maintenance Previews and cleanups of the build outputs, the machine's .NET build servers an…
@@ -531,6 +532,18 @@ _Generated from `git ls-files` — do not edit by hand._
 │   │   │   ├── SelectValueGestures.cs
 │   │   │   ├── SessionGestures.cs
 │   │   │   └── TaskGestures.cs
+│   │   ├── Plan/
+│   │   │   ├── example.space-plan.json
+│   │   │   ├── PlanApi.cs
+│   │   │   ├── PlanJson.cs
+│   │   │   ├── PlanViews.cs
+│   │   │   ├── PlanViewsDiff.cs
+│   │   │   ├── SpacePlan.cs
+│   │   │   ├── SpacePlanExecutor.cs
+│   │   │   ├── SpacePlanGestures.cs
+│   │   │   ├── SpacePlanPlanner.cs
+│   │   │   ├── SpacePlanReader.cs
+│   │   │   └── SpacePlanValidator.cs
 │   │   ├── Schema/
 │   │   │   ├── AnytypeSpaceAliases.cs
 │   │   │   ├── DevSpace.cs
@@ -556,6 +569,7 @@ _Generated from `git ls-files` — do not edit by hand._
 │   │   │   ├── AnytypeUtilityToolCatalog.cs
 │   │   │   ├── ManagementToolCatalog.cs
 │   │   │   ├── SchemaAdminToolCatalog.cs
+│   │   │   ├── SpacePlanToolCatalog.cs
 │   │   │   ├── ToolCatalog.cs
 │   │   │   ├── ToolDescriptor.cs
 │   │   │   └── ToolExecutionContract.cs
@@ -2270,6 +2284,7 @@ _Generated from `git ls-files` — do not edit by hand._
 │   │   ├── ProviderKeywordsBugNotes.md
 │   │   ├── ProviderKeywordsTests.cs
 │   │   ├── SchemaAdminToolCatalogTests.cs
+│   │   ├── SpacePlanToolCatalogTests.cs
 │   │   └── ToolCatalogTests.cs
 │   ├── Deckle.Anytype.Tests/
 │   │   ├── Fixtures/
@@ -2345,6 +2360,8 @@ _Generated from `git ls-files` — do not edit by hand._
 │   │   ├── SchemaAdminGesturesTests.cs
 │   │   ├── SessionGesturesBugNotes.md
 │   │   ├── SessionGesturesTests.cs
+│   │   ├── SpacePlanTests.cs
+│   │   ├── SpacePlanTrialTests.cs
 │   │   ├── SpaceWriteLockBugNotes.md
 │   │   ├── SpaceWriteLockTests.cs
 │   │   ├── TaskGesturesBugNotes.md

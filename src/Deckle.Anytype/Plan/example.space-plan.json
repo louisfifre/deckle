@@ -1,0 +1,116 @@
+{
+  "plan_version": 1,
+  "properties": [
+    {
+      "key": "ticket_state",
+      "name": "State",
+      "format": "select",
+      "tags": [
+        { "name": "Open", "color": "lime" },
+        { "name": "Blocked", "color": "red" },
+        { "name": "Done", "color": "grey" }
+      ]
+    },
+    { "key": "ticket_note", "name": "Note", "format": "text" },
+    { "key": "ticket_project", "name": "Project", "format": "objects" }
+  ],
+  "types": [
+    {
+      "key": "ticket",
+      "name": "Ticket",
+      "plural_name": "Tickets",
+      "layout": "action",
+      "description": "One thing to do.",
+      "icon": { "format": "icon", "name": "checkbox", "color": "lime" },
+      "properties": [ "ticket_state", "ticket_project", "ticket_note" ],
+      "panel": { "featured": [ "ticket_state" ], "hidden": [ "ticket_note" ] },
+      "default_template": "Ticket default",
+      "views": [
+        {
+          "name": "Open",
+          "type": "table",
+          "filters": [ { "property": "ticket_state", "condition": "in", "value": [ "Open", "Blocked" ] } ],
+          "sorts": [ { "property": "ticket_state", "direction": "asc" }, { "property": "name", "direction": "asc" } ],
+          "columns": [ { "property": "name", "width": 320 }, { "property": "ticket_state", "width": 140 }, { "property": "ticket_project" } ]
+        },
+        {
+          "name": "Board",
+          "type": "kanban",
+          "group_by": "ticket_state",
+          "sorts": [ { "property": "name", "direction": "asc" } ],
+          "columns": [ { "property": "name" }, { "property": "ticket_project", "hidden": true } ]
+        }
+      ]
+    },
+    {
+      "key": "ticket_project_page",
+      "name": "Workstream",
+      "plural_name": "Workstreams",
+      "layout": "basic",
+      "properties": [ "ticket_note" ],
+      "default_template": "Workstream default"
+    }
+  ],
+  "collections": [
+    { "name": "Types", "items": [ "type:ticket", "type:ticket_project_page" ], "views": [ { "name": "All", "type": "list", "columns": [ { "property": "name" } ] } ] }
+  ],
+  "queries": [
+    {
+      "name": "Open tickets",
+      "source": { "types": [ "ticket" ] },
+      "views": [
+        {
+          "name": "Open",
+          "type": "table",
+          "filters": [ { "property": "ticket_state", "condition": "in", "value": [ "Open" ] } ],
+          "sorts": [ { "property": "name", "direction": "asc" } ],
+          "columns": [ { "property": "name" }, { "property": "ticket_state" } ]
+        }
+      ]
+    }
+  ],
+  "templates": [
+    {
+      "name": "Ticket default",
+      "for": "ticket",
+      "blocks": [ { "type": "heading_2", "text": "What to do" }, { "type": "paragraph", "text": "" } ]
+    },
+    {
+      "name": "Workstream default",
+      "for": "ticket_project_page",
+      "blocks": [
+        { "type": "heading_2", "text": "Tickets of this workstream" },
+        {
+          "type": "dataview",
+          "source": "type:ticket",
+          "views": [
+            {
+              "name": "Here",
+              "type": "table",
+              "filters": [ { "property": "ticket_project", "condition": "in", "value": "$self" } ],
+              "sorts": [ { "property": "name", "direction": "asc" } ],
+              "columns": [ { "property": "name" }, { "property": "ticket_state" } ]
+            }
+          ]
+        }
+      ]
+    }
+  ],
+  "pages": [
+    {
+      "name": "Start here",
+      "blocks": [
+        { "type": "heading_1", "text": "Tickets" },
+        { "type": "dataview", "source": "object:Open tickets", "views": [ { "name": "Open", "type": "list", "columns": [ { "property": "name" } ] } ] }
+      ]
+    }
+  ],
+  "objects": [
+    { "type": "ticket_project_page", "name": "First workstream", "template": "Workstream default" },
+    { "type": "ticket", "name": "First ticket", "template": "Ticket default", "properties": { "ticket_state": "Open" } }
+  ],
+  "widgets": [
+    { "target": "type:ticket", "layout": "view", "limit": 6, "view": "Open" },
+    { "target": "object:Start here", "layout": "tree" }
+  ]
+}

@@ -1,8 +1,25 @@
 <#
 .SYNOPSIS
-    Apply a schema manifest to an Anytype space
+    Apply a schema manifest or a space plan to an Anytype space, or read a space into a plan
 .DESCRIPTION
-    Brings an Anytype space to a schema manifest through the running Deckle's
+    With -Plan, builds a whole space from one plan file, in creation order:
+    properties and options, types with their panel and default template,
+    collections, queries, templates with their in-body views, type views, pages
+    and, when asked for, objects and the sidebar. It is idempotent and -Check
+    only reads. A plan is checked against itself first (a view on a property
+    nobody declared is refused before any write). Ten minutes after a write the
+    script checks again (-RecheckAfterMinutes): a sort or filter written without
+    an id reads right at once and collapses when the object is loaded again.
+    -Stages names what a run covers: schema, structure (the default pair),
+    objects, widgets. The sidebar (widgets) is the space owner's: run that stage
+    with the owner's key, not the bot's.
+
+    With -ReadTo, reads the space (-Space) into a plan file, the reverse
+    command: -Pages names the pages to read with their body. Objects are never
+    read. The file holds the structure of a real space: keep it out of the
+    repository.
+
+    Without -Plan, brings an Anytype space to a schema manifest through the running Deckle's
     schema-admin surface, with no model in the loop: it previews, shows what
     would change, waits for a typed yes, applies, then previews again and
     succeeds only when nothing is left to do.
@@ -19,7 +36,19 @@
     2 the preview holds a conflict or the answer was not yes, 3 actions remain
     after the apply.
 .EXAMPLE
+    pwsh -NoProfile -File scripts/maintenance/apply-anytype-schema.ps1 -Space home -ReadTo D:\anytype\space-builder\plans\home.plan.json -Pages 'Accueil'
+.EXAMPLE
+    pwsh -NoProfile -File scripts/maintenance/apply-anytype-schema.ps1 -Space home-test -Plan D:\anytype\space-builder\plans\home.plan.json
+.EXAMPLE
+    pwsh -NoProfile -File scripts/maintenance/apply-anytype-schema.ps1 -Space home-test -Plan D:\anytype\space-builder\plans\home.plan.json -Check
+.EXAMPLE
     pwsh -NoProfile -File scripts/maintenance/apply-anytype-schema.ps1 -Space pm -Manifest src/Deckle.Anytype/Schema/pm-schema-manifest.json
+.EXAMPLE
+    pwsh -NoProfile -File scripts/maintenance/apply-anytype-schema.ps1 -Space home -ReadTo D:\anytype\space-builder\plans\home.plan.json -Pages 'Accueil'
+.EXAMPLE
+    pwsh -NoProfile -File scripts/maintenance/apply-anytype-schema.ps1 -Space home-test -Plan D:\anytype\space-builder\plans\home.plan.json
+.EXAMPLE
+    pwsh -NoProfile -File scripts/maintenance/apply-anytype-schema.ps1 -Space home-test -Plan D:\anytype\space-builder\plans\home.plan.json -Check
 .EXAMPLE
     pwsh -NoProfile -File scripts/maintenance/apply-anytype-schema.ps1 -Space pm -Manifest src/Deckle.Anytype/Schema/pm-schema-manifest.json -InviteLink 'anytype://invite/?cid=CID&key=KEY' -Pilot
 .NOTES
@@ -33,8 +62,22 @@ param(
     [Parameter(Mandatory)]
     [string]$Space,
     # Path of the schema manifest, a JSON file.
-    [Parameter(Mandatory)]
     [string]$Manifest,
+    # Path of a space plan, a JSON file: the manifest's grammar plus panels, views,
+    # templates, collections, queries, pages, widgets and objects.
+    [string]$Plan,
+    # With -Plan: which parts a run covers. Default: schema and structure.
+    [ValidateSet('schema', 'structure', 'objects', 'widgets')]
+    [string[]]$Stages = @('schema', 'structure'),
+    # With -Plan: read only. Exit 0 when the space is the plan, 3 when it is not.
+    [switch]$Check,
+    # With -Plan: after a write, wait this long and check again. 0 skips it.
+    [ValidateRange(0, 120)]
+    [int]$RecheckAfterMinutes = 10,
+    # Reads the space into a plan file instead of writing anything.
+    [string]$ReadTo,
+    # With -ReadTo: names of the pages to read with their body.
+    [string[]]$Pages = @(),
     # An invite link of the space, copied from the Anytype app. When given, the
     # bot asks to join and the alias is pointed at that space.
     [string]$InviteLink,
@@ -128,8 +171,12 @@ function Set-JsonValue([string]$Path, [string]$Property, [string]$Value) {
 $script:Token = [Environment]::GetEnvironmentVariable($TokenVariable, 'User')
 if (-not $script:Token) { Stop-With 1 "The user variable $TokenVariable is empty: Deckle mints it when its gateway starts." }
 
-$manifestPath = (Resolve-Path -LiteralPath $Manifest).Path
-$script:ManifestObject = Get-Content -LiteralPath $manifestPath -Raw | ConvertFrom-Json -Depth 64
+if (-not $Manifest -and -not $Plan -and -not $ReadTo) { Stop-With 1 'Give -Manifest, -Plan or -ReadTo.' }
+if ($Manifest -and $Plan) { Stop-With 1 'Give -Manifest or -Plan, not both.' }
+if ($Manifest) {
+    $manifestPath = (Resolve-Path -LiteralPath $Manifest).Path
+    $script:ManifestObject = Get-Content -LiteralPath $manifestPath -Raw | ConvertFrom-Json -Depth 64
+}
 
 if (-not $DataRoot) {
     $DataRoot = if ($env:DECKLE_DATA_ROOT) { $env:DECKLE_DATA_ROOT } else { Join-Path $env:LOCALAPPDATA 'Deckle' }
@@ -174,6 +221,88 @@ if ($InviteLink) {
         }
         Write-Host '  The piloting commands follow at the next start of Deckle, which replaces its gateway.' -ForegroundColor Yellow
     }
+}
+
+# ── Read a space into a plan ─────────────────────────────────────────────────
+
+if ($ReadTo) {
+    Write-Step "Read '$Space' into a plan"
+    $read = Invoke-SchemaTool 'space_plan_read' @{ space = $Space; pages = @($Pages) }
+    if ($read.IsError) { Stop-With 1 "space_plan_read failed:`n$($read.Text)" }
+    [IO.File]::WriteAllText($ReadTo, $read.Text, [Text.UTF8Encoding]::new($false))
+    $plan = $read.Text | ConvertFrom-Json -Depth 64
+    Write-Host ("  {0} properties, {1} types, {2} templates, {3} collections, {4} queries -> {5}" -f `
+        @($plan.properties).Count, @($plan.types).Count, @($plan.templates).Count, @($plan.collections).Count, @($plan.queries).Count, $ReadTo)
+    foreach ($note in @($plan.reader_notes)) { Write-Host "  note: $note" -ForegroundColor Yellow }
+    Write-Host 'The file holds a real space''s structure: keep it out of the repository.' -ForegroundColor Yellow
+    exit 0
+}
+
+# ── Build, check or re-check a space from a plan ─────────────────────────────
+
+if ($Plan) {
+    $planPath = (Resolve-Path -LiteralPath $Plan).Path
+    $planObject = Get-Content -LiteralPath $planPath -Raw | ConvertFrom-Json -Depth 64
+
+    function Get-PlanPreview {
+        $answer = Invoke-SchemaTool 'space_plan_preview' @{ space = $Space; plan = $planObject; stages = @($Stages) }
+        if ($answer.IsError -or -not $answer.Structured) { Stop-With 1 "space_plan_preview failed:`n$($answer.Text)" }
+        $answer.Structured
+    }
+
+    Write-Step "Preview '$Space' against $(Split-Path $planPath -Leaf) ($($Stages -join ', '))"
+    $planPreview = Get-PlanPreview
+    if (@($planPreview.problems).Count) {
+        Write-Host 'The plan is invalid:' -ForegroundColor Red
+        $planPreview.problems | ForEach-Object { Write-Host "  - $_" }
+        Stop-With 2 'Nothing was written: fix the plan first.'
+    }
+    if (@($planPreview.conflicts).Count) {
+        Write-Host 'Conflicts:' -ForegroundColor Red
+        $planPreview.conflicts | ForEach-Object { Write-Host "  - $_" }
+        Stop-With 2 'Nothing was written: a conflict has to be settled first.'
+    }
+    foreach ($note in @($planPreview.notes)) { Write-Host "  left as it is: $note" -ForegroundColor Yellow }
+    $count = @($planPreview.actions).Count
+    if ($count -eq 0) { Write-Host "`nNothing to do: the space matches the plan." -ForegroundColor Green; exit 0 }
+
+    $planPreview.actions | Group-Object kind | Sort-Object Count -Descending |
+        ForEach-Object { Write-Host ('  {0,4}  {1}' -f $_.Count, $_.Name) }
+    if ($Check) {
+        $planPreview.actions | Select-Object -First 40 | ForEach-Object { Write-Host "        $($_.kind) · $($_.key)" -ForegroundColor DarkGray }
+        Stop-With 3 "The space differs from the plan ($count action(s))."
+    }
+
+    $answer = Read-Host "`nApply these $count action(s) to '$Space'? (yes/no)"
+    if ($answer -notin 'yes', 'y', 'oui', 'o') { Stop-With 2 'Nothing was written.' }
+
+    Write-Step 'Apply'
+    $applied = Invoke-SchemaTool 'space_plan_apply' @{
+        space = $Space; preview_id = $planPreview.preview_id; plan = $planObject; stages = @($Stages); confirm = $true
+    }
+    Write-Host $applied.Text
+    if ($applied.IsError) { Stop-With 1 'The apply stopped on an error; what it wrote before is listed above.' }
+
+    Write-Step 'Verify'
+    $after = Get-PlanPreview
+    if (@($after.actions).Count) {
+        $after.actions | Select-Object -First 40 | ForEach-Object { Write-Host "  $($_.kind) · $($_.key)" }
+        Stop-With 3 'The space does not match the plan yet.'
+    }
+    Write-Host 'The space matches the plan right after the write.' -ForegroundColor Green
+
+    if ($RecheckAfterMinutes -gt 0) {
+        # Why wait: id-less sorts and filters collapse when the object is loaded again.
+        Write-Step "Check again in $RecheckAfterMinutes minute(s)"
+        Start-Sleep -Seconds ($RecheckAfterMinutes * 60)
+        $later = Get-PlanPreview
+        if (@($later.actions).Count) {
+            $later.actions | Select-Object -First 40 | ForEach-Object { Write-Host "  $($_.kind) · $($_.key)" }
+            Stop-With 3 "After $RecheckAfterMinutes minute(s) the space no longer matches the plan."
+        }
+        Write-Host "Still the plan after $RecheckAfterMinutes minute(s)." -ForegroundColor Green
+    }
+    exit 0
 }
 
 # ── Preview, confirm, apply, verify ──────────────────────────────────────────
