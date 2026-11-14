@@ -161,18 +161,27 @@ internal sealed record PlanTypeDisplay(string? Header, double? Width)
     public const string HeaderProperty = "header_relations_layout";
     public const string WidthProperty = "layout_width";
 
+    // A width stored in single precision reads back a few millionths off: closer
+    // than this, it is the same width, or the plan would rewrite it on every run.
+    private const double WidthTolerance = 1e-6;
+
     public static PlanTypeDisplay? Parse(string typeKey, JsonNode? node)
     {
         if (node is null) return null;
         if (node is not JsonObject obj)
             throw new ArgumentException($"Le champ « display » du type « {typeKey} » doit être un objet.");
         JsonShape.RequireOnly(obj, ["header", "width"], $"display du type {typeKey}");
-        string? header = obj["header"]?.GetValue<string>();
-        if (header is not (null or "list" or "inline"))
-            throw new ArgumentException($"type {typeKey} : display.header vaut « list » ou « inline », pas « {header} ».");
-        double? width = obj["width"]?.GetValue<double>();
-        if (width is < 0 or > 1)
-            throw new ArgumentException($"type {typeKey} : display.width va de 0 (automatique) à 1, pas {width}.");
+        string? header = null;
+        if (obj["header"] is { } headerNode
+            && !(headerNode is JsonValue hv && hv.TryGetValue(out header) && header is "list" or "inline"))
+            throw new ArgumentException($"type {typeKey} : display.header vaut « list » ou « inline », pas {headerNode.ToJsonString()}.");
+        double? width = null;
+        if (obj["width"] is { } widthNode)
+        {
+            if (!(widthNode is JsonValue wv && wv.TryGetValue(out double w) && w is >= 0 and <= 1))
+                throw new ArgumentException($"type {typeKey} : display.width est un nombre de 0 (automatique) à 1, pas {widthNode.ToJsonString()}.");
+            width = w;
+        }
         return new PlanTypeDisplay(header, width);
     }
 
@@ -197,7 +206,7 @@ internal sealed record PlanTypeDisplay(string? Header, double? Width)
     {
         var set = new JsonObject();
         if (Header is not null && Header != live.Header) set[HeaderProperty] = Header == "list" ? 1 : 0;
-        if (Width is not null && Math.Abs(Width.Value - (live.Width ?? 0)) > 1e-9) set[WidthProperty] = Width.Value;
+        if (Width is not null && Math.Abs(Width.Value - (live.Width ?? 0)) > WidthTolerance) set[WidthProperty] = Width.Value;
         return set;
     }
 

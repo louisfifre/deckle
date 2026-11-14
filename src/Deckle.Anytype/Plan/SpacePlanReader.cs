@@ -11,10 +11,24 @@ internal sealed class LivePlanRefs : IPlanRefs
     private readonly Dictionary<string, string> _typeKeys = new(StringComparer.Ordinal);
     private readonly Dictionary<string, string> _objectIds = new(StringComparer.Ordinal);
     private readonly Dictionary<string, string> _objectNames = new(StringComparer.Ordinal);
+    private readonly Dictionary<string, string> _byKind = new(StringComparer.Ordinal);
 
     public void SetType(string key, string id) { _typeIds[key] = id; _typeKeys[id] = key; }
 
     public void SetObject(string name, string id) { _objectIds[name] = id; _objectNames[id] = name; }
+
+    // A collection, a query and a page may share a name, and the map above keeps
+    // the last one read. A removal must hit the object of the kind it means, so
+    // the reader also files each one under its kind.
+    public void SetObject(string kind, string name, string id)
+    {
+        SetObject(name, id);
+        _byKind[kind + "|" + name] = id;
+    }
+
+    public string ObjectIdOf(string kind, string name) =>
+        _byKind.TryGetValue(kind + "|" + name, out string? id) ? id
+        : throw new InvalidOperationException($"{kind} « {name} » inconnu de l'espace.");
 
     public bool HasType(string key) => _typeIds.ContainsKey(key);
 
@@ -168,7 +182,7 @@ internal sealed class SpacePlanReader(AnytypeApiClient api)
                 .SearchAllAsync(new AnytypeV2SearchRequest { Type = kind }, ct).ConfigureAwait(false);
             foreach (AnytypeV2SearchRow row in rows.Where(r => r.Type == kind).OrderBy(r => r.Name, StringComparer.Ordinal))
             {
-                refs.SetObject(row.Name, row.Id);
+                refs.SetObject(kind, row.Name, row.Id);
                 JsonObject doc = await v2.GetAsync($"objects/{row.Id}", ct).ConfigureAwait(false);
                 var item = new JsonObject { ["name"] = row.Name };
                 if (kind == "query")

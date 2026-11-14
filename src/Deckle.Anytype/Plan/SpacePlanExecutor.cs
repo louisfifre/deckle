@@ -49,7 +49,7 @@ internal sealed class SpacePlanExecutor(
                     break;
                 case "object_delete":
                     await RefusableAsync(step, log, () => v2.SendAsync(HttpMethod.Delete,
-                        $"objects/{refs.ObjectId(Str(step.Data, "name"))}", null, ct)).ConfigureAwait(false);
+                        $"objects/{refs.ObjectIdOf(Str(step.Data, "kind"), Str(step.Data, "name"))}", null, ct)).ConfigureAwait(false);
                     break;
                 case "type_delete":
                     await RefusableAsync(step, log, () => v2.SendAsync(HttpMethod.Delete,
@@ -114,7 +114,7 @@ internal sealed class SpacePlanExecutor(
         JsonObject made = await v2.SendAsync(
             HttpMethod.Post, "collections", new JsonObject { ["name"] = Str(collection, "name"), ["items"] = items }, ct)
             .ConfigureAwait(false);
-        refs.SetObject(Str(collection, "name"), SchemaApiJson.Id(made));
+        refs.SetObject("collection", Str(collection, "name"), SchemaApiJson.Id(made));
         log.Add(step.Detail);
     }
 
@@ -138,7 +138,7 @@ internal sealed class SpacePlanExecutor(
             HttpMethod.Post, "queries",
             new JsonObject { ["name"] = Str(query, "name"), ["type"] = types[0]!.GetValue<string>() }, ct)
             .ConfigureAwait(false);
-        refs.SetObject(Str(query, "name"), SchemaApiJson.Id(made));
+        refs.SetObject("query", Str(query, "name"), SchemaApiJson.Id(made));
         log.Add(step.Detail);
     }
 
@@ -497,8 +497,8 @@ internal sealed class SpacePlanExecutor(
         JsonObject? row = (await v2.ListAsync("widgets", [new("scope", "space")], ct).ConfigureAwait(false))
             .FirstOrDefault(w => Str(w, "target") == targetId);
         if (row is null) { log.Add($"déjà absent : {step.Detail}"); return; }
-        await v2.SendAsync(HttpMethod.Delete, $"widgets/{SchemaApiJson.Id(row)}", null, ct).ConfigureAwait(false);
-        log.Add($"supprimé : {step.Detail}");
+        await RefusableAsync(step, log, () => v2.SendAsync(HttpMethod.Delete, $"widgets/{SchemaApiJson.Id(row)}", null, ct))
+            .ConfigureAwait(false);
     }
 
     private async Task RemoveFromCollectionAsync(PlanStep step, List<string> log, CancellationToken ct)
@@ -506,15 +506,17 @@ internal sealed class SpacePlanExecutor(
         JsonObject data = step.Data!;
         var items = new JsonArray();
         foreach (JsonNode? item in data["items"] as JsonArray ?? []) items.Add(ResolveMember(item!.GetValue<string>()));
-        await v2.PatchOpsAsync($"objects/{refs.ObjectId(Str(data, "name"))}",
-            [new JsonObject { ["op"] = "remove_items", ["items"] = items }], ct).ConfigureAwait(false);
-        log.Add(step.Detail);
+        string id = refs.ObjectIdOf("collection", Str(data, "name"));
+        await RefusableAsync(step, log, () => v2.PatchOpsAsync($"objects/{id}",
+            [new JsonObject { ["op"] = "remove_items", ["items"] = items }], ct)).ConfigureAwait(false);
     }
 
     // A removal the server refuses (a 403 on an object another key created, a
     // native the app keeps, a 404 already gone) is said and the run goes on: a
     // prune is a list of independent removals, and one refusal blocks none of the
-    // others.
+    // others. Anything else (a 5xx, a rate limit, a dropped connection) is a
+    // failure and stops the run, so a backend that is down never reads as a list
+    // of refusals.
     private static async Task RefusableAsync(PlanStep step, List<string> log, Func<Task> remove)
     {
         try
@@ -526,9 +528,11 @@ internal sealed class SpacePlanExecutor(
         {
             log.Add($"refusé ({ex.Status}) : {step.Detail} — {ex.ApiMessage ?? ex.Message}");
         }
-        catch (HttpRequestException ex) when (ex is not AnytypeV2Exception)
+        // The v1 client throws a plain HttpRequestException carrying the status.
+        catch (HttpRequestException ex) when (ex is not AnytypeV2Exception
+            && ex.StatusCode is System.Net.HttpStatusCode.Forbidden or System.Net.HttpStatusCode.NotFound or System.Net.HttpStatusCode.Conflict)
         {
-            log.Add($"refusé : {step.Detail} — {ex.Message}");
+            log.Add($"refusé ({(int)ex.StatusCode!}) : {step.Detail} — {ex.Message}");
         }
     }
 
