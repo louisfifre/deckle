@@ -35,11 +35,12 @@ public sealed class TaskGestures(AnytypeApiClient api, NameResolver resolver, An
     /// <param name="timeEstimated">Estimated time in hours.</param>
     /// <param name="doneDefinition">What lets the task be ticked.</param>
     /// <param name="slot">Créneau option, key or name; null takes Cap.</param>
+    /// <param name="orchestratedBy">The orchestration task this task reports to, name or id; null leaves it unset.</param>
     public async Task<string> CreateAsync(
         string project, string name, string type,
         int? priority = null, IReadOnlyList<string>? checklist = null, string? notes = null,
         string? dueDate = null, double? timeEstimated = null, string? doneDefinition = null,
-        string? slot = null,
+        string? slot = null, string? orchestratedBy = null,
         CancellationToken ct = default)
     {
         var sw = Stopwatch.StartNew();
@@ -83,6 +84,12 @@ public sealed class TaskGestures(AnytypeApiClient api, NameResolver resolver, An
         string projectId = await resolver.ResolveAsync(
             project, new[] { DevSpace.Types.Project }, NameMatch.Exact, ct);
 
+        // The orchestration task is resolved before the create too: an unknown
+        // or ambiguous one is refused with nothing made.
+        string? orchestratorId = string.IsNullOrWhiteSpace(orchestratedBy)
+            ? null
+            : await resolver.ResolveAsync(orchestratedBy, new[] { DevSpace.Types.Task }, NameMatch.Exact, ct);
+
         // The slot is read before the create, so an unknown option is refused
         // with nothing made. A space without the property still gets its task:
         // the answer says the slot was not set.
@@ -99,6 +106,9 @@ public sealed class TaskGestures(AnytypeApiClient api, NameResolver resolver, An
             [DevSpace.Props.Projects] = new JsonArray(projectId),
             [DevSpace.Props.TaskType] = new JsonArray(DisplayType(typeKey)),
         };
+
+        if (orchestratorId is not null)
+            props[DevSpace.Props.OrchestratedBy] = new JsonArray(orchestratorId);
 
         if (priority is int level)
         {
@@ -150,6 +160,7 @@ public sealed class TaskGestures(AnytypeApiClient api, NameResolver resolver, An
         if (priority is int p) facts.Add($"Priorité : {p}");
         facts.Add(day is null ? "Date cible : aucune (pas encore placée)" : $"Date cible : {day}");
         if (timeEstimated is double h) facts.Add($"Temps estimé : {Hours(h)} h");
+        if (orchestratorId is not null) facts.Add($"Orchestré par : {orchestratorId}");
         if (slotName is not null) facts.Add($"Créneau : {slotName}");
         if (slotNote is not null) facts.Add(slotNote);
         if (items.Count > 0) facts.Add($"Sous-tâches : {items.Count}");

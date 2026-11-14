@@ -117,6 +117,56 @@ public class ReadGesturesTests
         Assert.All(v2.Requests, r => Assert.DoesNotContain("format=md", r.PathAndQuery));
     }
 
+    // An orchestration task answers with the tasks that point to it, found by
+    // a search on « Orchestré par » (the link lives on the orchestrated task).
+    // Done and archived ones are settled; the count says how many are open.
+    [Fact]
+    public async Task TaskPropertiesOfAnOrchestrationTaskListsTheTasksItOrchestrates()
+    {
+        string page = new JsonObject
+        {
+            ["data"] = new JsonArray(
+                new JsonObject
+                {
+                    ["id"] = OtherTaskId, ["name"] = "Travail A", ["type"] = "task",
+                    ["properties"] = new JsonObject { ["done"] = true },
+                },
+                new JsonObject
+                {
+                    ["id"] = ProjectId, ["name"] = "Travail B", ["type"] = "task",
+                    ["properties"] = new JsonObject { },
+                },
+                new JsonObject
+                {
+                    ["id"] = ReportId, ["name"] = "Travail C", ["type"] = "task",
+                    ["properties"] = new JsonObject { ["archive"] = true },
+                }),
+            ["total"] = 3,
+            ["has_more"] = false,
+        }.ToJsonString();
+        FakeV2Handler v2 = Reads(
+            PropsReply(TaskId, "task", "Orchestrer la flotte", Sel(DevSpace.Props.TaskType, "Orchestrer")),
+            page);
+
+        string digest = await NewGestures(v2).TaskPropertiesAsync(TaskId, Ct);
+
+        Assert.Equal(
+            Lines(
+                $"id : {TaskId}",
+                "[ ] Orchestrer la flotte",
+                "Type de tâche : Orchestrer",
+                "Tâches orchestrées : 3, ouvertes : 1",
+                $"[x] Travail A · id : {OtherTaskId}",
+                $"[ ] Travail B · id : {ProjectId}",
+                $"[ ] Travail C · archivée · id : {ReportId}"),
+            digest);
+
+        JsonObject body = (JsonObject)JsonNode.Parse(v2.Requests[1].Body!)!;
+        JsonObject filter = (JsonObject)Assert.Single((JsonArray)body["filters"]!)!;
+        Assert.Equal(DevSpace.Props.OrchestratedBy, filter["property"]!.GetValue<string>());
+        Assert.Equal(TaskId, ((JsonArray)filter["value"]!).Single()!.GetValue<string>());
+    }
+
     // The priority is served under "priority" as its option name, the level.
     [Fact]
     [Trait("Category", "regression")]
