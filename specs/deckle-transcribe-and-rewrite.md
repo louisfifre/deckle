@@ -18,7 +18,7 @@ Louis has a text to rework or an audio file to turn into text, outside a dictati
 
 ### Tray menu
 
-1. The left-click menu holds one entry that opens the window, in the actions group with Record.
+1. The left-click menu holds "Transcribe and rewrite…", which opens the window, in the actions group after Record. "Transcribe audio files…" stays under it, writing each .txt beside its audio, until the file assistant exists.
 2. The developer menu (right click, Developer mode on) holds Logs and Restart at its bottom; the left-click menu ends on Settings and Quit.
 
 ### Transcribe and rewrite window
@@ -63,4 +63,4 @@ Louis has a text to rework or an audio file to turn into text, outside a dictati
 - **Dropping files on the window.** Dropping audio files shows a drop zone over the whole window, a faint accent veil with a dashed outline that grows a little. Does it offer two halves, "Transcribe here" (into the field) and "Transcribe to file" (the assistant), or a single target? Depends on it: whether the assistant can be reached by drop.
 - **Line width when maximised.** Cap the width of the text's lines when the window is very wide, as Word does, or let them run the full width? To judge on a capture.
 - **"Show in Deckle Folders"** in the assistant's Result step, once Deckle Folders exists.
-- **The tray entry's label and whether it replaces "Transcribe audio file"**: one entry opening the window, or two entries (the window, the assistant)?
+- **The tray entries once the assistant exists**: does "Transcribe audio files…" open the assistant, or does the window offer the assistant itself, leaving one entry?
