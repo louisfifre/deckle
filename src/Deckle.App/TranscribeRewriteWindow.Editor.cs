@@ -48,7 +48,9 @@ public sealed partial class TranscribeRewriteWindow
     // EndRun updates them once.
     private void OnEditorTextChanged(object sender, RoutedEventArgs e)
     {
-        if (!_running) UpdateCommands();
+        if (_running) return;
+        UpdateCommands();
+        ScheduleAutoSave();
     }
 
     // Handled before the await: the field must not paste the rich version

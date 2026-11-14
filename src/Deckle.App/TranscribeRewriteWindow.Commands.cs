@@ -25,7 +25,8 @@ public sealed partial class TranscribeRewriteWindow
     // folder; null for a pasted text.
     private string? _sourceAudioPath;
 
-    // One file goes into the field; several at once go to the file list.
+    // One file goes into the field; several at once go to the file list, and
+    // once a list exists every file chosen joins it.
     private async void OnTranscribeFileClick(object sender, RoutedEventArgs e)
     {
         try
@@ -46,8 +47,8 @@ public sealed partial class TranscribeRewriteWindow
             IReadOnlyList<PickFileResult> picked = await picker.PickMultipleFilesAsync();
             if (picked.Count == 0) return;
 
-            if (picked.Count > 1)
-                await TranscribeFilesAsync([.. picked.Select(p => p.Path)]);
+            if (picked.Count > 1 || _files.Count > 0)
+                await AddFilesAsync([.. picked.Select(p => p.Path)]);
             else
                 await TranscribeIntoFieldAsync(picked[0].Path);
         }
@@ -67,8 +68,7 @@ public sealed partial class TranscribeRewriteWindow
     {
         if (TranscribeFile is null) return;
 
-        // The list stays one click away while the field shows this file.
-        ShowField(fromList: _files.Count > 0);
+        ShowField();
         string before = ReadText();
         _history.Record(before);
         BeginRun(ProcessingVariant.Transcribing);
@@ -186,7 +186,8 @@ public sealed partial class TranscribeRewriteWindow
         Microsoft.UI.Xaml.Input.KeyboardAcceleratorInvokedEventArgs args)
     {
         args.Handled = true;
-        if (SaveButton.IsEnabled) await SaveAsync();
+        if (_openFile is not null) SaveOpenFile();
+        else if (SaveButton.IsEnabled) await SaveAsync();
     }
 
     // "Save as", on the audio's name in its folder when the text came from a
@@ -239,20 +240,45 @@ public sealed partial class TranscribeRewriteWindow
         UpdateCommands();
     }
 
-    // Copy, Save and Rewrite need a text, Rewrite all a file with one; nothing
-    // that changes the field or the files runs during a run.
+    // Copy, Save and Rewrite need a text, Rewrite all a saved file; nothing
+    // that changes the field runs during its run, and nothing that changes
+    // the files during theirs. On the list, the text commands give way to
+    // Stop while a batch runs, and the rewrite row waits for a saved file.
     private void UpdateCommands()
     {
         bool hasText = !_showingFiles && ReadText().Trim().Length > 0;
-        bool filesHaveText = _showingFiles && _files.Any(f => f.HasText);
-        TranscribeFileButton.IsEnabled = !_running;
-        BackToFilesButton.IsEnabled = !_running;
+        bool filesHaveText = _files.Any(f => f.HasText);
+
+        // Files chosen during a transcription batch join it; not during a
+        // Rewrite all, which would leave them untouched.
+        TranscribeFileButton.IsEnabled = !_running && !_filesRewriting;
+
+        // The button says where the files go before anything is chosen; once a
+        // list exists every choice joins it, and the list says the rest.
+        bool listExists = _files.Count > 0;
+        TranscribeFileLabel.Text = Loc.Get(listExists ? "TranscribeRewrite_AddFiles" : "TranscribeRewrite_TranscribeFiles");
+        ToolTipService.SetToolTip(TranscribeFileButton,
+            listExists ? null : Loc.Get("TranscribeRewrite_TranscribeFilesTip"));
+
+        TextCommands.Visibility = _showingFiles ? Visibility.Collapsed : Visibility.Visible;
+        StopButton.Visibility = _showingFiles && _filesRunning ? Visibility.Visible : Visibility.Collapsed;
+
+        bool rewriteShown = !_showingFiles || filesHaveText;
+        RewriteButton.Visibility = rewriteShown ? Visibility.Visible : Visibility.Collapsed;
+        ProfileBox.Visibility = rewriteShown ? Visibility.Visible : Visibility.Collapsed;
         RewriteLabel.Text = Loc.Get(_showingFiles ? "TranscribeRewrite_RewriteAll" : "TranscribeRewrite_Rewrite");
-        RewriteButton.IsEnabled = !_running && (hasText || filesHaveText);
-        ProfileBox.IsEnabled = !_running;
+        ToolTipService.SetToolTip(RewriteButton,
+            _showingFiles ? Loc.Get("TranscribeRewrite_RewriteAllTip") : null);
+        RewriteButton.IsEnabled = _showingFiles
+            ? !_filesRunning && filesHaveText
+            : !_running && !_filesRewriting && hasText;
+        ProfileBox.IsEnabled = !_running && !_filesRunning;
+
         UndoButton.IsEnabled = !_running && _history.CanUndo;
         RedoButton.IsEnabled = !_running && _history.CanRedo;
         CopyButton.IsEnabled = hasText;
+        // A file of the list saves itself.
+        SaveButton.Visibility = _openFile is null ? Visibility.Visible : Visibility.Collapsed;
         SaveButton.IsEnabled = hasText;
     }
 

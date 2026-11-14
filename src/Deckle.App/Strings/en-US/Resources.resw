@@ -552,8 +552,23 @@
   <data name="TranscribeRewriteTitleBar.Title" xml:space="preserve">
     <value>Transcribe and rewrite</value>
   </data>
-  <data name="TranscribeRewriteTranscribeFileLabel.Text" xml:space="preserve">
-    <value>Transcribe audio…</value>
+  <data name="TranscribeRewrite_TranscribeFiles" xml:space="preserve">
+    <value>Transcribe audio files…</value>
+    <comment>Top-left button while no list of files exists.</comment>
+  </data>
+  <data name="TranscribeRewrite_AddFiles" xml:space="preserve">
+    <value>Add audio files…</value>
+    <comment>Top-left button once the list of files exists: every file chosen joins it.</comment>
+  </data>
+  <data name="TranscribeRewrite_TranscribeFilesTip" xml:space="preserve">
+    <value>One file opens its text here. Several are transcribed in a batch, each text saved next to its audio file.</value>
+    <comment>Tooltip of the top-left button before any choice: says where the texts will go.</comment>
+  </data>
+  <data name="TranscribeRewrite_Stop" xml:space="preserve">
+    <value>Stop</value>
+  </data>
+  <data name="TranscribeRewrite_StopTip" xml:space="preserve">
+    <value>Stop after the file in progress</value>
   </data>
   <data name="TranscribeRewriteCopyLabel.Text" xml:space="preserve">
     <value>Copy</value>
@@ -568,14 +583,44 @@
     <value>Rewrite all</value>
     <comment>On the list of several files: rewrites every file and saves each rewrite over its text file.</comment>
   </data>
-  <data name="TranscribeRewriteBackToFilesLabel.Text" xml:space="preserve">
+  <data name="TranscribeRewrite_RewriteAllTip" xml:space="preserve">
+    <value>Rewrites every saved text and writes it over its .txt</value>
+  </data>
+  <data name="TranscribeRewrite_AllFiles" xml:space="preserve">
     <value>All files</value>
+    <comment>First item of the breadcrumb above a file opened from the list: goes back to the list.</comment>
   </data>
-  <data name="TranscribeRewriteShowMoreButton.Content" xml:space="preserve">
-    <value>Show more</value>
+  <data name="TranscribeRewrite_FilesSaved" xml:space="preserve">
+    <value>{0} of {1} saved</value>
+    <comment>Summary above the list. {0} = files saved, {1} = files in the list.</comment>
   </data>
-  <data name="TranscribeRewriteOpenFolderButton.Content" xml:space="preserve">
+  <data name="TranscribeRewrite_FilesFailed" xml:space="preserve">
+    <value>{0} failed</value>
+    <comment>Summary above the list. {0} = files that failed.</comment>
+  </data>
+  <data name="TranscribeRewrite_FilesStopped" xml:space="preserve">
+    <value>{0} not transcribed</value>
+    <comment>Summary above the list. {0} = files left untouched because the batch was stopped.</comment>
+  </data>
+  <data name="TranscribeRewriteFilesDestinationRun.Text" xml:space="preserve">
+    <value>Each text is saved next to its audio file.</value>
+  </data>
+  <data name="TranscribeRewriteOpenFolderRun.Text" xml:space="preserve">
     <value>Open folder</value>
+  </data>
+  <data name="TranscribeRewriteAutoSavedCaption.Text" xml:space="preserve">
+    <value>Changes are saved automatically</value>
+    <comment>Above a file of the list opened in the field: there is no Save button.</comment>
+  </data>
+  <data name="TranscribeRewriteShowInFolderItem.Text" xml:space="preserve">
+    <value>Show in folder</value>
+    <comment>Context menu of a line of the list.</comment>
+  </data>
+  <data name="TranscribeRewrite_AutoSaveFailed_Title" xml:space="preserve">
+    <value>Your changes couldn't be saved</value>
+  </data>
+  <data name="TranscribeRewrite_AutoSaveFailed_Body" xml:space="preserve">
+    <value>The text file beside the audio can't be written. Copy the text to keep it.</value>
   </data>
   <data name="TranscribeRewriteEditor.PlaceholderText" xml:space="preserve">
     <value>Paste a text, or transcribe an audio file.</value>
@@ -633,13 +678,27 @@
   <data name="FileTranscription_StateRewriting" xml:space="preserve">
     <value>Rewriting…</value>
   </data>
-  <data name="FileTranscription_StateSaved" xml:space="preserve">
-    <value>Saved as {0}</value>
-    <comment>{0} = file name of the .txt, beside its audio.</comment>
+  <data name="FileTranscription_StateRewritten" xml:space="preserve">
+    <value>Rewritten</value>
   </data>
-  <data name="FileTranscription_StateSavedNotRewritten" xml:space="preserve">
-    <value>The rewrite didn't come back. Transcript saved as {0}</value>
-    <comment>{0} = file name of the .txt, beside its audio.</comment>
+  <data name="FileTranscription_StateRewriteKept" xml:space="preserve">
+    <value>Rewrite didn't come back, transcript kept</value>
+  </data>
+  <data name="FileTranscription_StateStopped" xml:space="preserve">
+    <value>Not transcribed</value>
+    <comment>The batch was stopped before this file's turn.</comment>
+  </data>
+  <data name="FileTranscription_DurationHours" xml:space="preserve">
+    <value>{0} h {1:00} min</value>
+    <comment>Duration of an audio file. {0} = hours, {1} = minutes.</comment>
+  </data>
+  <data name="FileTranscription_DurationMinutes" xml:space="preserve">
+    <value>{0} min</value>
+    <comment>Duration of an audio file. {0} = minutes.</comment>
+  </data>
+  <data name="FileTranscription_DurationSeconds" xml:space="preserve">
+    <value>{0} s</value>
+    <comment>Duration of an audio file. {0} = seconds.</comment>
   </data>
   <data name="FileTranscription_StateTranscriptionFailed" xml:space="preserve">
     <value>Couldn't transcribe this file</value>

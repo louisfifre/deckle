@@ -51,9 +51,10 @@ public sealed partial class TranscribeRewriteWindow
     internal async Task<string> MeasureLongTranscriptAsync()
     {
         if (_running) EndRun();
+        ResetFilesRun();
         HideNotice();
         _files.Clear();
-        ShowField(fromList: false);
+        ShowField();
         WriteText("");
         BeginRun(ProcessingVariant.Transcribing);
 
@@ -91,6 +92,7 @@ public sealed partial class TranscribeRewriteWindow
     internal void ShowStateForCapture(string state)
     {
         if (_running) EndRun();
+        ResetFilesRun();
         HideNotice();
         ResizeForCapture(state == "files-narrow" ? 520 : 640);
         switch (state)
@@ -106,11 +108,11 @@ public sealed partial class TranscribeRewriteWindow
                 return;
             case "file-from-list":
                 ShowSampleFiles();
-                OnShowMoreClick(new Button { DataContext = _files[0] }, new Microsoft.UI.Xaml.RoutedEventArgs());
+                OpenFile(_files[0]);
                 return;
         }
         _files.Clear();
-        ShowField(fromList: false);
+        ShowField();
         switch (state)
         {
             case EmptyState:
@@ -182,7 +184,7 @@ public sealed partial class TranscribeRewriteWindow
             _files.Add(item);
         }
         ShowFiles();
-        BeginFilesRun();
+        BeginFilesRun(rewriting: false);
     }
 
     private void ResizeForCapture(int widthDip)
