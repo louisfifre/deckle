@@ -58,6 +58,21 @@ internal sealed record SpacePlan(
                 if (typeExtras.Hidden.Count > 0 && type["properties"] is JsonArray regular)
                     for (int i = regular.Count - 1; i >= 0; i--)
                         if (typeExtras.Hidden.Contains(regular[i]?.GetValue<string>() ?? "")) regular.RemoveAt(i);
+                // Anytype lists a type's header properties before its regular ones
+                // (measured on a live type: featured, regular, hidden). The schema
+                // stage compares that list, so a header property declared after a
+                // regular one would never match and be reordered on every run.
+                if (typeExtras.Featured.Count > 0 && type["properties"] is JsonArray listed)
+                {
+                    var keys = listed.Select(n => n?.GetValue<string>() ?? "").ToList();
+                    var ordered = typeExtras.Featured.Where(keys.Contains)
+                        .Concat(keys.Where(k => !typeExtras.Featured.Contains(k))).ToList();
+                    if (!ordered.SequenceEqual(keys))
+                    {
+                        listed.Clear();
+                        foreach (string k in ordered) listed.Add(k);
+                    }
+                }
             }
 
         JsonObject schemaOnly = manifestNode;

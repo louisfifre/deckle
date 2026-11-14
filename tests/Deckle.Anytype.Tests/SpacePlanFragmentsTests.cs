@@ -46,6 +46,24 @@ public class SpacePlanFragmentsTests
         Assert.Empty(SpacePlanValidator.Validate(SpacePlan.Parse(plan)));
     }
 
+    // Measured on a live space: a type created without a panel holds its own
+    // properties in the regular section, in the order they were declared, so the
+    // fragment states only that order and leaves the panel to Anytype's default.
+    [Fact]
+    public void ForType_WithoutAPanelKeepsTheDeclaredOrderInTheRegularSection()
+    {
+        JsonObject plan = SpacePlanFragments.ForType(SpaceProperties(), Args(
+            """{"key":"recipe","name":"Recette","properties":["owner","kind"]}"""));
+
+        JsonObject type = plan["types"]!.AsArray().Single()!.AsObject();
+        Assert.Null(type["panel"]);
+        Assert.Equal(["owner", "kind"], type["properties"]!.AsArray().Select(p => p!.GetValue<string>()));
+        SpacePlan parsed = SpacePlan.Parse(plan);
+        Assert.Equal(["owner", "kind"], Assert.Single(parsed.Manifest.Types).Properties);
+        Assert.Empty(parsed.TypeExtras["recipe"].Featured);
+        Assert.Empty(parsed.TypeExtras["recipe"].Hidden);
+    }
+
     [Fact]
     public void ForType_RefusesAPropertyTheSpaceDoesNotHold()
     {

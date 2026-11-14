@@ -75,6 +75,22 @@ public sealed class SpacePlanTests
         Assert.Null(plan.ManifestNode["types"]![0]!["views"]);
     }
 
+    // Anytype lists a type's header (featured) properties before its regular ones.
+    // A plan that declares a header property after a regular one must still match
+    // the live list, or the schema stage rewrites the order on every run.
+    [Fact, Trait("Category", "regression")]
+    public void Parse_PutsHeaderPropertiesFirstInTheListTheSchemaStageCompares()
+    {
+        JsonObject plan = SamplePlan();
+        JsonObject type = plan["types"]![0]!.AsObject();
+        type["properties"] = new JsonArray("projects", "owner_note", "state");
+
+        SpacePlan parsed = SpacePlan.Parse(plan);
+
+        Assert.Equal(["state", "projects"], Assert.Single(parsed.Manifest.Types).Properties);
+        Assert.Equal(["projects", "owner_note", "state"], parsed.TypeExtras["ticket"].AllProperties);
+    }
+
     [Fact]
     public void Parse_RefusesAPlanVersionItDoesNotRead()
     {
