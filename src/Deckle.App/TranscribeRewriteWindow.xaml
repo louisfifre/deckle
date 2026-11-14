@@ -28,7 +28,7 @@
             </TitleBar.IconSource>
         </TitleBar>
 
-        <Grid Grid.Row="1" Margin="16,4,16,16" RowSpacing="8">
+        <Grid Grid.Row="1" Margin="16,4,16,16">
             <Grid.RowDefinitions>
                 <RowDefinition Height="Auto" />
                 <RowDefinition Height="Auto" />
@@ -86,7 +86,7 @@
                 </StackPanel>
             </Grid>
 
-            <InfoBar x:Name="Notice" Grid.Row="1" IsOpen="False" IsClosable="True" />
+            <InfoBar x:Name="Notice" Grid.Row="1" Margin="0,8,0,0" IsOpen="False" IsClosable="True" />
 
             <!-- The outline host lies over the field and takes no input: the
                  HUD's processing stroke is attached to it while a run works.
@@ -95,7 +95,7 @@
                  Its border is one even line in every state (Louis, 2026-11-14):
                  the stronger bottom line and the accent bar of focus belong
                  to a single-line box, not to a page of text. -->
-            <Grid x:Name="EditorArea" Grid.Row="3">
+            <Grid x:Name="EditorArea" Grid.Row="3" Margin="0,8,0,0">
                 <RichEditBox x:Name="Editor"
                              x:Uid="TranscribeRewriteEditor"
                              CornerRadius="{ThemeResource OverlayCornerRadius}"
@@ -132,7 +132,7 @@
 
             <!-- Above the list: how far the batch is, and where the texts go,
                  once for every file. -->
-            <StackPanel x:Name="FilesHeader" Grid.Row="2" Spacing="2" Visibility="Collapsed">
+            <StackPanel x:Name="FilesHeader" Grid.Row="2" Margin="0,8,0,0" Spacing="2" Visibility="Collapsed">
                 <TextBlock x:Name="FilesSummary" Style="{StaticResource BodyStrongTextBlockStyle}" />
                 <TextBlock Style="{StaticResource CaptionTextBlockStyle}"
                            Foreground="{ThemeResource TextFillColorSecondaryBrush}">
@@ -142,7 +142,7 @@
 
             <!-- Above a file of the list opened in the field: where it sits in
                  the list, and that its changes save themselves. -->
-            <StackPanel x:Name="FileHeader" Grid.Row="2" Spacing="2" Visibility="Collapsed">
+            <StackPanel x:Name="FileHeader" Grid.Row="2" Margin="0,8,0,0" Spacing="2" Visibility="Collapsed">
                 <BreadcrumbBar x:Name="FileCrumbs" ItemClicked="OnFileCrumbClick" />
                 <TextBlock x:Uid="TranscribeRewriteAutoSavedCaption"
                            Style="{StaticResource CaptionTextBlockStyle}"
@@ -155,6 +155,7 @@
                  folder. -->
             <ListView x:Name="FileList"
                       Grid.Row="3"
+                      Margin="0,8,0,0"
                       SelectionMode="None"
                       IsItemClickEnabled="True"
                       ItemClick="OnFileItemClick"
@@ -214,7 +215,7 @@
                 </ListView.ItemTemplate>
             </ListView>
 
-            <Grid Grid.Row="4" ColumnSpacing="8">
+            <Grid Grid.Row="4" Margin="0,8,0,0" ColumnSpacing="8">
                 <Grid.ColumnDefinitions>
                     <ColumnDefinition Width="Auto" />
                     <ColumnDefinition Width="Auto" />
