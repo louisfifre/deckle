@@ -1,4 +1,7 @@
 using Deckle.Composition;
+using Deckle.Core;
+using Deckle.Shell;
+using Deckle.Shell.WindowChrome;
 using Microsoft.UI.Xaml.Controls;
 
 namespace Deckle.App;
@@ -10,7 +13,15 @@ public sealed partial class TranscribeRewriteWindow
 {
     internal const string EmptyState = "empty";
 
-    internal static readonly string[] CaptureStates = ["text", "transcribing", "rewriting", "failed", "files"];
+    // files-start: the moment after the choice; files-full: forty files with
+    // long names; files-narrow: the list at the window's minimum width;
+    // file-from-list: one file of the list opened in the field.
+    internal static readonly string[] CaptureStates =
+        ["text", "transcribing", "rewriting", "failed", "files", "files-start", "files-full", "files-narrow", "file-from-list"];
+
+    // A long, realistic recording name, to see how a line holds it.
+    private const string LongName =
+        "2026-11-12 Client workshop with the product team about the spring roadmap, recording 3";
 
     // The list of several files, every state a file can be in.
     private static readonly (string Name, string Duration, FileTranscriptionState State, bool RewriteFailed, bool HasText)[] SampleFiles =
@@ -81,10 +92,22 @@ public sealed partial class TranscribeRewriteWindow
     {
         if (_running) EndRun();
         HideNotice();
-        if (state == "files")
+        ResizeForCapture(state == "files-narrow" ? 520 : 640);
+        switch (state)
         {
-            ShowSampleFiles();
-            return;
+            case "files" or "files-narrow":
+                ShowSampleFiles();
+                return;
+            case "files-start":
+                ShowGeneratedFiles(5, running: 0, done: 0);
+                return;
+            case "files-full":
+                ShowGeneratedFiles(40, running: 8, done: 7);
+                return;
+            case "file-from-list":
+                ShowSampleFiles();
+                OnShowMoreClick(new Button { DataContext = _files[0] }, new Microsoft.UI.Xaml.RoutedEventArgs());
+                return;
         }
         _files.Clear();
         ShowField(fromList: false);
@@ -129,5 +152,42 @@ public sealed partial class TranscribeRewriteWindow
             _files.Add(item);
         }
         ShowFiles();
+    }
+
+    // count files named after LongName: the first `done` saved, the next one
+    // transcribing when running > done, the rest waiting with no duration yet.
+    private void ShowGeneratedFiles(int count, int running, int done)
+    {
+        _files.Clear();
+        string folder = Path.Combine(Path.GetTempPath(), "Recordings");
+        for (int i = 0; i < count; i++)
+        {
+            var item = new FileTranscriptionItem(Path.Combine(folder, $"{LongName} - {i + 1:00}.m4a"));
+            if (i < done)
+            {
+                item.DurationText = "1:0" + (i % 10) + ":12";
+                item.Text = SampleText;
+                item.OutputPath = Path.ChangeExtension(item.Path, ".txt");
+                item.State = FileTranscriptionState.Done;
+            }
+            else if (i == done && running > done)
+            {
+                item.DurationText = "58:40";
+                item.State = FileTranscriptionState.Transcribing;
+            }
+            else if (i == 0)
+            {
+                item.State = FileTranscriptionState.Transcribing;
+            }
+            _files.Add(item);
+        }
+        ShowFiles();
+        BeginFilesRun();
+    }
+
+    private void ResizeForCapture(int widthDip)
+    {
+        double scale = Dpi.ScaleOf(NativeMethods.GetDpiForWindow(_hwnd));
+        AppWindow.Resize(new Windows.Graphics.SizeInt32((int)(widthDip * scale), (int)(480 * scale)));
     }
 }
