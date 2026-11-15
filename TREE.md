@@ -2461,6 +2461,7 @@ _Generated from `git ls-files` — do not edit by hand._
 │   │   ├── DenyListing.cs
 │   │   ├── EntryFormatTests.cs
 │   │   ├── FolderIconRuleTests.cs
+│   │   ├── FolderListingBugNotes.md
 │   │   ├── FolderListingTests.cs
 │   │   ├── HeaviestFilesTests.cs
 │   │   ├── MapInventoryTests.cs
