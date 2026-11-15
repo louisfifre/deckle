@@ -800,6 +800,7 @@ _Generated from `git ls-files` — do not edit by hand._
 │   │   │   ├── SizeNode.cs
 │   │   │   ├── SizeProgress.cs
 │   │   │   ├── SizeReport.cs
+│   │   │   ├── SizeReportReuse.cs
 │   │   │   ├── SizeScan.cs
 │   │   │   ├── SizeScanGate.cs
 │   │   │   └── SizeScanOptions.cs
@@ -2486,6 +2487,8 @@ _Generated from `git ls-files` — do not edit by hand._
 │   │   ├── PathRulesTests.cs
 │   │   ├── ScratchFolder.cs
 │   │   ├── SizeAnalysisMomentTests.cs
+│   │   ├── SizeReportReuseTests.cs
+│   │   ├── SizesBugNotes.md
 │   │   ├── SizeScanEventsTests.cs
 │   │   ├── SizeScanGateTests.cs
 │   │   ├── SizeScanTests.cs
