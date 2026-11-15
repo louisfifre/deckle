@@ -61,14 +61,24 @@ internal sealed partial class ProjectPage : Page, IProjectsPage
         _context.Workspace.Readings.ReadingChanged += OnReadingChanged;
         _context.Workspace.Board.Changed += OnBoardChanged;
 
-        Apply();
-        StartTimer();
+        // The window never receives a page whose constructor threw, so it cannot
+        // dispose it: the page lets go of what it subscribed to and started.
+        try
+        {
+            Apply();
+            StartTimer();
 
-        // "Rename" in a card's menu opens the page with the name already a text
-        // box (spec, Renaming).
-        if (beginRename) NameEditor.BeginEdit();
+            // "Rename" in a card's menu opens the page with the name already a text
+            // box (spec, Renaming).
+            if (beginRename) NameEditor.BeginEdit();
 
-        _initialLoad = LoadAsync(refreshMenu: false, estimateAgent: true);
+            _initialLoad = LoadAsync(refreshMenu: false, estimateAgent: true);
+        }
+        catch (Exception)
+        {
+            Dispose();
+            throw;
+        }
     }
 
     private ProjectEntry? Project => _context.Store.Find(_projectId);

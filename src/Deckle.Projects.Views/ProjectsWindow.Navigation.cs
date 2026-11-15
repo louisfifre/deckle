@@ -64,7 +64,9 @@ public sealed partial class ProjectsWindow
         catch (Exception ex)
         {
             // A page that cannot be built leaves the pane and the other pages
-            // alone: the window says so in its place instead of closing.
+            // alone: the window says so in its place instead of closing. The
+            // page never reaches this window, so it lets go of its own
+            // subscriptions in its constructor before the exception arrives.
             LastPageFailure = ex;
             DeckleProjectsSource.Log.ProjectsPageFailed(kind, ex.GetType().Name);
             PageHost.Content = FailureMessage();

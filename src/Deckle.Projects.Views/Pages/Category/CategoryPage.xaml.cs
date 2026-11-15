@@ -50,8 +50,18 @@ internal sealed partial class CategoryPage : Page, IProjectsPage
         _context.Workspace.Readings.ReadingChanged += OnReadingChanged;
         _context.Workspace.Board.Changed += OnBoardChanged;
 
-        Wire();
-        _ = ReadAsync(Build());
+        // The window never receives a page whose constructor threw, so it cannot
+        // dispose it: the page lets go of what it subscribed to.
+        try
+        {
+            Wire();
+            _ = ReadAsync(Build());
+        }
+        catch (Exception)
+        {
+            Dispose();
+            throw;
+        }
     }
 
     // F5 and the window coming back to the front: every row is read again, and

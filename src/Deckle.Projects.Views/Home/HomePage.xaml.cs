@@ -46,7 +46,17 @@ internal sealed partial class HomePage : Page, IProjectsPage
         _context.Workspace.Readings.ReadingChanged += OnReadingChanged;
         _context.Workspace.Board.Changed += OnBoardChanged;
 
-        Build();
+        // The window never receives a page whose constructor threw, so it cannot
+        // dispose it: the page lets go of what it subscribed to.
+        try
+        {
+            Build();
+        }
+        catch (Exception)
+        {
+            Dispose();
+            throw;
+        }
     }
 
     // F5 and the window coming back to the front: every card on screen is read
