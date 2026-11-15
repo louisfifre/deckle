@@ -12,11 +12,19 @@ namespace Deckle.Atelier.Views;
 // hands no folder to a tool, so the catalog asks AppPaths for the module's,
 // by the id the app registers the module under (Deckle.Modules.ModuleIds.Atelier,
 // which this library does not reference): the same folder, by the same rule.
-internal static class AtelierToolCatalog
+//
+// The model that describes photos comes from the host: this library knows no
+// model and no server (IPhotoDescriptionModel's header), so the app sets
+// PhotoDescriptionModel before it opens the window, and the photo tool reads
+// it from here. Null outside the app (a test, a window built alone): the
+// tools then have no description to offer.
+public static class AtelierToolCatalog
 {
     private const string ModuleId = "atelier";
 
-    public static IReadOnlyList<IAtelierTool> Create()
+    public static IPhotoDescriptionModel? PhotoDescriptionModel { get; set; }
+
+    internal static IReadOnlyList<IAtelierTool> Create()
     {
         string moduleDirectory = AppPaths.GetModuleDirectory(ModuleId);
         var marks = new PhotoMarkQueue();

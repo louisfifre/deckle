@@ -597,6 +597,8 @@ _Generated from `git ls-files` — do not edit by hand._
 │   │   │   │   └── deckle--state--rewriting.ico
 │   │   │   └── Sounds/
 │   │   │       └── speech.wav
+│   │   ├── AtelierPhotoDescriptions/
+│   │   │   └── LlmPhotoDescriptionModel.cs
 │   │   ├── Diagnostics/
 │   │   │   ├── AppDiagnosticsBootstrap.cs
 │   │   │   ├── AppHudFeedbackSink.cs
@@ -2428,6 +2430,7 @@ _Generated from `git ls-files` — do not edit by hand._
 │   │   ├── FileTranscriptionBugNotes.md
 │   │   ├── FileTranscriptionRunTests.cs
 │   │   ├── HudFeedbackSinkTests.cs
+│   │   ├── LlmPhotoDescriptionModelTests.cs
 │   │   ├── MessageTemplateDoctrineTests.cs
 │   │   ├── MilestoneClosersTests.cs
 │   │   ├── ProdApplyUpdateTests.cs

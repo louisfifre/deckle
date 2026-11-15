@@ -31,6 +31,10 @@ public partial class App
             // Not gated: one Stopwatch per window per process, and the provider
             // declares this milestone ungoverned.
             var sw = Stopwatch.StartNew();
+            // The photo tool's descriptions, over Deckle.Llm: built once,
+            // cheap (nothing is read until a photo is described).
+            AtelierToolCatalog.PhotoDescriptionModel ??=
+                LlmPhotoDescriptionModel.Create(AppPaths.GetModuleDirectory(ModuleIds.Atelier));
             var window = CreateWindowOrLog("atelier",
                 () => new AtelierWindow(AppPaths.GetModuleDirectory(ModuleIds.Atelier)));
             SecondaryWindowPlacement.Restore(window, SecondaryWindowPlacement.Atelier);
