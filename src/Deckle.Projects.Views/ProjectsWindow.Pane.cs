@@ -24,6 +24,7 @@ public sealed partial class ProjectsWindow
 
     private bool _paneOpen;
     private bool _rebuildingPane;
+    private bool _switchingMode;
 
     // Nodes the person opened or closed, by key. A node absent from it is in its
     // default state: a category open, "Without a category" closed (board H2).
@@ -60,13 +61,29 @@ public sealed partial class ProjectsWindow
     {
         if (!_paneOpen) return;
         NavigationViewPaneDisplayMode mode = OpenPaneMode();
-        if (Nav.PaneDisplayMode != mode) Nav.PaneDisplayMode = mode;
+        if (Nav.PaneDisplayMode == mode) return;
+
+        // NavigationView may close its pane while it changes mode (a guard, not
+        // an observed fault: its documentation does not say). A change made here is not
+        // the person closing it, so PaneClosed is ignored during it and the pane
+        // is kept open afterwards.
+        _switchingMode = true;
+        try
+        {
+            Nav.PaneDisplayMode = mode;
+            if (!Nav.IsPaneOpen) Nav.IsPaneOpen = true;
+        }
+        finally
+        {
+            _switchingMode = false;
+        }
     }
 
     // A pane that covers the page closes when the person clicks elsewhere: the
     // state follows, so the next press of the hamburger opens it again.
     private void OnPaneClosed(NavigationView sender, object args)
     {
+        if (_switchingMode) return;
         _paneOpen = false;
         Nav.PaneDisplayMode = NavigationViewPaneDisplayMode.LeftMinimal;
     }
