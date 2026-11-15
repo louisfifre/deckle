@@ -77,5 +77,17 @@ public partial class App
         }, keepPopups: true);
         PhotosReview.CloseApplySummary(window);
         await Task.Delay(300);
+
+        // The file tool's gallery on the same shoot: the one folder of the
+        // sample whose files Windows draws a picture of, so the tiles show
+        // their content and not only their type's icon. Back to the list
+        // after, which the later states photograph.
+        await Capture("files-gallery-photos", async () =>
+        {
+            await window.ShowToolForReviewAsync("files");
+            await FilesReview.ShowDisplayAsync(window, FileListDisplay.Gallery);
+            await Task.Delay(600);
+        });
+        await FilesReview.ShowDisplayAsync(window, FileListDisplay.List);
     }
 }

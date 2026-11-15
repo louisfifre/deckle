@@ -10,8 +10,9 @@ namespace Deckle.App;
 // so the window first opens with no folder: the empty state of board 12.11.
 // Then a sample folder made under that root (SampleFolder, nothing from the
 // person's disk) is added the way the picker adds one, and the window is
-// photographed in the file tool, with an item selected, in each registered
-// tool, with the pane open, and one folder down. A state that fails to show
+// photographed in the file tool, with an item selected, in its large rows and
+// its gallery, in each registered tool, with the pane open, and one folder
+// down. A state that fails to show
 // fails its image, and so the run.
 public partial class App
 {
@@ -63,6 +64,13 @@ public partial class App
         string sample = SampleFolder.Create(Path.Combine(AppPaths.UserDataRoot, "self-check-sample"));
         await Capture("files", () => window.AddFolderForReviewAsync(sample));
         await Capture("files-selected", () => window.SelectForReviewAsync("notes-2023.zip"));
+
+        // The other two displays, with the item still selected and its panel
+        // open, as changing display leaves them; then back to the list, which
+        // the later states photograph.
+        await Capture("files-large-rows", () => FilesReview.ShowDisplayAsync(window, FileListDisplay.LargeRows));
+        await Capture("files-gallery", () => FilesReview.ShowDisplayAsync(window, FileListDisplay.Gallery));
+        if (loaded) await FilesReview.ShowDisplayAsync(window, FileListDisplay.List);
 
         foreach (string tool in window.ToolIds.Where(t => t != "files"))
             await Capture(tool, () => window.ShowToolForReviewAsync(tool));
