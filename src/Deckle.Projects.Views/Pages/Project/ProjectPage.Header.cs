@@ -96,6 +96,12 @@ internal sealed partial class ProjectPage
         if (showTerminal && mainHadFocus) ShowTerminalButton.Focus(FocusState.Programmatic);
         else if (!showTerminal && terminalHadFocus) MainButton.Focus(FocusState.Programmatic);
 
+        // The main button stays on screen but is switched off while another
+        // action runs: with the keyboard on it, the focus would drop to nowhere,
+        // so the button beside it takes it (as MainActionButton does).
+        else if (!showTerminal && mainHadFocus && !state.ButtonEnabled && ScriptMenuButton is { IsEnabled: true, Visibility: Visibility.Visible })
+            ScriptMenuButton.Focus(FocusState.Programmatic);
+
         MainLine.Apply(state.Line);
         MainLine.Visibility = state.Line is null ? Visibility.Collapsed : Visibility.Visible;
     }
