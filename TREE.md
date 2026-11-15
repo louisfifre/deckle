@@ -747,6 +747,7 @@ _Generated from `git ls-files` — do not edit by hand._
 │   │   │   ├── MapConventions.cs
 │   │   │   ├── MapFileFacts.cs
 │   │   │   ├── MapFolderWalk.cs
+│   │   │   ├── MapGraphLayout.cs
 │   │   │   ├── MapInventory.cs
 │   │   │   ├── MapInventoryBuilder.cs
 │   │   │   ├── MapItem.cs
@@ -2461,6 +2462,7 @@ _Generated from `git ls-files` — do not edit by hand._
 │   │   ├── FolderIconRuleTests.cs
 │   │   ├── FolderListingTests.cs
 │   │   ├── HeaviestFilesTests.cs
+│   │   ├── MapGraphLayoutTests.cs
 │   │   ├── MapInventoryTests.cs
 │   │   ├── MapListFilterTests.cs
 │   │   ├── MapListOrderTests.cs
