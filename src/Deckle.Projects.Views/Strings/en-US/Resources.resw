@@ -38,6 +38,8 @@
   <data name="Home_WithoutCategory" xml:space="preserve"><value>Without a category</value></data>
   <data name="Home_WithoutCategoryHint" xml:space="preserve"><value>Drag a card onto a category, or use its menu.</value></data>
   <data name="Home_WithoutCategoryToggle_Format" xml:space="preserve"><value>Without a category, {0} projects</value></data>
+  <data name="Home_WithoutCategory_Expanded" xml:space="preserve"><value>Expanded</value></data>
+  <data name="Home_WithoutCategory_Collapsed" xml:space="preserve"><value>Collapsed</value></data>
   <data name="Home_MoreTile_Format" xml:space="preserve"><value>{0} more projects, open {1}</value></data>
   <data name="Home_DropCaption_Format" xml:space="preserve"><value>Move to {0}</value></data>
   <data name="Home_NewCategoryTitleBox" xml:space="preserve"><value>Category title</value></data>
