@@ -47,6 +47,38 @@ public sealed class DeckleAtelierSourceTests
     }
 
     [Fact]
+    public void RemovingAFolderIsOneMilestoneThenTheCountLeft()
+    {
+        using var scratch = new ScratchFolder();
+        var store = new AddedFolderStore(scratch.Folder("data"));
+        string a = scratch.Folder("A");
+        store.Add(a);
+        store.Add(scratch.Folder("B"));
+        using var listener = new TestEventListener("Deckle-Atelier");
+
+        store.Remove(a);
+
+        Assert.Equal(
+            [DeckleAtelierSource.EvtFolderRemoved, DeckleAtelierSource.EvtFolderRemovedDetail],
+            listener.Events.Select(e => e.EventId));
+        Assert.Equal(EventLevel.Informational, listener.Events[0].Level);
+        Assert.Equal([1], listener.Events[1].Payload!);
+    }
+
+    [Fact]
+    public void AnUnreachableAddedFolderIsAWarningWithItsReasonAndNoPath()
+    {
+        using var listener = new TestEventListener("Deckle-Atelier");
+
+        DeckleAtelierSource.Log.AddedFolderUnreachable(nameof(AddedFolderReachability.NotFound));
+
+        var ev = Assert.Single(listener.Events);
+        Assert.Equal(DeckleAtelierSource.EvtAddedFolderUnreachable, ev.EventId);
+        Assert.Equal(EventLevel.Warning, ev.Level);
+        Assert.Equal(["NotFound"], ev.Payload!);
+    }
+
+    [Fact]
     public void AListingThatFailsIsAWarningWithItsReasonAndNoPath()
     {
         using var scratch = new ScratchFolder();

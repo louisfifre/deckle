@@ -718,7 +718,9 @@ _Generated from `git ls-files` — do not edit by hand._
 │   ├── Deckle.Atelier/
 │   │   ├── AddedFolders/
 │   │   │   ├── AddedFolder.cs
+│   │   │   ├── AddedFolderReach.cs
 │   │   │   ├── AddedFolderStore.cs
+│   │   │   ├── DeckleAtelierSource.AddedFolders.cs
 │   │   │   └── FolderIconRule.cs
 │   │   ├── Browsing/
 │   │   │   ├── AddressResolver.cs
