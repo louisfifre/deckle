@@ -41,7 +41,7 @@ internal sealed class ProjectGrid : UserControl
             {
                 Orientation = Orientation.Horizontal,
                 MinItemWidth = CardGridCapacity.MinCardWidth,
-                MinItemHeight = 120,
+                MinItemHeight = (double)Application.Current.Resources["ProjectsCardMinHeight"],
                 MinColumnSpacing = CardGridCapacity.Gap,
                 MinRowSpacing = CardGridCapacity.Gap,
                 ItemsStretch = UniformGridLayoutItemsStretch.Fill,

@@ -11,8 +11,8 @@
          "Run", never from a click on the card, so a stray click cannot start a
          build. Same card brushes and corner as Home's cards. -->
     <Grid x:Name="Root"
-          MinHeight="112"
-          Padding="16"
+          MinHeight="{StaticResource ProjectsCardMinHeight}"
+          Padding="{StaticResource ProjectsCardPadding}"
           RowSpacing="2"
           Background="{ThemeResource CardBackgroundFillColorDefaultBrush}"
           BorderBrush="{ThemeResource CardStrokeColorDefaultBrush}"

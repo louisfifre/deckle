@@ -15,8 +15,8 @@
          a screen reader. Its fill is the card brush; the hover is the control
          fill File Explorer's and Settings' clickable cards use. -->
     <Grid x:Name="Root"
-          MinHeight="120"
-          Padding="16,14,8,12"
+          MinHeight="{StaticResource ProjectsCardMinHeight}"
+          Padding="{StaticResource ProjectsCardPadding}"
           RowSpacing="2"
           Background="{ThemeResource CardBackgroundFillColorDefaultBrush}"
           BorderBrush="{ThemeResource CardStrokeColorDefaultBrush}"
@@ -56,6 +56,7 @@
                     Width="32"
                     Height="32"
                     Padding="0"
+                    Margin="0,-2,-8,0"
                     VerticalAlignment="Center">
                 <FontIcon Glyph="&#xE712;" FontSize="16" />
             </Button>
@@ -63,7 +64,6 @@
 
         <TextBlock x:Name="MetaText"
                    Grid.Row="1"
-                   Margin="0,0,8,0"
                    Style="{StaticResource CaptionTextBlockStyle}"
                    Foreground="{ThemeResource TextFillColorSecondaryBrush}"
                    TextTrimming="CharacterEllipsis"

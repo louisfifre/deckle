@@ -2090,6 +2090,7 @@ _Generated from `git ls-files` — do not edit by hand._
 │   │   ├── IProjectsPage.cs
 │   │   ├── ProjectsContext.cs
 │   │   ├── ProjectsGlyphs.cs
+│   │   ├── ProjectsMetrics.xaml
 │   │   ├── ProjectsText.cs
 │   │   ├── ProjectStoreExtensions.cs
 │   │   ├── ProjectsWindow.Chrome.cs

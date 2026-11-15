@@ -47,10 +47,10 @@
         <ItemsRepeater x:Name="Cards">
             <ItemsRepeater.Layout>
                 <UniformGridLayout Orientation="Horizontal"
-                                   MinItemWidth="340"
-                                   MinItemHeight="112"
-                                   MinColumnSpacing="12"
-                                   MinRowSpacing="12"
+                                   MinItemWidth="{StaticResource ProjectsActionCardMinWidth}"
+                                   MinItemHeight="{StaticResource ProjectsCardMinHeight}"
+                                   MinColumnSpacing="{StaticResource ProjectsCardSpacing}"
+                                   MinRowSpacing="{StaticResource ProjectsCardSpacing}"
                                    ItemsStretch="Fill" />
             </ItemsRepeater.Layout>
         </ItemsRepeater>

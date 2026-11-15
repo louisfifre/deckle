@@ -18,7 +18,7 @@ internal sealed class MoreTile : Button
         VerticalAlignment = VerticalAlignment.Stretch;
         HorizontalContentAlignment = HorizontalAlignment.Center;
         VerticalContentAlignment = VerticalAlignment.Center;
-        MinHeight = 120;
+        MinHeight = (double)Application.Current.Resources["ProjectsCardMinHeight"];
         CornerRadius = (Microsoft.UI.Xaml.CornerRadius)Application.Current.Resources["OverlayCornerRadius"];
         AutomationProperties.SetName(this, ProjectsText.Format("Home_MoreTile_Format", plan.MoreCount, categoryName));
         Click += (_, _) => open();

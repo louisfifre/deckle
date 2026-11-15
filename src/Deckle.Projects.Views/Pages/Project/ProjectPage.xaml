@@ -10,7 +10,7 @@
          real window holds more than a board draws. A project whose folder is
          gone keeps its header and one sentence; the rest is hidden. -->
     <ScrollViewer x:Name="Scroll" VerticalScrollBarVisibility="Auto">
-        <StackPanel Margin="56,12,56,40" Spacing="32">
+        <StackPanel Margin="{StaticResource ProjectsPageMargin}" Spacing="{StaticResource ProjectsSectionSpacing}">
 
             <Grid ColumnSpacing="8">
                 <Grid.ColumnDefinitions>

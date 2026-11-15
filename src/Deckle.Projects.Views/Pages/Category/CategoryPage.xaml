@@ -9,7 +9,7 @@
          scrolls, so the list itself does not (a category rarely holds more than
          a screen, and two nested scrollers make a drag hard to aim). -->
     <ScrollViewer VerticalScrollBarVisibility="Auto">
-        <StackPanel Margin="56,12,56,40" Spacing="24">
+        <StackPanel Margin="{StaticResource ProjectsPageMargin}" Spacing="{StaticResource ProjectsSectionSpacing}">
 
             <StackPanel Spacing="4">
                 <ContentControl x:Name="BreadcrumbHost" HorizontalAlignment="Left" HorizontalContentAlignment="Left" />
