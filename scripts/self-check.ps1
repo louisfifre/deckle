@@ -35,7 +35,9 @@
     The checkout whose build is run. The checkout this script lives in by default.
 .PARAMETER TimeoutSeconds
     How long the app may take. The walk is a few seconds per dozen pages; the
-    default leaves room for a cold start.
+    default leaves room for a cold start. The whole walk took 160 to 180 s once
+    Deckle Projects joined it (2026-11-15, 161 pages, its sample projects
+    reading git and their script menus), so 180 s no longer left that room.
 .PARAMETER OutputFolder
     Where report.json and the captures go. A new folder under the temp folder by
     default; it is kept, the report and the images are the output.
@@ -60,7 +62,7 @@ param(
     [string]$Configuration = 'Debug',
     [string]$Target,
     [ValidateRange(10, 1800)]
-    [int]$TimeoutSeconds = 180,
+    [int]$TimeoutSeconds = 300,
     [string]$OutputFolder,
     [switch]$LinkRuntime,
     [switch]$KeepData
