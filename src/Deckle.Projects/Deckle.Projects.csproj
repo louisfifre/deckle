@@ -1,0 +1,29 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <RootNamespace>Deckle.Projects</RootNamespace>
+    <!-- EventSource [Event] parameters use snake_case so the ETW payload
+         keys land as-is in the JSONL output; IDE1006 would flag them. -->
+    <NoWarn>$(NoWarn);IDE1006</NoWarn>
+  </PropertyGroup>
+
+  <!-- Deckle Projects' logic: the projects the person registered and their
+       categories, what is read from a project's folder (version, uncommitted
+       files, the remote, what an agent reads), the project's script menu, the
+       actions run from it in a terminal, and the links that open a project in
+       other tools. No XAML and no WindowsAppSDK, so every rule here is tested
+       without a window; Deckle.Projects.Views presents it. -->
+  <ItemGroup>
+    <ProjectReference Include="..\Deckle.Diagnostics\Deckle.Diagnostics.csproj" />
+    <!-- AppPaths: the module's data folder. Core holds no XAML. -->
+    <ProjectReference Include="..\Deckle.Core\Deckle.Core.csproj" />
+    <!-- The map's inventory (the "An agent always reads" readout), the path
+         rules and the navigation history, reused rather than copied: the
+         dependency points toward the engine of Deckle Folders and never the
+         other way. -->
+    <ProjectReference Include="..\Deckle.Atelier\Deckle.Atelier.csproj" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <InternalsVisibleTo Include="Deckle.Projects.Tests" />
+  </ItemGroup>
+</Project>

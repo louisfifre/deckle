@@ -1938,6 +1938,9 @@ _Generated from `git ls-files` — do not edit by hand._
 │   │   ├── IPresetStore.cs
 │   │   ├── Preset.cs
 │   │   └── PresetFamily.cs
+│   ├── Deckle.Projects/
+│   │   ├── Deckle.Projects.csproj
+│   │   └── DeckleProjectsSource.cs
 │   ├── Deckle.Security/
 │   │   ├── Deckle.Security.csproj
 │   │   ├── GLOSSARY.md  — glossary-deckle-security Security vocabulary. It defines the trusted-session boundary, captured content,…
@@ -2995,6 +2998,11 @@ _Generated from `git ls-files` — do not edit by hand._
 │   ├── Deckle.Presets.Tests/
 │   │   ├── Deckle.Presets.Tests.csproj
 │   │   └── PresetFamilyTests.cs
+│   ├── Deckle.Projects.Tests/
+│   │   ├── Deckle.Projects.Tests.csproj
+│   │   ├── DeckleProjectsSourceEventIdTests.cs
+│   │   ├── MessageTemplateDoctrineTests.cs
+│   │   └── ScratchFolder.cs
 │   ├── Deckle.Security.Tests/
 │   │   ├── Deckle.Security.Tests.csproj
 │   │   ├── SecretVaultTests.cs
