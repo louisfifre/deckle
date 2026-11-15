@@ -23,6 +23,10 @@
          the warning mark, with some slack. Fixed, so the buttons line up. -->
     <x:Double x:Key="ProjectsRowActionColumnWidth">176</x:Double>
 
+    <!-- The widest the project page header's right column may grow: the three
+         buttons side by side with room for the run line under them. -->
+    <x:Double x:Key="ProjectsHeaderActionsMaxWidth">480</x:Double>
+
     <!-- Left and right 56, bottom 40, on every page. The top is 16 under the
          title bar on a page that starts with its own heading, and Home's title
          row takes the same 16; the scrolling body under it starts 32 lower. -->

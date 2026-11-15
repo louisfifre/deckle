@@ -30,8 +30,14 @@
 
                 <!-- The script menu and the main action, side by side, and under
                      them the main action's last result. The main action appears
-                     here and nowhere else on the page. -->
-                <StackPanel Grid.Column="1" Margin="0,28,0,0" Spacing="6" HorizontalAlignment="Right">
+                     here and nowhere else on the page. The column has a maximum
+                     width so a long failure is trimmed (its tooltip has the
+                     whole line) instead of pushing the name aside. -->
+                <StackPanel Grid.Column="1"
+                            Margin="0,28,0,0"
+                            Spacing="6"
+                            MaxWidth="{StaticResource ProjectsHeaderActionsMaxWidth}"
+                            HorizontalAlignment="Right">
                     <StackPanel Orientation="Horizontal" Spacing="8" HorizontalAlignment="Right">
                         <Button x:Name="ScriptMenuButton" Click="OnScriptMenuClick">
                             <StackPanel Orientation="Horizontal" Spacing="8">
