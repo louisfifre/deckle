@@ -16,6 +16,9 @@ internal sealed class SelfCheckReport
 {
     public const string FileName = "report.json";
 
+    // The event name Deckle-Audio writes for a refused microphone open.
+    private const string MicrophoneOpenFailedEvent = "MicrophoneOpenFailed";
+
     private static readonly JsonSerializerOptions Json = new()
     {
         WriteIndented = true,
@@ -122,9 +125,19 @@ internal sealed class SelfCheckReport
             }
         }
 
-        if (Errors.Count > 0)
-            failures.Add($"{Errors.Count} log event(s) at Error or Critical during the run: "
-                + string.Join(", ", Errors.Select(e => e.Event).Distinct()));
+        // The probe logs its own refusal as the Error a take would raise
+        // (MicrophoneCapture.Probe). When that refusal is a fact about the
+        // machine, already judged above as a warning, its log line is the same
+        // fact and must not fail the run a second time. It stays in Errors, so
+        // the report still shows it.
+        bool machineMicrophoneFact = Microphone?.Outcome is SelfCheckMicrophone.DeviceMissing
+            or SelfCheckMicrophone.DeviceBusy or SelfCheckMicrophone.DeviceRefused;
+        List<SelfCheckLogEvent> failing = Errors
+            .Where(e => !(machineMicrophoneFact && e.Event == MicrophoneOpenFailedEvent))
+            .ToList();
+        if (failing.Count > 0)
+            failures.Add($"{failing.Count} log event(s) at Error or Critical during the run: "
+                + string.Join(", ", failing.Select(e => e.Event).Distinct()));
 
         Failures = failures;
         Warnings = warnings;
