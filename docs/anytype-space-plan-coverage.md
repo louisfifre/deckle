@@ -15,7 +15,7 @@ The space plan engine is `src/Deckle.Anytype/Plan/` plus the schema stage in `sr
 | # | Element | Read | Write | Remove | What is left |
 |---|---|---|---|---|---|
 | 1 | The space itself | n/a | no | no | No route deletes a space. The bot cannot invite the owner: a person creates the space and admits the bot, or the bot creates it and owns it alone (`POST /v2/spaces`). |
-| 2 | Properties | yes | create, rename | yes (prune) | Changing a property's format is refused as a conflict. |
+| 2 | Properties | yes | create, rename | yes (prune) | Changing a property's format is refused as a conflict. On a space a person created, renaming a native property is refused to the bot (403): the run says it and goes on, and the owner renames it in the app. |
 | 3 | Options of a select: name, colour | yes | create; recolour an existing one (v1) | yes (prune, v1) | — |
 | 4 | Options of a select: order | no | no | n/a | Not rendered by the API. |
 | 5 | Types: name, plural, icon, description | yes | create, rename; icon and description only when empty | yes (prune) | Layout cannot change after creation. An icon that exists is not replaced. Native types removed from a space cannot be recreated under their key. |
