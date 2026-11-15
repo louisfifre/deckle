@@ -93,22 +93,21 @@ internal sealed partial class PinnedActionsSection : UserControl
         List<ActionRef> order = [.. models.Select(m => m.Action)];
         if (!order.SequenceEqual(_order))
         {
+            // Cards are made again when the set changes, not kept: the repeater
+            // would otherwise be handed elements that still have the repeater
+            // as their parent (see ProjectGrid). The rebuilt cards are drawn
+            // from the models just below.
             var elements = new List<UIElement>();
-            var kept = new Dictionary<ActionRef, PinnedActionCard>();
+            _cards.Clear();
             foreach (ActionRef action in order)
             {
-                if (!_cards.TryGetValue(action, out PinnedActionCard? card))
-                {
-                    card = new PinnedActionCard(action);
-                    card.RunRequested += a => RunRequested?.Invoke(a);
-                    card.ShowTerminalRequested += a => ShowTerminalRequested?.Invoke(a);
-                }
-                kept[action] = card;
+                var card = new PinnedActionCard(action);
+                card.RunRequested += a => RunRequested?.Invoke(a);
+                card.ShowTerminalRequested += a => ShowTerminalRequested?.Invoke(a);
+                _cards[action] = card;
                 elements.Add(card);
             }
 
-            _cards.Clear();
-            foreach ((ActionRef action, PinnedActionCard card) in kept) _cards[action] = card;
             _order = order;
             Cards.ItemsSource = elements;
         }
