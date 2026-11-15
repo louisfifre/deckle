@@ -193,6 +193,21 @@ public sealed class ActionRunner : IDisposable
     public bool TerminalIsOpen(string projectId, ActionRef action) =>
         EndedTerminalTitle(projectId, action) is { } title && _finder.Exists(title);
 
+    // TerminalIsOpen for several actions of a project from one look at the
+    // windows, which walks every top-level window: the caller asks once per
+    // refresh, off the UI thread, and shares the answer between its controls.
+    // Returns the actions whose terminal is still open.
+    public IReadOnlySet<ActionRef> ActionsWithOpenTerminal(string projectId, IEnumerable<ActionRef> actions)
+    {
+        var titles = new Dictionary<ActionRef, string>();
+        foreach (ActionRef action in actions)
+            if (EndedTerminalTitle(projectId, action) is { } title) titles[action] = title;
+        if (titles.Count == 0) return new HashSet<ActionRef>();
+
+        IReadOnlySet<string> open = _finder.ExistingAmong(titles.Values);
+        return titles.Where(t => open.Contains(t.Value)).Select(t => t.Key).ToHashSet();
+    }
+
     private string? EndedTerminalTitle(string projectId, ActionRef action) =>
         _board.LastResult(projectId, action) is { Outcome: RunOutcome.Succeeded or RunOutcome.Failed } result
             ? result.TerminalTitle

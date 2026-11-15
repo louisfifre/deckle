@@ -59,7 +59,7 @@ internal sealed partial class ProjectPage
                 pin, running, board.LastResult(project.Id, pin.Action), menuGivesIt, canStart, now);
 
             string detail = pin.Action.Variant is { } variant ? $"{pin.Script} · {variant}" : pin.Script;
-            bool terminalOpen = running is null && _context.Workspace.Runner.TerminalIsOpen(project.Id, pin.Action);
+            bool terminalOpen = running is null && TerminalIsOpen(pin.Action);
             cards.Add(new PinnedCardModel(pin.Action, pin.Label, detail, state, terminalOpen));
         }
 
@@ -101,6 +101,7 @@ internal sealed partial class ProjectPage
     private void ShowTerminal(ActionRef action)
     {
         _context.Workspace.Runner.TryShowTerminal(_projectId, action);
+        RefreshTerminals();
         ApplyActions();
     }
 

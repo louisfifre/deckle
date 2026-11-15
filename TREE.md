@@ -2073,6 +2073,7 @@ _Generated from `git ls-files` — do not edit by hand._
 │   │   │       ├── ProjectPage.OpenIn.cs
 │   │   │       ├── ProjectPage.Readouts.cs
 │   │   │       ├── ProjectPage.Review.cs
+│   │   │       ├── ProjectPage.Terminals.cs
 │   │   │       ├── ProjectPage.Timer.cs
 │   │   │       ├── ProjectPage.xaml
 │   │   │       ├── ProjectPage.xaml.cs

@@ -17,6 +17,7 @@ namespace Deckle.Projects.Views;
 //   ProjectPage.Actions.cs    the pinned actions and what their buttons start
 //   ProjectPage.Missing.cs    a project whose folder is gone
 //   ProjectPage.Timer.cs      the one-second tick of "Running · 1 min 12 s"
+//   ProjectPage.Terminals.cs  which ended runs still have their terminal open
 //   ProjectPage.Review.cs     what the self-check drives
 //
 // The page listens to three things, each marshalled to the window's thread
@@ -69,6 +70,7 @@ internal sealed partial class ProjectPage : Page, IProjectsPage
             if (Project is { } opened) ProbeDiskIfUnread(opened);
             Apply();
             StartTimer();
+            RefreshTerminals();
 
             // "Rename" in a card's menu opens the page with the name already a text
             // box (spec, Renaming).
@@ -89,9 +91,13 @@ internal sealed partial class ProjectPage : Page, IProjectsPage
     // AGENTS.md wants to see the number move. The window coming back to the
     // front reads the folder again, and the menu only if it was not found, since
     // the person may have just run the install command in a terminal.
-    public Task RefreshAsync(RefreshReason reason) => reason == RefreshReason.Requested
-        ? LoadAsync(refreshMenu: true, estimateAgent: true)
-        : LoadAsync(refreshMenu: _listing is not ScriptMenuListing.Listed, estimateAgent: false);
+    public Task RefreshAsync(RefreshReason reason)
+    {
+        RefreshTerminals();
+        return reason == RefreshReason.Requested
+            ? LoadAsync(refreshMenu: true, estimateAgent: true)
+            : LoadAsync(refreshMenu: _listing is not ScriptMenuListing.Listed, estimateAgent: false);
+    }
 
     public void Dispose()
     {
@@ -212,7 +218,12 @@ internal sealed partial class ProjectPage : Page, IProjectsPage
 
     private void OnBoardChanged(string projectId)
     {
-        if (projectId == _projectId) _context.Dispatch(ApplyActions);
+        if (projectId != _projectId) return;
+        _context.Dispatch(() =>
+        {
+            ApplyActions();
+            RefreshTerminals();
+        });
     }
 
     // The board moved or a second went by: only what shows an action's state is

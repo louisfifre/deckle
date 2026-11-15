@@ -357,6 +357,26 @@ public sealed class ActionRunnerTests : IDisposable
 
         Assert.False(runner.TerminalIsOpen(project.Id, pin.Action));
     }
+
+    [Fact]
+    public async Task TheOpenTerminalsOfSeveralActionsAreFoundFromTheSameWindowList()
+    {
+        var windows = new FakeWindowSystem();
+        using ActionRunner runner = NewRunner(finder: new TerminalWindowFinder(windows));
+        ProjectEntry project = NewProject();
+        PinnedAction pin = Pin("a.0", "A");
+        PinnedAction never = Pin("b.0", "B");
+        StartOutcome outcome = await runner.StartAsync(project, pin);
+        runner.PollOnce();
+        Write(RunFolder(), RunWrapper.ResultFile, "0");
+        runner.PollOnce();
+
+        Assert.Empty(runner.ActionsWithOpenTerminal(project.Id, [pin.Action, never.Action]));
+
+        windows.Windows.Add(new TopWindow(9, outcome.Run!.Title));
+        Assert.Equal([pin.Action], runner.ActionsWithOpenTerminal(project.Id, [pin.Action, never.Action]));
+    }
+
     // ── The runs folder ────────────────────────────────────────────────────
 
     [Fact]

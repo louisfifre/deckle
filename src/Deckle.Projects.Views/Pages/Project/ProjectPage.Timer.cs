@@ -6,7 +6,8 @@ namespace Deckle.Projects.Views;
 // states that show a time are drawn again once a second. The board raises its
 // event when an action begins or ends and never for the time that passes; this
 // tick is the only thing that makes the seconds count. Only the action states
-// are redrawn, and a card whose words did not change is left alone.
+// are redrawn, and a card whose words did not change is left alone. The tick
+// does no I/O: the open terminals are read off the UI thread (ProjectPage.Terminals.cs).
 internal sealed partial class ProjectPage
 {
     private static readonly TimeSpan Tick = TimeSpan.FromSeconds(1);
@@ -18,7 +19,11 @@ internal sealed partial class ProjectPage
         _tick = DispatcherQueue.CreateTimer();
         _tick.Interval = Tick;
         _tick.IsRepeating = true;
-        _tick.Tick += (_, _) => ApplyActions();
+        _tick.Tick += (_, _) =>
+        {
+            ApplyActions();
+            RecheckTerminalsIfStale();
+        };
         _tick.Start();
     }
 

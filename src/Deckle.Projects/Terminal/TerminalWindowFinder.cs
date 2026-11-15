@@ -46,6 +46,15 @@ public sealed class TerminalWindowFinder(IWindowSystem windows)
         return windows.TopWindows().Any(w => string.Equals(w.Title, wanted, StringComparison.Ordinal));
     }
 
+    // Which of the titles have a visible window, from one look at the window
+    // list (Exists looks once per title, and a look walks every top-level
+    // window). Returns the titles as they were given.
+    public IReadOnlySet<string> ExistingAmong(IEnumerable<string> titles)
+    {
+        HashSet<string> present = [.. windows.TopWindows().Select(w => w.Title)];
+        return titles.Where(t => present.Contains(WindowsTerminalLauncher.TitleText(t))).ToHashSet(StringComparer.Ordinal);
+    }
+
     // False when no visible window carries the title: the caller says nothing,
     // the run's own state line stays.
     public bool Show(string title)

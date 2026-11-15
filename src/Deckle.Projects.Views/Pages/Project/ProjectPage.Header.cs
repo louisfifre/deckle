@@ -109,7 +109,7 @@ internal sealed partial class ProjectPage
         MainLine.Apply(state.Line);
         MainLine.SetShowTerminal(
             !showTerminal && _context.Workspace.Board.ActiveRun(_projectId) is null
-            && _context.Workspace.Runner.TerminalIsOpen(_projectId, main.Action));
+            && TerminalIsOpen(main.Action));
         MainLine.Visibility = state.Line is null ? Visibility.Collapsed : Visibility.Visible;
     }
 
