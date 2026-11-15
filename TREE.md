@@ -2038,6 +2038,13 @@ _Generated from `git ls-files` — do not edit by hand._
 │   │   │   ├── ProjectCardMenu.cs
 │   │   │   ├── ProjectGrid.cs
 │   │   │   └── WithoutCategoryFold.cs
+│   │   ├── Pages/
+│   │   │   ├── Category/
+│   │   │   │   ├── CategoryPage.xaml
+│   │   │   │   └── CategoryPage.xaml.cs
+│   │   │   └── Project/
+│   │   │       ├── ProjectPage.xaml
+│   │   │       └── ProjectPage.xaml.cs
 │   │   ├── Strings/
 │   │   │   └── en-US/
 │   │   │       └── Resources.resw
@@ -2047,7 +2054,14 @@ _Generated from `git ls-files` — do not edit by hand._
 │   │   ├── ProjectsContext.cs
 │   │   ├── ProjectsGlyphs.cs
 │   │   ├── ProjectsText.cs
-│   │   └── ProjectStoreExtensions.cs
+│   │   ├── ProjectStoreExtensions.cs
+│   │   ├── ProjectsWindow.Chrome.cs
+│   │   ├── ProjectsWindow.Navigation.cs
+│   │   ├── ProjectsWindow.Pane.cs
+│   │   ├── ProjectsWindow.Refresh.cs
+│   │   ├── ProjectsWindow.Review.cs
+│   │   ├── ProjectsWindow.xaml
+│   │   └── ProjectsWindow.xaml.cs
 │   ├── Deckle.Security/
 │   │   ├── Deckle.Security.csproj
 │   │   ├── GLOSSARY.md  — glossary-deckle-security Security vocabulary. It defines the trusted-session boundary, captured content,…
