@@ -19,9 +19,18 @@ public sealed partial class AtelierWindow
         return ShowPlaceAsync();
     }
 
-    private Task ShowPlaceAsync()
+    private int _placeRequest;
+
+    // Before the tool, the added folder itself is asked whether it is still
+    // there: one that vanished or cannot be read shows its message in place
+    // of the tool (AtelierWindow.Folders.cs), and no tool runs on it.
+    private async Task ShowPlaceAsync()
     {
         FolderPlace place = Place!;
+        int request = ++_placeRequest;
+        // What a tool was still showing belongs to the place left.
+        _showing?.Cancel();
+        _unreachableShown = null;
         EmptyState.Visibility = Visibility.Collapsed;
         CentreHost.Visibility = Visibility.Visible;
         SetTopRowEnabled(true);
@@ -30,13 +39,25 @@ public sealed partial class AtelierWindow
         UpButton.IsEnabled = place.Parent is not null;
         SelectFolderItem(place.Root);
         _ = Address.ShowAsync(place);
-        return ShowCurrentToolAsync();
+
+        AddedFolderReachability reach = await Task.Run(() => AddedFolderReach.Check(place.Root.Path));
+        if (request != _placeRequest) return;
+        NoteReach(place.Root.Path, reach);
+        if (reach != AddedFolderReachability.Reachable)
+        {
+            ShowUnreachable(place.Root, reach);
+            return;
+        }
+        await ShowCurrentToolAsync();
     }
 
     // With no folder added, every button of the top row is disabled except
     // the pane's, and the address bar says "Aucun dossier" (12.11).
     private void ShowEmptyState()
     {
+        ++_placeRequest;
+        _showing?.Cancel();
+        _unreachableShown = null;
         CentreHost.Content = null;
         CentreHost.Visibility = Visibility.Collapsed;
         EmptyState.Visibility = Visibility.Visible;
@@ -74,12 +95,14 @@ public sealed partial class AtelierWindow
         if (Place?.Parent is { } parent) _ = NavigateTo(parent);
     }
 
-    // Re-runs the current tool on the current folder (spec, Open 17).
+    // Re-runs the current tool on the current folder (spec, Open 17). It
+    // asks the disk again about every added folder too, so one that came
+    // back, its drive plugged in again, loses its mark and opens.
     private void Refresh()
     {
         if (Place is null) return;
-        _ = Address.ShowAsync(Place);
-        _ = ShowCurrentToolAsync();
+        _reachChecked = CheckFolderReachAsync();
+        _ = ShowPlaceAsync();
     }
 
     private void OnBackClick(object sender, RoutedEventArgs e) => GoBack();
@@ -114,6 +137,23 @@ public sealed partial class AtelierWindow
         GoUp();
         args.Handled = true;
     }
+
+    // What the self-check drives: Refresh as F5 runs it, awaited, with the
+    // pane's marks settled; where the window stands; whether the address
+    // bar cuts a segment's name.
+    public async Task RefreshForReviewAsync()
+    {
+        if (Place is null) return;
+        _reachChecked = CheckFolderReachAsync();
+        await ShowPlaceAsync();
+        await _reachChecked;
+    }
+
+    public string? CurrentFolderForReview => Place?.Root.Path;
+
+    public bool CanGoBackForReview => _history.CanGoBack;
+
+    public bool AddressCutsASegmentForReview => Address.HasTrimmedSegment;
 
     private void OnAddressAccelerator(KeyboardAccelerator sender, KeyboardAcceleratorInvokedEventArgs args)
     {
