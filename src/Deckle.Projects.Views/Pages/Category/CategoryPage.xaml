@@ -25,6 +25,10 @@
               DragItemsCompleted="OnDragItemsCompleted">
         <ListView.Resources>
             <ResourceDictionary>
+            <!-- The item template gives the presenter its corner from this
+                 resource, not from the container's CornerRadius, so the rows
+                 take the cards' corner here. -->
+            <StaticResource x:Key="ListViewItemCornerRadius" ResourceKey="OverlayCornerRadius" />
             <!-- The list's own hover and pressed fills (the container draws
                  them), in the control fills the Home cards use. -->
             <ResourceDictionary.ThemeDictionaries>
@@ -58,7 +62,7 @@
 
         <ListView.Footer>
             <Button x:Name="DeleteButton"
-                    Margin="0,32,0,0"
+                    Margin="-11,32,0,0"
                     HorizontalAlignment="Left"
                     Style="{StaticResource SubtleButtonStyle}">
                 <StackPanel Orientation="Horizontal" Spacing="8">
@@ -66,7 +70,7 @@
                     <TextBlock x:Name="DeleteLabel" />
                 </StackPanel>
                 <Button.Flyout>
-                    <Flyout x:Name="DeleteFlyout" Placement="Top">
+                    <Flyout x:Name="DeleteFlyout" Placement="Bottom">
                         <StackPanel Width="280" Spacing="12">
                             <TextBlock x:Name="DeleteQuestion" TextWrapping="Wrap" />
                             <Button x:Name="DeleteConfirmButton" Click="OnDeleteConfirmed" />
@@ -80,12 +84,14 @@
             <Style TargetType="ListViewItem">
                 <Setter Property="Padding" Value="0" />
                 <Setter Property="MinHeight" Value="0" />
-                <Setter Property="Margin" Value="0,1,0,1" />
+                <!-- The presenter draws its fill 4 px in from the container on
+                     each side; the margin takes that back so the rows run from
+                     the title's left edge to the page's right edge. -->
+                <Setter Property="Margin" Value="-4,1,-4,1" />
                 <Setter Property="HorizontalContentAlignment" Value="Stretch" />
                 <Setter Property="Background" Value="{ThemeResource CardBackgroundFillColorDefaultBrush}" />
                 <Setter Property="BorderBrush" Value="{ThemeResource CardStrokeColorDefaultBrush}" />
                 <Setter Property="BorderThickness" Value="1" />
-                <Setter Property="CornerRadius" Value="{ThemeResource ControlCornerRadius}" />
             </Style>
         </ListView.ItemContainerStyle>
     </ListView>

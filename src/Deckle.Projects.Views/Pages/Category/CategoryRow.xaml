@@ -9,8 +9,7 @@
          over the full path, the same meta line as the card, and the main
          action's button. The row draws only its content: the list's item
          container around it (CategoryPage.xaml) paints the card fill and
-         stroke, the 4 px control radius the board draws (a list row is smaller
-         than a card), and the hover, pressed and focus states. -->
+         stroke, the same corner radius as a card, and the hover, pressed and focus states. -->
     <Grid x:Name="Root"
           MinHeight="64"
           Padding="16,10,16,10"
