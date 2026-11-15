@@ -24,6 +24,16 @@ internal sealed class ScratchFolder : IDisposable
 
     public void Dispose()
     {
+        // A git repository's objects are read-only files: clear the attribute
+        // first, or the delete stops on them and leaves the folder behind.
+        try
+        {
+            foreach (string file in Directory.EnumerateFiles(Path, "*", SearchOption.AllDirectories))
+                System.IO.File.SetAttributes(file, FileAttributes.Normal);
+        }
+        catch (IOException) { }
+        catch (UnauthorizedAccessException) { }
+
         try { Directory.Delete(Path, recursive: true); } catch (IOException) { } catch (UnauthorizedAccessException) { }
     }
 }

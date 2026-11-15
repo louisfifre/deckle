@@ -16,7 +16,7 @@ namespace Deckle.Projects;
 // label into noise; reading it as UTF-8 needs the child to write UTF-8. The
 // menu's own entry file (menu.ps1) is still what runs, with the arguments it
 // would get from a person.
-public sealed class ScriptMenuReader
+public sealed class ScriptMenuReader : IScriptMenuReader
 {
     public static readonly TimeSpan DefaultTimeout = TimeSpan.FromSeconds(15);
 

@@ -1951,6 +1951,11 @@ _Generated from `git ls-files` — do not edit by hand._
 │   │   │   ├── DeckleProjectsSource.Opening.cs
 │   │   │   ├── IProjectOpener.cs
 │   │   │   └── ProjectOpener.cs
+│   │   ├── Presentation/
+│   │   │   ├── CardGridCapacity.cs
+│   │   │   ├── CardMeta.cs
+│   │   │   ├── DeckleProjectsSource.Window.cs
+│   │   │   └── ProjectsTarget.cs
 │   │   ├── Readouts/
 │   │   │   ├── Manifests/
 │   │   │   │   ├── CargoManifest.cs
@@ -1977,9 +1982,15 @@ _Generated from `git ls-files` — do not edit by hand._
 │   │   │   ├── ActionRunner.cs
 │   │   │   ├── DeckleProjectsSource.Runs.cs
 │   │   │   └── RunWrapper.cs
+│   │   ├── Sample/
+│   │   │   ├── ProjectsSampleWorld.cs
+│   │   │   ├── SampleGit.cs
+│   │   │   └── SampleManifests.cs
 │   │   ├── ScriptMenu/
 │   │   │   ├── DeckleProjectsSource.ScriptMenu.cs
 │   │   │   ├── DeckleScriptsInstall.cs
+│   │   │   ├── IScriptMenuReader.cs
+│   │   │   ├── ScriptMenuCache.cs
 │   │   │   ├── ScriptMenuEntry.cs
 │   │   │   ├── ScriptMenuListing.cs
 │   │   │   ├── ScriptMenuParser.cs
@@ -1997,6 +2008,9 @@ _Generated from `git ls-files` — do not edit by hand._
 │   │   │   ├── TerminalCommand.cs
 │   │   │   ├── TerminalWindowFinder.cs
 │   │   │   └── WindowsTerminalLauncher.cs
+│   │   ├── Workspace/
+│   │   │   ├── ProjectsHooks.cs
+│   │   │   └── ProjectsWorkspace.cs
 │   │   ├── Deckle.Projects.csproj
 │   │   └── DeckleProjectsSource.cs
 │   ├── Deckle.Security/
@@ -3061,6 +3075,8 @@ _Generated from `git ls-files` — do not edit by hand._
 │   │   │   └── FormattingTests.cs
 │   │   ├── Opening/
 │   │   │   └── ProjectOpenerTests.cs
+│   │   ├── Presentation/
+│   │   │   └── PresentationTests.cs
 │   │   ├── Readouts/
 │   │   │   ├── AgentReadingTests.cs
 │   │   │   ├── GitRemoteTests.cs
@@ -3077,6 +3093,8 @@ _Generated from `git ls-files` — do not edit by hand._
 │   │   │   ├── ActionRunnerTests.cs
 │   │   │   ├── RunWrapperBehaviourTests.cs
 │   │   │   └── RunWrapperTests.cs
+│   │   ├── Sample/
+│   │   │   └── ProjectsSampleWorldTests.cs
 │   │   ├── ScriptMenu/
 │   │   │   ├── ScriptMenuParserTests.cs
 │   │   │   └── ScriptMenuReaderTests.cs
@@ -3086,6 +3104,8 @@ _Generated from `git ls-files` — do not edit by hand._
 │   │   ├── Terminal/
 │   │   │   ├── TerminalLaunchersTests.cs
 │   │   │   └── TerminalWindowFinderTests.cs
+│   │   ├── Workspace/
+│   │   │   └── ProjectsWorkspaceTests.cs
 │   │   ├── Deckle.Projects.Tests.csproj
 │   │   ├── DeckleProjectsSourceEventIdTests.cs
 │   │   ├── MessageTemplateDoctrineTests.cs

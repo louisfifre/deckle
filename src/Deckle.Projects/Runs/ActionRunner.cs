@@ -11,6 +11,9 @@ public enum StartRefusal
     NoShell,
     AlreadyRunning,
 
+    // The project is unknown, or the action is not one of its pins.
+    NotPinned,
+
     // No terminal could be opened, or the run's folder could not be made.
     TerminalUnavailable,
 }
