@@ -68,7 +68,19 @@ internal static class CategoryDropTarget
             Show(true);
         };
 
-        target.DragLeave += (_, _) => Show(false);
+        // DragLeave also reaches the target from the elements inside it (the
+        // pointer going from one card to the next fires it), so it is only a
+        // real leave when the event comes from the target itself or the pointer
+        // is outside its bounds. Hiding on every one made the frame flicker
+        // between cards. The target's own event is kept as a leave so the frame
+        // cannot stay stuck when a drag ends with the position still inside;
+        // DragOver draws it again at the next move.
+        target.DragLeave += (_, e) =>
+        {
+            Windows.Foundation.Point at = e.GetPosition(target);
+            bool outside = at.X < 0 || at.Y < 0 || at.X >= target.ActualWidth || at.Y >= target.ActualHeight;
+            if (ReferenceEquals(e.OriginalSource, target) || outside) Show(false);
+        };
 
         target.Drop += async (_, e) =>
         {
