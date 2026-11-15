@@ -55,7 +55,7 @@ internal sealed partial class MapView : UserControl, IAtelierToolView
             var box = new CheckBox { Content = MapKindText.Plural(kind), IsChecked = true, MinWidth = 0, Tag = kind };
             box.Click += OnFilterClick;
             _kindBoxes[kind] = box;
-            KindBoxes.Children.Add(box);
+            Filters.Children.Add(box);
         }
     }
 

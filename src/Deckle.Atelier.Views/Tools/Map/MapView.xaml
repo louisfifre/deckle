@@ -44,17 +44,17 @@
             </Grid.ColumnDefinitions>
 
             <!-- "Toujours lu par un LLM" first, then one box per kind present in
-                 the folder, all ticked (12.8b, 12.8c). -->
-            <StackPanel x:Name="Filters"
-                        Orientation="Horizontal"
-                        Spacing="24">
+                 the folder, all ticked (12.8b, 12.8c). The boxes go on to a
+                 second line when the panel narrows the list, rather than cut
+                 a label. The code adds the kinds' boxes after the divider. -->
+            <local:MapFilterPanel x:Name="Filters"
+                                  ColumnSpacing="24"
+                                  RowSpacing="4">
                 <CheckBox x:Name="AlwaysReadBox" x:Uid="MapAlwaysRead" MinWidth="0" Click="OnFilterClick" />
                 <Rectangle Width="1"
                            Height="16"
-                           VerticalAlignment="Center"
                            Fill="{ThemeResource DividerStrokeColorDefaultBrush}" />
-                <StackPanel x:Name="KindBoxes" Orientation="Horizontal" Spacing="24" />
-            </StackPanel>
+            </local:MapFilterPanel>
 
             <!-- The two displays of the same rows (spec, Open 11: both drawn),
                  at the end of the filters' line, as the file tool's pressed
@@ -62,7 +62,7 @@
             <StackPanel x:Name="DisplayChoice"
                         Grid.Column="1"
                         Orientation="Horizontal"
-                        VerticalAlignment="Center"
+                        VerticalAlignment="Top"
                         Spacing="2">
                 <StackPanel.Resources>
                     <SolidColorBrush x:Key="ToggleButtonBackground" Color="Transparent" />

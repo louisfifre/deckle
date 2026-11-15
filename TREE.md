@@ -824,6 +824,7 @@ _Generated from `git ls-files` — do not edit by hand._
 │   │   │   │   └── FilesView.xaml.cs
 │   │   │   ├── Map/
 │   │   │   │   ├── MapDetails.cs
+│   │   │   │   ├── MapFilterPanel.cs
 │   │   │   │   ├── MapKindText.cs
 │   │   │   │   ├── MapLinkGraph.cs
 │   │   │   │   ├── MapPanelSection.cs
