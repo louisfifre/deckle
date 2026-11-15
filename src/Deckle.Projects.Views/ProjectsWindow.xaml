@@ -74,6 +74,14 @@
                             <StaticResource x:Key="NavigationViewContentBackground" ResourceKey="SystemControlTransparentBrush" />
                             <StaticResource x:Key="NavigationViewContentGridBorderBrush" ResourceKey="SystemControlTransparentBrush" />
                         </ResourceDictionary>
+                        <!-- HighContrast has no fallback to Default's ground: it
+                             repeats the control's own values (WinUI generic.xaml),
+                             so a contrast theme keeps SystemColorWindowColor, as
+                             the Mail window does. -->
+                        <ResourceDictionary x:Key="HighContrast">
+                            <SolidColorBrush x:Key="NavigationViewContentBackground" Color="{ThemeResource SystemColorWindowColor}" />
+                            <StaticResource x:Key="NavigationViewContentGridBorderBrush" ResourceKey="SystemControlTransparentBrush" />
+                        </ResourceDictionary>
                     </ResourceDictionary.ThemeDictionaries>
                 </ResourceDictionary>
             </NavigationView.Resources>
