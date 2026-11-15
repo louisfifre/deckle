@@ -88,7 +88,13 @@ internal sealed class MainActionButton : UserControl
     public void Apply(MainActionState state)
     {
         _label.Text = state.Label;
+
+        // A button that is switched off while the keyboard is on it drops the
+        // focus to nowhere (the run starts when it is pressed). The card or the
+        // row around it takes the focus, and the person keeps their place.
+        bool hadFocus = _button.FocusState != FocusState.Unfocused;
         _button.IsEnabled = state.Enabled;
+        if (hadFocus && !state.Enabled) FocusOwner();
         AutomationProperties.SetName(_button, state.Label);
 
         bool running = state.Status == MainActionStatus.Running;
@@ -100,5 +106,19 @@ internal sealed class MainActionButton : UserControl
         string failure = ProjectsText.Format("Card_LastFailed_Format", state.Label);
         ToolTipService.SetToolTip(_warning, failed ? failure : null);
         AutomationProperties.SetName(_warning, failed ? failure : "");
+    }
+
+    // The nearest control around this one that the keyboard can stop on: the
+    // Home card, or the list item that holds a category row.
+    private void FocusOwner()
+    {
+        for (DependencyObject? e = VisualTreeHelper.GetParent(this); e is not null; e = VisualTreeHelper.GetParent(e))
+        {
+            if (e is Control { IsTabStop: true, IsEnabled: true } owner)
+            {
+                owner.Focus(FocusState.Programmatic);
+                return;
+            }
+        }
     }
 }

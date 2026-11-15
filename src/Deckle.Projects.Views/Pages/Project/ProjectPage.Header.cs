@@ -1,5 +1,6 @@
 using Microsoft.UI.Xaml;
 using Microsoft.UI.Xaml.Controls;
+using Microsoft.UI.Xaml.Input;
 
 namespace Deckle.Projects.Views;
 
@@ -80,14 +81,27 @@ internal sealed partial class ProjectPage
             _context.Workspace.Clock.GetUtcNow());
 
         bool showTerminal = state.Button == ActionButtonMode.ShowTerminal;
+
+        // The two buttons take turns in the same place. A button that goes away
+        // while the keyboard is on it would drop the focus to nowhere, so the
+        // other one takes it.
+        bool mainHadFocus = HasFocus(MainButton);
+        bool terminalHadFocus = HasFocus(ShowTerminalButton);
+
         MainLabel.Text = state.Label;
         MainButton.IsEnabled = state.ButtonEnabled;
         MainButton.Visibility = showTerminal ? Visibility.Collapsed : Visibility.Visible;
         ShowTerminalButton.Visibility = showTerminal ? Visibility.Visible : Visibility.Collapsed;
 
+        if (showTerminal && mainHadFocus) ShowTerminalButton.Focus(FocusState.Programmatic);
+        else if (!showTerminal && terminalHadFocus) MainButton.Focus(FocusState.Programmatic);
+
         MainLine.Apply(state.Line);
         MainLine.Visibility = state.Line is null ? Visibility.Collapsed : Visibility.Visible;
     }
+
+    private bool HasFocus(Control control) =>
+        XamlRoot is { } root && ReferenceEquals(FocusManager.GetFocusedElement(root), control);
 
     private void OnScriptMenuClick(object sender, RoutedEventArgs e)
     {
