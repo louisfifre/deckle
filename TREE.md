@@ -2528,6 +2528,7 @@ _Generated from `git ls-files` — do not edit by hand._
 │   │   ├── FolderIconRuleTests.cs
 │   │   ├── FolderListingBugNotes.md
 │   │   ├── FolderListingTests.cs
+│   │   ├── FolderPaneBugNotes.md
 │   │   ├── HeaviestFilesTests.cs
 │   │   ├── MapGraphLayoutTests.cs
 │   │   ├── MapInventoryTests.cs
