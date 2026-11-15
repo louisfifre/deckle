@@ -1,4 +1,5 @@
 using System.Text.Json;
+using Deckle.Core;
 
 namespace Deckle.Atelier;
 
@@ -7,7 +8,8 @@ namespace Deckle.Atelier;
 //
 // Why not JsonSettingsStore: that primitive debounces, watches the file and
 // holds a cross-process mutex, which settings edited by hand need. This list
-// changes only on an explicit gesture (add a folder), is written at once, and
+// changes only on an explicit gesture (add a folder, change its icon), is
+// written at once, and
 // is read by one window, so a plain atomic write (temp file, then move) is the
 // whole need.
 //
@@ -45,13 +47,43 @@ public sealed class AddedFolderStore
         AddedFolder? known = _folders.FirstOrDefault(f => FolderPaths.Comparer.Equals(f.Path, normalized));
         if (known is not null) return known;
 
-        var folder = new AddedFolder(normalized, _clock.GetUtcNow());
+        // The plain folder in the accent colour, with the symbol the rule reads
+        // from its name and its top level.
+        var icon = IconChoice.Default with { Symbol = FolderIconRule.Pick(normalized) };
+        var folder = new AddedFolder(normalized, _clock.GetUtcNow(), icon);
         _folders.Add(folder);
         Save();
         DeckleAtelierSource.Log.FolderAdded();
-        DeckleAtelierSource.Log.FolderAddedDetail(_folders.Count);
+        DeckleAtelierSource.Log.FolderAddedDetail(_folders.Count, icon.Symbol.ToString());
         Changed?.Invoke();
         return folder;
+    }
+
+    // The added folder at exactly this path, or null.
+    public AddedFolder? Find(string path)
+    {
+        string normalized = FolderPaths.Normalize(path);
+        return _folders.FirstOrDefault(f => FolderPaths.Comparer.Equals(f.Path, normalized));
+    }
+
+    // Gives the added folder at this path another icon and saves it at once:
+    // the picker has no confirm button, a choice applies when it is made
+    // (12.3b). Returns the folder as it now is, or null when no added folder
+    // sits at that path.
+    public AddedFolder? ChangeIcon(string path, IconChoice icon)
+    {
+        string normalized = FolderPaths.Normalize(path);
+        int index = _folders.FindIndex(f => FolderPaths.Comparer.Equals(f.Path, normalized));
+        if (index < 0) return null;
+        if (_folders[index].Icon == icon) return _folders[index];
+
+        AddedFolder changed = _folders[index] with { Icon = icon };
+        _folders[index] = changed;
+        Save();
+        DeckleAtelierSource.Log.FolderIconChanged();
+        DeckleAtelierSource.Log.FolderIconChangedDetail(icon.Symbol.ToString(), icon.Tint.ToString(), icon.HasBackground);
+        Changed?.Invoke();
+        return changed;
     }
 
     // The added folder that holds this path, the deepest one when added
@@ -78,7 +110,7 @@ public sealed class AddedFolderStore
                 if (string.IsNullOrWhiteSpace(f.Path)) continue;
                 string normalized = FolderPaths.Normalize(f.Path);
                 if (_folders.Any(k => FolderPaths.Comparer.Equals(k.Path, normalized))) continue;
-                _folders.Add(new AddedFolder(normalized, f.AddedAt));
+                _folders.Add(new AddedFolder(normalized, f.AddedAt, f.ToIcon()));
             }
         }
         catch (Exception ex) when (ex is JsonException or IOException or UnauthorizedAccessException or ArgumentException or NotSupportedException)
@@ -94,7 +126,7 @@ public sealed class AddedFolderStore
         try
         {
             Directory.CreateDirectory(System.IO.Path.GetDirectoryName(_path)!);
-            var file = new StoredFile { Folders = [.. _folders.Select(f => new StoredFolder { Path = f.Path, AddedAt = f.AddedAt })] };
+            var file = new StoredFile { Folders = [.. _folders.Select(StoredFolder.From)] };
             string tmp = _path + ".tmp";
             File.WriteAllText(tmp, JsonSerializer.Serialize(file, Json));
             File.Move(tmp, _path, overwrite: true);
@@ -105,15 +137,37 @@ public sealed class AddedFolderStore
         }
     }
 
+    // Version 2 adds the icon. A version 1 file has none: its folders take
+    // IconChoice.Default, the plain folder in the accent colour.
     private sealed class StoredFile
     {
-        public int Version { get; set; } = 1;
+        public int Version { get; set; } = 2;
         public List<StoredFolder> Folders { get; set; } = [];
     }
 
+    // The symbol and the tint are written by name, so the file reads without
+    // the enums' order. A name this build does not know (a file written by a
+    // later one) falls back to the default for that part alone.
     private sealed class StoredFolder
     {
         public string Path { get; set; } = "";
         public DateTimeOffset AddedAt { get; set; }
+        public string? Icon { get; set; }
+        public string? Tint { get; set; }
+        public bool IconBackground { get; set; }
+
+        public static StoredFolder From(AddedFolder folder) => new()
+        {
+            Path = folder.Path,
+            AddedAt = folder.AddedAt,
+            Icon = folder.Icon.Symbol.ToString(),
+            Tint = folder.Icon.Tint.ToString(),
+            IconBackground = folder.Icon.HasBackground,
+        };
+
+        public IconChoice ToIcon() => new(
+            Enum.TryParse(Icon, ignoreCase: false, out IconSymbol symbol) && Enum.IsDefined(symbol) ? symbol : IconChoice.Default.Symbol,
+            Enum.TryParse(Tint, ignoreCase: false, out IconTint tint) && Enum.IsDefined(tint) ? tint : IconChoice.Default.Tint,
+            IconBackground);
     }
 }

@@ -722,7 +722,8 @@ _Generated from `git ls-files` — do not edit by hand._
 │   ├── Deckle.Atelier/
 │   │   ├── AddedFolders/
 │   │   │   ├── AddedFolder.cs
-│   │   │   └── AddedFolderStore.cs
+│   │   │   ├── AddedFolderStore.cs
+│   │   │   └── FolderIconRule.cs
 │   │   ├── Browsing/
 │   │   │   ├── AddressResolver.cs
 │   │   │   ├── FolderListing.cs
@@ -1141,6 +1142,10 @@ _Generated from `git ls-files` — do not edit by hand._
 │   │   ├── Hotkeys/
 │   │   │   ├── HotkeyChord.cs
 │   │   │   └── HotkeyModifiers.cs
+│   │   ├── Icons/
+│   │   │   ├── IconChoice.cs
+│   │   │   ├── IconSymbol.cs
+│   │   │   └── IconTint.cs
 │   │   ├── Interop/
 │   │   │   ├── NativeMethods.Audio.cs
 │   │   │   ├── NativeMethods.cs
@@ -2425,6 +2430,7 @@ _Generated from `git ls-files` — do not edit by hand._
 │   │   ├── Deckle.Atelier.Tests.csproj
 │   │   ├── DeckleAtelierSourceTests.cs
 │   │   ├── EntryFormatTests.cs
+│   │   ├── FolderIconRuleTests.cs
 │   │   ├── FolderListingTests.cs
 │   │   ├── HeaviestFilesTests.cs
 │   │   ├── MapInventoryTests.cs
