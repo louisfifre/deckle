@@ -617,6 +617,129 @@ public class ReadGesturesTests
         Assert.Empty(v2.Requests);
     }
 
+    // ── TaskReportsAsync / OrchestrationOverviewAsync ─────────────────────────
+
+    const string OtherReportId = "bafyreiReport2aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa";
+
+    static string SearchPage(params JsonObject[] rows) => new JsonObject
+    {
+        ["data"] = new JsonArray(rows),
+        ["total"] = rows.Length,
+        ["has_more"] = false,
+    }.ToJsonString();
+
+    static JsonObject Row(string id, string type, string name, JsonObject? properties = null) => new()
+    {
+        ["id"] = id, ["name"] = name, ["type"] = type, ["properties"] = properties ?? new JsonObject(),
+    };
+
+    static string ClosedJournal(string day) =>
+        $"# Journal {day}\n\n{day} 09:00\n\nDébut\n\n{day} 10:30\n\nClôture · temps réel 1,5 h. Fini.\n\nSuite";
+
+    // Newest first as the server sorts them. The first report is closed and its
+    // line shows the closing entry; the second has no heading, so its date is
+    // the creation date, and no closing entry, so its line stops at the id.
+    [Fact]
+    public async Task TaskReportsListsEachReportNewestFirstWithItsClosingEntry()
+    {
+        FakeV2Handler v2 = Reads(
+            PropsReply(TaskId, "task", "Ma tâche"),
+            SearchPage(
+                Row(ReportId, "report", ""),
+                Row(OtherReportId, "report", "", new JsonObject { ["created_date"] = "2026-11-08T14:00:00Z" })),
+            MdReply(ReportId, "report", ClosedJournal("2026-11-10")),
+            MdReply(OtherReportId, "report", "2026-11-08 14:00\n\nDébut"));
+
+        string digest = await NewGestures(v2).TaskReportsAsync(TaskId, Ct);
+
+        Assert.Equal(
+            Lines(
+                $"id : {TaskId}",
+                "Ma tâche",
+                "Rapports : 2",
+                $"2026-11-10 · {ReportId} — Clôture · temps réel 1,5 h. Fini.",
+                $"2026-11-08 · {OtherReportId}"),
+            digest);
+
+        JsonObject search = (JsonObject)JsonNode.Parse(v2.Requests[1].Body!)!;
+        Assert.Equal(DevSpace.Types.Report, search["type"]!.GetValue<string>());
+        JsonObject filter = (JsonObject)Assert.Single((JsonArray)search["filters"]!)!;
+        Assert.Equal(DevSpace.Props.Tasks, filter["property"]!.GetValue<string>());
+        Assert.Equal(TaskId, ((JsonArray)filter["value"]!).Single()!.GetValue<string>());
+        JsonObject sort = (JsonObject)Assert.Single((JsonArray)search["sorts"]!)!;
+        Assert.Equal(DevSpace.Native.CreatedDate, sort["property"]!.GetValue<string>());
+        Assert.Equal("desc", sort["direction"]!.GetValue<string>());
+    }
+
+    [Fact]
+    public async Task TaskReportsSaysAucunRapportWhenNoneIsLinked()
+    {
+        FakeV2Handler v2 = Reads(PropsReply(TaskId, "task", "Ma tâche"), SearchPage());
+
+        string digest = await NewGestures(v2).TaskReportsAsync(TaskId, Ct);
+
+        Assert.Equal(Lines($"id : {TaskId}", "Ma tâche", "Rapports : aucun rapport"), digest);
+    }
+
+    [Fact]
+    public async Task OrchestrationOverviewRefusesATaskOfAnotherTypeBeforeReadingAnythingElse()
+    {
+        FakeV2Handler v2 = Reads(
+            PropsReply(TaskId, "task", "Ma tâche", Sel(DevSpace.Props.TaskType, "Produire")));
+
+        InvalidOperationException error = await Assert.ThrowsAsync<InvalidOperationException>(
+            () => NewGestures(v2).OrchestrationOverviewAsync(TaskId, Ct));
+
+        Assert.Contains("n'est pas une tâche d'orchestration", error.Message);
+        Assert.Single(v2.Requests);
+    }
+
+    [Fact]
+    public async Task OrchestrationOverviewGathersChecklistReportsAndEachOrchestratedTasksLastLine()
+    {
+        FakeV2Handler v2 = Reads(
+            PropsReply(TaskId, "task", "Orchestrer la flotte",
+                Sel(DevSpace.Props.TaskType, "Orchestrer"),
+                Str(DevSpace.Props.DoneDefinition, "Tout est livré.")),
+            MdReply(TaskId, "task", "- [x] a\n- [ ] b"),
+            // its own reports
+            SearchPage(Row(ReportId, "report", "")),
+            MdReply(ReportId, "report", ClosedJournal("2026-11-10")),
+            // the orchestrated tasks: one done, one open
+            SearchPage(
+                Row(OtherTaskId, "task", "Travail A", new JsonObject { ["done"] = true }),
+                Row(ProjectId, "task", "Travail B")),
+            // A: most recent report and its body; B: no report
+            SearchPage(Row(OtherReportId, "report", "")),
+            MdReply(OtherReportId, "report", "# Journal 2026-11-09\n\n2026-11-09 09:00\n\nbranche créée"),
+            SearchPage());
+
+        string digest = await NewGestures(v2).OrchestrationOverviewAsync(TaskId, Ct);
+
+        Assert.Equal(
+            Lines(
+                $"id : {TaskId}",
+                "[ ] Orchestrer la flotte",
+                "Définition de fini : Tout est livré.",
+                "- [x] a",
+                "- [ ] b",
+                "Cochées : 1 / 2",
+                "Rapports : 1",
+                $"2026-11-10 · {ReportId} — Clôture · temps réel 1,5 h. Fini.",
+                "Tâches orchestrées : 2",
+                $"[x] Travail A · id : {OtherTaskId} — 2026-11-09 09:00 · branche créée",
+                $"[ ] Travail B · id : {ProjectId} — aucun rapport",
+                "Tâches ouvertes : 1"),
+            digest);
+
+        // The orchestrated tasks are found by « Orchestré par », and each task's
+        // latest report is one page of one row.
+        JsonObject tasks = (JsonObject)JsonNode.Parse(v2.Requests[4].Body!)!;
+        JsonObject filter = (JsonObject)Assert.Single((JsonArray)tasks["filters"]!)!;
+        Assert.Equal(DevSpace.Props.OrchestratedBy, filter["property"]!.GetValue<string>());
+        Assert.EndsWith("/search?limit=1&offset=0", v2.Requests[5].PathAndQuery);
+    }
+
     // ── IdeaTextAsync ─────────────────────────────────────────────────────────
 
     [Fact]

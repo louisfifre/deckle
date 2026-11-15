@@ -62,15 +62,21 @@ public sealed class ReadGestures(NameResolver resolver, AnytypeV2Client v2)
 
     // Archived tasks count as settled, like done ones: the orchestration is
     // finished when every task listed here is ticked or archived.
-    async Task AppendOrchestratedTasksAsync(StringBuilder sb, string orchestrationId, CancellationToken ct)
-    {
-        IReadOnlyList<AnytypeV2SearchRow> rows = await _searcher.SearchAllAsync(
+    async Task<IReadOnlyList<AnytypeV2SearchRow>> OrchestratedTasksAsync(string orchestrationId, CancellationToken ct) =>
+        await _searcher.SearchAllAsync(
             new AnytypeV2SearchRequest
             {
                 Type = DevSpace.Types.Task,
                 Filters = [AnytypeV2SearchFilter.In(DevSpace.Props.OrchestratedBy, [orchestrationId])],
                 Fields = [DevSpace.Props.Done, DevSpace.Props.Archive, DevSpace.Props.TaskType, DevSpace.Props.Priority],
             }, ct);
+
+    static bool IsOpen(AnytypeV2SearchRow t) =>
+        !t.Properties.Checkbox(DevSpace.Props.Done) && !t.Properties.Checkbox(DevSpace.Props.Archive);
+
+    async Task AppendOrchestratedTasksAsync(StringBuilder sb, string orchestrationId, CancellationToken ct)
+    {
+        IReadOnlyList<AnytypeV2SearchRow> rows = await OrchestratedTasksAsync(orchestrationId, ct);
 
         if (rows.Count == 0)
         {
@@ -100,15 +106,129 @@ public sealed class ReadGestures(NameResolver resolver, AnytypeV2Client v2)
         var sb = new StringBuilder();
         AppendIdentity(sb, obj, done: obj.Props.Checkbox(DevSpace.Props.Done));
 
-        IReadOnlyList<MarkdownBody.ChecklistItem> items = MarkdownBody.ChecklistItems(obj.Markdown);
+        AppendChecklist(sb, obj.Markdown);
+
+        DeckleAnytypeSource.Log.GestureCompleted("task_checklist", Elapsed(started));
+        return sb.ToString();
+    }
+
+    static void AppendChecklist(StringBuilder sb, string markdown)
+    {
+        IReadOnlyList<MarkdownBody.ChecklistItem> items = MarkdownBody.ChecklistItems(markdown);
         foreach (MarkdownBody.ChecklistItem item in items)
             sb.Append('\n').Append(item.Done ? "- [x] " : "- [ ] ").Append(item.Label);
         sb.Append(items.Count == 0
             ? "\nAucune sous-tâche."
             : $"\nCochées : {items.Count(i => i.Done)} / {items.Count}");
+    }
 
-        DeckleAnytypeSource.Log.GestureCompleted("task_checklist", Elapsed(started));
+    // The reports of a task, newest first, one line each: the report's day, its
+    // id for report_journal, and its closing entry when it has one. The link
+    // lives on the report (« Tâches »), so they are found by a search on it.
+    public async Task<string> TaskReportsAsync(string task, CancellationToken ct = default)
+    {
+        var started = DateTime.UtcNow;
+        Loaded obj = await LoadAsync(task, DevSpace.Types.Task, withMarkdown: false, ct);
+
+        var sb = new StringBuilder();
+        AppendIdentity(sb, obj, done: null);
+        await AppendReportsAsync(sb, obj.Id, ct);
+
+        DeckleAnytypeSource.Log.GestureCompleted("task_reports", Elapsed(started));
         return sb.ToString();
+    }
+
+    // An orchestration task read as a whole: what it is for, its checklist, its
+    // own reports and, per orchestrated task, where that task's work stopped, so
+    // a new orchestrator resumes from this one read.
+    public async Task<string> OrchestrationOverviewAsync(string task, CancellationToken ct = default)
+    {
+        var started = DateTime.UtcNow;
+        // Without the body first: a task of another type is refused before the
+        // body is paid for.
+        Loaded obj = await LoadAsync(task, DevSpace.Types.Task, withMarkdown: false, ct);
+
+        if (DevSpace.TaskType.Resolve(obj.Props.Select(DevSpace.Props.TaskType) ?? "")
+            != DevSpace.TaskType.Orchestration)
+            throw new InvalidOperationException(
+                $"{obj.Name} n'est pas une tâche d'orchestration (type Orchestrer) : "
+                + "lis-la avec task_properties.");
+        string body = MarkdownBody.DropTitle(await MarkdownOfAsync(obj.Id, ct), obj.Props.Name);
+
+        var sb = new StringBuilder();
+        AppendIdentity(sb, obj, done: obj.Props.Checkbox(DevSpace.Props.Done));
+        AppendFact(sb, "Définition de fini", obj.Props.Text(DevSpace.Props.DoneDefinition));
+        AppendChecklist(sb, body);
+        await AppendReportsAsync(sb, obj.Id, ct);
+
+        IReadOnlyList<AnytypeV2SearchRow> rows = await OrchestratedTasksAsync(obj.Id, ct);
+        if (rows.Count == 0)
+        {
+            sb.Append("\nTâches orchestrées : aucune.");
+        }
+        else
+        {
+            sb.Append("\nTâches orchestrées : ").Append(rows.Count);
+            foreach (AnytypeV2SearchRow t in rows)
+            {
+                sb.Append('\n').Append(t.Properties.Checkbox(DevSpace.Props.Done) ? "[x] " : "[ ] ")
+                    .Append(t.Name.Length > 0 ? t.Name : "(sans titre)");
+                if (t.Properties.Checkbox(DevSpace.Props.Archive)) sb.Append(" · archivée");
+                sb.Append(" · id : ").Append(t.Id).Append(" — ");
+
+                // Only the most recent report is read: its last line says where
+                // the task's work stopped.
+                IReadOnlyList<AnytypeV2SearchRow> latest = await ReportsOfTaskAsync(t.Id, limit: 1, ct);
+                string? last = latest.Count == 0 ? null : ReportLines.LastEntry(await MarkdownOfAsync(latest[0].Id, ct));
+                sb.Append(last ?? "aucun rapport");
+            }
+        }
+        sb.Append("\nTâches ouvertes : ").Append(rows.Count(IsOpen));
+
+        DeckleAnytypeSource.Log.GestureCompleted("orchestration_overview", Elapsed(started));
+        return sb.ToString();
+    }
+
+    // Newest first by the native creation date: the model v6 has no
+    // journal-date property. A limit asks the server for one page of that size.
+    async Task<IReadOnlyList<AnytypeV2SearchRow>> ReportsOfTaskAsync(string taskId, int? limit, CancellationToken ct)
+    {
+        var request = new AnytypeV2SearchRequest
+        {
+            Type = DevSpace.Types.Report,
+            Filters = [AnytypeV2SearchFilter.In(DevSpace.Props.Tasks, [taskId])],
+            Sorts = [new AnytypeV2SearchSort(DevSpace.Native.CreatedDate, Descending: true)],
+            Fields = [DevSpace.Native.CreatedDate],
+        };
+        if (limit is int n) return (await _searcher.SearchPageAsync(request, offset: 0, limit: n, ct)).Rows;
+        return await _searcher.SearchAllAsync(request, ct);
+    }
+
+    async Task<string> MarkdownOfAsync(string id, CancellationToken ct)
+    {
+        AnytypeV2ObjectDocument md = await _reader.ReadAsync(
+            id, new AnytypeV2ObjectReadOptions { Markdown = true }, ct);
+        return md.Body["markdown"]?.GetValue<string>() ?? "";
+    }
+
+    async Task AppendReportsAsync(StringBuilder sb, string taskId, CancellationToken ct)
+    {
+        IReadOnlyList<AnytypeV2SearchRow> reports = await ReportsOfTaskAsync(taskId, limit: null, ct);
+        if (reports.Count == 0)
+        {
+            sb.Append("\nRapports : aucun rapport");
+            return;
+        }
+
+        sb.Append("\nRapports : ").Append(reports.Count);
+        foreach (AnytypeV2SearchRow r in reports)
+        {
+            string markdown = await MarkdownOfAsync(r.Id, ct);
+            string date = ReportLines.Day(markdown) ?? r.Properties.Day(DevSpace.Native.CreatedDate) ?? "?";
+            string? closing = ReportLines.ClosingEntry(markdown);
+            sb.Append('\n').Append(date).Append(" · ").Append(r.Id);
+            if (closing is not null) sb.Append(" — ").Append(closing);
+        }
     }
 
     // The notes section of the task body, the checklist left out. A body
