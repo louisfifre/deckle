@@ -1952,6 +1952,7 @@ _Generated from `git ls-files` — do not edit by hand._
 │   │   │   ├── IProjectOpener.cs
 │   │   │   └── ProjectOpener.cs
 │   │   ├── Presentation/
+│   │   │   ├── ActionStates.cs
 │   │   │   ├── CardGridCapacity.cs
 │   │   │   ├── CardMeta.cs
 │   │   │   ├── DeckleProjectsSource.Window.cs
@@ -3132,6 +3133,7 @@ _Generated from `git ls-files` — do not edit by hand._
 │   │   ├── Opening/
 │   │   │   └── ProjectOpenerTests.cs
 │   │   ├── Presentation/
+│   │   │   ├── ActionStatesTests.cs
 │   │   │   └── PresentationTests.cs
 │   │   ├── Readouts/
 │   │   │   ├── AgentReadingTests.cs
