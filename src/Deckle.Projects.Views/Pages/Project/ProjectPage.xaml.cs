@@ -96,14 +96,22 @@ internal sealed partial class ProjectPage : Page, IProjectsPage
     // Reads the folder, the menu and the estimate, in parallel, and draws the
     // page once they are in. A reading that cannot be made leaves the previous
     // values on screen (the engine says why in the log).
+    //
+    // The menu and the estimate skip a folder the cached reading calls missing.
+    // When it did, the folder is read first: a folder that came back would
+    // otherwise get its readouts but not its menu nor its estimate until a
+    // second refresh.
     private async Task LoadAsync(bool refreshMenu, bool estimateAgent)
     {
         if (_disposed || Project is not { } project) return;
 
         try
         {
+            Task reading = _context.RefreshReadingsAsync([project], _lifetime.Token);
+            if (FolderIsMissing(project)) await reading;
+
             await Task.WhenAll(
-                _context.RefreshReadingsAsync([project], _lifetime.Token),
+                reading,
                 ReadMenuAsync(project, refreshMenu),
                 estimateAgent ? EstimateAgentAsync(project) : Task.CompletedTask);
         }
