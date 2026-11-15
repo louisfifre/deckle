@@ -568,9 +568,11 @@ public partial class App
             Audio.MicrophoneCapture.ErrorName(probe.ErrorCode),
             Audio.MicrophoneCapture.FormatErrorCode(probe.ErrorCode));
 
-        // The probe logs nothing of its own. A library that did not load is a
-        // fault of the build: it goes in the log as the Error a take would
-        // have raised, so the report's error list carries it too.
+        // The probe already logs its refusal (MicrophoneCapture.Probe); a
+        // missing, busy or refusing device is then forgiven by the verdict
+        // (SelfCheckReport.Judge). A library that did not load is a fault of
+        // the build: it is logged once more here, under this purpose, so the
+        // report's error list names the self-check as the caller.
         if (outcome.Outcome is SelfCheckMicrophone.LoadFailed or SelfCheckMicrophone.InitializeFailed)
             Audio.DeckleAudioSource.Log.MicrophoneOpenFailed(
                 "self_check", probe.Stage ?? "open", outcome.ErrorCode, outcome.ErrorName, "", "");

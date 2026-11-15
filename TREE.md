@@ -2395,6 +2395,7 @@ _Generated from `git ls-files` — do not edit by hand._
 │   │   ├── ProdApplyUpdateTests.cs
 │   │   ├── ProdUpdateTests.cs
 │   │   ├── ReswMirrorTests.cs
+│   │   ├── SelfCheckBugNotes.md
 │   │   ├── SelfCheckTests.cs
 │   │   ├── TranscribeRewriteHistoryTests.cs
 │   │   ├── TrayDeveloperMenuTests.cs

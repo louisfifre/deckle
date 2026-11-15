@@ -205,6 +205,55 @@ public class SelfCheckTests
         Assert.Single(report.Warnings);
     }
 
+    // deploy-prod of v0.129.0 and v0.130.0 failed on a machine with no
+    // microphone: the probe's own MicrophoneOpenFailed line failed the run that
+    // the verdict had only warned about.
+    [Theory]
+    [InlineData("resolve", MicErrorKind.NotDetected)]
+    [InlineData("open", MicErrorKind.InUse)]
+    [Trait("Category", "regression")]
+    public void Verdict_PassesWhenTheOnlyErrorIsTheProbeReportingAMachineFact(string stage, MicErrorKind kind)
+    {
+        SelfCheckReport report = PassingReport();
+        report.Microphone = SelfCheckMicrophone.From(false, stage, kind, "E_NOTFOUND", "0x80070490");
+        report.Errors.Add(new SelfCheckLogEvent("t", "Error", "Deckle-Audio", "MicrophoneOpenFailed", "probe"));
+
+        report.Judge();
+
+        Assert.Equal("passed", report.Outcome);
+        Assert.Single(report.Errors);
+    }
+
+    [Fact]
+    [Trait("Category", "regression")]
+    public void Verdict_StillFailsOnTheProbesErrorWhenTheLibraryDidNotLoad()
+    {
+        SelfCheckReport report = PassingReport();
+        report.Microphone = SelfCheckMicrophone.From(
+            ok: false, stage: "load", MicErrorKind.Unavailable, "paNotInitialized", "-10000");
+        report.Errors.Add(new SelfCheckLogEvent("t", "Error", "Deckle-Audio", "MicrophoneOpenFailed", "probe"));
+
+        report.Judge();
+
+        Assert.Equal("failed", report.Outcome);
+        Assert.Contains(report.Failures, f => f.Contains("MicrophoneOpenFailed"));
+    }
+
+    [Fact]
+    [Trait("Category", "regression")]
+    public void Verdict_StillFailsOnAnotherErrorBesideAMissingMicrophone()
+    {
+        SelfCheckReport report = PassingReport();
+        report.Microphone = SelfCheckMicrophone.From(false, "resolve", MicErrorKind.NotDetected, "E_NOTFOUND", "0x80070490");
+        report.Errors.Add(new SelfCheckLogEvent("t", "Error", "Deckle-Audio", "MicrophoneOpenFailed", "probe"));
+        report.Errors.Add(new SelfCheckLogEvent("t", "Error", "Deckle-Settings", "NavFailedThrew", "boom"));
+
+        report.Judge();
+
+        Assert.Equal("failed", report.Outcome);
+        Assert.Contains(report.Failures, f => f.StartsWith("1 log event") && f.Contains("NavFailedThrew"));
+    }
+
     [Fact]
     [Trait("Category", "unit")]
     public void Verdict_FailsWhenPortAudioCouldNotInitialize()
