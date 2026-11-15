@@ -2453,6 +2453,7 @@ _Generated from `git ls-files` — do not edit by hand._
 │   │   ├── Deckle.Atelier.Tests.csproj
 │   │   ├── DeckleAtelierSourceEventIdTests.cs
 │   │   ├── DeckleAtelierSourceTests.cs
+│   │   ├── DenyListing.cs
 │   │   ├── EntryFormatTests.cs
 │   │   ├── FolderIconRuleTests.cs
 │   │   ├── FolderListingTests.cs

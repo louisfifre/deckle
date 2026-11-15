@@ -57,6 +57,67 @@ public sealed class FolderListingTests
         Assert.Empty(listing.Entries);
     }
 
+    // A folder Windows refuses to list says so: it does not pass for an empty
+    // one, which would tell the person there is nothing in it.
+    [Fact]
+    [Trait("Category", "regression")]
+    public void AFolderWindowsRefusesToListSaysSoRatherThanEmpty()
+    {
+        using var scratch = new ScratchFolder();
+        string refused = scratch.Folder("refused");
+        scratch.File("x", "refused", "inside.txt");
+
+        using (DenyListing.On(refused))
+        {
+            FolderListingResult listing = FolderListing.List(refused);
+
+            Assert.Equal(FolderListingFailure.AccessDenied, listing.Failure);
+            Assert.Empty(listing.Entries);
+        }
+    }
+
+    // A refused sub-folder is still a row of its parent, as File Explorer
+    // shows it; only entering it is refused.
+    [Fact]
+    public void ARefusedSubFolderStillListsInItsParent()
+    {
+        using var scratch = new ScratchFolder();
+        string refused = scratch.Folder("refused");
+        scratch.File("x", "shown.txt");
+
+        using (DenyListing.On(refused))
+        {
+            FolderListingResult listing = FolderListing.List(scratch.Path);
+
+            Assert.True(listing.Succeeded);
+            Assert.Equal(["refused", "shown.txt"], listing.Entries.Select(e => e.Name));
+        }
+    }
+
+    // A path that names a file, not a folder, cannot be listed: it reads as a
+    // folder that is not there, as File Explorer says of an address it cannot
+    // open as a folder.
+    [Fact]
+    public void AFileInPlaceOfTheFolderReadsAsAFolderThatIsNotThere()
+    {
+        using var scratch = new ScratchFolder();
+        string file = scratch.File("x", "not-a-folder.txt");
+
+        Assert.Equal(FolderListingFailure.NotFound, FolderListing.List(file).Failure);
+    }
+
+    [Fact]
+    public void AnEmptyFolderListsNothingAndSucceeds()
+    {
+        using var scratch = new ScratchFolder();
+        string empty = scratch.Folder("empty");
+
+        FolderListingResult listing = FolderListing.List(empty);
+
+        Assert.True(listing.Succeeded);
+        Assert.Empty(listing.Entries);
+    }
+
     [Fact]
     public void TheSampleFolderHoldsFoldersAndFilesOfSeveralSizes()
     {
