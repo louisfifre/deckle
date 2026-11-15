@@ -1100,6 +1100,12 @@ _Generated from `git ls-files` — do not edit by hand._
 │   │   │   ├── SettingsComposer.Numeric.cs
 │   │   │   ├── SettingsPageHeader.cs
 │   │   │   └── SettingsSection.cs
+│   │   ├── IconPicker/
+│   │   │   ├── IconChoiceView.cs
+│   │   │   ├── IconPicker.cs
+│   │   │   ├── IconSymbolGlyphs.cs
+│   │   │   ├── IconTintPalette.cs
+│   │   │   └── IconTintSwatch.cs
 │   │   ├── ConfirmationService.cs
 │   │   ├── ConsentService.cs
 │   │   ├── Deckle.Catalog.csproj
