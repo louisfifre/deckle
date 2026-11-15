@@ -1,4 +1,6 @@
 using System.Runtime.InteropServices;
+using System.Security.AccessControl;
+using System.Security.Principal;
 using Microsoft.Win32.SafeHandles;
 
 namespace Deckle.Atelier;
@@ -40,6 +42,44 @@ public static partial class SizesSample
         string music = Folder(sampleRoot, "Musique");
         Sparse(music, "Concert-2025.flac", 312 * Mo);
         Sparse(music, "Répétition.wav", 64 * Mo);
+
+        // An empty folder, for the sizes tool's own message on one (spec,
+        // Open 33). It weighs nothing, so Projets keeps its size and rank.
+        Folder(projects, EmptyFolder);
+    }
+
+    // Where AddTo leaves an empty folder, from the sample's root.
+    public const string EmptyFolder = "Brouillons";
+    public static string EmptyFolderPath(string sampleRoot) => Path.Combine(sampleRoot, "Projets", EmptyFolder);
+
+    // A folder of the sample the current user may not list, for the message on
+    // a folder that cannot be read (spec, Open 33). The refusal is one deny rule
+    // on the folder alone; disposing removes the rule and the folder, so the
+    // sample can be deleted and made again (SampleFolder.Create). It is made
+    // only for the moment it is looked at, so no other state shows it.
+    public static IDisposable AddUnreadableFolder(string sampleRoot, out string path)
+    {
+        string folder = Path.Combine(sampleRoot, "Projets", "Privé");
+        Directory.CreateDirectory(folder);
+        var info = new DirectoryInfo(folder);
+        var rule = new FileSystemAccessRule(WindowsIdentity.GetCurrent().User!,
+            FileSystemRights.ListDirectory, AccessControlType.Deny);
+        DirectorySecurity security = info.GetAccessControl();
+        security.AddAccessRule(rule);
+        info.SetAccessControl(security);
+        path = folder;
+        return new Undo(() =>
+        {
+            DirectorySecurity back = info.GetAccessControl();
+            back.RemoveAccessRule(rule);
+            info.SetAccessControl(back);
+            Directory.Delete(folder);
+        });
+    }
+
+    private sealed class Undo(Action undo) : IDisposable
+    {
+        public void Dispose() => undo();
     }
 
     private static string Folder(string parent, string name)
