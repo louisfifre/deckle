@@ -715,6 +715,9 @@
   <data name="TrayMenu_Atelier" xml:space="preserve">
     <value>Deckle Folders</value>
   </data>
+  <data name="TrayMenu_Projects" xml:space="preserve">
+    <value>Deckle Projects</value>
+  </data>
   <data name="TrayMenu_Mail" xml:space="preserve">
     <value>Deckle Mail (preview)</value>
   </data>
@@ -1737,6 +1740,12 @@
   </data>
   <data name="Setup_Module_atelier_Description" xml:space="preserve">
     <value>One window to look at the folders you add, with a file list and tools for photos, sizes and repositories</value>
+  </data>
+  <data name="Setup_Module_projects_Label" xml:space="preserve">
+    <value>Deckle Projects</value>
+  </data>
+  <data name="Setup_Module_projects_Description" xml:space="preserve">
+    <value>One window for your project folders, grouped in categories, with each project's version, its scripts and what an agent reads there</value>
   </data>
   <data name="Setup_Module_Requires_Format" xml:space="preserve">
     <value>{0}. Requires {1}</value>

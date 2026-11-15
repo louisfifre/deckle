@@ -661,6 +661,7 @@ _Generated from `git ls-files` — do not edit by hand._
 │   │   ├── App.Orchestration.cs
 │   │   ├── App.ParagraphRewrite.cs
 │   │   ├── App.PrecisionScroll.cs
+│   │   ├── App.Projects.cs
 │   │   ├── App.Relocate.cs
 │   │   ├── App.SelfCheck.Atelier.AddedFolders.cs
 │   │   ├── App.SelfCheck.Atelier.cs
@@ -910,6 +911,7 @@ _Generated from `git ls-files` — do not edit by hand._
 │   │   │   └── ToolPlaceholderView.cs
 │   │   ├── AtelierGlyphs.cs
 │   │   ├── AtelierText.cs
+│   │   ├── AtelierWindow.External.cs
 │   │   ├── AtelierWindow.FolderIcon.cs
 │   │   ├── AtelierWindow.Folders.cs
 │   │   ├── AtelierWindow.Navigation.cs

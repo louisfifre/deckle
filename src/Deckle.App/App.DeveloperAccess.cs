@@ -31,8 +31,10 @@ public partial class App
     private IReadOnlyList<TrayMenuEntry> ComposeDeveloperTray()
         => TrayDeveloperMenu.Compose(
             AtelierPresent,
+            ProjectsPresent,
             key => Loc.Get(key),
             () => ShowAtelierWindowLazy(),
+            () => ShowProjectsWindowLazy(),
             () => ShowMailLazy(),
             () => CaptureInterfaceFromTray(),
             () => ShowLogWindowLazy(),

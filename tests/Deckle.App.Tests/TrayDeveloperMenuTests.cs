@@ -5,13 +5,14 @@ namespace Deckle.App.Tests;
 
 // The developer tray menu: the alpha surfaces, then the developer tools, then
 // Logs and Restart at the bottom, each group behind a separator. The Atelier
-// shows only while its module is present.
+// and Deckle Projects show only while their modules are present.
 [Trait("Category", "unit")]
 public sealed class TrayDeveloperMenuTests
 {
-    private static IReadOnlyList<TrayMenuEntry> Compose(bool showAtelier)
+    private static IReadOnlyList<TrayMenuEntry> Compose(bool showAtelier, bool showProjects = true)
         => TrayDeveloperMenu.Compose(
-            showAtelier, key => key, () => { }, () => { }, () => { }, () => { }, () => { });
+            showAtelier, showProjects, key => key,
+            () => { }, () => { }, () => { }, () => { }, () => { }, () => { });
 
     private static IEnumerable<string> CommandIds(IReadOnlyList<TrayMenuEntry> entries)
         => entries.OfType<TrayMenuCommand>().Select(c => c.Id);
@@ -20,7 +21,7 @@ public sealed class TrayDeveloperMenuTests
     public void TheMenuHoldsTheAlphaSurfacesThenTheCaptureThenLogsAndRestart()
     {
         Assert.Equal(
-            ["atelier", "mail", "capture-interface", "logs", "restart"],
+            ["atelier", "projects", "mail", "capture-interface", "logs", "restart"],
             CommandIds(Compose(showAtelier: true)));
     }
 
@@ -28,8 +29,16 @@ public sealed class TrayDeveloperMenuTests
     public void TheAtelierEntryIsAbsentWhenItsModuleIs()
     {
         Assert.Equal(
-            ["mail", "capture-interface", "logs", "restart"],
+            ["projects", "mail", "capture-interface", "logs", "restart"],
             CommandIds(Compose(showAtelier: false)));
+    }
+
+    [Fact]
+    public void TheProjectsEntryIsAbsentWhenItsModuleIs()
+    {
+        Assert.Equal(
+            ["atelier", "mail", "capture-interface", "logs", "restart"],
+            CommandIds(Compose(showAtelier: true, showProjects: false)));
     }
 
     [Fact]
@@ -57,13 +66,13 @@ public sealed class TrayDeveloperMenuTests
     {
         var ran = new List<string>();
         IReadOnlyList<TrayMenuEntry> entries = TrayDeveloperMenu.Compose(
-            true, key => key,
-            () => ran.Add("atelier"), () => ran.Add("mail"), () => ran.Add("capture-interface"),
-            () => ran.Add("logs"), () => ran.Add("restart"));
+            true, true, key => key,
+            () => ran.Add("atelier"), () => ran.Add("projects"), () => ran.Add("mail"),
+            () => ran.Add("capture-interface"), () => ran.Add("logs"), () => ran.Add("restart"));
 
         foreach (TrayMenuCommand command in entries.OfType<TrayMenuCommand>())
             command.Invoke();
 
-        Assert.Equal(["atelier", "mail", "capture-interface", "logs", "restart"], ran);
+        Assert.Equal(["atelier", "projects", "mail", "capture-interface", "logs", "restart"], ran);
     }
 }
