@@ -71,6 +71,7 @@ public class SelfCheckTests
         report.Surfaces.Add(new SelfCheckSurface("transcribe-rewrite", null, null, true, 300, @"captures\transcribe-rewrite.png"));
         report.Surfaces.Add(new SelfCheckSurface("mail", "triage", "Triage", true, 300, @"captures\mail-triage.png"));
         report.Surfaces.Add(new SelfCheckSurface("atelier", "files", null, true, 400, @"captures\atelier-files.png"));
+        report.Surfaces.Add(new SelfCheckSurface("projects", "h1", null, true, 400, @"captures\projects-h1.png"));
         report.Microphone = new SelfCheckMicrophone(SelfCheckMicrophone.Ok, null, "OK", "0");
         return report;
     }
@@ -160,6 +161,7 @@ public class SelfCheckTests
     [InlineData("transcribe-rewrite")]
     [InlineData("mail")]
     [InlineData("atelier")]
+    [InlineData("projects")]
     [Trait("Category", "unit")]
     public void Verdict_FailsWhenARequiredWindowWasNeverWalked(string window)
     {
@@ -302,6 +304,7 @@ public class SelfCheckTests
     [InlineData(" Settings/LLM-Rewrite ", "settings", "llm-rewrite")]
     [InlineData("mail/activity", "mail", "activity")]
     [InlineData("atelier/photos-gallery", "atelier", "photos-gallery")]
+    [InlineData("projects/p3", "projects", "p3")]
     [Trait("Category", "unit")]
     public void Target_NamesAWindowOrOneOfItsViews(string text, string window, string? view)
     {

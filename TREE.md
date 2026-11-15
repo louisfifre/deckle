@@ -674,6 +674,10 @@ _Generated from `git ls-files` — do not edit by hand._
 │   │   ├── App.SelfCheck.Atelier.Sizes.cs
 │   │   ├── App.SelfCheck.cs
 │   │   ├── App.SelfCheck.Diagnostics.cs
+│   │   ├── App.SelfCheck.Projects.Category.cs
+│   │   ├── App.SelfCheck.Projects.cs
+│   │   ├── App.SelfCheck.Projects.Home.cs
+│   │   ├── App.SelfCheck.Projects.Project.cs
 │   │   ├── App.SelfCheck.Rewriting.cs
 │   │   ├── App.SpeechRepair.cs
 │   │   ├── App.Startup.CommandLine.cs

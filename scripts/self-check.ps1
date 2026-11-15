@@ -6,8 +6,8 @@
     Takes the already-built Deckle.exe of this checkout (it never builds), runs it
     with --self-check on a fresh data root of its own, waits for it, and reads
     the report.json it writes. The app opens its Settings window, walks every
-    page, opens the Log window, the Mail window and the Atelier, probes the microphone once
-    and exits (see src/Deckle.App/App.SelfCheck.cs for what it composes and why).
+    page, opens the Log window, the Mail window, the Atelier and Deckle Projects,
+    probes the microphone once and exits (see src/Deckle.App/App.SelfCheck.cs for what it composes and why).
 
     It runs beside the maintainer's resident Deckle: it takes no mutex of the
     resident app, composes no hook, no hotkey, no tray icon and no engine, and it
@@ -22,11 +22,11 @@
     script: 0 passed, 1 failed.
 .PARAMETER Only
     Check one thing instead of everything: a window (settings, log,
-    mail, atelier) or one view of Settings, Mail or the Atelier, named as its
-    image is in a full run: settings/general, mail/activity,
-    atelier/photos-gallery. A Mail or Atelier view is a state reached from the
-    ones before it, so the walk is played up to it without pictures and stops
-    there. The other windows and the microphone probe are left out, and
+    mail, atelier, projects) or one view of Settings, Mail, the Atelier or
+    Projects, named as its image is in a full run: settings/general,
+    mail/activity, atelier/photos-gallery, projects/p3. A Mail, Atelier or
+    Projects view is a state reached from the ones before it, so the walk is
+    played up to it without pictures and stops there. The other windows and the microphone probe are left out, and
     "passed" then speaks of that target alone. A target that names nothing
     fails the run, with the names it could have been.
 .PARAMETER Configuration
