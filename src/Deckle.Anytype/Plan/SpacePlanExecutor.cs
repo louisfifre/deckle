@@ -18,54 +18,72 @@ internal sealed class SpacePlanExecutor(
         .GroupBy(t => t.For + "/" + t.Name, StringComparer.Ordinal)
         .ToDictionary(g => g.Key, g => g.First().Id, StringComparer.Ordinal);
 
+    // Steps that change something the space already held, which may be the
+    // owner's native on a space the bot only edits: a 403 there is said and the
+    // run goes on (EditRefusal). Creations are not in the list: what later steps
+    // build on must exist, so a refused creation stops the run.
+    internal static readonly HashSet<string> EditKinds = new(StringComparer.Ordinal)
+    {
+        "type_panel_add", "type_panel_remove", "type_panel_order", "type_default_template",
+        "views", "option_color", "type_display",
+    };
+
     public async Task RunAsync(IReadOnlyList<PlanStep> steps, List<string> log, CancellationToken ct)
     {
         foreach (PlanStep step in steps)
         {
-            switch (step.Kind)
-            {
-                case "type_panel_add": await PatchTypeAsync(step, "add_property", log, ct); break;
-                case "type_panel_remove": await PatchTypeAsync(step, "remove_property", log, ct); break;
-                case "type_panel_order": await OrderPanelAsync(step, log, ct); break;
-                case "collection_create": await CreateCollectionAsync(step, log, ct); break;
-                case "collection_add": await AddToCollectionAsync(step, log, ct); break;
-                case "query_create": await CreateQueryAsync(step, log, ct); break;
-                case "template_create": await CreateTemplateAsync(step, log, ct); break;
-                case "template_replace": await ReplaceTemplateAsync(step, log, ct); break;
-                case "type_default_template": await SetDefaultTemplateAsync(step, log, ct); break;
-                case "views": await EnsureViewsAsync(step, log, ct); break;
-                case "page_create": await CreatePageAsync(step, log, ct); break;
-                case "object_create": await CreateObjectAsync(step, log, ct); break;
-                case "widget_create": await CreateWidgetAsync(step, log, ct); break;
-                case "widget_update": await UpdateWidgetAsync(step, log, ct); break;
-                case "option_color": await RecolourOptionAsync(step, log, ct); break;
-                case "type_display": await SetTypeDisplayAsync(step, log, ct); break;
-                case "page_rewrite": await RewritePageAsync(step, log, ct); break;
-                case "widget_delete": await DeleteWidgetAsync(step, log, ct); break;
-                case "collection_remove": await RemoveFromCollectionAsync(step, log, ct); break;
-                case "template_delete":
-                    await RefusableAsync(step, log, () => v2.SendAsync(HttpMethod.Delete,
-                        $"objects/{_templateIds[Str(step.Data, "for") + "/" + Str(step.Data, "name")]}", null, ct)).ConfigureAwait(false);
-                    break;
-                case "object_delete":
-                    await RefusableAsync(step, log, () => v2.SendAsync(HttpMethod.Delete,
-                        $"objects/{refs.ObjectIdOf(Str(step.Data, "kind"), Str(step.Data, "name"))}", null, ct)).ConfigureAwait(false);
-                    break;
-                case "type_delete":
-                    await RefusableAsync(step, log, () => v2.SendAsync(HttpMethod.Delete,
-                        $"types/{Uri.EscapeDataString(Str(step.Data, "type"))}", null, ct)).ConfigureAwait(false);
-                    break;
-                case "property_delete":
-                    await RefusableAsync(step, log, () => v2.SendAsync(HttpMethod.Delete,
-                        $"properties/{Uri.EscapeDataString(Str(step.Data, "property"))}", null, ct)).ConfigureAwait(false);
-                    break;
-                case "option_delete": await DeleteOptionAsync(step, log, ct); break;
-                case "query_source_differs":
-                    log.Add($"laissé tel quel : {step.Detail}");
-                    break;
-                default:
-                    throw new InvalidOperationException($"Étape inconnue « {step.Kind} ».");
-            }
+            if (EditKinds.Contains(step.Kind))
+                await EditRefusal.TryAsync(() => RunOneAsync(step, log, ct), step.Detail, log).ConfigureAwait(false);
+            else
+                await RunOneAsync(step, log, ct).ConfigureAwait(false);
+        }
+    }
+
+    private async Task RunOneAsync(PlanStep step, List<string> log, CancellationToken ct)
+    {
+        switch (step.Kind)
+        {
+            case "type_panel_add": await PatchTypeAsync(step, "add_property", log, ct); break;
+            case "type_panel_remove": await PatchTypeAsync(step, "remove_property", log, ct); break;
+            case "type_panel_order": await OrderPanelAsync(step, log, ct); break;
+            case "collection_create": await CreateCollectionAsync(step, log, ct); break;
+            case "collection_add": await AddToCollectionAsync(step, log, ct); break;
+            case "query_create": await CreateQueryAsync(step, log, ct); break;
+            case "template_create": await CreateTemplateAsync(step, log, ct); break;
+            case "template_replace": await ReplaceTemplateAsync(step, log, ct); break;
+            case "type_default_template": await SetDefaultTemplateAsync(step, log, ct); break;
+            case "views": await EnsureViewsAsync(step, log, ct); break;
+            case "page_create": await CreatePageAsync(step, log, ct); break;
+            case "object_create": await CreateObjectAsync(step, log, ct); break;
+            case "widget_create": await CreateWidgetAsync(step, log, ct); break;
+            case "widget_update": await UpdateWidgetAsync(step, log, ct); break;
+            case "option_color": await RecolourOptionAsync(step, log, ct); break;
+            case "type_display": await SetTypeDisplayAsync(step, log, ct); break;
+            case "page_rewrite": await RewritePageAsync(step, log, ct); break;
+            case "widget_delete": await DeleteWidgetAsync(step, log, ct); break;
+            case "collection_remove": await RemoveFromCollectionAsync(step, log, ct); break;
+            case "template_delete":
+                await RefusableAsync(step, log, () => v2.SendAsync(HttpMethod.Delete,
+                    $"objects/{_templateIds[Str(step.Data, "for") + "/" + Str(step.Data, "name")]}", null, ct)).ConfigureAwait(false);
+                break;
+            case "object_delete":
+                await RefusableAsync(step, log, () => v2.SendAsync(HttpMethod.Delete,
+                    $"objects/{refs.ObjectIdOf(Str(step.Data, "kind"), Str(step.Data, "name"))}", null, ct)).ConfigureAwait(false);
+                break;
+            case "type_delete":
+                await RefusableAsync(step, log, () => v2.SendAsync(HttpMethod.Delete,
+                    $"types/{Uri.EscapeDataString(Str(step.Data, "type"))}", null, ct)).ConfigureAwait(false);
+                break;
+            case "property_delete":
+                await RefusableAsync(step, log, () => v2.SendAsync(HttpMethod.Delete,
+                    $"properties/{Uri.EscapeDataString(Str(step.Data, "property"))}", null, ct)).ConfigureAwait(false);
+                break;
+            case "option_delete": await DeleteOptionAsync(step, log, ct); break;
+            case "query_source_differs":
+                log.Add($"laissé tel quel : {step.Detail}");
+                break;
+            default:
+                throw new InvalidOperationException($"Étape inconnue « {step.Kind} ».");
         }
     }
 

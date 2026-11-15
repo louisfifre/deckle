@@ -126,13 +126,17 @@ public sealed partial class SchemaAdminGestures(AnytypeApiClient api, AnytypeSpa
 
         // Renames first: the type PATCH below rebuilds property links from the
         // live names, so they must already be the manifest's. A type is renamed
-        // with its plural; a property with its name alone.
+        // with its plural; a property with its name alone. A rename the server
+        // refuses (a native of a space the bot only edits) keeps the live name
+        // and the run goes on (EditRefusal).
         foreach (PropertySpec spec in preview.Manifest.Properties)
         {
             if (!preview.Actions.Any(a => a.Kind == "rename" && a.Key == $"property:{spec.Key}")) continue;
             SchemaPropertyInfo live = propertiesByKey[spec.Key];
-            await api.UpdatePropertyAsync(
-                preview.SpaceId, live.Id, new JsonObject { ["name"] = spec.Name }, ct);
+            if (!await EditRefusal.TryAsync(
+                    () => api.UpdatePropertyAsync(preview.SpaceId, live.Id, new JsonObject { ["name"] = spec.Name }, ct),
+                    $"renommer la propriété {spec.Key} · {live.Name} → {spec.Name}", applied))
+                continue;
             propertiesByKey[spec.Key] = live with { Name = spec.Name };
             applied.Add($"propriété renommée {spec.Key} · {live.Name} → {spec.Name}");
         }
@@ -141,11 +145,14 @@ public sealed partial class SchemaAdminGestures(AnytypeApiClient api, AnytypeSpa
         {
             if (!preview.Actions.Any(a => a.Kind == "rename" && a.Key == $"type:{spec.Key}")) continue;
             SchemaTypeInfo live = typesByKey[spec.Key];
-            await api.UpdateTypeAsync(
-                preview.SpaceId,
-                live.Id,
-                new JsonObject { ["name"] = spec.Name, ["plural_name"] = spec.PluralName },
-                ct);
+            if (!await EditRefusal.TryAsync(
+                    () => api.UpdateTypeAsync(
+                        preview.SpaceId,
+                        live.Id,
+                        new JsonObject { ["name"] = spec.Name, ["plural_name"] = spec.PluralName },
+                        ct),
+                    $"renommer le type {spec.Key} · {live.Name} → {spec.Name}", applied))
+                continue;
             typesByKey[spec.Key] = live with { Name = spec.Name, PluralName = spec.PluralName };
             applied.Add($"type renommé {spec.Key} · {live.Name} → {spec.Name}");
         }
@@ -199,7 +206,15 @@ public sealed partial class SchemaAdminGestures(AnytypeApiClient api, AnytypeSpa
                 // A declared key is sent so the option's wire key is the one
                 // DevSpace speaks; without it the server derives its own.
                 if (tag.Key is not null) payload["key"] = tag.Key;
-                await api.CreatePropertyTagAsync(preview.SpaceId, property.Id, payload, ct);
+                // An option added to a property the space already held changes
+                // that property, which may be the owner's native.
+                Task AddTag() => api.CreatePropertyTagAsync(preview.SpaceId, property.Id, payload, ct);
+                if (snapshot.Properties.ContainsKey(spec.Key))
+                {
+                    if (!await EditRefusal.TryAsync(AddTag, $"ajouter l'option {spec.Key}:{tag.Name}", applied)) continue;
+                }
+                else
+                    await AddTag();
                 applied.Add($"tag créé {spec.Key}:{tag.Name}");
             }
         }
@@ -297,11 +312,15 @@ public sealed partial class SchemaAdminGestures(AnytypeApiClient api, AnytypeSpa
 
             if (payload.Count == 0) continue;
 
-            await api.UpdateTypeAsync(
-                preview.SpaceId,
-                liveType.Id,
-                payload,
-                ct);
+            // A type this run created is the bot's own: a refusal there is a real
+            // failure. One the space held may be the owner's native.
+            Task Patch() => api.UpdateTypeAsync(preview.SpaceId, liveType.Id, payload, ct);
+            if (createdTypeKeys.Contains(type.Key))
+                await Patch();
+            else if (!await EditRefusal.TryAsync(Patch, $"aligner le type {type.Key}"
+                    + (propertiesOutcome.Length > 0 ? $" · {propertiesOutcome}" : "")
+                    + (iconChanged ? $" · icône {type.Icon!.Display}" : ""), applied))
+                continue;
             if (propertiesOutcome.Length > 0)
                 applied.Add($"propriétés alignées sur le manifeste · {type.Key} · {propertiesOutcome}");
             if (iconChanged)
@@ -325,7 +344,7 @@ public sealed partial class SchemaAdminGestures(AnytypeApiClient api, AnytypeSpa
                 throw new InvalidOperationException(
                     $"Impossible d'écrire la description de « {type.Key} » : id de type introuvable.");
 
-            await api.UpdateObjectAsync(
+            Task Describe() => api.UpdateObjectAsync(
                 preview.SpaceId,
                 described.Id,
                 new JsonObject
@@ -336,6 +355,10 @@ public sealed partial class SchemaAdminGestures(AnytypeApiClient api, AnytypeSpa
                     },
                 },
                 ct);
+            if (createdTypeKeys.Contains(type.Key))
+                await Describe();
+            else if (!await EditRefusal.TryAsync(Describe, $"décrire le type {type.Key}", applied))
+                continue;
             applied.Add($"description définie {type.Key}");
         }
 

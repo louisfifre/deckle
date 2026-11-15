@@ -942,14 +942,14 @@ internal sealed class FakeAnytypeServer : IDisposable
     public void OnPostType(JsonObject response) =>
         _routes.Add(new("POST", $"{SpacePath}/types", 201, response.ToJsonString()));
 
-    public void OnPatchType(string id, JsonObject response) =>
-        _routes.Add(new("PATCH", $"{SpacePath}/types/{id}", 200, response.ToJsonString()));
+    public void OnPatchType(string id, JsonObject response, int status = 200) =>
+        _routes.Add(new("PATCH", $"{SpacePath}/types/{id}", status, response.ToJsonString()));
 
-    public void OnPatchProperty(string id, JsonObject response) =>
-        _routes.Add(new("PATCH", $"{SpacePath}/properties/{id}", 200, response.ToJsonString()));
+    public void OnPatchProperty(string id, JsonObject response, int status = 200) =>
+        _routes.Add(new("PATCH", $"{SpacePath}/properties/{id}", status, response.ToJsonString()));
 
-    public void OnPostProperty(JsonObject response) =>
-        _routes.Add(new("POST", $"{SpacePath}/properties", 201, response.ToJsonString()));
+    public void OnPostProperty(JsonObject response, int status = 201) =>
+        _routes.Add(new("POST", $"{SpacePath}/properties", status, response.ToJsonString()));
 
     public void OnDeleteObject(string id, JsonObject response) =>
         _routes.Add(new("DELETE", $"{SpacePath}/objects/{id}", 200, response.ToJsonString()));
