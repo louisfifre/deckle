@@ -60,61 +60,77 @@ internal sealed partial class FilesView
         }
     }
 
-    // "Mettre à la Corbeille" and the Delete key. The row leaves the list once
-    // the item has left its folder, and a selection on it clears with its
-    // panel; an item Windows kept keeps its row, and the bar says so.
-    internal async Task RecycleAsync(FileRow row)
+    // "Mettre à la Corbeille" on one row, and the Delete key on every row
+    // selected, in one call to the bin, which recycles them one by one so a
+    // refusal stops only its own item. A row leaves the list once its item
+    // has left its folder, and leaves the selection and its panel with it; an
+    // item Windows kept keeps its row, and the bar says so: by its name when
+    // it is one, by their number when they are several.
+    internal Task RecycleAsync(FileRow row) => RecycleAsync([row]);
+
+    internal async Task RecycleAsync(IReadOnlyList<FileRow> rows)
     {
-        if (!_recycling.Add(row)) return;
-        RecycleOutcome outcome;
+        FileRow[] going = [.. rows.Where(_recycling.Add)];
+        if (going.Length == 0) return;
+        string[] paths = [.. going.Select(r => r.Entry.Path)];
+        // An outcome the bin never gave reads as not done, so its row stays.
+        RecycleOutcome[] outcomes = [.. going.Select(_ => new RecycleOutcome(RecycleStatus.NotDone))];
+        var clock = System.Diagnostics.Stopwatch.StartNew();
         try
         {
-            string path = row.Entry.Path;
-            outcome = await Task.Run(() => _bin.RecycleItem(path));
+            await Task.Run(() => _bin.Recycle(paths, (i, outcome) => outcomes[i] = outcome, CancellationToken.None));
         }
         finally
         {
-            _recycling.Remove(row);
+            foreach (FileRow row in going) _recycling.Remove(row);
         }
 
-        if (outcome.LeftItsFolder) RemoveRow(row);
-        switch (outcome.Status)
-        {
-            case RecycleStatus.Refused or RecycleStatus.Failed or RecycleStatus.NotDone:
-                ShowNotice(InfoBarSeverity.Warning, AtelierText.Format("Files_Recycle_Stayed_Format", row.Name));
-                break;
-            case RecycleStatus.DeletedForGood:
-                ShowNotice(InfoBarSeverity.Error, AtelierText.Format("Files_Recycle_Destroyed_Format", row.Name));
-                break;
-            default:
-                Notice.IsOpen = false;
-                break;
-        }
+        RemoveRows([.. going.Where((_, i) => outcomes[i].LeftItsFolder)]);
+        FileRow[] stayed = [.. going.Where((_, i) => outcomes[i].Status is RecycleStatus.Refused or RecycleStatus.Failed or RecycleStatus.NotDone)];
+        FileRow[] destroyed = [.. going.Where((_, i) => outcomes[i].Status is RecycleStatus.DeletedForGood)];
+        DeckleAtelierSource.Log.ItemsRecycled(
+            going.Length, outcomes.Count(o => o.Status == RecycleStatus.Recycled), stayed.Length, destroyed.Length,
+            clock.ElapsedMilliseconds);
+
+        if (destroyed.Length > 0)
+            ShowNotice(InfoBarSeverity.Error, Sentence(destroyed, "Files_Recycle_Destroyed_Format", "Files_Recycle_Destroyed_Many_Format"));
+        else if (stayed.Length > 0)
+            ShowNotice(InfoBarSeverity.Warning, Sentence(stayed, "Files_Recycle_Stayed_Format", "Files_Recycle_Stayed_Many_Format"));
+        else
+            Notice.IsOpen = false;
     }
 
+    private static string Sentence(FileRow[] rows, string oneKey, string manyKey) =>
+        rows.Length == 1 ? AtelierText.Format(oneKey, rows[0].Name) : AtelierText.Format(manyKey, rows.Length);
+
+    private void RemoveRow(FileRow row) => RemoveRows([row]);
+
     // The keyboard stays in the list: the focus goes to the row that took the
-    // place of the one removed, or to the new last one, so Delete can be
-    // pressed again on the next item without reaching for the pointer.
-    private void RemoveRow(FileRow row)
+    // place of the first one removed, or to the new last one, so Delete can
+    // be pressed again on the next item without reaching for the pointer.
+    private void RemoveRows(IReadOnlyList<FileRow> rows)
     {
-        int index = _rows.IndexOf(row);
+        int index = rows.Select(_rows.IndexOf).Where(i => i >= 0).DefaultIfEmpty(-1).Min();
         if (index < 0) return;
         ListViewBase items = ItemsOf(Display);
-        bool wasSelected = ReferenceEquals(items.SelectedItem, row);
+        var selected = new HashSet<FileRow>(SelectedRows());
+        bool selectionChanged = rows.Any(selected.Contains);
         FocusState focus = FocusWithin(items);
 
-        row.Release(Display);
         _filling = true;
         try
         {
-            _rows.RemoveAt(index);
-            if (wasSelected) items.SelectedItem = null;
+            foreach (FileRow row in rows)
+            {
+                row.Release(Display);
+                _rows.Remove(row);
+            }
         }
         finally
         {
             _filling = false;
         }
-        if (wasSelected) _ = ShowDetailsAsync(null);
+        if (selectionChanged) _ = ShowSelectionAsync();
         if (_rows.Count == 0) ShowMessage(AtelierText.Get("Files_Empty"));
 
         // The focus moves the way it came: a key press keeps a keyboard focus,

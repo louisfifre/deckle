@@ -8,6 +8,22 @@ public static class SampleFolder
 {
     public const string Name = "Exemple";
 
+    // A folder with nothing in it, for the file tool's "Ce dossier est vide."
+    public const string EmptyFolderName = "Brouillons";
+
+    // A name far longer than any column, for the ellipsis and its tooltip in
+    // each display and the panel's title. Kept near 110 characters so the
+    // full path stays under Windows' 260 in the self-check's data root.
+    public const string LongFileName =
+        "Compte-rendu de l'assemblée générale de la copropriété du 14 mars 2026 et devis de ravalement de la façade.pdf";
+
+    // A real PDF and a Markdown file of several lines, for the gallery's
+    // previews: the first page of one, the beginning of the other's text. The
+    // other PDFs of the sample hold zeroes, so they show the type icon that a
+    // PDF Windows cannot read keeps.
+    public const string PdfFileName = "Plan-du-jardin.pdf";
+    public const string MarkdownFileName = "Lisez-moi.md";
+
     private static readonly DateTime Base = new(2026, 11, 5, 10, 0, 0, DateTimeKind.Local);
 
     // Builds <parent>\Exemple, replacing what a previous run left, and returns
@@ -43,8 +59,14 @@ public static class SampleFolder
         Folder(photos, "2025", -320);
 
         Folder(root, "Projets", -1);
+        Folder(root, EmptyFolderName, -5);
 
-        Text(root, "Lisez-moi.md", "Dossier d'exemple créé par le self-check de Deckle.\n", -2);
+        Text(root, MarkdownFileName,
+            "# Lisez-moi\n\nDossier d'exemple créé par le self-check de Deckle.\n\n" +
+            "## Ce qu'il contient\n\n- Documents : des notes et deux contrats.\n- Photos : deux années de sorties.\n" +
+            "- Projets : vide pour l'instant.\n\nRien ici ne vient de vos dossiers.\n", -2);
+        Pdf(root, PdfFileName, -16);
+        Sized(root, LongFileName, 86 * 1024, -244);
         Sized(root, "Tarifs-2026.pdf", 120 * 1024, -298);
         Sized(root, "notes-2023.zip", 3_200_000, -680);
 
@@ -58,6 +80,14 @@ public static class SampleFolder
     {
         string path = System.IO.Path.Combine(parent, name);
         File.WriteAllText(path, content);
+        File.SetLastWriteTime(path, Base.AddDays(days));
+    }
+
+    private static void Pdf(string parent, string name, int days)
+    {
+        string path = System.IO.Path.Combine(parent, name);
+        File.WriteAllBytes(path, SamplePdf.Create("Plan du jardin",
+            ["Potager au nord, verger au sud.", "Allée centrale de 1,20 m.", "Récupérateur d'eau près de l'abri."]));
         File.SetLastWriteTime(path, Base.AddDays(days));
     }
 

@@ -28,6 +28,41 @@ public static class FilesReview
 
     public static void HideRowActions(Window window) => Find(window).HideRowActionsForReview();
 
+    // Several items selected as Ctrl+click on each selects them, with the
+    // panel of the group. Throws when one is not in the folder.
+    public static async Task SelectAsync(Window window, params string[] names)
+    {
+        if (!Find(window).SelectForReview(names))
+            throw new InvalidOperationException($"One of {string.Join(", ", names)} is not in the file tool's folder.");
+        await Task.Delay(200);
+    }
+
+    // Throws when the name of that item, on screen in the shown display, has
+    // no tooltip with its full text, so the image of a long name fails
+    // without one: a tooltip is a popup, which no image keeps open.
+    public static async Task RequireNameToolTipAsync(Window window, string name)
+    {
+        await Task.Delay(200);
+        if (Find(window).CheckNameToolTipForReview(name) is { } problem)
+            throw new InvalidOperationException(problem);
+    }
+
+    // Waits until the tile of each item, on screen in the gallery, shows the
+    // preview of its content: a picture for a PDF, its text for a Markdown
+    // file. Throws after a few seconds with the items still without one, so
+    // the image of the previews fails rather than shows icons.
+    public static async Task RequirePreviewsAsync(Window window, params string[] names)
+    {
+        FilesView view = Find(window);
+        for (int attempt = 0; attempt < 40; attempt++)
+        {
+            if (view.MissingPreviewsForReview(names) is []) return;
+            await Task.Delay(150);
+        }
+        throw new InvalidOperationException(
+            $"No preview on the gallery tile of {string.Join(", ", view.MissingPreviewsForReview(names))}.");
+    }
+
     private static FilesView Find(Window window) =>
         FindIn(window.Content) ?? throw new InvalidOperationException("The file tool is not shown in this window.");
 

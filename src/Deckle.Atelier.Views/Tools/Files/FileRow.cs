@@ -8,7 +8,8 @@ namespace Deckle.Atelier.Views;
 // formatted once when the folder is read. What comes from the shell comes
 // later and may never come (IFileIconProvider): the item shows a neutral
 // glyph until its type's icon is handed back, and in the gallery its type's
-// icon until the picture of its content is. Each is asked for when a display
+// icon until the picture of its content is, or for a text file the beginning
+// of its text (TextPreviewReader). Each is asked for when a display
 // realizes the item's container, at the size that display draws it, so a
 // folder of thousands of items asks only for those on screen; the picture is
 // let go when the container is recycled, the icons, shared per type by the
@@ -19,6 +20,7 @@ internal sealed class FileRow : INotifyPropertyChanged
     private ImageSource? _largeIcon;
     private ImageSource? _tileIcon;
     private ImageSource? _thumbnail;
+    private string? _previewText;
     private CancellationTokenSource? _loading;
     private FileListDisplay _loadingDisplay;
 
@@ -75,9 +77,26 @@ internal sealed class FileRow : INotifyPropertyChanged
         private set => Set(ref _thumbnail, value, nameof(Thumbnail), nameof(TileGlyphVisibility), nameof(TileIconVisibility));
     }
 
-    public Visibility TileGlyphVisibility => _tileIcon is null && _thumbnail is null ? Visibility.Visible : Visibility.Collapsed;
+    // The beginning of a Markdown or plain-text file, shown on its tile in
+    // place of a picture (TextPreviewReader).
+    public string? PreviewText
+    {
+        get => _previewText;
+        private set
+        {
+            if (_previewText == value) return;
+            _previewText = value;
+            Notify(nameof(PreviewText), nameof(PreviewTextVisibility), nameof(TileGlyphVisibility), nameof(TileIconVisibility));
+        }
+    }
 
-    public Visibility TileIconVisibility => _thumbnail is null ? Visibility.Visible : Visibility.Collapsed;
+    public Visibility PreviewTextVisibility => _previewText is null ? Visibility.Collapsed : Visibility.Visible;
+
+    private bool HasPreview => _thumbnail is not null || _previewText is not null;
+
+    public Visibility TileGlyphVisibility => _tileIcon is null && !HasPreview ? Visibility.Visible : Visibility.Collapsed;
+
+    public Visibility TileIconVisibility => HasPreview ? Visibility.Collapsed : Visibility.Visible;
 
     // Called on the UI thread when a display realizes the item's container.
     // pixelSize is the display's image cell in physical pixels; the gallery
@@ -104,7 +123,16 @@ internal sealed class FileRow : INotifyPropertyChanged
                     if (_tileIcon is null) TileIcon = await icons.GetAsync(Entry.Path, Entry.IsFolder, pixelSize, token);
                     // A folder has no picture of its own here: File Explorer's
                     // folder previews are drawn from what it holds.
-                    if (!Entry.IsFolder && _thumbnail is null && !token.IsCancellationRequested)
+                    // A text file shows its beginning, read off the UI thread;
+                    // the shell has no picture of it to ask for.
+                    if (!Entry.IsFolder && TextPreviewReader.Previews(Entry.Path))
+                    {
+                        if (_previewText is not null || token.IsCancellationRequested) break;
+                        string path = Entry.Path;
+                        string? text = await Task.Run(() => TextPreviewReader.Read(path), token);
+                        if (!token.IsCancellationRequested && text is not null) PreviewText = text;
+                    }
+                    else if (!Entry.IsFolder && _thumbnail is null && !token.IsCancellationRequested)
                     {
                         ImageSource? picture = await icons.GetThumbnailAsync(Entry.Path, thumbnailPixelSize, token);
                         if (!token.IsCancellationRequested && picture is not null) Thumbnail = picture;
@@ -128,13 +156,22 @@ internal sealed class FileRow : INotifyPropertyChanged
             _loading?.Cancel();
             _loading = null;
         }
-        if (display == FileListDisplay.Gallery && _thumbnail is not null) Thumbnail = null;
+        if (display == FileListDisplay.Gallery)
+        {
+            if (_thumbnail is not null) Thumbnail = null;
+            if (_previewText is not null) PreviewText = null;
+        }
     }
 
     private void Set(ref ImageSource? field, ImageSource? value, params string[] properties)
     {
         if (ReferenceEquals(field, value)) return;
         field = value;
+        Notify(properties);
+    }
+
+    private void Notify(params string[] properties)
+    {
         foreach (string property in properties)
             PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(property));
     }

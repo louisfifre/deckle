@@ -83,7 +83,9 @@ public partial class App
         await Capture("files-gallery", () => FilesReview.ShowDisplayAsync(window, FileListDisplay.Gallery));
         await Capture("files-gallery-actions", () => FilesReview.ShowRowActionsAsync(window, hovered));
         if (loaded) FilesReview.HideRowActions(window);
+        if (loaded) await WalkAtelierPreviewsAsync(window, Capture);
         if (loaded) await FilesReview.ShowDisplayAsync(window, FileListDisplay.List);
+        if (loaded) await WalkAtelierFileSelectionAsync(window, Capture);
 
         foreach (string tool in window.ToolIds.Where(t => t != "files"))
             await Capture(tool, () => window.ShowToolForReviewAsync(tool));
