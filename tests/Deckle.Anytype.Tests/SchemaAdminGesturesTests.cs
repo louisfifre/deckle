@@ -908,6 +908,86 @@ public class SchemaAdminGesturesTests
         Assert.Contains("propriété renommée etat_identification", outcome);
     }
 
+    // On a space a person created, the bot is an editor and Anytype refuses it the
+    // rename of a native property (403, « PM trial 2026-11-15 », 2026-11-15): the
+    // first write of the build, which stopped the whole run before anything was
+    // written.
+    [Fact, Trait("Category", "regression")]
+    public async Task ApplyGoesOnWhenTheServerRefusesToRenameANativeProperty()
+    {
+        using var server = new FakeAnytypeServer();
+        server.OnListTypes(Page(new JsonArray
+        {
+            ExistingType(properties: new JsonArray { "prop-etat", "prop-notes" }),
+        }));
+        server.OnListProperties(Page(new JsonArray
+        {
+            new JsonObject
+            {
+                ["id"] = "prop-etat", ["key"] = "etat_identification", ["name"] = "Status", ["format"] = "select",
+            },
+            NotesProperty(),
+        }));
+        server.OnListPropertyTags("prop-etat", EmptyList());
+        server.OnPatchProperty("prop-etat",
+            new JsonObject { ["message"] = "failed to update property", ["code"] = "forbidden" }, status: 403);
+
+        var gestures = NewGestures(server);
+        string previewId = PreviewId(await gestures.PreviewAsync("home", OrderedManifest(), Ct));
+        string outcome = await gestures.ApplyAsync("home", previewId, OrderedManifest(), confirm: true, Ct);
+
+        Assert.Contains("refusé (403) : renommer la propriété etat_identification · Status → État d'identification", outcome);
+        Assert.DoesNotContain("propriété renommée", outcome);
+    }
+
+    [Fact, Trait("Category", "regression")]
+    public async Task ApplyStillCreatesWhatComesAfterARefusedTypeRename()
+    {
+        using var server = new FakeAnytypeServer();
+        server.OnListTypes(Page(new JsonArray { ExistingType(name: "Nom live") }));
+        server.OnListProperties(EmptyList());
+        server.OnPostProperty(new JsonObject
+        {
+            ["id"] = "prop-etat",
+            ["key"] = "etat_identification",
+            ["name"] = "État d'identification",
+            ["format"] = "select",
+        });
+        server.OnPostPropertyTag("prop-etat", new JsonObject
+        {
+            ["id"] = "tag-confirme",
+            ["key"] = "confirme",
+            ["name"] = "Confirmé",
+            ["color"] = "grey",
+        });
+        server.OnPatchType("type-piece", new JsonObject { ["message"] = "failed to update type" }, status: 403);
+
+        var gestures = NewGestures(server);
+        string previewId = PreviewId(await gestures.PreviewAsync("home", Manifest(), Ct));
+        string outcome = await gestures.ApplyAsync("home", previewId, Manifest(), confirm: true, Ct);
+
+        Assert.Contains("refusé (403) : renommer le type piece", outcome);
+        Assert.Contains("propriété créée etat_identification", outcome);
+        Assert.Contains("tag créé etat_identification:Confirmé", outcome);
+        Assert.Contains("refusé (403) : aligner le type piece", outcome);
+    }
+
+    [Fact]
+    public async Task ApplyStopsWhenTheServerRefusesACreation()
+    {
+        using var server = new FakeAnytypeServer();
+        server.OnListTypes(Page(new JsonArray { ExistingType() }));
+        server.OnListProperties(EmptyList());
+        server.OnPostProperty(new JsonObject { ["message"] = "forbidden" }, status: 403);
+
+        var gestures = NewGestures(server);
+        string previewId = PreviewId(await gestures.PreviewAsync("home", Manifest(), Ct));
+
+        var ex = await Assert.ThrowsAsync<InvalidOperationException>(
+            () => gestures.ApplyAsync("home", previewId, Manifest(), confirm: true, Ct));
+        Assert.Contains("Rien n'a été écrit avant l'erreur", ex.Message);
+    }
+
     [Fact]
     public async Task PreviewRefusesToCreateANativeTypeTheSpaceNoLongerHolds()
     {
