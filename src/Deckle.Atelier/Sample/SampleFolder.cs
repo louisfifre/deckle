@@ -8,6 +8,15 @@ public static class SampleFolder
 {
     public const string Name = "Exemple";
 
+    // A folder with nothing in it, for the file tool's "Ce dossier est vide."
+    public const string EmptyFolderName = "Brouillons";
+
+    // A name far longer than any column, for the ellipsis and its tooltip in
+    // each display and the panel's title. Kept near 110 characters so the
+    // full path stays under Windows' 260 in the self-check's data root.
+    public const string LongFileName =
+        "Compte-rendu de l'assemblée générale de la copropriété du 14 mars 2026 et devis de ravalement de la façade.pdf";
+
     private static readonly DateTime Base = new(2026, 11, 5, 10, 0, 0, DateTimeKind.Local);
 
     // Builds <parent>\Exemple, replacing what a previous run left, and returns
@@ -43,8 +52,10 @@ public static class SampleFolder
         Folder(photos, "2025", -320);
 
         Folder(root, "Projets", -1);
+        Folder(root, EmptyFolderName, -5);
 
         Text(root, "Lisez-moi.md", "Dossier d'exemple créé par le self-check de Deckle.\n", -2);
+        Sized(root, LongFileName, 86 * 1024, -244);
         Sized(root, "Tarifs-2026.pdf", 120 * 1024, -298);
         Sized(root, "notes-2023.zip", 3_200_000, -680);
 

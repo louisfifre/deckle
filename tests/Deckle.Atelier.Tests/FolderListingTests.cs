@@ -119,6 +119,20 @@ public sealed class FolderListingTests
     }
 
     [Fact]
+    public void TheSampleFolderHoldsAnEmptyFolderAndAFileWithAVeryLongName()
+    {
+        using var scratch = new ScratchFolder();
+
+        string root = SampleFolder.Create(scratch.Path);
+        FolderListingResult listing = FolderListing.List(root);
+
+        Assert.Contains(listing.Entries, e => e.IsFolder && e.Name == SampleFolder.EmptyFolderName);
+        Assert.Empty(FolderListing.List(Path.Combine(root, SampleFolder.EmptyFolderName)).Entries);
+        Assert.Contains(listing.Entries, e => !e.IsFolder && e.Name == SampleFolder.LongFileName);
+        Assert.True(SampleFolder.LongFileName.Length > 100);
+    }
+
+    [Fact]
     public void TheSampleFolderHoldsFoldersAndFilesOfSeveralSizes()
     {
         using var scratch = new ScratchFolder();
