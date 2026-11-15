@@ -157,5 +157,7 @@ public sealed class ProjectsWorkspace : IDisposable
     {
         Board.Changed -= OnBoardChanged;
         Runner.Dispose();
+        Readings.Dispose();
+        Menus.Dispose();
     }
 }

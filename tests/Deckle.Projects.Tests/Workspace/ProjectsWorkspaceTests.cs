@@ -240,6 +240,38 @@ public sealed class ProjectsWorkspaceTests : IDisposable
     }
 
     [Fact]
+    public async Task ACallerLeavingDoesNotCancelTheMenuReadAnotherCallerWaitsOn()
+    {
+        ProjectEntry project = AddWithMenu("alpha");
+        var gated = new GatedMenuReader();
+        using var menus = new ScriptMenuCache(gated, _workspace.Store);
+        using var leaving = new CancellationTokenSource();
+
+        Task<ScriptMenuListing> first = menus.RefreshAsync(project, leaving.Token);
+        Task<ScriptMenuListing> second = menus.RefreshAsync(project, CancellationToken.None);
+        leaving.Cancel();
+        await Assert.ThrowsAnyAsync<OperationCanceledException>(() => first);
+        gated.Release(new ScriptMenuListing.Listed([new ScriptMenuEntry("build-run.1", "Build & run", "build-run.ps1", "", [])]));
+
+        Assert.IsType<ScriptMenuListing.Listed>(await second);
+        Assert.NotNull(menus.Cached(project.Id));
+    }
+
+    // Answers when the test says so, and only if its own token was not cancelled.
+    private sealed class GatedMenuReader : IScriptMenuReader
+    {
+        private readonly TaskCompletionSource<ScriptMenuListing> _answer = new(TaskCreationOptions.RunContinuationsAsynchronously);
+
+        public void Release(ScriptMenuListing listing) => _answer.SetResult(listing);
+
+        public async Task<ScriptMenuListing> ListAsync(string projectPath, CancellationToken cancellation)
+        {
+            using (cancellation.Register(() => _answer.TrySetCanceled(cancellation)))
+                return await _answer.Task;
+        }
+    }
+
+    [Fact]
     public async Task TheAgentEstimateOfAnUnknownProjectIsNull()
     {
         Assert.Null(await _workspace.EstimateAgentTokensAsync("missing", TestContext.Current.CancellationToken));
