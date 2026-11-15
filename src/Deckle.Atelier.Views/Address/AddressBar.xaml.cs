@@ -37,7 +37,7 @@ internal sealed partial class AddressBar : UserControl
         LeaveTextMode();
         Crumbs.ItemsSource = null;
         Crumbs.Visibility = Visibility.Collapsed;
-        RootIcon.Visibility = Visibility.Collapsed;
+        IconButton.Visibility = Visibility.Collapsed;
         Placeholder.Visibility = Visibility.Visible;
     }
 
@@ -54,7 +54,8 @@ internal sealed partial class AddressBar : UserControl
             .Select((s, i) => new AddressCrumb(s, new FolderPlace(place.Root, s.Path), hasSubfolders[i]))
             .ToList();
         Crumbs.Visibility = Visibility.Visible;
-        RootIcon.Visibility = Visibility.Visible;
+        ShowIcon(place.Root);
+        IconButton.Visibility = Visibility.Visible;
         Placeholder.Visibility = Visibility.Collapsed;
     }
 

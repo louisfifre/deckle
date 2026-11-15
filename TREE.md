@@ -793,6 +793,7 @@ _Generated from `git ls-files` — do not edit by hand._
 │   │   └── DeckleAtelierSource.cs
 │   ├── Deckle.Atelier.Views/
 │   │   ├── Address/
+│   │   │   ├── AddressBar.Icon.cs
 │   │   │   ├── AddressBar.xaml
 │   │   │   ├── AddressBar.xaml.cs
 │   │   │   └── AddressCrumb.cs
@@ -848,6 +849,7 @@ _Generated from `git ls-files` — do not edit by hand._
 │   │   │   └── ToolPlaceholderView.cs
 │   │   ├── AtelierGlyphs.cs
 │   │   ├── AtelierText.cs
+│   │   ├── AtelierWindow.FolderIcon.cs
 │   │   ├── AtelierWindow.Folders.cs
 │   │   ├── AtelierWindow.Navigation.cs
 │   │   ├── AtelierWindow.Review.cs

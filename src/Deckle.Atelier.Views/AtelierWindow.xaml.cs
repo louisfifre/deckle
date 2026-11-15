@@ -35,6 +35,7 @@ public sealed partial class AtelierWindow : Window
         ApplyLabels();
         Address.Folders = _folders;
         Address.NavigateRequested += place => _ = NavigateTo(place);
+        Address.IconChosen += OnFolderIconChosen;
 
         BuildToolButtons();
         RebuildFolderItems();

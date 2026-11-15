@@ -13,7 +13,9 @@ public sealed partial class AtelierWindow
 
     // One item per added folder, in the order they were added. Reduced to
     // the icon, an item says its name and path on hover and to a screen
-    // reader; opened, it shows them on two lines (12.2, Open 14).
+    // reader; opened, it shows them on two lines (12.2, Open 14). The icon is
+    // the folder's own, in its colour (spec, Window), drawn by the item's
+    // content (AtelierWindow.FolderIcon.cs).
     private void RebuildFolderItems()
     {
         Nav.MenuItems.Clear();
@@ -39,8 +41,7 @@ public sealed partial class AtelierWindow
             });
             var item = new NavigationViewItem
             {
-                Content = text,
-                Icon = new FontIcon { Glyph = AtelierGlyphs.Folder },
+                Content = FolderItemContent(folder, text),
                 Tag = folder,
             };
             string label = AtelierText.Format("Folders_Item_Format", folder.Name, folder.Path);

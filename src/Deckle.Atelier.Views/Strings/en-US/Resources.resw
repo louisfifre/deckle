@@ -228,4 +228,31 @@
   <data name="Map_Mutual" xml:space="preserve"><value>dans les deux sens</value></data>
   <data name="Map_None" xml:space="preserve"><value>Rien dans ce dossier.</value></data>
   <data name="Map_NoLinks" xml:space="preserve"><value>Ne cite rien et n'est cité par rien dans ce dossier.</value></data>
+
+  <!-- An added folder's icon (spec, Window; boards 12.3, 12.3b): the address
+       bar's icon button, then the keys the shared picker of Deckle.Catalog
+       asks its host for (IconPicker.cs lists them). -->
+  <data name="Address_Icon_Format" xml:space="preserve"><value>Changer l'icône de {0}</value></data>
+  <data name="IconPicker_Icon" xml:space="preserve"><value>Icône</value></data>
+  <data name="IconPicker_Color" xml:space="preserve"><value>Couleur</value></data>
+  <data name="IconPicker_Background" xml:space="preserve"><value>Fond</value></data>
+  <data name="IconPicker_Background_Off" xml:space="preserve"><value>Sans fond</value></data>
+  <data name="IconPicker_Background_On" xml:space="preserve"><value>Fond carré</value></data>
+  <data name="IconPicker_Symbol_Folder" xml:space="preserve"><value>Dossier</value></data>
+  <data name="IconPicker_Symbol_Photos" xml:space="preserve"><value>Photos</value></data>
+  <data name="IconPicker_Symbol_Documents" xml:space="preserve"><value>Documents</value></data>
+  <data name="IconPicker_Symbol_Code" xml:space="preserve"><value>Code</value></data>
+  <data name="IconPicker_Symbol_Music" xml:space="preserve"><value>Musique</value></data>
+  <data name="IconPicker_Symbol_Videos" xml:space="preserve"><value>Vidéos</value></data>
+  <data name="IconPicker_Symbol_Downloads" xml:space="preserve"><value>Téléchargements</value></data>
+  <data name="IconPicker_Symbol_Archive" xml:space="preserve"><value>Archives</value></data>
+  <data name="IconPicker_Symbol_Work" xml:space="preserve"><value>Travail</value></data>
+  <data name="IconPicker_Symbol_Home" xml:space="preserve"><value>Maison</value></data>
+  <data name="IconPicker_Symbol_People" xml:space="preserve"><value>Personnes</value></data>
+  <data name="IconPicker_Symbol_Favorite" xml:space="preserve"><value>Favori</value></data>
+  <data name="IconPicker_Tint_Accent" xml:space="preserve"><value>Couleur d'accentuation de Windows</value></data>
+  <data name="IconPicker_Tint_Red" xml:space="preserve"><value>Rouge</value></data>
+  <data name="IconPicker_Tint_Orange" xml:space="preserve"><value>Orange</value></data>
+  <data name="IconPicker_Tint_Green" xml:space="preserve"><value>Vert</value></data>
+  <data name="IconPicker_Tint_Purple" xml:space="preserve"><value>Violet</value></data>
 </root>
