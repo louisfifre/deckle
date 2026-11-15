@@ -64,7 +64,7 @@ public sealed partial class ShellRecycleBin : IRecycleBin
 
     private static RecycleOutcome RecycleOne(string path)
     {
-        if (!File.Exists(path)) return new RecycleOutcome(RecycleStatus.Missing);
+        if (!Exists(path)) return new RecycleOutcome(RecycleStatus.Missing);
 
         int hr = SHCreateItemFromParsingName(path, 0, in IID_IShellItem, out nint item);
         if (hr < 0) return Refused("shell-item", hr, RecycleStatus.Failed);
@@ -85,7 +85,7 @@ public sealed partial class ShellRecycleBin : IRecycleBin
             int performed = operation.PerformOperations();
             operation.Unadvise(cookie);
 
-            bool stillThere = File.Exists(path);
+            bool stillThere = Exists(path);
             if (sink.Recycled && !stillThere)
                 return new RecycleOutcome(RecycleStatus.Recycled, 0, sink.RecycledPath);
             if (stillThere)
@@ -107,6 +107,10 @@ public sealed partial class ShellRecycleBin : IRecycleBin
             Marshal.Release(item);
         }
     }
+
+    // A file or a folder: the file tool recycles either, and a folder goes to
+    // the bin whole, with what it holds, as File Explorer sends it.
+    private static bool Exists(string path) => File.Exists(path) || Directory.Exists(path);
 
     private static RecycleOutcome Refused(string reason, int hr, RecycleStatus status)
     {

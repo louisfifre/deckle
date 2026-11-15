@@ -2423,6 +2423,7 @@ _Generated from `git ls-files` — do not edit by hand._
 │   │   │   ├── RawReadingMaintenanceTests.cs
 │   │   │   └── SamplePhotosTests.cs
 │   │   ├── Recycling/
+│   │   │   ├── RecycleOutcomeTests.cs
 │   │   │   └── ShellRecycleBinTests.cs
 │   │   ├── AddedFolderStoreTests.cs
 │   │   ├── AddressResolverTests.cs
