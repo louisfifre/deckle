@@ -3,8 +3,10 @@
 //
 // The mark is a stack of sheets (d in front, a at the back) plus a flat blade (e).
 // A rear sheet shows only what the sheet in front leaves visible, minus a gap: the
-// gap is a parallel offset of the front sheet's edges, so it is equal everywhere by
-// construction, and an inner corner is the front corner's radius plus the gap.
+// gap is a parallel offset of the front sheet's edges, so it is equal along the
+// edges by construction. Around a corner, the front corner and the rear corner
+// facing it take the same radius, GROOVE_RADIUS: the gap widens a little there,
+// and both sides of it read as the same curve.
 //
 // The mark has two forms, because a gap that reads at 64 px closes at 16 px:
 // `normal`, four blades, and `small`, three blades and a wider gap, for where the
@@ -81,6 +83,7 @@ function polygon(corners) {
 
 const TOP_ANGLE = 27;   // every top edge slopes down to the right by this much
 const INNER_RADIUS = 10;
+const GROOVE_RADIUS = 50; // a corner the gap turns around, on both of its sides
 const PIVOT = [500, 960]; // where the blades converge; the tips sit around it
 
 // A sheet: its left edge, a point its top edge passes through, its right edge,
@@ -98,20 +101,20 @@ const FLAT = { tip: [515, 971], bottom: 22, rApex: 14, rEnd: 22 };
 const FORMS = {
   normal: {
     gap: 44, tipRadius: 3,
-    front: { ...FRONT, top: [395, 620], right: 92, rTL: 22, rTR: 22, rBL: 10 },
+    front: { ...FRONT, top: [395, 620], right: 92, rTL: 22, rTR: GROOVE_RADIUS, rBL: 10 },
     rear: [
-      { id: 'b', left: line([440, 470], 80), top: [570, 455], right: vertical(668), tip: [496, 955], bottom: 62, rTL: 30, rTR: 34, rBR: 30 },
+      { id: 'b', left: line([440, 470], 80), top: [570, 455], right: vertical(668), tip: [496, 955], bottom: 62, rTL: 30, rTR: GROOVE_RADIUS, rBR: GROOVE_RADIUS },
       { id: 'a', ...BACK, tip: [506, 964] }],
     flat: { ...FLAT, rApex: 18, rEnd: 28 },
   },
   small: {
     gap: 56, tipRadius: 4,
-    front: { ...FRONT, top: [400, 560], right: 80, rTL: 30, rTR: 30, rBL: 12 },
+    front: { ...FRONT, top: [400, 560], right: 80, rTL: 30, rTR: GROOVE_RADIUS, rBL: 12 },
     rear: [{ id: 'a', ...BACK, left: line([520, 360], 76), tip: [504, 962], bottom: 42 }],
     flat: { ...FLAT, rApex: 22, rEnd: 32 },
   },
   five: {
-    gap: 24, tipRadius: 1.5,
+    gap: 24, tipRadius: 1.5, evenCorners: true,
     front: FRONT,
     rear: [
       { id: 'c', left: vertical(396), top: [470, 545], right: vertical(548), tip: [492.5, 951.5], bottom: 78, rTL: 20, rTR: 22, rBR: 20 },
@@ -141,8 +144,11 @@ function buildBlades(form) {
     const pts = [[...TL, s.rTL], [...TR, s.rTR], [...BR, s.rBR], [...s.tip, tipRadius]];
     // The gap is not offset below the bend: the edge runs from this sheet's own
     // tip, so the gap narrows towards the pivot as in the first logo.
-    if (front.bottom) pts.push([...cross(offset(front.bottom, gap, front.c), oRight), front.rBR + gap]);
-    pts.push([...cross(oRight, oTop), front.rTR + gap]);
+    // The first drawing kept the gap even around corners too: its rear corner
+    // is the front one plus the gap.
+    const facing = r => form.evenCorners ? r + gap : r;
+    if (front.bottom) pts.push([...cross(offset(front.bottom, gap, front.c), oRight), facing(front.rBR)]);
+    pts.push([...cross(oRight, oTop), facing(front.rTR)]);
     pts.push([...cross(oTop, s.left), INNER_RADIUS]);
     out.push({ id: s.id, corners: rounded(pts) });
     front = { top: sTop, right: s.right, bottom, c: centre([TL, TR, BR, s.tip]), rTR: s.rTR, rBR: s.rBR };
@@ -162,9 +168,10 @@ function buildBlades(form) {
 // Both gradients are placed in the drawing's space (userSpaceOnUse), not in each
 // blade's own box: the blades read as cut from one sheet of colour.
 
-// At rest: one linear gradient across the blades.
-const REST = { from: PIVOT, to: [1029, 642],
-  stops: [[0, '#05B2FC'], [0.25, '#1F7DFB'], [0.5, '#4F49FB'], [0.75, '#7137FB'], [1, '#8A2EFB']] };
+// At rest: one linear gradient across the blades, from the pivot up to the top
+// right. One step lighter than the first logo's, as Windows 11's own icons are.
+const REST = { from: PIVOT, to: [999, 271],
+  stops: [[0, '#4CC9FF'], [0.25, '#3D8BFF'], [0.5, '#6366FF'], [0.75, '#8B5CFF'], [1, '#A974FF']] };
 
 // Lit: one radial gradient centred on the pivot, shared by every lit blade.
 const EMBER = { centre: PIVOT, radius: 720,
@@ -173,11 +180,15 @@ const EMBER = { centre: PIVOT, radius: 720,
 // The dot an icon carries while a user incident is open: Windows' caution yellow.
 const INCIDENT = '#FFB900';
 
-// The tile behind the mark where it stands among other apps (the taskbar,
-// Alt+Tab). It is keyed by the Windows mode it is shown on: pale on a dark
-// taskbar, dark on a light one. The mark takes TILE_MARK of the tile's side.
-const TILE = { dark: '#E6E8F0', light: '#14142B' };
-const TILE_MARK = 1 / 1.34, TILE_RADIUS = 0.22;
+// Depth, the way Fluent icons get it: a light from above, laid on each blade
+// in its own box (white, fading out over the top part of the blade), and a
+// soft shadow cast below the mark, in drawing units. No tile behind the mark:
+// Windows 11 icons are the shape alone.
+const SHEEN = { opacity: 0.28, reach: 0.55 };
+const SHADOW = { colour: '#1A0B4D', opacity: 0.32, dy: 6, blur: 9 };
+// Below this size the shadow is under half a pixel wide and only muddies the
+// edge, so the small icons go without it, as Microsoft's do.
+const SHADOW_MIN_SIZE = 48;
 
 // What each state lights. The names are the app's: recording while the microphone
 // is open, rewriting while a profile rewrites the transcript.
@@ -186,15 +197,15 @@ const STATES = { rest: [], recording: ['a'], rewriting: ['a', 'e'] };
 // --- Views ------------------------------------------------------------------
 
 // The square a mark is shown in: its own box, centred, with a thin margin, so it
-// takes all the pixels a 16 px tray icon has. `scale` widens it for a tile.
-function markView(blades, scale = 1) {
+// takes all the pixels a 16 px tray icon has. No room is kept for the shadow:
+// it would shrink the mark, and what the edge cuts of it is faint, under the tips.
+function markView(blades) {
   const pts = blades.flatMap(b => polygon(b.corners));
   const xs = pts.map(p => p[0]), ys = pts.map(p => p[1]);
   const x0 = Math.min(...xs), x1 = Math.max(...xs), y0 = Math.min(...ys), y1 = Math.max(...ys);
-  const side = Math.max(x1 - x0, y1 - y0) * 1.03 * scale;
+  const side = Math.max(x1 - x0, y1 - y0) * 1.03;
   return { x: (x0 + x1 - side) / 2, y: (y0 + y1 - side) / 2, side };
 }
-const tileView = blades => markView(blades, 1 / TILE_MARK);
 
 // --- SVG --------------------------------------------------------------------
 
@@ -214,17 +225,24 @@ function pathData(corners, ox = 0, oy = 0) {
 const stopTags = list => list.map(([o, c]) => `<stop offset="${o}" stop-color="${c}"/>`).join('');
 const restGradient = (ox, oy) => `<linearGradient id="rest" gradientUnits="userSpaceOnUse" x1="${f(REST.from[0] - ox)}" y1="${f(REST.from[1] - oy)}" x2="${f(REST.to[0] - ox)}" y2="${f(REST.to[1] - oy)}">${stopTags(REST.stops)}</linearGradient>`;
 const emberGradient = (ox, oy) => `<radialGradient id="ember" gradientUnits="userSpaceOnUse" cx="${f(EMBER.centre[0] - ox)}" cy="${f(EMBER.centre[1] - oy)}" r="${EMBER.radius}">${stopTags(EMBER.stops)}</radialGradient>`;
+// In each blade's own box (objectBoundingBox, the default), so every blade is lit from its top.
+const sheenGradient = `<linearGradient id="sheen" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#fff" stop-opacity="${SHEEN.opacity}"/><stop offset="${SHEEN.reach}" stop-color="#fff" stop-opacity="0"/></linearGradient>`;
+const shadowFilter = `<filter id="shadow" x="-20%" y="-20%" width="140%" height="140%"><feDropShadow dx="0" dy="${SHADOW.dy}" stdDeviation="${SHADOW.blur}" flood-color="${SHADOW.colour}" flood-opacity="${SHADOW.opacity}"/></filter>`;
 
 function svg(blades, title, lit) {
   const [ox, oy] = SVG_ORIGIN;
-  const defs = restGradient(ox, oy) + (lit.length ? '\n' + emberGradient(ox, oy) : '');
+  const defs = [restGradient(ox, oy), ...(lit.length ? [emberGradient(ox, oy)] : []), sheenGradient, shadowFilter].join('\n');
   const paths = blades
     .map(b => `<path id="blade-${b.id}" d="${pathData(b.corners, ox, oy)}" fill="url(#${lit.includes(b.id) ? 'ember' : 'rest'})"/>`).join('\n');
+  const sheens = blades.map(b => `<path d="${pathData(b.corners, ox, oy)}" fill="url(#sheen)"/>`).join('\n');
   return `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 ${SVG_SIZE} ${SVG_SIZE}" role="img" aria-label="${title}">
 <defs>
 ${defs}
 </defs>
+<g filter="url(#shadow)">
 ${paths}
+</g>
+${sheens}
 </svg>
 `;
 }
@@ -266,21 +284,49 @@ function holds(s, x, y) {
   return inside;
 }
 
-// RGBA pixels, straight alpha. `tile` is a colour, or nothing for the bare mark.
-function raster(blades, lit, size, { incident = false, tile = null } = {}) {
-  const shapes = blades.map(b => shape(polygon(b.corners), lit.includes(b.id) ? emberColour : restColour));
-  const view = tile ? tileView(blades) : markView(blades);
+// A blade's colour with the light from above laid on it, measured in the
+// blade's own box as the SVG's sheen is.
+function lit(s, colour) {
+  return (x, y) => {
+    const c = colour(x, y), t = (y - s.y0) / (s.y1 - s.y0);
+    const k = SHEEN.opacity * Math.max(0, 1 - t / SHEEN.reach);
+    return c.map(v => v + (255 - v) * k);
+  };
+}
+
+// Blurs an alpha plane in place, one axis then the other.
+function gaussian(plane, size, sigma) {
+  const radius = Math.ceil(sigma * 3), kernel = [];
+  for (let i = -radius; i <= radius; i++) kernel.push(Math.exp(-(i * i) / (2 * sigma * sigma)));
+  const sum = kernel.reduce((a, b) => a + b, 0), tmp = new Float32Array(plane.length);
+  for (const [from, to, horizontal] of [[plane, tmp, true], [tmp, plane, false]])
+    for (let y = 0; y < size; y++) for (let x = 0; x < size; x++) {
+      let v = 0;
+      for (let i = -radius; i <= radius; i++) {
+        const xx = horizontal ? x + i : x, yy = horizontal ? y : y + i;
+        if (xx >= 0 && xx < size && yy >= 0 && yy < size) v += from[yy * size + xx] * kernel[i + radius];
+      }
+      to[y * size + x] = v / sum;
+    }
+}
+
+// RGBA pixels, straight alpha: the bare mark, its shadow under it from
+// SHADOW_MIN_SIZE up.
+function raster(blades, litIds, size, { incident = false } = {}) {
+  const shapes = blades.map(b => {
+    const s = shape(polygon(b.corners), null);
+    s.colour = lit(s, litIds.includes(b.id) ? emberColour : restColour);
+    return s;
+  });
+  const shadowed = size >= SHADOW_MIN_SIZE, view = markView(blades);
   if (incident) {
     // The dot sits in the top-left corner, the one the mark leaves empty.
     const c = [view.x + view.side * 0.125, view.y + view.side * 0.125], r = view.side * 0.115;
     const circle = Array.from({ length: 64 }, (_, i) => [c[0] + r * Math.cos(i * Math.PI / 32), c[1] + r * Math.sin(i * Math.PI / 32)]);
     shapes.unshift(shape(circle, plain(INCIDENT)));
   }
-  if (tile) {
-    const r = view.side * TILE_RADIUS, x0 = view.x, y0 = view.y, x1 = x0 + view.side, y1 = y0 + view.side;
-    shapes.push(shape(polygon(rounded([[x0, y0, r], [x1, y0, r], [x1, y1, r], [x0, y1, r]])), plain(tile)));
-  }
   const grid = size >= 128 ? 4 : 8, px = new Uint8Array(size * size * 4), step = view.side / size / grid;
+  const alpha = new Float32Array(size * size);
   for (let py = 0; py < size; py++) for (let pxl = 0; pxl < size; pxl++) {
     let r = 0, g = 0, b = 0, hit = 0;
     for (let sy = 0; sy < grid; sy++) for (let sx = 0; sx < grid; sx++) {
@@ -293,7 +339,22 @@ function raster(blades, lit, size, { incident = false, tile = null } = {}) {
     if (!hit) continue;
     const o = (py * size + pxl) * 4;
     px[o] = Math.round(r / hit); px[o + 1] = Math.round(g / hit); px[o + 2] = Math.round(b / hit);
-    px[o + 3] = Math.round(255 * hit / (grid * grid));
+    alpha[py * size + pxl] = hit / (grid * grid);
+    px[o + 3] = Math.round(255 * alpha[py * size + pxl]);
+  }
+  if (!shadowed) return px;
+
+  // The shadow: the mark's own coverage, moved down and blurred, laid under it.
+  const unit = size / view.side, dy = Math.round(SHADOW.dy * unit), shade = new Float32Array(size * size);
+  for (let y = dy; y < size; y++) for (let x = 0; x < size; x++) shade[y * size + x] = alpha[(y - dy) * size + x];
+  gaussian(shade, size, SHADOW.blur * unit);
+  const sc = rgb(SHADOW.colour);
+  for (let i = 0; i < size * size; i++) {
+    const a = alpha[i], s = shade[i] * SHADOW.opacity * (1 - a), out = a + s;
+    if (out <= 0) continue;
+    const o = i * 4;
+    for (let k = 0; k < 3; k++) px[o + k] = Math.round((px[o + k] * a + sc[k] * s) / out);
+    px[o + 3] = Math.round(255 * out);
   }
   return px;
 }
@@ -344,48 +405,38 @@ function ico(draw) {
 // --- The sheet --------------------------------------------------------------
 
 // One file, one fixed grid that shows what the app ships: the two forms in the
-// three states from 16 to 64 px, bare first, then on the tile. Two switches change only how it
-// is shown: the Windows mode (page colour, and the tile that goes with it) and
-// the rendering (the vector drawing, or the exact pixels an .ico holds, at the
-// same size). No script: the switches are radio buttons read by CSS.
+// three states from 16 to 128 px. Two switches change only how it is shown: the
+// Windows mode (page colour) and the rendering (the vector drawing, or the
+// exact pixels an .ico holds, at the same size). No script: the switches are
+// radio buttons read by CSS.
 function sheet(forms) {
-  const sizes = [16, 20, 24, 32, 48, 64];
+  const sizes = [16, 20, 24, 32, 48, 64, 128];
   const n = v => Math.round(v * 10) / 10;
   const symbols = Object.entries(forms).map(([name, blades]) => {
     const v = markView(blades);
-    return `<symbol id="${name}" viewBox="${n(v.x)} ${n(v.y)} ${n(v.side)} ${n(v.side)}">`
-      + blades.map(b => `<path class="${b.id}" d="${pathData(b.corners)}"/>`).join('') + `</symbol>`;
+    return `<symbol id="${name}" viewBox="${n(v.x)} ${n(v.y)} ${n(v.side)} ${n(v.side)}"><g filter="url(#shadow)">`
+      + blades.map(b => `<path class="${b.id}" d="${pathData(b.corners)}"/>`).join('') + `</g>`
+      + blades.map(b => `<path class="sheen" d="${pathData(b.corners)}"/>`).join('') + `</symbol>`;
   });
-  const cell = (name, state, s, tiled) => {
-    const blades = forms[name], lit = STATES[state], size = `width="${s}" height="${s}"`;
-    const img = (options, cls = '') => `<img ${size}${cls} alt="" src="data:image/png;base64,${png(raster(blades, lit, s, options), s).toString('base64')}">`;
-    if (!tiled) return `<td><svg class="${state}" ${size}><use href="#${name}" width="100%" height="100%"/></svg>${img()}</td>`;
-    const t = tileView(blades), m = markView(blades);
-    return `<td><svg class="${state}" ${size} viewBox="${n(t.x)} ${n(t.y)} ${n(t.side)} ${n(t.side)}"><rect x="${n(t.x)}" y="${n(t.y)}" width="${n(t.side)}" height="${n(t.side)}" rx="${n(t.side * TILE_RADIUS)}"/><use href="#${name}" x="${n(m.x)}" y="${n(m.y)}" width="${n(m.side)}" height="${n(m.side)}"/></svg>`
-      + img({ tile: TILE.dark }, ' class="dark"') + img({ tile: TILE.light }, ' class="light"') + `</td>`;
+  const cell = (name, state, s) => {
+    const blades = forms[name], size = `width="${s}" height="${s}"`;
+    const img = `<img ${size} alt="" src="data:image/png;base64,${png(raster(blades, STATES[state], s), s).toString('base64')}">`;
+    return `<td><svg class="${state}" ${size}><use href="#${name}" width="100%" height="100%"/></svg>${img}</td>`;
   };
-  // The bare marks first, the tiles together at the end; inside a state, the
-  // normal form sits right above the small one.
-  const sections = [
-    [false, 'Bare mark', 'Tray and title bars. Deckle ships the small form here.'],
-    [true, 'On a tile', 'Taskbar and Alt+Tab. Deckle ships the normal form here, at rest and recording.'],
-  ];
+  // Inside a state, the normal form sits right above the small one.
   const names = Object.keys(forms);
   let rows = '';
-  for (const [tiled, title, use] of sections) {
-    rows += `<tr class="section"><th colspan="${sizes.length + 2}">${title}<span>${use}</span></th></tr>\n`;
-    for (const state of Object.keys(STATES)) names.forEach((name, i) => {
-      rows += `<tr${i ? '' : ' class="first"'}>${i ? '' : `<th rowspan="${names.length}">${state}</th>`}<th>${name}</th>${sizes.map(s => cell(name, state, s, tiled)).join('')}</tr>\n`;
-    });
-  }
+  for (const state of Object.keys(STATES)) names.forEach((name, i) => {
+    rows += `<tr${i ? '' : ' class="first"'}>${i ? '' : `<th rowspan="${names.length}">${state}</th>`}<th>${name}</th>${sizes.map(s => cell(name, state, s)).join('')}</tr>\n`;
+  });
   const group = (name, label, options) => `<div class="param"><span>${label}</span>` + options.map(([id, text], i) =>
     `<input type="radio" name="${name}" id="${name}-${id}"${i ? '' : ' checked'}><label for="${name}-${id}">${text}</label>`).join('') + `</div>`;
 
   return `<!doctype html>
 <!-- Written by logo/generate.mjs: change the generator, not this file. -->
 <html lang="en"><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Deckle — logo sheet</title><style>
-:root{--bg:#000;--fg:#fff;--line:#242424;--tile:${TILE.dark}}
-body:has(#mode-light:checked){--bg:#fff;--fg:#000;--line:#e6e6e6;--tile:${TILE.light}}
+:root{--bg:#000;--fg:#fff;--line:#242424}
+body:has(#mode-light:checked){--bg:#fff;--fg:#000;--line:#e6e6e6}
 body{margin:0;padding:24px;background:var(--bg);color:var(--fg);font:12px/16px "Cascadia Mono",Consolas,monospace}
 h1{font-size:12px;font-weight:400;margin:0 0 20px;text-transform:uppercase;letter-spacing:.12em}
 p{margin:0 0 24px;max-width:64ch;opacity:.7}
@@ -403,23 +454,21 @@ th,td{height:80px;padding:0;font-weight:400;text-align:center;vertical-align:mid
 thead th{height:32px}
 th{opacity:.5;text-align:left;white-space:nowrap}
 thead th:nth-child(n+3){text-align:center}
-thead tr>*,tr.first>*,tr.section>*{border-top:1px solid var(--line)}
-tr.section th{height:48px;opacity:1}
-tr.section span{opacity:.5;margin-left:16px}
+thead tr>*,tr.first>*{border-top:1px solid var(--line)}
 td svg,td img{display:block;margin:auto}
 td img,body:has(#rendering-pixels:checked) td svg{display:none}
 body:has(#rendering-pixels:checked) td img{display:block;image-rendering:pixelated}
-body:has(#rendering-pixels:checked):has(#mode-light:checked) td img.dark,
-body:has(#rendering-pixels:checked):not(:has(#mode-light:checked)) td img.light{display:none}
 svg{--rest:url(#rest);--a:var(--rest);--e:var(--rest)}
 svg.recording{--a:url(#ember)}
 svg.rewriting{--a:url(#ember);--e:url(#ember)}
-rect{fill:var(--tile)}path{fill:var(--rest)}path.a{fill:var(--a)}path.e{fill:var(--e)}
+path{fill:var(--rest)}path.a{fill:var(--a)}path.e{fill:var(--e)}path.sheen{fill:url(#sheen)}
 </style><body><h1>Deckle — logo sheet</h1>
-<p>The mark has two forms. Normal has four blades. Small has three, so its gaps stay open at 16 px. A blade lights up while Deckle works: one while it records, two while it rewrites.</p>
+<p>The mark has two forms, both bare, as Windows 11 icons are. Normal has four blades and stands in the taskbar. Small has three, so its gaps stay open at 16 px, and stands in the tray and the title bars. A blade lights up while Deckle works: one while it records, two while it rewrites. The icon pixels carry the shadow from ${SHADOW_MIN_SIZE} px up.</p>
 <svg width="0" height="0" style="position:absolute"><defs>
 ${restGradient(0, 0)}
 ${emberGradient(0, 0)}
+${sheenGradient}
+${shadowFilter}
 ${symbols.join('\n')}
 </defs></svg>
 <form>
@@ -451,10 +500,10 @@ for (const [state, lit] of Object.entries(STATES)) {
   // A XAML title bar takes a bitmap, shown at 16 px: see IconAssets.
   writeFileSync(iconFile(`deckle--state--${state}--32px.png`), png(raster(small, lit, 32), 32));
 }
-// A window's icon (taskbar, Alt+Tab): the normal form on the tile of each
-// Windows mode. A window shows the microphone, not the rewrite.
-for (const state of ['rest', 'recording']) for (const [mode, tile] of Object.entries(TILE))
-  writeFileSync(iconFile(`deckle--state--${state}--mode--${mode}.ico`), ico(size => raster(normal, STATES[state], size, { tile })));
+// A window's icon (taskbar, Alt+Tab): the normal form. A window shows the
+// microphone, not the rewrite.
+for (const state of ['rest', 'recording'])
+  writeFileSync(iconFile(`deckle--state--${state}--form--normal.ico`), ico(size => raster(normal, STATES[state], size)));
 
 writeFileSync(beside('deckle-five.svg'), svg(five, 'Deckle, first drawing', []));
 writeFileSync(beside('sheet.html'), sheet({ normal, small }));

@@ -4,14 +4,16 @@
 
 `generate.mjs` holds the two gradients the logo uses.
 
-- **Rest** — linear, across the blades: `#05B2FC` `#1F7DFB` `#4F49FB` `#7137FB` `#8A2EFB`.
+- **Rest** — linear, from the pivot to the top right: `#4CC9FF` `#3D8BFF` `#6366FF` `#8B5CFF` `#A974FF`. One step lighter than the first logo's `#05B2FC` … `#8A2EFB`, as Windows 11's own icons are; changed on 2026-11-15.
 - **Ember** — radial from the pivot, shared by every lit blade: `#FFC21A` `#FF8A1F` `#FF4D2E` `#F5245E` `#E01E8C`.
 
 A lit blade says a capability is at work: the large back blade for transcription, the flat right blade added to it for rewriting.
 
-The tile behind the mark, where it stands among other apps, follows the Windows mode and not the app mode: `#E6E8F0` on a dark taskbar, `#14142B` on a light one. A tile filled with the rest gradient under a white mark was tried on 2026-11-11 and not kept: too heavy, and Ember does not read on it.
+Depth follows Fluent: a white sheen from the top of each blade (28 % fading out by 55 % of its height) and a soft shadow below the mark (`#1A0B4D` at 32 %), which the icon pixels carry from 48 px up.
 
-`sheet.html` shows every form, backing, state and size the app ships.
+The mark stands bare everywhere, with no tile behind it, as Windows 11 icons do. A tile keyed to the Windows mode (`#E6E8F0` on a dark taskbar, `#14142B` on a light one) shipped until 2026-11-15 and was dropped: it read as a Windows 10 icon. A tile filled with the rest gradient under a white mark was tried on 2026-11-11 and not kept either: too heavy, and Ember does not read on it.
+
+`sheet.html` shows every form, state and size the app ships.
 
 ## Set aside
 
