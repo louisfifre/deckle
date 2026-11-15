@@ -732,10 +732,12 @@ _Generated from `git ls-files` — do not edit by hand._
 │   │   │   ├── EntryFormat.cs
 │   │   │   └── SelectionSummary.cs
 │   │   ├── Icons/
+│   │   │   ├── DeckleAtelierSource.Previews.cs
 │   │   │   ├── FileContentPresence.cs
 │   │   │   ├── FileIconKey.cs
 │   │   │   ├── FileThumbnailProbe.cs
 │   │   │   ├── MemoryBoundedCache.cs
+│   │   │   ├── PdfFirstPageReader.cs
 │   │   │   ├── ShellImage.cs
 │   │   │   ├── ShellImageNativeMethods.cs
 │   │   │   ├── ShellImagePixels.cs
@@ -2435,6 +2437,7 @@ _Generated from `git ls-files` — do not edit by hand._
 │   │   ├── Icons/
 │   │   │   ├── FileIconKeyTests.cs
 │   │   │   ├── MemoryBoundedCacheTests.cs
+│   │   │   ├── PdfFirstPageReaderTests.cs
 │   │   │   ├── ShellImageReaderSystemTests.cs
 │   │   │   ├── ShellPixelRulesTests.cs
 │   │   │   ├── ShellWorkQueueTests.cs
