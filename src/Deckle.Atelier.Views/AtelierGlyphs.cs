@@ -21,7 +21,10 @@ internal static class AtelierGlyphs
     public const string SizesTool = "";
     public const string MapTool = "";
 
-    public const string DisplayList = "";
+    public const string ShowInFolder = "";  // FolderOpen
+    public const string RecycleBin = "";    // Delete (the bin)
+
+    public const string DisplayList ="";
     public const string DisplayLargeRows = "";
     public const string DisplayGallery = "";
 }

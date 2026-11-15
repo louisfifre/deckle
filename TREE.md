@@ -530,6 +530,7 @@ _Generated from `git ls-files` — do not edit by hand._
 │   │   │   ├── SessionGestures.cs
 │   │   │   └── TaskGestures.cs
 │   │   ├── Plan/
+│   │   │   ├── EditRefusal.cs
 │   │   │   ├── example.space-plan.json
 │   │   │   ├── PlanApi.cs
 │   │   │   ├── PlanJson.cs
@@ -659,6 +660,7 @@ _Generated from `git ls-files` — do not edit by hand._
 │   │   ├── App.PrecisionScroll.cs
 │   │   ├── App.Relocate.cs
 │   │   ├── App.SelfCheck.Atelier.cs
+│   │   ├── App.SelfCheck.Atelier.FolderIcons.cs
 │   │   ├── App.SelfCheck.Atelier.Map.cs
 │   │   ├── App.SelfCheck.Atelier.Photos.cs
 │   │   ├── App.SelfCheck.Atelier.Sizes.cs
@@ -716,7 +718,8 @@ _Generated from `git ls-files` — do not edit by hand._
 │   ├── Deckle.Atelier/
 │   │   ├── AddedFolders/
 │   │   │   ├── AddedFolder.cs
-│   │   │   └── AddedFolderStore.cs
+│   │   │   ├── AddedFolderStore.cs
+│   │   │   └── FolderIconRule.cs
 │   │   ├── Browsing/
 │   │   │   ├── AddressResolver.cs
 │   │   │   ├── FolderListing.cs
@@ -735,6 +738,10 @@ _Generated from `git ls-files` — do not edit by hand._
 │   │   │   ├── ShellImagePixels.cs
 │   │   │   ├── ShellImageReader.cs
 │   │   │   └── ShellWorkQueue.cs
+│   │   ├── Launching/
+│   │   │   ├── DeckleAtelierSource.Launching.cs
+│   │   │   ├── FileLauncher.cs
+│   │   │   └── ShellFileLauncher.cs
 │   │   ├── Map/
 │   │   │   ├── FrontMatter.cs
 │   │   │   ├── MapConventions.cs
@@ -763,7 +770,9 @@ _Generated from `git ls-files` — do not edit by hand._
 │   │   │   ├── PhotoMarkStore.cs
 │   │   │   ├── PhotoRenamer.cs
 │   │   │   ├── PhotoRenameRule.cs
-│   │   │   ├── PhotoSidecars.cs
+│   │   │   └── PhotoSidecars.cs
+│   │   ├── Recycling/
+│   │   │   ├── DeckleAtelierSource.Recycling.cs
 │   │   │   ├── RecycleBin.cs
 │   │   │   ├── ShellFileOperationInterop.cs
 │   │   │   └── ShellRecycleBin.cs
@@ -786,6 +795,7 @@ _Generated from `git ls-files` — do not edit by hand._
 │   │   └── DeckleAtelierSource.cs
 │   ├── Deckle.Atelier.Views/
 │   │   ├── Address/
+│   │   │   ├── AddressBar.Icon.cs
 │   │   │   ├── AddressBar.xaml
 │   │   │   ├── AddressBar.xaml.cs
 │   │   │   └── AddressCrumb.cs
@@ -801,7 +811,13 @@ _Generated from `git ls-files` — do not edit by hand._
 │   │   │   ├── Files/
 │   │   │   │   ├── FileDetails.cs
 │   │   │   │   ├── FileRow.cs
+│   │   │   │   ├── FileRowActions.xaml
+│   │   │   │   ├── FileRowActions.xaml.cs
+│   │   │   │   ├── FilesReview.cs
 │   │   │   │   ├── FilesTool.cs
+│   │   │   │   ├── FilesView.Actions.cs
+│   │   │   │   ├── FilesView.Photo.cs
+│   │   │   │   ├── FilesView.Review.cs
 │   │   │   │   ├── FilesView.xaml
 │   │   │   │   └── FilesView.xaml.cs
 │   │   │   ├── Map/
@@ -841,6 +857,7 @@ _Generated from `git ls-files` — do not edit by hand._
 │   │   │   └── ToolPlaceholderView.cs
 │   │   ├── AtelierGlyphs.cs
 │   │   ├── AtelierText.cs
+│   │   ├── AtelierWindow.FolderIcon.cs
 │   │   ├── AtelierWindow.Folders.cs
 │   │   ├── AtelierWindow.Navigation.cs
 │   │   ├── AtelierWindow.Review.cs
@@ -1093,6 +1110,12 @@ _Generated from `git ls-files` — do not edit by hand._
 │   │   │   ├── SettingsComposer.Numeric.cs
 │   │   │   ├── SettingsPageHeader.cs
 │   │   │   └── SettingsSection.cs
+│   │   ├── IconPicker/
+│   │   │   ├── IconChoiceView.cs
+│   │   │   ├── IconPicker.cs
+│   │   │   ├── IconSymbolGlyphs.cs
+│   │   │   ├── IconTintPalette.cs
+│   │   │   └── IconTintSwatch.cs
 │   │   ├── ConfirmationService.cs
 │   │   ├── ConsentService.cs
 │   │   ├── Deckle.Catalog.csproj
@@ -1135,6 +1158,10 @@ _Generated from `git ls-files` — do not edit by hand._
 │   │   ├── Hotkeys/
 │   │   │   ├── HotkeyChord.cs
 │   │   │   └── HotkeyModifiers.cs
+│   │   ├── Icons/
+│   │   │   ├── IconChoice.cs
+│   │   │   ├── IconSymbol.cs
+│   │   │   └── IconTint.cs
 │   │   ├── Interop/
 │   │   │   ├── NativeMethods.Audio.cs
 │   │   │   ├── NativeMethods.cs
@@ -2339,6 +2366,7 @@ _Generated from `git ls-files` — do not edit by hand._
 │   │   ├── DevSpaceBugNotes.md
 │   │   ├── DevSpaceTests.cs
 │   │   ├── DocumentGesturesTests.cs
+│   │   ├── EditRefusalTests.cs
 │   │   ├── FakeV2Handler.cs
 │   │   ├── GatewayKeyFingerprintTests.cs
 │   │   ├── GatewayPayloadTests.cs
@@ -2371,6 +2399,7 @@ _Generated from `git ls-files` — do not edit by hand._
 │   │   ├── SchemaAdminGesturesTests.cs
 │   │   ├── SessionGesturesBugNotes.md
 │   │   ├── SessionGesturesTests.cs
+│   │   ├── SpacePlanBugNotes.md
 │   │   ├── SpacePlanFragmentsTests.cs
 │   │   ├── SpacePlanTests.cs
 │   │   ├── SpacePlanTrialTests.cs
@@ -2402,6 +2431,8 @@ _Generated from `git ls-files` — do not edit by hand._
 │   │   │   ├── ShellImageReaderSystemTests.cs
 │   │   │   ├── ShellPixelRulesTests.cs
 │   │   │   └── ShellWorkQueueTests.cs
+│   │   ├── Launching/
+│   │   │   └── ShellFileLauncherTests.cs
 │   │   ├── Photos/
 │   │   │   ├── CaptureDataTests.cs
 │   │   │   ├── DarktableTests.cs
@@ -2412,13 +2443,18 @@ _Generated from `git ls-files` — do not edit by hand._
 │   │   │   ├── PhotoRenamerTests.cs
 │   │   │   ├── PhotosEventsTests.cs
 │   │   │   ├── RawReadingMaintenanceTests.cs
-│   │   │   ├── SamplePhotosTests.cs
+│   │   │   └── SamplePhotosTests.cs
+│   │   ├── Recycling/
+│   │   │   ├── RecycleOutcomeTests.cs
 │   │   │   └── ShellRecycleBinTests.cs
 │   │   ├── AddedFolderStoreTests.cs
 │   │   ├── AddressResolverTests.cs
+│   │   ├── AtelierEventIdBugNotes.md
 │   │   ├── Deckle.Atelier.Tests.csproj
+│   │   ├── DeckleAtelierSourceEventIdTests.cs
 │   │   ├── DeckleAtelierSourceTests.cs
 │   │   ├── EntryFormatTests.cs
+│   │   ├── FolderIconRuleTests.cs
 │   │   ├── FolderListingTests.cs
 │   │   ├── HeaviestFilesTests.cs
 │   │   ├── MapInventoryTests.cs

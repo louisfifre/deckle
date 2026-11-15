@@ -17,8 +17,9 @@ public sealed partial class DeckleAtelierSource
     public const int EvtPhotoMarksSaveFailed  = 102;
     public const int EvtMarksApplyStarted     = 103;
     public const int EvtMarksApplyEnded       = 104;
-    public const int EvtPhotoRecycleRefused   = 105;
-    public const int EvtPhotoDeletedForGood   = 106;
+    // 105 and 106 were born here as the Recycle Bin's events; the bin now
+    // serves every tool, and its events keep their numbers in
+    // Recycling/DeckleAtelierSource.Recycling.cs.
     public const int EvtPhotoRenameFailed     = 107;
     public const int EvtDarktableOpened       = 108;
     public const int EvtDarktableNotOpened    = 109;
@@ -73,28 +74,6 @@ public sealed partial class DeckleAtelierSource
     public void MarksApplyEnded(string run_id, int recycled, int renamed, int failed, long elapsed_ms)
     {
         if (IsEnabled()) WriteEvent(EvtMarksApplyEnded, run_id, recycled, renamed, failed, elapsed_ms);
-    }
-
-    // The shell said it would not recycle the photo, or failed: the photo is
-    // left in its folder, never deleted for good, and the apply goes on.
-    [Event(EvtPhotoRecycleRefused,
-           Level = EventLevel.Warning,
-           Keywords = (EventKeywords)Keywords.Pipeline,
-           Message = "A photo stayed in its folder because the Recycle Bin could not take it\nreason={0} | hresult={1}")]
-    public void PhotoRecycleRefused(string reason, int hresult)
-    {
-        if (IsEnabled()) WriteEvent(EvtPhotoRecycleRefused, reason, hresult);
-    }
-
-    // The guard did not hold: the shell reported a deletion with no item in
-    // the Recycle Bin. Error, because the person was promised the bin.
-    [Event(EvtPhotoDeletedForGood,
-           Level = EventLevel.Error,
-           Keywords = (EventKeywords)Keywords.Pipeline,
-           Message = "A photo was deleted for good instead of going to the Recycle Bin\nextension={0}")]
-    public void PhotoDeletedForGood(string extension)
-    {
-        if (IsEnabled()) WriteEvent(EvtPhotoDeletedForGood, extension);
     }
 
     [Event(EvtPhotoRenameFailed,

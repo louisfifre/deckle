@@ -27,6 +27,27 @@ public static class EntryFormat
     public static string Date(DateTime local, CultureInfo culture) =>
         local.ToString(culture.DateTimeFormat.ShortDatePattern, culture);
 
+    // The extension a type is named by when nothing more is known of it, as
+    // File Explorer writes it in "Fichier PDF": upper case, without the dot.
+    // Null for a name that has none, which File Explorer calls "Fichier".
+    public static string? TypeExtension(string name)
+    {
+        string extension = Path.GetExtension(name).TrimStart('.');
+        return extension.Length == 0 ? null : extension.ToUpperInvariant();
+    }
+
+    // The line under a name in the large rows (board 12.16): type, size and
+    // date modified, in that order, as File Explorer's Content view lists
+    // them. A folder has no size of its own, so its line skips it rather than
+    // show an empty place between two separators.
+    public static string Summary(string type, long? bytes, DateTime modified, string separator, CultureInfo culture)
+    {
+        string date = Date(modified, culture);
+        return bytes is long size
+            ? string.Join(separator, type, Size(size, culture), date)
+            : string.Join(separator, type, date);
+    }
+
     // French writes octets (Ko, Mo); every other culture gets the SI letters.
     private static string Unit(string french, CultureInfo culture) =>
         culture.TwoLetterISOLanguageName == "fr" ? french : french.Replace('o', 'B');

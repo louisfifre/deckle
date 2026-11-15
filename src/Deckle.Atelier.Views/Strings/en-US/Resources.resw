@@ -71,6 +71,19 @@
   <data name="Display_List" xml:space="preserve"><value>Liste</value></data>
   <data name="Display_LargeRows" xml:space="preserve"><value>Grandes lignes</value></data>
   <data name="Display_Gallery" xml:space="preserve"><value>Galerie</value></data>
+  <data name="Files_Summary_Separator" xml:space="preserve"><value> · </value></data>
+  <!-- The two actions of a row (12.1). The button shows the action, its
+       accessible name adds the item, so a screen reader says which row. -->
+  <data name="Files_ShowInFolder" xml:space="preserve"><value>Ouvrir dans l'Explorateur</value></data>
+  <data name="Files_Recycle" xml:space="preserve"><value>Mettre à la Corbeille</value></data>
+  <data name="Files_ShowInFolder_Name_Format" xml:space="preserve"><value>Ouvrir dans l'Explorateur : {0}</value></data>
+  <data name="Files_Recycle_Name_Format" xml:space="preserve"><value>Mettre à la Corbeille : {0}</value></data>
+  <!-- What the file tool says when Windows did not do what was asked. -->
+  <data name="Files_Recycle_Stayed_Format" xml:space="preserve"><value>« {0} » n'a pas pu aller à la Corbeille. Il reste dans le dossier.</value></data>
+  <data name="Files_Recycle_Destroyed_Format" xml:space="preserve"><value>« {0} » a été supprimé définitivement au lieu d'aller à la Corbeille.</value></data>
+  <data name="Files_Open_Failed_Format" xml:space="preserve"><value>« {0} » n'a pas pu être ouvert.</value></data>
+  <data name="Files_ShowInFolder_Failed_Format" xml:space="preserve"><value>L'Explorateur n'a pas pu montrer « {0} ».</value></data>
+  <data name="Files_Gone_Format" xml:space="preserve"><value>« {0} » n'est plus dans ce dossier.</value></data>
 
   <!-- Details panel -->
   <data name="Details_Panel" xml:space="preserve"><value>Détails</value></data>
@@ -228,4 +241,31 @@
   <data name="Map_Mutual" xml:space="preserve"><value>dans les deux sens</value></data>
   <data name="Map_None" xml:space="preserve"><value>Rien dans ce dossier.</value></data>
   <data name="Map_NoLinks" xml:space="preserve"><value>Ne cite rien et n'est cité par rien dans ce dossier.</value></data>
+
+  <!-- An added folder's icon (spec, Window; boards 12.3, 12.3b): the address
+       bar's icon button, then the keys the shared picker of Deckle.Catalog
+       asks its host for (IconPicker.cs lists them). -->
+  <data name="Address_Icon_Format" xml:space="preserve"><value>Changer l'icône de {0}</value></data>
+  <data name="IconPicker_Icon" xml:space="preserve"><value>Icône</value></data>
+  <data name="IconPicker_Color" xml:space="preserve"><value>Couleur</value></data>
+  <data name="IconPicker_Background" xml:space="preserve"><value>Fond</value></data>
+  <data name="IconPicker_Background_Off" xml:space="preserve"><value>Sans fond</value></data>
+  <data name="IconPicker_Background_On" xml:space="preserve"><value>Fond carré</value></data>
+  <data name="IconPicker_Symbol_Folder" xml:space="preserve"><value>Dossier</value></data>
+  <data name="IconPicker_Symbol_Photos" xml:space="preserve"><value>Photos</value></data>
+  <data name="IconPicker_Symbol_Documents" xml:space="preserve"><value>Documents</value></data>
+  <data name="IconPicker_Symbol_Code" xml:space="preserve"><value>Code</value></data>
+  <data name="IconPicker_Symbol_Music" xml:space="preserve"><value>Musique</value></data>
+  <data name="IconPicker_Symbol_Videos" xml:space="preserve"><value>Vidéos</value></data>
+  <data name="IconPicker_Symbol_Downloads" xml:space="preserve"><value>Téléchargements</value></data>
+  <data name="IconPicker_Symbol_Archive" xml:space="preserve"><value>Archives</value></data>
+  <data name="IconPicker_Symbol_Work" xml:space="preserve"><value>Travail</value></data>
+  <data name="IconPicker_Symbol_Home" xml:space="preserve"><value>Maison</value></data>
+  <data name="IconPicker_Symbol_People" xml:space="preserve"><value>Personnes</value></data>
+  <data name="IconPicker_Symbol_Favorite" xml:space="preserve"><value>Favori</value></data>
+  <data name="IconPicker_Tint_Accent" xml:space="preserve"><value>Couleur d'accentuation de Windows</value></data>
+  <data name="IconPicker_Tint_Red" xml:space="preserve"><value>Rouge</value></data>
+  <data name="IconPicker_Tint_Orange" xml:space="preserve"><value>Orange</value></data>
+  <data name="IconPicker_Tint_Green" xml:space="preserve"><value>Vert</value></data>
+  <data name="IconPicker_Tint_Purple" xml:space="preserve"><value>Violet</value></data>
 </root>

@@ -40,6 +40,10 @@ public sealed partial class DeckleAtelierSource : DeckleEventSource
     public const int EvtMapInventoryCancelled  = 43;
     public const int EvtMapConfigUnreadable    = 44;
 
+    // The added folders' icons take 50 to 59.
+    public const int EvtFolderIconChanged       = 50;
+    public const int EvtFolderIconChangedDetail = 51;
+
     // The file exists and cannot be read: the window opens with no folder,
     // and the unreadable file is kept aside so nothing is lost.
     [Event(EvtAddedFoldersLoadFailed,
@@ -72,10 +76,31 @@ public sealed partial class DeckleAtelierSource : DeckleEventSource
     [Event(EvtFolderAddedDetail,
            Level = EventLevel.Verbose,
            Keywords = (EventKeywords)Keywords.Lifecycle,
-           Message = "folders={0}")]
-    public void FolderAddedDetail(int folders)
+           Message = "folders={0} | icon={1}",
+           Version = 1)]
+    public void FolderAddedDetail(int folders, string icon)
     {
-        if (IsEnabled()) WriteEvent(EvtFolderAddedDetail, folders);
+        if (IsEnabled()) WriteEvent(EvtFolderAddedDetail, folders, icon);
+    }
+
+    // The person gave an added folder another icon with the picker. The
+    // detail says the choice: names of the fixed set, nothing of the folder.
+    [Event(EvtFolderIconChanged,
+           Level = EventLevel.Informational,
+           Keywords = (EventKeywords)Keywords.Lifecycle,
+           Message = "An added folder's icon was changed")]
+    public void FolderIconChanged()
+    {
+        if (IsEnabled()) WriteEvent(EvtFolderIconChanged);
+    }
+
+    [Event(EvtFolderIconChangedDetail,
+           Level = EventLevel.Verbose,
+           Keywords = (EventKeywords)Keywords.Lifecycle,
+           Message = "icon={0} | tint={1} | background={2}")]
+    public void FolderIconChangedDetail(string icon, string tint, bool background)
+    {
+        if (IsEnabled()) WriteEvent(EvtFolderIconChangedDetail, icon, tint, background);
     }
 
     [Event(EvtFolderListed,

@@ -26,4 +26,28 @@ public sealed class EntryFormatTests
     {
         Assert.Equal("31/12/2023", EntryFormat.Date(new DateTime(2023, 12, 31, 18, 5, 0), French));
     }
+
+    [Theory]
+    [InlineData("Contrat-location.pdf", "PDF")]
+    [InlineData("Recette-pain.md", "MD")]
+    [InlineData("archive.tar.gz", "GZ")]
+    [InlineData("Makefile", null)]
+    public void ATypeIsNamedByItsExtensionInUpperCase(string name, string? expected)
+    {
+        Assert.Equal(expected, EntryFormat.TypeExtension(name));
+    }
+
+    [Fact]
+    public void AFileSummaryReadsTypeThenSizeThenDate()
+    {
+        string summary = EntryFormat.Summary("Fichier PDF", 412 * 1024L, new DateTime(2023, 12, 31), " · ", French);
+        Assert.Equal("Fichier PDF · 412 Ko · 31/12/2023", summary);
+    }
+
+    [Fact]
+    public void AFolderSummarySkipsTheSizeItDoesNotHave()
+    {
+        string summary = EntryFormat.Summary("Dossier de fichiers", null, new DateTime(2023, 12, 31), " · ", French);
+        Assert.Equal("Dossier de fichiers · 31/12/2023", summary);
+    }
 }

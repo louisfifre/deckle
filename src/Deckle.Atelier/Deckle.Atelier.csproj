@@ -13,6 +13,9 @@
        Deckle.Diagnostics is referenced only for the EventSource. -->
   <ItemGroup>
     <ProjectReference Include="..\Deckle.Diagnostics\Deckle.Diagnostics.csproj" />
+    <!-- IconChoice: an added folder's icon, the type the shared picker of
+         Deckle.Catalog edits. Core holds no XAML. -->
+    <ProjectReference Include="..\Deckle.Core\Deckle.Core.csproj" />
     <!-- Photos: capture data. Used by Photos/CaptureDataReader.cs alone. -->
     <PackageReference Include="MetadataExtractor" />
   </ItemGroup>

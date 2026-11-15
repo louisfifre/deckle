@@ -23,7 +23,8 @@ internal sealed partial class PhotosView : UserControl, IAtelierToolView
 {
     private readonly IAtelierToolHost _host;
     private readonly string _moduleDirectory;
-    private readonly PhotoMarkQueue _queue = new();
+    // Shared with the file tool, which shows and sets the same marks.
+    private readonly PhotoMarkQueue _queue;
     private readonly Dictionary<string, CaptureReading> _readings = new(FolderPaths.Comparer);
 
     private FolderPlace? _place;
@@ -40,10 +41,11 @@ internal sealed partial class PhotosView : UserControl, IAtelierToolView
     // makes by itself are not taken for the person's.
     private bool _filling;
 
-    public PhotosView(IAtelierToolHost host, string moduleDirectory)
+    public PhotosView(IAtelierToolHost host, string moduleDirectory, PhotoMarkQueue queue)
     {
         _host = host;
         _moduleDirectory = moduleDirectory;
+        _queue = queue;
         InitializeComponent();
         Root.AddHandler(KeyDownEvent, new KeyEventHandler(OnRootKeyDown), handledEventsToo: true);
         ApplyLabels();

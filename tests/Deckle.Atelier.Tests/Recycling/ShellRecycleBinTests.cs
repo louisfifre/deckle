@@ -2,8 +2,8 @@ using Xunit;
 
 namespace Deckle.Atelier.Tests;
 
-// The real Recycle Bin, through the shell, on files the test writes in the
-// temporary folder (a drive that has a bin). Each recycled file is removed
+// The real Recycle Bin, through the shell, on files and folders the test
+// writes in the temporary folder (a drive that has a bin). Each recycled item is removed
 // from the bin afterwards, its $R data file and its $I record, so the run
 // leaves nothing in the person's bin.
 //
@@ -30,6 +30,30 @@ public sealed class ShellRecycleBinTests
             Assert.NotNull(outcome.RecycledPath);
             Assert.True(File.Exists(outcome.RecycledPath));
             Assert.Contains("$Recycle.Bin", outcome.RecycledPath, StringComparison.OrdinalIgnoreCase);
+        }
+        finally
+        {
+            PurgeFromBin(outcome.RecycledPath);
+        }
+    }
+
+    [Fact]
+    public void AFolderGoesToTheRecycleBinWithWhatItHolds()
+    {
+        using var scratch = new ScratchFolder();
+        string folder = scratch.Folder("deckle-atelier-recycle-test-folder");
+        scratch.File("inside", "deckle-atelier-recycle-test-folder", "sub", "note.txt");
+        var outcomes = new List<RecycleOutcome>();
+
+        new ShellRecycleBin().Recycle([folder], (_, o) => outcomes.Add(o), CancellationToken.None);
+
+        RecycleOutcome outcome = Assert.Single(outcomes);
+        try
+        {
+            Assert.Equal(RecycleStatus.Recycled, outcome.Status);
+            Assert.False(Directory.Exists(folder));
+            Assert.NotNull(outcome.RecycledPath);
+            Assert.True(File.Exists(Path.Combine(outcome.RecycledPath, "sub", "note.txt")));
         }
         finally
         {
@@ -74,15 +98,20 @@ public sealed class ShellRecycleBinTests
     }
 
     // The bin keeps "$R<id>.<ext>" (the data) next to "$I<id>.<ext>" (where it
-    // came from and when). Only the test's own file is touched, by the exact
-    // path the shell returned.
+    // came from and when); a recycled folder's data is a folder. Only the
+    // test's own item is touched, by the exact path the shell returned.
     private static void PurgeFromBin(string? recycled)
     {
         if (recycled is null) return;
         string name = Path.GetFileName(recycled);
         if (!name.StartsWith("$R", StringComparison.Ordinal)) return;
         string info = Path.Combine(Path.GetDirectoryName(recycled)!, "$I" + name[2..]);
-        try { File.Delete(recycled); } catch (IOException) { } catch (UnauthorizedAccessException) { }
+        try
+        {
+            if (Directory.Exists(recycled)) Directory.Delete(recycled, recursive: true);
+            else File.Delete(recycled);
+        }
+        catch (IOException) { } catch (UnauthorizedAccessException) { }
         try { File.Delete(info); } catch (IOException) { } catch (UnauthorizedAccessException) { }
     }
 }

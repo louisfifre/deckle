@@ -1,35 +1,64 @@
+using System.Collections.ObjectModel;
 using Microsoft.UI.Xaml;
 using Microsoft.UI.Xaml.Automation;
 using Microsoft.UI.Xaml.Controls;
+using Microsoft.UI.Xaml.Controls.Primitives;
 using Microsoft.UI.Xaml.Input;
+using Microsoft.UI.Xaml.Media;
 using Windows.System;
 
 namespace Deckle.Atelier.Views;
 
-// The file tool's centre. A click selects a row and opens the details panel;
-// a double-click or Enter on a folder enters it (spec, Behaviours: a click
-// never opens the item). Opening a file is not built yet.
+// The file tool's centre, in the display chosen at its bottom right: the
+// list, the large rows or the gallery. A click selects an item and opens the
+// details panel; it never opens the item (spec, Behaviours). A double-click
+// or Enter enters a folder and opens a file in its default application, in
+// every display, as File Explorer does.
+//
+// The three displays show the same items (FileRow). Only the shown one holds
+// them, so only its containers are realized: each is a ListView or a GridView,
+// which realizes the items on screen alone, and asks the shell for an item's
+// icon or picture when it realizes its container (FileRow.LoadAsync), off the
+// UI thread behind the icon seam. A folder of thousands of items scrolls as
+// one of ten in each display.
+//
+// This file holds the displays, the selection and the keys; the row actions
+// (FilesView.Actions.cs), the panel of a photo (FilesView.Photo.cs) and the
+// self-check's hooks (FilesView.Review.cs) each have their partial file.
 internal sealed partial class FilesView : UserControl, IAtelierToolView
 {
     private readonly IAtelierToolHost _host;
     private FolderPlace? _place;
+    private ObservableCollection<FileRow> _rows = [];
 
-    // Set while the rows are replaced, so the selection changes the list makes
-    // by itself are not taken for the person's.
+    // Set while the items are replaced or moved to another display, so the
+    // selection changes a control makes by itself are not taken for the
+    // person's.
     private bool _filling;
 
-    public FilesView(IAtelierToolHost host)
+    public FilesView(IAtelierToolHost host, string moduleDirectory, PhotoMarkQueue marks,
+                     IRecycleBin bin, IFileLauncher launcher)
     {
         _host = host;
+        _moduleDirectory = moduleDirectory;
+        _marks = marks;
+        _bin = bin;
+        _launcher = launcher;
         InitializeComponent();
         Label(DisplayListButton, "Display_List");
         Label(DisplayLargeRowsButton, "Display_LargeRows");
         Label(DisplayGalleryButton, "Display_Gallery");
         AutomationProperties.SetName(DisplayChoice, AtelierText.Get("Display_Group"));
+        AutomationProperties.SetName(Rows, AtelierText.Get("Display_List"));
+        AutomationProperties.SetName(LargeRows, AtelierText.Get("Display_LargeRows"));
+        AutomationProperties.SetName(Gallery, AtelierText.Get("Display_Gallery"));
     }
 
     FrameworkElement IAtelierToolView.Content => this;
 
+    // Kept by the view, which the window keeps for the tool's whole life: the
+    // display stays as chosen from one folder to the next, as File Explorer
+    // keeps the last one chosen (spec silent).
     internal FileListDisplay Display { get; private set; } = FileListDisplay.List;
 
     public async Task ShowAsync(FolderPlace place, string? selection, CancellationToken cancellation)
@@ -37,18 +66,26 @@ internal sealed partial class FilesView : UserControl, IAtelierToolView
         FolderListingResult listing = await Task.Run(() => FolderListing.List(place.Path), cancellation);
         if (cancellation.IsCancellationRequested) return;
 
+        if (_place is null || !FolderPaths.Comparer.Equals(_place.Path, place.Path))
+        {
+            _readings.Clear();
+            Notice.IsOpen = false;
+        }
         _place = place;
-        List<FileRow> rows = [.. listing.Entries.Select(e => new FileRow(e))];
+        foreach (FileRow old in _rows) old.Release(Display);
+        ObservableCollection<FileRow> rows = [.. listing.Entries.Select(e => new FileRow(e))];
+        _rows = rows;
+        FileRow? selected;
         _filling = true;
         try
         {
-            Rows.ItemsSource = rows;
-            FileRow? selected = selection is null
+            ListViewBase items = ItemsOf(Display);
+            items.ItemsSource = rows;
+            selected = selection is null
                 ? null
                 : rows.FirstOrDefault(r => FolderPaths.Comparer.Equals(r.Entry.Path, selection));
-            Rows.SelectedItem = selected;
-            if (selected is not null) Rows.ScrollIntoView(selected);
-            _host.Select(selected?.Entry.Path, selected is null ? null : FileDetails.For(selected.Entry));
+            items.SelectedItem = selected;
+            if (selected is not null) items.ScrollIntoView(selected);
         }
         finally
         {
@@ -62,58 +99,199 @@ internal sealed partial class FilesView : UserControl, IAtelierToolView
             FolderListingFailure.AccessDenied => AtelierText.Get("Files_AccessDenied"),
             _ => AtelierText.Get("Files_Unreadable"),
         };
-        Message.Text = message ?? "";
-        Message.Visibility = message is null ? Visibility.Collapsed : Visibility.Visible;
-
-        await LoadIconsAsync(rows, cancellation);
+        ShowMessage(message);
+        await ShowDetailsAsync(selected);
     }
 
-    // After the rows are shown, so the list never waits for its icons. The
-    // size asked for is the 16 DIP cell in physical pixels.
-    private async Task LoadIconsAsync(List<FileRow> rows, CancellationToken cancellation)
+    private void ShowMessage(string? message)
     {
-        int pixelSize = (int)Math.Round(IconCellSize * (XamlRoot?.RasterizationScale ?? 1.0));
-        foreach (FileRow row in rows)
+        Message.Text = message ?? "";
+        Message.Visibility = message is null ? Visibility.Collapsed : Visibility.Visible;
+    }
+
+    // ── Displays ──────────────────────────────────────────────────────────
+
+    private void OnDisplayClick(object sender, RoutedEventArgs e)
+    {
+        FileListDisplay display =
+            ReferenceEquals(sender, DisplayLargeRowsButton) ? FileListDisplay.LargeRows
+            : ReferenceEquals(sender, DisplayGalleryButton) ? FileListDisplay.Gallery
+            : FileListDisplay.List;
+        ShowDisplay(display);
+    }
+
+    // The same folder in another display: the items move to its control with
+    // their selection, scrolled to it, and the details panel is left as it
+    // is, since what is selected has not changed. A click on the pressed
+    // button would release it; it stays pressed instead, as one display is
+    // always shown.
+    internal void ShowDisplay(FileListDisplay display)
+    {
+        MarkDisplay(display);
+        if (display == Display) return;
+
+        ListViewBase from = ItemsOf(Display);
+        ListViewBase to = ItemsOf(display);
+        object? selected = from.SelectedItem;
+        bool hadFocus = from.FocusState != FocusState.Unfocused;
+        FileListDisplay left = Display;
+        Display = display;
+
+        _filling = true;
+        try
         {
-            if (cancellation.IsCancellationRequested) return;
-            row.Icon = await _host.Icons.GetAsync(row.Entry.Path, row.Entry.IsFolder, pixelSize, cancellation);
+            from.ItemsSource = null;
+            from.Visibility = Visibility.Collapsed;
+            foreach (FileRow row in _rows) row.Release(left);
+
+            to.Visibility = Visibility.Visible;
+            to.ItemsSource = _rows;
+            to.SelectedItem = selected;
+            if (selected is not null) to.ScrollIntoView(selected);
         }
+        finally
+        {
+            _filling = false;
+        }
+
+        Header.Visibility = display == FileListDisplay.List ? Visibility.Visible : Visibility.Collapsed;
+        if (hadFocus) to.Focus(FocusState.Programmatic);
+    }
+
+    private void MarkDisplay(FileListDisplay display)
+    {
+        DisplayListButton.IsChecked = display == FileListDisplay.List;
+        DisplayLargeRowsButton.IsChecked = display == FileListDisplay.LargeRows;
+        DisplayGalleryButton.IsChecked = display == FileListDisplay.Gallery;
+    }
+
+    private ListViewBase ItemsOf(FileListDisplay display) => display switch
+    {
+        FileListDisplay.LargeRows => LargeRows,
+        FileListDisplay.Gallery => Gallery,
+        _ => Rows,
+    };
+
+    private FileListDisplay DisplayOf(object control) =>
+        ReferenceEquals(control, LargeRows) ? FileListDisplay.LargeRows
+        : ReferenceEquals(control, Gallery) ? FileListDisplay.Gallery
+        : FileListDisplay.List;
+
+    // ── Icons and pictures ────────────────────────────────────────────────
+
+    // An item asks for what its display draws when the display realizes its
+    // container, and drops it when the container is recycled. The sizes are
+    // the display's image cells in physical pixels.
+    private void OnContainerContentChanging(ListViewBase sender, ContainerContentChangingEventArgs args)
+    {
+        if (args.Item is not FileRow row) return;
+        FileListDisplay display = DisplayOf(sender);
+        if (args.InRecycleQueue)
+        {
+            row.Release(display);
+            return;
+        }
+        double cell = display switch
+        {
+            FileListDisplay.LargeRows => LargeIconCellSize,
+            FileListDisplay.Gallery => TileIconCellSize,
+            _ => IconCellSize,
+        };
+        _ = row.LoadAsync(_host.Icons, display, PixelSize(cell), PixelSize(TileWidth));
     }
 
     private const double IconCellSize = 16;
+    private const double LargeIconCellSize = 32;
+    private const double TileIconCellSize = 64;
+    private const double TileWidth = 160;
+
+    private int PixelSize(double dips) => (int)Math.Round(dips * (XamlRoot?.RasterizationScale ?? 1.0));
+
+    // ── Selection and the panel ───────────────────────────────────────────
 
     private void OnSelectionChanged(object sender, SelectionChangedEventArgs e)
     {
         if (_filling) return;
-        if (Rows.SelectedItem is FileRow row) _host.Select(row.Entry.Path, FileDetails.For(row.Entry));
-        else _host.Select(null, null);
+        _ = ShowDetailsAsync(((ListViewBase)sender).SelectedItem as FileRow);
     }
 
-    private void OnRowsDoubleTapped(object sender, DoubleTappedRoutedEventArgs e)
+    // A photo shows the photo tool's panel (spec, Details panel; 12.15); any
+    // other item, its size, date and location (12.1).
+    private Task ShowDetailsAsync(FileRow? row)
     {
-        if ((e.OriginalSource as FrameworkElement)?.DataContext is FileRow row) Enter(row);
-    }
-
-    private void OnRowsKeyDown(object sender, KeyRoutedEventArgs e)
-    {
-        if (e.Key == VirtualKey.Enter && Rows.SelectedItem is FileRow row)
+        ForgetPhotoPanel();
+        if (row is null)
         {
-            Enter(row);
-            e.Handled = true;
+            _host.Select(null, null);
+            return Task.CompletedTask;
+        }
+        if (IsPhoto(row)) return ShowPhotoDetailsAsync(row);
+        _host.Select(row.Entry.Path, FileDetails.For(row.Entry));
+        return Task.CompletedTask;
+    }
+
+    // ── Activation and keys ───────────────────────────────────────────────
+
+    // A double-click on one of the row's actions is two clicks on that
+    // action, not a request to open the row.
+    private void OnItemsDoubleTapped(object sender, DoubleTappedRoutedEventArgs e)
+    {
+        if (IsInButton(e.OriginalSource as DependencyObject, (DependencyObject)sender)) return;
+        if ((e.OriginalSource as FrameworkElement)?.DataContext is FileRow row) Activate(row);
+    }
+
+    // Enter opens what is selected; Delete sends it to the Recycle Bin, as in
+    // File Explorer, but Shift+Delete, which Explorer uses to delete for good,
+    // does nothing here: this app never deletes for good. G and X mark a
+    // photo whose panel is shown, as in the photo tool. Keys pressed on a
+    // row's action button are that button's.
+    private void OnItemsKeyDown(object sender, KeyRoutedEventArgs e)
+    {
+        if (e.OriginalSource is ButtonBase) return;
+        if (((ListViewBase)sender).SelectedItem is not FileRow row) return;
+        bool modified = IsDown(VirtualKey.Control) || IsDown(VirtualKey.Menu);
+        switch (e.Key)
+        {
+            case VirtualKey.Enter:
+                Activate(row);
+                e.Handled = true;
+                break;
+            case VirtualKey.Delete when !modified && !IsDown(VirtualKey.Shift):
+                _ = RecycleAsync(row);
+                e.Handled = true;
+                break;
+            case VirtualKey.G when !modified && _photoTile is not null:
+                MarkPhoto(PhotoMark.Keep);
+                e.Handled = true;
+                break;
+            case VirtualKey.X when !modified && _photoTile is not null:
+                MarkPhoto(PhotoMark.Delete);
+                e.Handled = true;
+                break;
         }
     }
 
-    private void Enter(FileRow row)
+    private void Activate(FileRow row)
     {
-        if (!row.Entry.IsFolder || _place is null) return;
-        _host.Open(_place.Enter(row.Entry.Path));
+        if (!row.Entry.IsFolder)
+        {
+            _ = OpenAsync(row);
+            return;
+        }
+        if (_place is not null) _host.Open(_place.Enter(row.Entry.Path));
     }
 
-    // Only the list is built; its button stays pressed.
-    private void OnDisplayClick(object sender, RoutedEventArgs e)
+    private static bool IsDown(VirtualKey key) =>
+        Microsoft.UI.Input.InputKeyboardSource.GetKeyStateForCurrentThread(key)
+            .HasFlag(Windows.UI.Core.CoreVirtualKeyStates.Down);
+
+    private static bool IsInButton(DependencyObject? element, DependencyObject stop)
     {
-        Display = FileListDisplay.List;
-        DisplayListButton.IsChecked = true;
+        for (DependencyObject? e = element; e is not null && !ReferenceEquals(e, stop); e = VisualTreeHelper.GetParent(e))
+        {
+            if (e is ButtonBase) return true;
+        }
+        return false;
     }
 
     private static void Label(FrameworkElement element, string key)

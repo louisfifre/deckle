@@ -2,7 +2,8 @@
     x:Class="Deckle.Atelier.Views.AddressBar"
     xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
     xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
-    xmlns:local="using:Deckle.Atelier.Views">
+    xmlns:local="using:Deckle.Atelier.Views"
+    xmlns:catalog="using:Deckle.Catalog">
 
     <!-- File Explorer's address bar (spec, Window): the path as segments, a
          chevron after a segment that lists the folders inside it, a click on
@@ -33,11 +34,17 @@
                 <ColumnDefinition Width="*" />
             </Grid.ColumnDefinitions>
 
-            <FontIcon x:Name="RootIcon"
-                      Width="28"
-                      Glyph="&#xE8B7;"
-                      FontSize="16"
-                      VerticalAlignment="Center" />
+            <!-- The added folder's icon. A click opens the icon picker under
+                 it (12.3); never a right-click (spec, Window). -->
+            <Button x:Name="IconButton"
+                    Width="28"
+                    Height="24"
+                    Padding="0"
+                    VerticalAlignment="Center"
+                    Style="{StaticResource SubtleButtonStyle}"
+                    Click="OnIconClick">
+                <catalog:IconChoiceView x:Name="RootIcon" />
+            </Button>
 
             <BreadcrumbBar x:Name="Crumbs"
                            Grid.Column="1"
