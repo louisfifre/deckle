@@ -740,7 +740,8 @@ _Generated from `git ls-files` — do not edit by hand._
 │   │   │   ├── ShellImageNativeMethods.cs
 │   │   │   ├── ShellImagePixels.cs
 │   │   │   ├── ShellImageReader.cs
-│   │   │   └── ShellWorkQueue.cs
+│   │   │   ├── ShellWorkQueue.cs
+│   │   │   └── TextPreviewReader.cs
 │   │   ├── Launching/
 │   │   │   ├── DeckleAtelierSource.Launching.cs
 │   │   │   ├── FileLauncher.cs
@@ -2436,7 +2437,8 @@ _Generated from `git ls-files` — do not edit by hand._
 │   │   │   ├── MemoryBoundedCacheTests.cs
 │   │   │   ├── ShellImageReaderSystemTests.cs
 │   │   │   ├── ShellPixelRulesTests.cs
-│   │   │   └── ShellWorkQueueTests.cs
+│   │   │   ├── ShellWorkQueueTests.cs
+│   │   │   └── TextPreviewReaderTests.cs
 │   │   ├── Launching/
 │   │   │   └── ShellFileLauncherTests.cs
 │   │   ├── Photos/
