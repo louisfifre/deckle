@@ -2,15 +2,17 @@ using Microsoft.UI.Xaml;
 
 namespace Deckle.Atelier.Views;
 
-// One row of the map's list, its texts formatted once when the folder is read.
+// One row of the map's list, its texts formatted once each time the list is filled.
 // Columns of board 12.8b: name, type, links, lines, tokens, date modified. A
 // figure the item does not have (a server's lines, a file too large to read)
 // stays blank, as File Explorer leaves a folder's size blank.
 internal sealed class MapRow
 {
-    public MapRow(MapItem item, int links, bool nameIsShared)
+    public MapRow(MapItem item, int links, bool nameIsShared, bool kindShown = true)
     {
         Item = item;
+        KindColumnWidth = kindShown ? MapKindColumnWidth : new GridLength(0);
+        KindVisibility = kindShown ? Visibility.Visible : Visibility.Collapsed;
         Glyph = MapKindText.Glyph(item.Kind);
         Kind = MapKindText.Name(item.Kind);
         Links = MapKindText.Count(links);
@@ -26,6 +28,15 @@ internal sealed class MapRow
         Folder = nameIsShared ? folder : "";
         FolderVisibility = nameIsShared && folder.Length > 0 ? Visibility.Visible : Visibility.Collapsed;
     }
+
+    // The Type column's width: shown flat (12.8b); by sections the section's
+    // title already says the kind, and the column goes (12.8a draws name,
+    // links, lines, tokens, date). The header follows the same width, and the
+    // columns after it have fixed widths, so they stay aligned either way.
+    public static GridLength MapKindColumnWidth { get; } = new(128);
+
+    public GridLength KindColumnWidth { get; }
+    public Visibility KindVisibility { get; }
 
     public MapItem Item { get; }
     public string Name => Item.Name;

@@ -4,8 +4,9 @@
     xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
     xmlns:local="using:Deckle.Atelier.Views">
 
-    <!-- The map's inventory as a details list, flat, as board 12.8b draws it:
-         the filter boxes, a header row, then one row per item. The header,
+    <!-- The map's inventory as a details list, flat as board 12.8b draws it or
+         by sections as 12.8a does: the filter boxes and the display's choice,
+         a header row, then one row per item. The header,
          the rows and the total share their column widths and sit 12 px in
          from the item's rounded fill, as in the file tool, so each label
          stands over its column and the last value ends the row. -->
@@ -36,19 +37,45 @@
             <RowDefinition Height="*" />
         </Grid.RowDefinitions>
 
-        <!-- "Toujours lu par un LLM" first, then one box per kind present in
-             the folder, all ticked (12.8b, 12.8c). -->
-        <StackPanel x:Name="Filters"
-                    Margin="16,0,16,4"
-                    Orientation="Horizontal"
-                    Spacing="24">
-            <CheckBox x:Name="AlwaysReadBox" x:Uid="MapAlwaysRead" MinWidth="0" Click="OnFilterClick" />
-            <Rectangle Width="1"
-                       Height="16"
-                       VerticalAlignment="Center"
-                       Fill="{ThemeResource DividerStrokeColorDefaultBrush}" />
-            <StackPanel x:Name="KindBoxes" Orientation="Horizontal" Spacing="24" />
-        </StackPanel>
+        <Grid x:Name="Toolbar" Margin="16,0,4,4" ColumnSpacing="12">
+            <Grid.ColumnDefinitions>
+                <ColumnDefinition Width="*" />
+                <ColumnDefinition Width="Auto" />
+            </Grid.ColumnDefinitions>
+
+            <!-- "Toujours lu par un LLM" first, then one box per kind present in
+                 the folder, all ticked (12.8b, 12.8c). -->
+            <StackPanel x:Name="Filters"
+                        Orientation="Horizontal"
+                        Spacing="24">
+                <CheckBox x:Name="AlwaysReadBox" x:Uid="MapAlwaysRead" MinWidth="0" Click="OnFilterClick" />
+                <Rectangle Width="1"
+                           Height="16"
+                           VerticalAlignment="Center"
+                           Fill="{ThemeResource DividerStrokeColorDefaultBrush}" />
+                <StackPanel x:Name="KindBoxes" Orientation="Horizontal" Spacing="24" />
+            </StackPanel>
+
+            <!-- The two displays of the same rows (spec, Open 11: both drawn),
+                 at the end of the filters' line, as the file tool's pressed
+                 button names its display. Flat first, the default. -->
+            <StackPanel x:Name="DisplayChoice"
+                        Grid.Column="1"
+                        Orientation="Horizontal"
+                        VerticalAlignment="Center"
+                        Spacing="2">
+                <StackPanel.Resources>
+                    <SolidColorBrush x:Key="ToggleButtonBackground" Color="Transparent" />
+                    <SolidColorBrush x:Key="ToggleButtonBorderBrush" Color="Transparent" />
+                </StackPanel.Resources>
+                <ToggleButton x:Name="FlatButton" Width="36" Height="32" Padding="0" IsChecked="True" Click="OnDisplayClick">
+                    <FontIcon Glyph="&#xE8FD;" FontSize="16" />
+                </ToggleButton>
+                <ToggleButton x:Name="SectionsButton" Width="36" Height="32" Padding="0" Click="OnDisplayClick">
+                    <FontIcon Glyph="&#xF168;" FontSize="16" />
+                </ToggleButton>
+            </StackPanel>
+        </Grid>
 
         <!-- The walk stopped at its bound on a huge folder: the list is partial. -->
         <InfoBar x:Name="Truncated"
@@ -68,14 +95,14 @@
               BorderThickness="0,0,0,1">
             <Grid.ColumnDefinitions>
                 <ColumnDefinition Width="*" />
-                <ColumnDefinition Width="{StaticResource MapKindColumnWidth}" />
+                <ColumnDefinition x:Name="HeaderKindColumn" Width="{StaticResource MapKindColumnWidth}" />
                 <ColumnDefinition Width="{StaticResource MapLinksColumnWidth}" />
                 <ColumnDefinition Width="{StaticResource MapLinesColumnWidth}" />
                 <ColumnDefinition Width="{StaticResource MapTokensColumnWidth}" />
                 <ColumnDefinition Width="{StaticResource MapModifiedColumnWidth}" />
             </Grid.ColumnDefinitions>
             <TextBlock x:Uid="MapHeaderName" Style="{StaticResource MapHeaderTextStyle}" />
-            <TextBlock x:Uid="MapHeaderKind" Grid.Column="1" Style="{StaticResource MapHeaderTextStyle}" />
+            <TextBlock x:Name="HeaderKind" x:Uid="MapHeaderKind" Grid.Column="1" Style="{StaticResource MapHeaderTextStyle}" />
             <TextBlock x:Uid="MapHeaderLinks" Grid.Column="2" Style="{StaticResource MapFigureTextStyle}" />
             <TextBlock x:Uid="MapHeaderLines" Grid.Column="3" Style="{StaticResource MapFigureTextStyle}" />
             <TextBlock x:Name="TokensHeader" x:Uid="MapHeaderTokens" Grid.Column="4" Style="{StaticResource MapFigureTextStyle}" />
@@ -98,6 +125,44 @@
                   SelectionMode="Single"
                   IsItemClickEnabled="False"
                   SelectionChanged="OnSelectionChanged">
+            <!-- Group titles scroll with their rows, as in File Explorer: a
+                 title held at the top would pass over the rows under it. -->
+            <ListView.ItemsPanel>
+                <ItemsPanelTemplate>
+                    <ItemsStackPanel AreStickyGroupHeadersEnabled="False" />
+                </ItemsPanelTemplate>
+            </ListView.ItemsPanel>
+
+            <!-- By sections (12.8a): one title per kind, its count after it in
+                 secondary text, with more room above it than a row has and a
+                 stronger weight (spec, Map). Its text starts where the names
+                 start (4 + 12). Ignored while the rows are flat. -->
+            <ListView.GroupStyle>
+                <GroupStyle>
+                    <GroupStyle.HeaderContainerStyle>
+                        <Style TargetType="ListViewHeaderItem">
+                            <Setter Property="Margin" Value="0" />
+                            <Setter Property="Padding" Value="16,0" />
+                            <Setter Property="MinHeight" Value="0" />
+                            <Setter Property="HorizontalContentAlignment" Value="Stretch" />
+                        </Style>
+                    </GroupStyle.HeaderContainerStyle>
+                    <GroupStyle.HeaderTemplate>
+                        <DataTemplate x:DataType="local:MapRowGroup">
+                            <StackPanel Margin="0,20,0,6" Orientation="Horizontal" Spacing="8">
+                                <TextBlock Text="{x:Bind Title}"
+                                           Style="{StaticResource BodyStrongTextBlockStyle}"
+                                           TextWrapping="NoWrap" />
+                                <TextBlock Text="{x:Bind CountText}"
+                                           Style="{StaticResource BodyTextBlockStyle}"
+                                           Foreground="{ThemeResource TextFillColorSecondaryBrush}"
+                                           TextWrapping="NoWrap" />
+                            </StackPanel>
+                        </DataTemplate>
+                    </GroupStyle.HeaderTemplate>
+                </GroupStyle>
+            </ListView.GroupStyle>
+
             <ListView.ItemContainerStyle>
                 <!-- The item spans the list's width and insets only its
                      rounded fill by 4 px; 16 px puts the content where the
@@ -112,7 +177,7 @@
                     <Grid ColumnSpacing="12" ToolTipService.ToolTip="{x:Bind Place}">
                         <Grid.ColumnDefinitions>
                             <ColumnDefinition Width="*" />
-                            <ColumnDefinition Width="{StaticResource MapKindColumnWidth}" />
+                            <ColumnDefinition Width="{x:Bind KindColumnWidth}" />
                             <ColumnDefinition Width="{StaticResource MapLinksColumnWidth}" />
                             <ColumnDefinition Width="{StaticResource MapLinesColumnWidth}" />
                             <ColumnDefinition Width="{StaticResource MapTokensColumnWidth}" />
@@ -137,7 +202,7 @@
                                        Visibility="{x:Bind FolderVisibility}"
                                        Style="{StaticResource MapHeaderTextStyle}" />
                         </Grid>
-                        <TextBlock Grid.Column="1" Text="{x:Bind Kind}" Style="{StaticResource MapHeaderTextStyle}" />
+                        <TextBlock Grid.Column="1" Text="{x:Bind Kind}" Visibility="{x:Bind KindVisibility}" Style="{StaticResource MapHeaderTextStyle}" />
                         <TextBlock Grid.Column="2" Text="{x:Bind Links}" Style="{StaticResource MapFigureTextStyle}" />
                         <TextBlock Grid.Column="3" Text="{x:Bind Lines}" Style="{StaticResource MapFigureTextStyle}" />
                         <TextBlock Grid.Column="4" Text="{x:Bind Tokens}" Style="{StaticResource MapFigureTextStyle}" />

@@ -3,7 +3,8 @@ using System.Runtime.CompilerServices;
 namespace Deckle.Atelier.Views;
 
 // What the self-check drives in the map that the window's own review steps
-// do not reach: the "always read" box (12.8c). The window keeps its tool
+// do not reach: the "always read" box (12.8c), the boxes per kind and the
+// choice between flat and by sections (12.8a). The window keeps its tool
 // views to itself, so each map view registers here under the window that
 // hosts it; the table holds them weakly, and a closed window takes its view.
 public static class MapReview
@@ -17,5 +18,18 @@ public static class MapReview
     public static void SetAlwaysReadOnly(AtelierWindow window, bool alwaysReadOnly)
     {
         if (Views.TryGetValue(window, out MapView? view)) view.SetAlwaysReadOnlyForReview(alwaysReadOnly);
+    }
+
+    // Ticks or unticks one kind's box the way a click does.
+    public static void SetKindShown(AtelierWindow window, MapItemKind kind, bool shown)
+    {
+        if (Views.TryGetValue(window, out MapView? view)) view.SetKindShownForReview(kind, shown);
+    }
+
+    // Shows the rows by sections (12.8a) or flat (12.8b), the way a click on
+    // the display's buttons does.
+    public static void SetBySections(AtelierWindow window, bool bySections)
+    {
+        if (Views.TryGetValue(window, out MapView? view)) view.SetBySectionsForReview(bySections);
     }
 }

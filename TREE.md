@@ -829,6 +829,7 @@ _Generated from `git ls-files` — do not edit by hand._
 │   │   │   │   ├── MapPanelSection.cs
 │   │   │   │   ├── MapReview.cs
 │   │   │   │   ├── MapRow.cs
+│   │   │   │   ├── MapRowGroup.cs
 │   │   │   │   ├── MapTool.cs
 │   │   │   │   ├── MapView.xaml
 │   │   │   │   └── MapView.xaml.cs

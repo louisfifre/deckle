@@ -5,8 +5,9 @@ namespace Deckle.App;
 
 // The map's states in the self-check's walk of the Atelier: the list on a
 // sample project (12.8b), an item selected with its panel and graph (12.8a),
-// the "always read" box ticked with its total (12.8c), and a folder with
-// nothing of the kind (12.14). The project is written under the sample folder
+// the "always read" box ticked with its total (12.8c), a filter that leaves no
+// row, the list by sections with an item that has no link (12.8a), and a folder
+// with nothing of the kind (12.14). The project is written under the sample folder
 // (MapSampleFolder) once the file tool's states are photographed, so those
 // images stay as they were, and before the address bar's text mode, which
 // stays open across navigation and would hide the path in these images.
@@ -29,7 +30,24 @@ public partial class App
             MapReview.SetAlwaysReadOnly(window, true);
             return window.SelectForReviewAsync("CLAUDE.md");
         });
+        // A filter that leaves no row: "always read" keeps only context
+        // files, and their box is unticked (spec, Open 33).
+        await capture("map-no-match", () =>
+        {
+            MapReview.SetKindShown(window, MapItemKind.ContextFile, false);
+            return Task.CompletedTask;
+        });
+        MapReview.SetKindShown(window, MapItemKind.ContextFile, true);
         MapReview.SetAlwaysReadOnly(window, false);
+
+        // By sections (12.8a), with an item that has no link selected, whose
+        // panel says so where the graph would be (spec, Open 33).
+        await capture("map-sections", () =>
+        {
+            MapReview.SetBySections(window, true);
+            return window.SelectForReviewAsync("LICENSE");
+        });
+        MapReview.SetBySections(window, false);
 
         await capture("map-nothing", async () =>
         {

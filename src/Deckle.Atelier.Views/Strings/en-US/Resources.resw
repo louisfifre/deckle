@@ -185,6 +185,9 @@
   <!-- Map tool (name not chosen): list, filters, empty state, panel -->
   <data name="MapFilters_Group" xml:space="preserve"><value>Filtres</value></data>
   <data name="MapAlwaysRead.Content" xml:space="preserve"><value>Toujours lu par un LLM</value></data>
+  <data name="Map_Display_Group" xml:space="preserve"><value>Affichage</value></data>
+  <data name="Map_Display_Flat" xml:space="preserve"><value>Liste</value></data>
+  <data name="Map_Display_Sections" xml:space="preserve"><value>Regrouper par type</value></data>
   <data name="MapHeaderName.Text" xml:space="preserve"><value>Nom</value></data>
   <data name="MapHeaderKind.Text" xml:space="preserve"><value>Type</value></data>
   <data name="MapHeaderLinks.Text" xml:space="preserve"><value>Liens</value></data>
