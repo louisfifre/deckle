@@ -1939,6 +1939,17 @@ _Generated from `git ls-files` — do not edit by hand._
 │   │   ├── Preset.cs
 │   │   └── PresetFamily.cs
 │   ├── Deckle.Projects/
+│   │   ├── Model/
+│   │   │   ├── ActionRef.cs
+│   │   │   ├── PinnedAction.cs
+│   │   │   ├── ProjectCategory.cs
+│   │   │   └── ProjectEntry.cs
+│   │   ├── ScriptMenu/
+│   │   │   └── ScriptMenuEntry.cs
+│   │   ├── Store/
+│   │   │   ├── DeckleProjectsSource.Store.cs
+│   │   │   ├── ProjectStore.cs
+│   │   │   └── StoredFile.cs
 │   │   ├── Deckle.Projects.csproj
 │   │   └── DeckleProjectsSource.cs
 │   ├── Deckle.Security/
@@ -2999,6 +3010,9 @@ _Generated from `git ls-files` — do not edit by hand._
 │   │   ├── Deckle.Presets.Tests.csproj
 │   │   └── PresetFamilyTests.cs
 │   ├── Deckle.Projects.Tests/
+│   │   ├── Store/
+│   │   │   ├── ProjectStoreEventsTests.cs
+│   │   │   └── ProjectStoreTests.cs
 │   │   ├── Deckle.Projects.Tests.csproj
 │   │   ├── DeckleProjectsSourceEventIdTests.cs
 │   │   ├── MessageTemplateDoctrineTests.cs
