@@ -36,20 +36,8 @@ internal sealed class WithoutCategoryFold : UserControl
                 Children =
                 {
                     _chevron,
-                    new TextBlock
-                    {
-                        Text = ProjectsText.Get("Home_WithoutCategory"),
-                        Style = (Style)Application.Current.Resources["BodyStrongTextBlockStyle"],
-                        Foreground = (Brush)Application.Current.Resources["TextFillColorSecondaryBrush"],
-                        VerticalAlignment = VerticalAlignment.Center,
-                    },
-                    new TextBlock
-                    {
-                        Text = projects.Count.ToString(ProjectsText.Culture),
-                        Style = (Style)Application.Current.Resources["BodyTextBlockStyle"],
-                        Foreground = (Brush)Application.Current.Resources["TextFillColorTertiaryBrush"],
-                        VerticalAlignment = VerticalAlignment.Center,
-                    },
+                    Label(ProjectsText.Get("Home_WithoutCategory"), "BodyStrongTextBlockStyle", "TextFillColorSecondaryBrush"),
+                    Label(projects.Count.ToString(ProjectsText.Culture), "BodyTextBlockStyle", "TextFillColorTertiaryBrush"),
                 },
             },
         };
@@ -64,12 +52,7 @@ internal sealed class WithoutCategoryFold : UserControl
             Spacing = 12,
             Children =
             {
-                new TextBlock
-                {
-                    Text = ProjectsText.Get("Home_WithoutCategoryHint"),
-                    Style = (Style)Application.Current.Resources["CaptionTextBlockStyle"],
-                    Foreground = (Brush)Application.Current.Resources["TextFillColorSecondaryBrush"],
-                },
+                Label(ProjectsText.Get("Home_WithoutCategoryHint"), "CaptionTextBlockStyle", "TextFillColorSecondaryBrush"),
                 Cards,
             },
         };
@@ -91,6 +74,14 @@ internal sealed class WithoutCategoryFold : UserControl
     }
 
     public ProjectGrid Cards { get; }
+
+    private static TextBlock Label(string text, string styleKey, string foregroundKey)
+    {
+        TextBlock label = Themed.Text(foregroundKey, styleKey);
+        label.Text = text;
+        label.VerticalAlignment = VerticalAlignment.Center;
+        return label;
+    }
 
     // Chevron down when closed, up when open, as Windows' own folds draw it.
     public bool IsOpen

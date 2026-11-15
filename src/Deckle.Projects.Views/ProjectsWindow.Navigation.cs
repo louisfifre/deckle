@@ -100,13 +100,11 @@ public sealed partial class ProjectsWindow
             TextAlignment = TextAlignment.Center,
             TextWrapping = TextWrapping.Wrap,
         });
-        message.Children.Add(new TextBlock
-        {
-            Text = ProjectsText.Get("Window_PageFailedHint"),
-            Foreground = (Brush)Application.Current.Resources["TextFillColorSecondaryBrush"],
-            TextAlignment = TextAlignment.Center,
-            TextWrapping = TextWrapping.Wrap,
-        });
+        TextBlock hint = Themed.Text("TextFillColorSecondaryBrush");
+        hint.Text = ProjectsText.Get("Window_PageFailedHint");
+        hint.TextAlignment = TextAlignment.Center;
+        hint.TextWrapping = TextWrapping.Wrap;
+        message.Children.Add(hint);
         return message;
     }
 

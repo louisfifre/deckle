@@ -35,12 +35,9 @@ internal sealed class CategorySection : UserControl
 
         if (projects.Count == 0)
         {
-            panel.Children.Add(new TextBlock
-            {
-                Text = ProjectsText.Get("Home_CategoryEmpty"),
-                Style = (Style)Application.Current.Resources["CaptionTextBlockStyle"],
-                Foreground = (Brush)Application.Current.Resources["TextFillColorSecondaryBrush"],
-            });
+            TextBlock hint = Themed.Text("TextFillColorSecondaryBrush", "CaptionTextBlockStyle");
+            hint.Text = ProjectsText.Get("Home_CategoryEmpty");
+            panel.Children.Add(hint);
         }
         else
         {

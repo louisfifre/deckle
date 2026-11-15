@@ -2021,6 +2021,7 @@ _Generated from `git ls-files` — do not edit by hand._
 │   │   │   ├── MainActionButton.cs
 │   │   │   ├── MainActionState.cs
 │   │   │   ├── ProjectDragData.cs
+│   │   │   ├── Themed.cs
 │   │   │   └── TrimmedTextToolTip.cs
 │   │   ├── Home/
 │   │   │   ├── CategoryHeader.cs

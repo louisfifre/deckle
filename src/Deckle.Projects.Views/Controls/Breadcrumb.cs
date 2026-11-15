@@ -1,7 +1,6 @@
 using Microsoft.UI.Xaml;
 using Microsoft.UI.Xaml.Automation;
 using Microsoft.UI.Xaml.Controls;
-using Microsoft.UI.Xaml.Media;
 
 namespace Deckle.Projects.Views;
 
@@ -24,7 +23,6 @@ internal sealed class Breadcrumb : UserControl
 {
     public Breadcrumb(IReadOnlyList<BreadcrumbStep> steps, bool trailingChevron)
     {
-        var secondary = (Brush)Application.Current.Resources["TextFillColorSecondaryBrush"];
         var row = new StackPanel { Orientation = Orientation.Horizontal, Spacing = 2 };
 
         for (int i = 0; i < steps.Count; i++)
@@ -32,36 +30,35 @@ internal sealed class Breadcrumb : UserControl
             BreadcrumbStep step = steps[i];
             if (step.Invoke is { } invoke)
             {
-                var button = new Button
-                {
-                    Style = (Style)Application.Current.Resources["SubtleButtonStyle"],
-                    Content = step.Label,
-                    Padding = new Thickness(6, 2, 6, 2),
-                    MinHeight = 0,
-                    Foreground = secondary,
-                };
+                Button button = Themed.SubtleButton("TextFillColorSecondaryBrush");
+                button.Content = step.Label;
+                button.Padding = new Thickness(6, 2, 6, 2);
+                button.MinHeight = 0;
                 button.Click += (_, _) => invoke();
                 row.Children.Add(button);
             }
             else
             {
-                row.Children.Add(new TextBlock { Text = step.Label, Foreground = secondary, VerticalAlignment = VerticalAlignment.Center, Margin = new Thickness(6, 0, 6, 0) });
+                TextBlock plain = Themed.Text("TextFillColorSecondaryBrush");
+                plain.Text = step.Label;
+                plain.VerticalAlignment = VerticalAlignment.Center;
+                plain.Margin = new Thickness(6, 0, 6, 0);
+                row.Children.Add(plain);
             }
 
-            if (i < steps.Count - 1 || trailingChevron) row.Children.Add(Chevron(secondary));
+            if (i < steps.Count - 1 || trailingChevron) row.Children.Add(Chevron());
         }
 
         Content = row;
         AutomationProperties.SetName(this, string.Join(" › ", steps.Select(s => s.Label)));
     }
 
-    private static FontIcon Chevron(Brush brush) => new()
+    private static FontIcon Chevron()
     {
-        Glyph = ProjectsGlyphs.ChevronRight,
-        FontSize = 12,
-        Foreground = brush,
-        VerticalAlignment = VerticalAlignment.Center,
-    };
+        FontIcon chevron = Themed.Icon(ProjectsGlyphs.ChevronRight, 12, "TextFillColorSecondaryBrush");
+        chevron.VerticalAlignment = VerticalAlignment.Center;
+        return chevron;
+    }
 
     // "Projects ›" for a category's page: Projects goes back to Home.
     public static Breadcrumb ForCategoryPage(ProjectsContext context) => new(

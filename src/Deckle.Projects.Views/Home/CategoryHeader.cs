@@ -1,7 +1,6 @@
 using Microsoft.UI.Xaml;
 using Microsoft.UI.Xaml.Automation;
 using Microsoft.UI.Xaml.Controls;
-using Microsoft.UI.Xaml.Media;
 
 namespace Deckle.Projects.Views;
 
@@ -20,8 +19,6 @@ internal sealed class CategoryHeader : UserControl
 
     public CategoryHeader(ProjectCategory category, int count, Action open)
     {
-        var tertiary = (Brush)Application.Current.Resources["TextFillColorTertiaryBrush"];
-
         var content = new StackPanel
         {
             Orientation = Orientation.Horizontal,
@@ -34,13 +31,7 @@ internal sealed class CategoryHeader : UserControl
                     Style = (Style)Application.Current.Resources["SubtitleTextBlockStyle"],
                     VerticalAlignment = VerticalAlignment.Center,
                 },
-                new TextBlock
-                {
-                    Text = count.ToString(ProjectsText.Culture),
-                    Style = (Style)Application.Current.Resources["BodyTextBlockStyle"],
-                    Foreground = tertiary,
-                    VerticalAlignment = VerticalAlignment.Center,
-                },
+                Count(count),
                 new FontIcon { Glyph = ProjectsGlyphs.ChevronRight, FontSize = 12, VerticalAlignment = VerticalAlignment.Center },
             },
         };
@@ -75,6 +66,14 @@ internal sealed class CategoryHeader : UserControl
 
         Content = new Grid { Children = { _open, _editor } };
         HorizontalContentAlignment = HorizontalAlignment.Stretch;
+    }
+
+    private static TextBlock Count(int count)
+    {
+        TextBlock text = Themed.Text("TextFillColorTertiaryBrush", "BodyTextBlockStyle");
+        text.Text = count.ToString(ProjectsText.Culture);
+        text.VerticalAlignment = VerticalAlignment.Center;
+        return text;
     }
 
     // The trimmed title the person kept; the page stores it (an empty one is

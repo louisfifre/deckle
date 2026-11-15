@@ -99,14 +99,10 @@ internal sealed class InlineNameEditor : UserControl
         _box.KeyDown += OnBoxKeyDown;
         _box.LostFocus += (_, _) => Finish(commit: true, restoreFocus: false);
 
-        _hint = new TextBlock
-        {
-            Style = (Style)Application.Current.Resources["CaptionTextBlockStyle"],
-            Foreground = (Microsoft.UI.Xaml.Media.Brush)Application.Current.Resources["TextFillColorTertiaryBrush"],
-            VerticalAlignment = VerticalAlignment.Center,
-            TextWrapping = TextWrapping.Wrap,
-            Visibility = Visibility.Collapsed,
-        };
+        _hint = Themed.Text("TextFillColorTertiaryBrush", "CaptionTextBlockStyle");
+        _hint.VerticalAlignment = VerticalAlignment.Center;
+        _hint.TextWrapping = TextWrapping.Wrap;
+        _hint.Visibility = Visibility.Collapsed;
 
         _editing = new StackPanel
         {

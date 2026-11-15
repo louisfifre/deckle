@@ -50,14 +50,9 @@ internal sealed class MainActionButton : UserControl
         ToolTipService.SetToolTip(_ring, ProjectsText.Get("Card_Running"));
         AutomationProperties.SetName(_ring, ProjectsText.Get("Card_Running"));
 
-        _warning = new FontIcon
-        {
-            Glyph = ProjectsGlyphs.Warning,
-            FontSize = 14,
-            Foreground = (Brush)Application.Current.Resources["SystemFillColorCriticalBrush"],
-            Visibility = Visibility.Collapsed,
-            VerticalAlignment = VerticalAlignment.Center,
-        };
+        _warning = Themed.Icon(ProjectsGlyphs.Warning, 14, "SystemFillColorCriticalBrush");
+        _warning.Visibility = Visibility.Collapsed;
+        _warning.VerticalAlignment = VerticalAlignment.Center;
 
         Content = new StackPanel
         {
