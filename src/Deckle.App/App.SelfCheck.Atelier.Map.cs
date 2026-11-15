@@ -6,7 +6,8 @@ namespace Deckle.App;
 // The map's states in the self-check's walk of the Atelier: the list on a
 // sample project (12.8b), an item selected with its panel and graph (12.8a),
 // the "always read" box ticked with its total (12.8c), a filter that leaves no
-// row, the list by sections with an item that has no link (12.8a), and a folder
+// row, the list by sections with an item that has no link (12.8a), the large
+// graph with an item chosen and the list it gives back (12.9), and a folder
 // with nothing of the kind (12.14). The project is written under the sample folder
 // (MapSampleFolder) once the file tool's states are photographed, so those
 // images stay as they were, and before the address bar's text mode, which
@@ -56,6 +57,19 @@ public partial class App
         });
         MapReview.SetAlwaysReadOnly(window, false);
         MapReview.SetBySections(window, false);
+
+        // The large graph (12.9) with the skill chosen, it and its neighbours
+        // standing out, then the list it gives back, on the same row.
+        await capture("map-large-graph", async () =>
+        {
+            await window.SelectForReviewAsync(@".claude\skills\publier-version\SKILL.md");
+            MapReview.SetLargeGraph(window, true);
+        });
+        await capture("map-large-graph-left", () =>
+        {
+            MapReview.SetLargeGraph(window, false);
+            return Task.CompletedTask;
+        });
 
         await capture("map-nothing", async () =>
         {
