@@ -152,8 +152,19 @@ internal sealed partial class ProjectPage : Page, IProjectsPage
             return;
         }
 
+        // A read that fails is an answer too: the section is shown in its error
+        // state, with the pinned cards, instead of staying hidden for good. A
+        // cancelled read means the page was left and needs nothing.
         ScriptMenuCache menus = _context.Workspace.Menus;
-        _listing = await (refresh ? menus.RefreshAsync(project, _lifetime.Token) : menus.GetAsync(project, _lifetime.Token));
+        try
+        {
+            _listing = await (refresh ? menus.RefreshAsync(project, _lifetime.Token) : menus.GetAsync(project, _lifetime.Token));
+        }
+        catch (Exception ex) when (ex is IOException or UnauthorizedAccessException or InvalidOperationException)
+        {
+            DeckleProjectsSource.Log.ProjectsPageFailed("project", ex.GetType().Name);
+            _listing = new ScriptMenuListing.Unreadable("");
+        }
     }
 
     private async Task EstimateAgentAsync(ProjectEntry project)
