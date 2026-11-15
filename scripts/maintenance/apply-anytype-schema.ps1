@@ -232,10 +232,13 @@ if ($ReadTo) {
     $read = Invoke-SchemaTool 'space_plan_read' @{ space = $Space; pages = @($Pages) }
     if ($read.IsError) { Stop-With 1 "space_plan_read failed:`n$($read.Text)" }
     [IO.File]::WriteAllText($ReadTo, $read.Text, [Text.UTF8Encoding]::new($false))
-    $plan = $read.Text | ConvertFrom-Json -Depth 64
+    # Not $plan: variable names ignore case, so that would write into the
+    # [string] parameter $Plan and turn the parsed plan back into text.
+    $readPlan = $read.Text | ConvertFrom-Json -Depth 64
     Write-Host ("  {0} properties, {1} types, {2} templates, {3} collections, {4} queries -> {5}" -f `
-        @($plan.properties).Count, @($plan.types).Count, @($plan.templates).Count, @($plan.collections).Count, @($plan.queries).Count, $ReadTo)
-    foreach ($note in @($plan.reader_notes)) { Write-Host "  note: $note" -ForegroundColor Yellow }
+        @($readPlan.properties).Count, @($readPlan.types).Count, @($readPlan.templates).Count, @($readPlan.collections).Count, @($readPlan.queries).Count, $ReadTo)
+    # @($null) holds one element: Where-Object drops an absent section.
+    foreach ($note in @($readPlan.reader_notes | Where-Object { $_ })) { Write-Host "  note: $note" -ForegroundColor Yellow }
     Write-Host 'The file holds a real space''s structure: keep it out of the repository.' -ForegroundColor Yellow
     exit 0
 }
@@ -264,7 +267,7 @@ if ($Plan) {
         $planPreview.conflicts | ForEach-Object { Write-Host "  - $_" }
         Stop-With 2 'Nothing was written: a conflict has to be settled first.'
     }
-    foreach ($note in @($planPreview.notes)) { Write-Host "  left as it is: $note" -ForegroundColor Yellow }
+    foreach ($note in @($planPreview.notes | Where-Object { $_ })) { Write-Host "  left as it is: $note" -ForegroundColor Yellow }
     $count = @($planPreview.actions).Count
     if ($count -eq 0) { Write-Host "`nNothing to do: the space matches the plan." -ForegroundColor Green; exit 0 }
 
