@@ -270,7 +270,7 @@
     <value>Photo descriptions</value>
   </data>
   <data name="LlmPhotoDescriptionBlock.Caption" xml:space="preserve">
-    <value>A model on this PC describes the Atelier&apos;s photos. A photo is never sent anywhere else.</value>
+    <value>A model on this PC describes the photos in Deckle Folders. A photo is never sent anywhere else.</value>
   </data>
   <data name="LlmPhotoDescription_ProviderCard.Header" xml:space="preserve">
     <value>Provider</value>
