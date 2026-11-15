@@ -26,12 +26,6 @@ _Generated from `git ls-files` — do not edit by hand._
 │       │   └── SKILL.md  — deckle-versioning Use when you record a Deckle version, touch CHANGELOG.md or prepare release not…
 │       ├── microsoft-docs/
 │       │   └── SKILL.md  — microsoft-docs Find official Microsoft documentation and code samples. Use for Microsoft techn…
-│       ├── ux-copy/
-│       │   ├── references/
-│       │   │   ├── patterns.md
-│       │   │   ├── voice-and-tone.md
-│       │   │   └── windows-fluent.md
-│       │   └── SKILL.md  — ux-copy Write or review interface wording — CTAs, errors, empty states, confirmations,…
 │       └── winui-app/
 │           ├── agents/
 │           │   └── openai.yaml
