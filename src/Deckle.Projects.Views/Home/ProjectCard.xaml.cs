@@ -139,9 +139,10 @@ internal sealed partial class ProjectCard : UserControl
     // What a click, Enter, Space and a screen reader's "invoke" all do.
     private void Open() => _context.Navigate(new ProjectsTarget.Project(ProjectId));
 
-    // The card is a button to Narrator and Voice Access: they can name it and
-    // invoke it, which a plain UserControl does not offer. Its two real buttons
-    // stay reachable inside it.
+    // The card is a list item to Narrator and Voice Access: they can name it and
+    // invoke it, which a plain UserControl does not offer. It is not reported as
+    // a button because it holds two real buttons, and a screen reader does not
+    // descend into a button's children; as a list item it stays a container.
     protected override Microsoft.UI.Xaml.Automation.Peers.AutomationPeer OnCreateAutomationPeer() => new CardPeer(this);
 
     private sealed class CardPeer(ProjectCard owner)
@@ -151,7 +152,7 @@ internal sealed partial class ProjectCard : UserControl
         protected override string GetClassNameCore() => nameof(ProjectCard);
 
         protected override Microsoft.UI.Xaml.Automation.Peers.AutomationControlType GetAutomationControlTypeCore() =>
-            Microsoft.UI.Xaml.Automation.Peers.AutomationControlType.Button;
+            Microsoft.UI.Xaml.Automation.Peers.AutomationControlType.ListItem;
 
         protected override object? GetPatternCore(Microsoft.UI.Xaml.Automation.Peers.PatternInterface pattern) =>
             pattern == Microsoft.UI.Xaml.Automation.Peers.PatternInterface.Invoke ? this : base.GetPatternCore(pattern);
