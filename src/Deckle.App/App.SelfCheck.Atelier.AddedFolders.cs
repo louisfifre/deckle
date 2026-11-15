@@ -77,6 +77,13 @@ public partial class App
             await window.RemoveFolderForReviewAsync(documents);
             Check(window.CurrentFolderForReview is { } now && !string.Equals(now, documents, StringComparison.OrdinalIgnoreCase),
                 "The window still stands in the removed folder.");
+            // The removed item is out of the pane and the garbage collector
+            // runs right behind: the pane still closes and opens
+            // (FolderPaneBugNotes.md).
+            await Task.Delay(60);
+            CollectGarbageNow();
+            window.SetPaneOpenForReview(false);
+            window.SetPaneOpenForReview(true);
         });
         window.SetPaneOpenForReview(false);
 

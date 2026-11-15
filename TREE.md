@@ -597,6 +597,8 @@ _Generated from `git ls-files` — do not edit by hand._
 │   │   │   │   └── deckle--state--rewriting.ico
 │   │   │   └── Sounds/
 │   │   │       └── speech.wav
+│   │   ├── AtelierPhotoDescriptions/
+│   │   │   └── LlmPhotoDescriptionModel.cs
 │   │   ├── Diagnostics/
 │   │   │   ├── AppDiagnosticsBootstrap.cs
 │   │   │   ├── AppHudFeedbackSink.cs
@@ -661,9 +663,11 @@ _Generated from `git ls-files` — do not edit by hand._
 │   │   ├── App.Relocate.cs
 │   │   ├── App.SelfCheck.Atelier.AddedFolders.cs
 │   │   ├── App.SelfCheck.Atelier.cs
+│   │   ├── App.SelfCheck.Atelier.FileSelection.cs
 │   │   ├── App.SelfCheck.Atelier.FolderIcons.cs
 │   │   ├── App.SelfCheck.Atelier.Map.cs
 │   │   ├── App.SelfCheck.Atelier.Photos.cs
+│   │   ├── App.SelfCheck.Atelier.Previews.cs
 │   │   ├── App.SelfCheck.Atelier.Search.cs
 │   │   ├── App.SelfCheck.Atelier.Sizes.cs
 │   │   ├── App.SelfCheck.cs
@@ -726,31 +730,38 @@ _Generated from `git ls-files` — do not edit by hand._
 │   │   │   └── FolderIconRule.cs
 │   │   ├── Browsing/
 │   │   │   ├── AddressResolver.cs
+│   │   │   ├── DeckleAtelierSource.FileRecycling.cs
 │   │   │   ├── FolderListing.cs
 │   │   │   ├── FolderPaths.cs
 │   │   │   ├── FolderPlace.cs
 │   │   │   └── NavigationHistory.cs
 │   │   ├── Formatting/
-│   │   │   └── EntryFormat.cs
+│   │   │   ├── EntryFormat.cs
+│   │   │   └── SelectionSummary.cs
 │   │   ├── Icons/
+│   │   │   ├── DeckleAtelierSource.Previews.cs
 │   │   │   ├── FileContentPresence.cs
 │   │   │   ├── FileIconKey.cs
 │   │   │   ├── FileThumbnailProbe.cs
 │   │   │   ├── MemoryBoundedCache.cs
+│   │   │   ├── PdfFirstPageReader.cs
 │   │   │   ├── ShellImage.cs
 │   │   │   ├── ShellImageNativeMethods.cs
 │   │   │   ├── ShellImagePixels.cs
 │   │   │   ├── ShellImageReader.cs
-│   │   │   └── ShellWorkQueue.cs
+│   │   │   ├── ShellWorkQueue.cs
+│   │   │   └── TextPreviewReader.cs
 │   │   ├── Launching/
 │   │   │   ├── DeckleAtelierSource.Launching.cs
 │   │   │   ├── FileLauncher.cs
 │   │   │   └── ShellFileLauncher.cs
 │   │   ├── Map/
+│   │   │   ├── DeckleAtelierSource.MapGraph.cs
 │   │   │   ├── FrontMatter.cs
 │   │   │   ├── MapConventions.cs
 │   │   │   ├── MapFileFacts.cs
 │   │   │   ├── MapFolderWalk.cs
+│   │   │   ├── MapGraphLayout.cs
 │   │   │   ├── MapInventory.cs
 │   │   │   ├── MapInventoryBuilder.cs
 │   │   │   ├── MapItem.cs
@@ -758,7 +769,9 @@ _Generated from `git ls-files` — do not edit by hand._
 │   │   │   ├── MapLink.cs
 │   │   │   ├── MapLinkReader.cs
 │   │   │   ├── MapListFilter.cs
+│   │   │   ├── MapListOrder.cs
 │   │   │   ├── MapNeighbourhood.cs
+│   │   │   ├── MapSection.cs
 │   │   │   ├── MapSkip.cs
 │   │   │   ├── McpDeclarations.cs
 │   │   │   └── TokenEstimate.cs
@@ -767,11 +780,22 @@ _Generated from `git ls-files` — do not edit by hand._
 │   │   │   ├── CaptureDataFormat.cs
 │   │   │   ├── CaptureDataReader.cs
 │   │   │   ├── Darktable.cs
+│   │   │   ├── DeckleAtelierSource.PhotoDescriptions.cs
 │   │   │   ├── DeckleAtelierSource.Photos.cs
+│   │   │   ├── FolderDataKey.cs
+│   │   │   ├── IPhotoDescriber.cs
 │   │   │   ├── MarksApplier.cs
+│   │   │   ├── PhotoDescriber.cs
+│   │   │   ├── PhotoDescription.cs
+│   │   │   ├── PhotoDescriptionModelChoice.cs
+│   │   │   ├── PhotoDescriptionPrompt.cs
+│   │   │   ├── PhotoDescriptionQueue.cs
+│   │   │   ├── PhotoDescriptionRun.cs
+│   │   │   ├── PhotoDescriptionStore.cs
 │   │   │   ├── PhotoFolder.cs
 │   │   │   ├── PhotoFormats.cs
 │   │   │   ├── PhotoMarkStore.cs
+│   │   │   ├── PhotoPictureReducer.cs
 │   │   │   ├── PhotoRenamer.cs
 │   │   │   ├── PhotoRenameRule.cs
 │   │   │   └── PhotoSidecars.cs
@@ -783,6 +807,7 @@ _Generated from `git ls-files` — do not edit by hand._
 │   │   ├── Sample/
 │   │   │   ├── MapSampleFolder.cs
 │   │   │   ├── SampleFolder.cs
+│   │   │   ├── SamplePdf.cs
 │   │   │   ├── SamplePhotos.cs
 │   │   │   └── SizesSample.cs
 │   │   ├── Search/
@@ -835,19 +860,28 @@ _Generated from `git ls-files` — do not edit by hand._
 │   │   │   │   ├── FilesView.Photo.cs
 │   │   │   │   ├── FilesView.Review.cs
 │   │   │   │   ├── FilesView.xaml
-│   │   │   │   └── FilesView.xaml.cs
+│   │   │   │   ├── FilesView.xaml.cs
+│   │   │   │   ├── SelectionDetails.cs
+│   │   │   │   └── TrimmedNameToolTip.cs
 │   │   │   ├── Map/
+│   │   │   │   ├── IMapGraphDrawing.cs
+│   │   │   │   ├── MapColumnGraphDrawing.cs
 │   │   │   │   ├── MapDetails.cs
+│   │   │   │   ├── MapFilterPanel.cs
 │   │   │   │   ├── MapKindText.cs
 │   │   │   │   ├── MapLinkGraph.cs
 │   │   │   │   ├── MapPanelSection.cs
 │   │   │   │   ├── MapReview.cs
 │   │   │   │   ├── MapRow.cs
+│   │   │   │   ├── MapRowGroup.cs
 │   │   │   │   ├── MapTool.cs
+│   │   │   │   ├── MapView.LargeGraph.cs
 │   │   │   │   ├── MapView.xaml
 │   │   │   │   └── MapView.xaml.cs
 │   │   │   ├── Photos/
 │   │   │   │   ├── ApplySummary.cs
+│   │   │   │   ├── PhotoDescriptions.cs
+│   │   │   │   ├── PhotoDescriptionSection.cs
 │   │   │   │   ├── PhotoDetails.cs
 │   │   │   │   ├── PhotoGlyphs.cs
 │   │   │   │   ├── PhotoMarkQueue.cs
@@ -855,6 +889,7 @@ _Generated from `git ls-files` — do not edit by hand._
 │   │   │   │   ├── PhotosTool.cs
 │   │   │   │   ├── PhotosView.Apply.cs
 │   │   │   │   ├── PhotosView.Darktable.cs
+│   │   │   │   ├── PhotosView.Describe.cs
 │   │   │   │   ├── PhotosView.Large.cs
 │   │   │   │   ├── PhotosView.Review.cs
 │   │   │   │   ├── PhotosView.xaml
@@ -1577,13 +1612,17 @@ _Generated from `git ls-files` — do not edit by hand._
 │   ├── Deckle.Llm/
 │   │   ├── Engines/
 │   │   │   ├── ClaudeEngine.cs
+│   │   │   ├── ImageRequestTransport.cs
 │   │   │   ├── OllamaEngine.cs
+│   │   │   ├── OllamaEngine.Images.cs
 │   │   │   └── OpenAiCompatibleEngine.cs
 │   │   ├── Generation/
 │   │   │   ├── GenerationDeadline.cs
+│   │   │   ├── GenerationImage.cs
 │   │   │   ├── GenerationRequest.cs
 │   │   │   ├── GenerationResult.cs
 │   │   │   ├── IGenerationEngine.cs
+│   │   │   ├── LocalEndpoint.cs
 │   │   │   ├── PromptTemplates.cs
 │   │   │   └── ReasoningLevel.cs
 │   │   ├── Providers/
@@ -1653,6 +1692,8 @@ _Generated from `git ls-files` — do not edit by hand._
 │   │   ├── LlmOllamaContext.cs
 │   │   ├── LlmPage.xaml
 │   │   ├── LlmPage.xaml.cs
+│   │   ├── LlmPhotoDescriptionSection.xaml
+│   │   ├── LlmPhotoDescriptionSection.xaml.cs
 │   │   ├── LlmProfilePage.xaml
 │   │   ├── LlmProfilePage.xaml.cs
 │   │   ├── LlmProfilesSection.xaml
@@ -1660,6 +1701,7 @@ _Generated from `git ls-files` — do not edit by hand._
 │   │   ├── LlmProvidersSection.xaml
 │   │   ├── LlmProvidersSection.xaml.cs
 │   │   ├── LlmSettingsModule.cs
+│   │   ├── PhotoDescriptionModelSetting.cs
 │   │   ├── ProfileViewModel.cs
 │   │   ├── ProviderViewModel.cs
 │   │   ├── RewriteChangeView.cs
@@ -2430,6 +2472,7 @@ _Generated from `git ls-files` — do not edit by hand._
 │   │   ├── FileTranscriptionBugNotes.md
 │   │   ├── FileTranscriptionRunTests.cs
 │   │   ├── HudFeedbackSinkTests.cs
+│   │   ├── LlmPhotoDescriptionModelTests.cs
 │   │   ├── MessageTemplateDoctrineTests.cs
 │   │   ├── MilestoneClosersTests.cs
 │   │   ├── ProdApplyUpdateTests.cs
@@ -2445,9 +2488,11 @@ _Generated from `git ls-files` — do not edit by hand._
 │   │   ├── Icons/
 │   │   │   ├── FileIconKeyTests.cs
 │   │   │   ├── MemoryBoundedCacheTests.cs
+│   │   │   ├── PdfFirstPageReaderTests.cs
 │   │   │   ├── ShellImageReaderSystemTests.cs
 │   │   │   ├── ShellPixelRulesTests.cs
-│   │   │   └── ShellWorkQueueTests.cs
+│   │   │   ├── ShellWorkQueueTests.cs
+│   │   │   └── TextPreviewReaderTests.cs
 │   │   ├── Launching/
 │   │   │   └── ShellFileLauncherTests.cs
 │   │   ├── Photos/
@@ -2455,8 +2500,13 @@ _Generated from `git ls-files` — do not edit by hand._
 │   │   │   ├── DarktableTests.cs
 │   │   │   ├── ExifSample.cs
 │   │   │   ├── MarksApplierTests.cs
+│   │   │   ├── PhotoDescriberTests.cs
+│   │   │   ├── PhotoDescriptionEventsTests.cs
+│   │   │   ├── PhotoDescriptionQueueTests.cs
+│   │   │   ├── PhotoDescriptionStoreTests.cs
 │   │   │   ├── PhotoFolderTests.cs
 │   │   │   ├── PhotoMarkStoreTests.cs
+│   │   │   ├── PhotoPictureReducerTests.cs
 │   │   │   ├── PhotoRenamerTests.cs
 │   │   │   ├── PhotosEventsTests.cs
 │   │   │   ├── RawReadingMaintenanceTests.cs
@@ -2473,12 +2523,17 @@ _Generated from `git ls-files` — do not edit by hand._
 │   │   ├── Deckle.Atelier.Tests.csproj
 │   │   ├── DeckleAtelierSourceEventIdTests.cs
 │   │   ├── DeckleAtelierSourceTests.cs
+│   │   ├── DenyListing.cs
 │   │   ├── EntryFormatTests.cs
 │   │   ├── FolderIconRuleTests.cs
+│   │   ├── FolderListingBugNotes.md
 │   │   ├── FolderListingTests.cs
+│   │   ├── FolderPaneBugNotes.md
 │   │   ├── HeaviestFilesTests.cs
+│   │   ├── MapGraphLayoutTests.cs
 │   │   ├── MapInventoryTests.cs
 │   │   ├── MapListFilterTests.cs
+│   │   ├── MapListOrderTests.cs
 │   │   ├── MapNeighbourhoodTests.cs
 │   │   ├── MapSampleFolderTests.cs
 │   │   ├── MapSampleRepository.cs
@@ -2487,6 +2542,7 @@ _Generated from `git ls-files` — do not edit by hand._
 │   │   ├── NavigationHistoryTests.cs
 │   │   ├── PathRulesTests.cs
 │   │   ├── ScratchFolder.cs
+│   │   ├── SelectionSummaryTests.cs
 │   │   ├── SizeAnalysisMomentTests.cs
 │   │   ├── SizeReportReuseTests.cs
 │   │   ├── SizesBugNotes.md
@@ -2864,6 +2920,7 @@ _Generated from `git ls-files` — do not edit by hand._
 │   │   ├── ClaudePromptCacheTests.cs
 │   │   ├── ClaudeReasoningTests.cs
 │   │   ├── Deckle.Llm.Tests.csproj
+│   │   ├── ImageRequestTests.cs
 │   │   ├── LlmUsageLogTests.cs
 │   │   └── ReasoningOnTheWireTests.cs
 │   ├── Deckle.Mail.Hub.Tests/

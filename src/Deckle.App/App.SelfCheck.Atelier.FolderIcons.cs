@@ -81,10 +81,14 @@ public partial class App
             await window.AddFolderForReviewAsync(sample);
         });
 
-        await Capture("folder-icons-pane-open", () =>
+        // The pane's items just changed and the garbage collector runs right
+        // behind: the pane once refused to open then (FolderPaneBugNotes.md).
+        await Capture("folder-icons-pane-open", async () =>
         {
+            await window.AddFolderForReviewAsync(sample);
+            await Task.Delay(60);
+            CollectGarbageNow();
             window.SetPaneOpenForReview(true);
-            return Task.CompletedTask;
         });
         window.SetPaneOpenForReview(false);
 
@@ -95,5 +99,14 @@ public partial class App
         }, keepPopups: true);
         window.CloseIconPickerForReview();
         await Task.Delay(300);
+    }
+
+    // What the garbage collector does on its own time, done at a moment the
+    // walk chooses, so a state that depends on it fails every run or none.
+    private static void CollectGarbageNow()
+    {
+        GC.Collect();
+        GC.WaitForPendingFinalizers();
+        GC.Collect();
     }
 }

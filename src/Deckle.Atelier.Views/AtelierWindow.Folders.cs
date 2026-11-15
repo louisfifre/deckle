@@ -1,3 +1,4 @@
+using Deckle.Catalog;
 using Microsoft.UI.Xaml;
 using Microsoft.UI.Xaml.Automation;
 using Microsoft.UI.Xaml.Controls;
@@ -25,6 +26,12 @@ public sealed partial class AtelierWindow
     private readonly AddedFolderStore _folders;
     private readonly List<FolderItem> _folderItems = [];
 
+    // The items of removed folders, kept for the next folder added. An item
+    // is never let go: NavigationView still tells an item taken out of
+    // MenuItems that the pane opens, and once the garbage collector has
+    // taken that item, setting IsPaneOpen throws E_FAIL (FolderPaneBugNotes.md).
+    private readonly Stack<FolderItem> _spareItems = new();
+
     // What the last check said of each added folder, by path: the pane marks
     // a folder that vanished or cannot be read (spec, Open 33).
     private readonly Dictionary<string, AddedFolderReachability> _reach = new(FolderPaths.Comparer);
@@ -42,67 +49,105 @@ public sealed partial class AtelierWindow
     // remove button at its end while the pointer is over it or the keyboard
     // is on it. The icon is the folder's own, in its colour (spec, Window),
     // drawn by the item's content (AtelierWindow.FolderIcon.cs).
-    private void RebuildFolderItems()
+    //
+    // The pane is brought to what the store holds without building it
+    // again: an item whose folder is still there is updated where it is, a
+    // folder that has none takes a spare item or a new one, and an item
+    // whose folder went becomes a spare (_spareItems).
+    private void SyncFolderItems()
     {
         HookPaneInputOnce();
-        Nav.MenuItems.Clear();
-        _folderItems.Clear();
-        foreach (AddedFolder folder in _folders.Folders)
+        IReadOnlyList<AddedFolder> folders = _folders.Folders;
+
+        for (int i = _folderItems.Count - 1; i >= 0; i--)
         {
-            var text = new StackPanel { VerticalAlignment = VerticalAlignment.Center };
-            // One line each, trimmed: CaptionTextBlockStyle wraps, and in the
-            // 48 px rail a wrapping path breaks at every letter and stretches
-            // the item to the window's height.
-            text.Children.Add(new TextBlock
-            {
-                Text = folder.Name,
-                TextWrapping = TextWrapping.NoWrap,
-                TextTrimming = TextTrimming.CharacterEllipsis,
-            });
-            text.Children.Add(new TextBlock
-            {
-                Text = folder.Path,
-                Style = (Style)Application.Current.Resources["CaptionTextBlockStyle"],
-                Foreground = (Brush)Application.Current.Resources["TextFillColorSecondaryBrush"],
-                TextWrapping = TextWrapping.NoWrap,
-                TextTrimming = TextTrimming.CharacterEllipsis,
-            });
+            FolderItem parts = _folderItems[i];
+            if (folders.Any(f => FolderPaths.Comparer.Equals(f.Path, parts.Folder.Path))) continue;
+            if (ReferenceEquals(Nav.SelectedItem, parts.Item)) Nav.SelectedItem = null;
+            Nav.MenuItems.RemoveAt(i);
+            _folderItems.RemoveAt(i);
+            parts.Rest();
+            _spareItems.Push(parts);
+        }
 
-            Button remove = RemoveButton(folder);
-            Grid content = FolderItemContent(folder, text);
-            content.ColumnDefinitions.Add(new ColumnDefinition { Width = new GridLength(RemoveSlotWidth) });
-            Grid.SetColumn(remove, 2);
-            content.Children.Add(remove);
-
-            var item = new NavigationViewItem
+        for (int i = 0; i < folders.Count; i++)
+        {
+            AddedFolder folder = folders[i];
+            int at = _folderItems.FindIndex(p => FolderPaths.Comparer.Equals(p.Folder.Path, folder.Path));
+            FolderItem parts;
+            if (at == i)
             {
-                Content = content,
-                Tag = folder,
-                HorizontalContentAlignment = HorizontalAlignment.Stretch,
-            };
-            // No handler is put on the item nor inside it, but on the button:
-            // with a pointer or size handler on each item, the pane failed to
-            // open after the items were built again (COMException from
-            // IsPaneOpen, met in the self-check walk, cause inside
-            // NavigationView not established). The pane hears the pointer
-            // and the focus for all its items (HookPaneInputOnce).
-            var parts = new FolderItem(item, remove, folder);
+                parts = _folderItems[i];
+            }
+            else
+            {
+                if (at >= 0)
+                {
+                    parts = _folderItems[at];
+                    _folderItems.RemoveAt(at);
+                    Nav.MenuItems.RemoveAt(at);
+                }
+                else
+                {
+                    parts = _spareItems.Count > 0 ? _spareItems.Pop() : NewFolderItem();
+                }
+                _folderItems.Insert(i, parts);
+                Nav.MenuItems.Insert(i, parts.Item);
+            }
+            parts.Show(folder);
             parts.SetPaneOpen(Nav.IsPaneOpen);
             MarkReach(parts, _reach.GetValueOrDefault(folder.Path, AddedFolderReachability.Reachable));
-            _folderItems.Add(parts);
-            Nav.MenuItems.Add(item);
         }
         if (Place is { } place) SelectFolderItem(place.Root);
         _reachChecked = CheckFolderReachAsync();
     }
 
+    // One item and what it shows, empty until Show gives it a folder. The
+    // pointer and the focus are heard by the pane for all its items
+    // (HookPaneInputOnce); the item itself carries the button's click only.
+    private FolderItem NewFolderItem()
+    {
+        // One line each, trimmed: CaptionTextBlockStyle wraps, and in the
+        // 48 px rail a wrapping path breaks at every letter and stretches
+        // the item to the window's height.
+        var name = new TextBlock
+        {
+            TextWrapping = TextWrapping.NoWrap,
+            TextTrimming = TextTrimming.CharacterEllipsis,
+        };
+        var path = new TextBlock
+        {
+            Style = (Style)Application.Current.Resources["CaptionTextBlockStyle"],
+            Foreground = (Brush)Application.Current.Resources["TextFillColorSecondaryBrush"],
+            TextWrapping = TextWrapping.NoWrap,
+            TextTrimming = TextTrimming.CharacterEllipsis,
+        };
+        var text = new StackPanel { VerticalAlignment = VerticalAlignment.Center };
+        text.Children.Add(name);
+        text.Children.Add(path);
+
+        Button remove = RemoveButton();
+        Grid content = FolderItemContent(out IconChoiceView icon, text);
+        content.ColumnDefinitions.Add(new ColumnDefinition { Width = new GridLength(RemoveSlotWidth) });
+        Grid.SetColumn(remove, 2);
+        content.Children.Add(remove);
+
+        var item = new NavigationViewItem
+        {
+            Content = content,
+            HorizontalContentAlignment = HorizontalAlignment.Stretch,
+        };
+        var parts = new FolderItem(item, name, path, icon, remove);
+        remove.Click += (_, _) => _ = RemoveFolderAsync(parts.Folder.Path);
+        return parts;
+    }
 
     // "Retirer de Deckle Folders": not drawn; the spec keeps the right-click
     // free ("never by a right-click", of the icon), so the removal is a
     // button in sight, as File Explorer's own lists put a cross on an entry.
     // No confirmation: nothing on the disk changes, and adding the folder
     // again undoes it.
-    private Button RemoveButton(AddedFolder folder)
+    private static Button RemoveButton()
     {
         var button = new Button
         {
@@ -118,7 +163,6 @@ public sealed partial class AtelierWindow
         string label = AtelierText.Get("Folders_Remove");
         ToolTipService.SetToolTip(button, label);
         AutomationProperties.SetName(button, label);
-        button.Click += (_, _) => _ = RemoveFolderAsync(folder.Path);
         return button;
     }
 
@@ -219,7 +263,7 @@ public sealed partial class AtelierWindow
     private Task AddAndOpen(string path)
     {
         AddedFolder folder = _folders.Add(path);
-        RebuildFolderItems();
+        SyncFolderItems();
         _activeTool = _tools[0];
         MarkActiveTool();
         return NavigateTo(FolderPlace.AtRoot(folder));
@@ -235,7 +279,7 @@ public sealed partial class AtelierWindow
         if (index < 0 || !_folders.Remove(path)) return Task.CompletedTask;
         _reach.Remove(path);
         bool standingInIt = _history.Forget(p => FolderPaths.Comparer.Equals(p.Root.Path, path));
-        RebuildFolderItems();
+        SyncFolderItems();
 
         if (_folders.Folders.Count == 0)
         {
@@ -278,12 +322,12 @@ public sealed partial class AtelierWindow
         if (request != _reachRequest) return;
         bool changed = false;
         for (int i = 0; i < paths.Length; i++) changed |= Remember(paths[i], answers[i]);
-        if (changed) RebuildMarkedItems();
+        if (changed) MarkFolderItems();
     }
 
     private void NoteReach(string path, AddedFolderReachability reach)
     {
-        if (Remember(path, reach)) RebuildMarkedItems();
+        if (Remember(path, reach)) MarkFolderItems();
     }
 
     private bool Remember(string path, AddedFolderReachability reach)
@@ -293,14 +337,16 @@ public sealed partial class AtelierWindow
         return known != reach;
     }
 
-    // An item is built with its mark, so a mark that changes builds the pane
-    // again with what the disk now says; the rebuild's own check then finds
-    // nothing new and stops there.
-    private void RebuildMarkedItems() => RebuildFolderItems();
+    // Each item takes the mark of what the disk now says of its folder.
+    private void MarkFolderItems()
+    {
+        foreach (FolderItem parts in _folderItems)
+            MarkReach(parts, _reach.GetValueOrDefault(parts.Folder.Path, AddedFolderReachability.Reachable));
+    }
 
     // A folder that vanished or cannot be read stays in the pane: Windows'
     // critical badge sits on it, in the rail as in the opened pane, and its
-    // tooltip says what is wrong.
+    // tooltip says what is wrong. The badge goes when the folder is back.
     private static void MarkReach(FolderItem parts, AddedFolderReachability reach)
     {
         string key = reach switch
@@ -310,11 +356,17 @@ public sealed partial class AtelierWindow
             _ => "Folders_Item_Format",
         };
         string label = AtelierText.Format(key, parts.Folder.Name, parts.Folder.Path);
-        ToolTipService.SetToolTip(parts.Item, label);
-        AutomationProperties.SetName(parts.Item, label);
+        if (!Equals(ToolTipService.GetToolTip(parts.Item), label))
+        {
+            ToolTipService.SetToolTip(parts.Item, label);
+            AutomationProperties.SetName(parts.Item, label);
+        }
 
-        if (reach != AddedFolderReachability.Reachable)
-            parts.Item.InfoBadge = new InfoBadge { Style = (Style)Application.Current.Resources["CriticalIconInfoBadgeStyle"] };
+        bool marked = reach != AddedFolderReachability.Reachable;
+        if (marked == parts.Item.InfoBadge is not null) return;
+        parts.Item.InfoBadge = marked
+            ? new InfoBadge { Style = (Style)Application.Current.Resources["CriticalIconInfoBadgeStyle"] }
+            : null;
     }
 
     // In place of the tool: one message that names the path and offers to
@@ -426,30 +478,50 @@ public sealed partial class AtelierWindow
     public bool ShowsUnreachableForReview(string path) =>
         _unreachableShown is { } shown && FolderPaths.Comparer.Equals(shown, FolderPaths.Normalize(path));
 
-    // One item of the pane and its remove button. The button shows while the
-    // pointer is over the item or the keyboard is on it, and only in the
-    // opened pane; hidden, it keeps its slot transparent.
-    private sealed class FolderItem(NavigationViewItem item, Button remove, AddedFolder folder)
+    // One item of the pane, the folder it shows and its remove button. The
+    // button shows while the pointer is over the item or the keyboard is on
+    // it, and only in the opened pane; hidden, it keeps its slot transparent.
+    private sealed class FolderItem(
+        NavigationViewItem item, TextBlock name, TextBlock path, IconChoiceView icon, Button remove)
     {
         private bool _pointerOver;
         private bool _keyboardFocus;
         private bool _paneOpen;
 
         public NavigationViewItem Item { get; } = item;
-        public AddedFolder Folder { get; } = folder;
+
+        // The folder shown; a spare item keeps its last one until Show.
+        public AddedFolder Folder { get; private set; } = null!;
 
         public bool RemoveShown => _paneOpen && remove.Opacity > 0;
 
-        public void SetPointerOver(bool over) { _pointerOver = over; Show(); }
-        public void SetKeyboardFocus(bool focus) { _keyboardFocus = focus; Show(); }
+        public void Show(AddedFolder folder)
+        {
+            Folder = folder;
+            Item.Tag = folder;
+            name.Text = folder.Name;
+            path.Text = folder.Path;
+            icon.Choice = folder.Icon;
+        }
+
+        // Out of the pane: nothing of the pointer or the keyboard stays on it.
+        public void Rest()
+        {
+            _pointerOver = false;
+            _keyboardFocus = false;
+            ShowRemove();
+        }
+
+        public void SetPointerOver(bool over) { _pointerOver = over; ShowRemove(); }
+        public void SetKeyboardFocus(bool focus) { _keyboardFocus = focus; ShowRemove(); }
 
         public void SetPaneOpen(bool open)
         {
             _paneOpen = open;
             remove.Visibility = open ? Visibility.Visible : Visibility.Collapsed;
-            Show();
+            ShowRemove();
         }
 
-        private void Show() => remove.Opacity = _pointerOver || _keyboardFocus ? 1 : 0;
+        private void ShowRemove() => remove.Opacity = _pointerOver || _keyboardFocus ? 1 : 0;
     }
 }
