@@ -1944,6 +1944,26 @@ _Generated from `git ls-files` — do not edit by hand._
 │   │   │   ├── PinnedAction.cs
 │   │   │   ├── ProjectCategory.cs
 │   │   │   └── ProjectEntry.cs
+│   │   ├── Readouts/
+│   │   │   ├── Manifests/
+│   │   │   │   ├── CargoManifest.cs
+│   │   │   │   ├── GradleManifest.cs
+│   │   │   │   ├── MsBuildManifest.cs
+│   │   │   │   ├── PackageJsonManifest.cs
+│   │   │   │   ├── PyProjectManifest.cs
+│   │   │   │   ├── TomlVersion.cs
+│   │   │   │   └── VersionText.cs
+│   │   │   ├── AgentReading.cs
+│   │   │   ├── DeckleProjectsSource.Readouts.cs
+│   │   │   ├── GitCommand.cs
+│   │   │   ├── GitRemote.cs
+│   │   │   ├── GitTags.cs
+│   │   │   ├── ManifestVersions.cs
+│   │   │   ├── ProjectReader.cs
+│   │   │   ├── ProjectReading.cs
+│   │   │   ├── ProjectReadings.cs
+│   │   │   ├── UncommittedFiles.cs
+│   │   │   └── VersionReading.cs
 │   │   ├── ScriptMenu/
 │   │   │   └── ScriptMenuEntry.cs
 │   │   ├── Store/
@@ -3010,13 +3030,25 @@ _Generated from `git ls-files` — do not edit by hand._
 │   │   ├── Deckle.Presets.Tests.csproj
 │   │   └── PresetFamilyTests.cs
 │   ├── Deckle.Projects.Tests/
+│   │   ├── Readouts/
+│   │   │   ├── AgentReadingTests.cs
+│   │   │   ├── GitRemoteTests.cs
+│   │   │   ├── GitTagsTests.cs
+│   │   │   ├── ManifestParsersTests.cs
+│   │   │   ├── ManifestVersionsTests.cs
+│   │   │   ├── ProjectReaderGitTests.cs
+│   │   │   ├── ProjectReaderUnavailableTests.cs
+│   │   │   ├── ProjectReadingsTests.cs
+│   │   │   ├── UncommittedFilesTests.cs
+│   │   │   └── VersionReadingTests.cs
 │   │   ├── Store/
 │   │   │   ├── ProjectStoreEventsTests.cs
 │   │   │   └── ProjectStoreTests.cs
 │   │   ├── Deckle.Projects.Tests.csproj
 │   │   ├── DeckleProjectsSourceEventIdTests.cs
 │   │   ├── MessageTemplateDoctrineTests.cs
-│   │   └── ScratchFolder.cs
+│   │   ├── ScratchFolder.cs
+│   │   └── Tools.cs
 │   ├── Deckle.Security.Tests/
 │   │   ├── Deckle.Security.Tests.csproj
 │   │   ├── SecretVaultTests.cs
