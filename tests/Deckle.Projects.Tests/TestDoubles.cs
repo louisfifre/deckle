@@ -21,9 +21,13 @@ internal sealed class FakeTerminalLauncher(TerminalStart? answer = null) : ITerm
 
     public TerminalStart Answer { get; set; } = answer ?? new TerminalStart(true, false, TerminalStart.WindowsTerminal);
 
+    // When set, launching throws it, as a launcher that breaks would.
+    public Exception? Throws { get; set; }
+
     public TerminalStart Launch(TerminalCommand command)
     {
         Commands.Add(command);
+        if (Throws is not null) throw Throws;
         return Answer;
     }
 }

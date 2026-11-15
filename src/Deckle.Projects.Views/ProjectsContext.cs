@@ -58,8 +58,20 @@ internal sealed class ProjectsContext(IProjectsHost host, ProjectsWorkspace work
 
     // The button of a card or of a row: the same call as the page's accent
     // button. A refusal is the engine's safety net behind buttons that are
-    // already disabled for the same reasons, so nothing is shown for it.
-    public Task<StartOutcome> RunMainActionAsync(string projectId) => Workspace.StartMainActionAsync(projectId);
+    // already disabled for the same reasons, so nothing is shown for it. The
+    // caller does not await it (a click handler), so a failure is caught and
+    // logged here instead of staying in a task nobody observes.
+    public async Task RunMainActionAsync(string projectId)
+    {
+        try
+        {
+            await Workspace.StartMainActionAsync(projectId);
+        }
+        catch (Exception ex) when (ex is not OperationCanceledException)
+        {
+            DeckleProjectsSource.Log.ProjectsPageFailed("card", ex.GetType().Name);
+        }
+    }
 
     // Reads the projects again off the window's thread. A reading that cannot
     // be made leaves the previous one in place (the engine says so in the log).

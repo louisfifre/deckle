@@ -24,7 +24,8 @@ public sealed partial class DeckleProjectsSource
 
     // A page that throws while it is built or while it reads again: the window
     // shows a message in place of one that could not be built and keeps the pane
-    // and the other pages.
+    // and the other pages. The same event records a card's main-action button
+    // that threw (kind "card"): nothing to show, the click did nothing.
     [Event(EvtProjectsPageFailed,
            Level = EventLevel.Warning,
            Keywords = (EventKeywords)Keywords.Lifecycle,

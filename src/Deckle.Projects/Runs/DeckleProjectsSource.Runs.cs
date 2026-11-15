@@ -13,6 +13,7 @@ public sealed partial class DeckleProjectsSource
     public const int EvtActionRunNotStarted = 32;
     public const int EvtTerminalFallbackUsed = 33;
     public const int EvtActionRunClosedEarly = 34;
+    public const int EvtActionRunStartFailed = 35;
 
     // terminal is windows-terminal or console; fallback is true when the one
     // asked for could not be started.
@@ -59,6 +60,18 @@ public sealed partial class DeckleProjectsSource
     public void TerminalFallbackUsed(string asked, string got)
     {
         if (IsEnabled()) WriteEvent(EvtTerminalFallbackUsed, asked, got);
+    }
+
+    // The start broke on an exception (the run folder, the launcher) after the
+    // project was marked as running: the mark is lifted and the start refused as
+    // terminal-unavailable, which ActionRunNotStarted records.
+    [Event(EvtActionRunStartFailed,
+           Level = EventLevel.Error,
+           Keywords = (EventKeywords)Keywords.Pipeline,
+           Message = "A project action could not be started; the project is free again\nex_type={0}")]
+    public void ActionRunStartFailed(string ex_type)
+    {
+        if (IsEnabled()) WriteEvent(EvtActionRunStartFailed, ex_type);
     }
 
     // The terminal was closed (or the shell killed) before the action wrote its
