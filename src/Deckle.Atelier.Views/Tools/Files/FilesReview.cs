@@ -16,6 +16,18 @@ public static class FilesReview
         await Task.Delay(300);
     }
 
+    // The row of that name with its two actions shown, as the pointer over it
+    // shows them; nothing is pressed. Throws when the row is not on screen,
+    // so the image that should show it fails.
+    public static async Task ShowRowActionsAsync(Window window, string name)
+    {
+        if (!Find(window).ShowRowActionsForReview(name))
+            throw new InvalidOperationException($"The row {name} is not on screen in the file tool.");
+        await Task.Delay(100);
+    }
+
+    public static void HideRowActions(Window window) => Find(window).HideRowActionsForReview();
+
     private static FilesView Find(Window window) =>
         FindIn(window.Content) ?? throw new InvalidOperationException("The file tool is not shown in this window.");
 

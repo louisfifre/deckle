@@ -12,7 +12,10 @@
          put the type, size and date under the name, as File Explorer's Content
          view does, and need no header. The gallery shows each item as a tile
          with a picture of its content. One control per display, and only the
-         shown one holds the items, so only it realizes containers. -->
+         shown one holds the items, so only it realizes containers. Every row
+         ends on the place of its two actions (FileRowActions), a column of
+         fixed width in the list, whose header keeps it empty, and in the large
+         rows; in the gallery they sit on the picture's corner. -->
     <UserControl.Resources>
         <GridLength x:Key="ModifiedColumnWidth">104</GridLength>
         <GridLength x:Key="SizeColumnWidth">88</GridLength>
@@ -22,16 +25,26 @@
              wide enough for a page of a PDF to be told from another. -->
         <x:Double x:Key="FileTileWidth">160</x:Double>
         <x:Double x:Key="FileTilePreviewHeight">120</x:Double>
+        <!-- The row actions' place, the same on every row (FileRowActions). -->
+        <GridLength x:Key="RowActionsColumnWidth">68</GridLength>
     </UserControl.Resources>
 
     <Grid Padding="12,8,12,0">
         <Grid.RowDefinitions>
             <RowDefinition Height="Auto" />
+            <RowDefinition Height="Auto" />
             <RowDefinition Height="*" />
             <RowDefinition Height="Auto" />
         </Grid.RowDefinitions>
 
+        <!-- What Windows did not do when it was asked to: open an item, show
+             it in File Explorer, take it to the Recycle Bin. -->
+        <InfoBar x:Name="Notice"
+                 Margin="4,0,4,8"
+                 IsOpen="False" />
+
         <Grid x:Name="Header"
+              Grid.Row="1"
               Height="32"
               Margin="4,0"
               Padding="12,0"
@@ -42,6 +55,7 @@
                 <ColumnDefinition Width="*" />
                 <ColumnDefinition Width="{StaticResource ModifiedColumnWidth}" />
                 <ColumnDefinition Width="{StaticResource SizeColumnWidth}" />
+                <ColumnDefinition Width="{StaticResource RowActionsColumnWidth}" />
             </Grid.ColumnDefinitions>
             <TextBlock x:Uid="FilesHeaderName"
                        Style="{StaticResource CaptionTextBlockStyle}"
@@ -61,7 +75,7 @@
         </Grid>
 
         <ListView x:Name="Rows"
-                  Grid.Row="1"
+                  Grid.Row="2"
                   Margin="0,4,0,0"
                   SelectionMode="Single"
                   IsItemClickEnabled="False"
@@ -82,6 +96,7 @@
                             <ColumnDefinition Width="*" />
                             <ColumnDefinition Width="{StaticResource ModifiedColumnWidth}" />
                             <ColumnDefinition Width="{StaticResource SizeColumnWidth}" />
+                            <ColumnDefinition Width="{StaticResource RowActionsColumnWidth}" />
                         </Grid.ColumnDefinitions>
                         <StackPanel Orientation="Horizontal" Spacing="12">
                             <Grid Width="16" Height="16" VerticalAlignment="Center">
@@ -106,6 +121,11 @@
                                    Foreground="{ThemeResource TextFillColorSecondaryBrush}"
                                    HorizontalAlignment="Right"
                                    VerticalAlignment="Center" />
+                        <local:FileRowActions Grid.Column="3"
+                                              HorizontalAlignment="Right"
+                                              VerticalAlignment="Center"
+                                              ShowInFolderClick="OnRowShowInFolderClick"
+                                              RecycleClick="OnRowRecycleClick" />
                     </Grid>
                 </DataTemplate>
             </ListView.ItemTemplate>
@@ -114,7 +134,7 @@
         <!-- Large rows (12.16): a 32 px icon, the name, and under it the type,
              size and date in the caption style the list's columns use. -->
         <ListView x:Name="LargeRows"
-                  Grid.Row="1"
+                  Grid.Row="2"
                   Margin="0,4,0,0"
                   SelectionMode="Single"
                   IsItemClickEnabled="False"
@@ -135,6 +155,7 @@
                         <Grid.ColumnDefinitions>
                             <ColumnDefinition Width="Auto" />
                             <ColumnDefinition Width="*" />
+                            <ColumnDefinition Width="{StaticResource RowActionsColumnWidth}" />
                         </Grid.ColumnDefinitions>
                         <Grid Width="32" Height="32" VerticalAlignment="Center">
                             <FontIcon Glyph="{x:Bind Glyph}"
@@ -150,6 +171,12 @@
                                        Foreground="{ThemeResource TextFillColorSecondaryBrush}"
                                        TextTrimming="CharacterEllipsis" />
                         </StackPanel>
+                        <local:FileRowActions Grid.Column="2"
+                                              HorizontalAlignment="Right"
+                                              VerticalAlignment="Center"
+                                              ShowInFolderClick="OnRowShowInFolderClick"
+                                              RecycleClick="OnRowRecycleClick" />
+
                     </Grid>
                 </DataTemplate>
             </ListView.ItemTemplate>
@@ -159,7 +186,7 @@
              where Windows draws one, its type's icon otherwise, the name under
              it as File Explorer centres it, on two lines at most. -->
         <GridView x:Name="Gallery"
-                  Grid.Row="1"
+                  Grid.Row="2"
                   Margin="0,4,0,0"
                   Padding="4,0,0,12"
                   SelectionMode="Single"
@@ -203,6 +230,14 @@
                             <Image Margin="8"
                                    Source="{x:Bind Thumbnail, Mode=OneWay}"
                                    Stretch="Uniform" />
+                            <!-- On the picture's corner, where they cover
+                                 nothing else and move nothing. -->
+                            <local:FileRowActions Margin="4"
+                                                  HorizontalAlignment="Right"
+                                                  VerticalAlignment="Top"
+                                                  OverContent="True"
+                                                  ShowInFolderClick="OnRowShowInFolderClick"
+                                                  RecycleClick="OnRowRecycleClick" />
                         </Grid>
                         <TextBlock Margin="4,0"
                                    Text="{x:Bind Name}"
@@ -219,7 +254,7 @@
              Windows' conventions; Explorer says the folder is empty in the
              middle of the list), over whichever display is shown. -->
         <TextBlock x:Name="Message"
-                   Grid.Row="1"
+                   Grid.Row="2"
                    Margin="0,24,0,0"
                    HorizontalAlignment="Center"
                    VerticalAlignment="Top"
@@ -229,7 +264,7 @@
         <!-- Where the display is chosen (12.18, bottom right). The pressed
              button is the display shown. -->
         <StackPanel x:Name="DisplayChoice"
-                    Grid.Row="2"
+                    Grid.Row="3"
                     Height="40"
                     Orientation="Horizontal"
                     HorizontalAlignment="Right"

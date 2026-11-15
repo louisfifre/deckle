@@ -813,8 +813,13 @@ _Generated from `git ls-files` — do not edit by hand._
 │   │   │   ├── Files/
 │   │   │   │   ├── FileDetails.cs
 │   │   │   │   ├── FileRow.cs
+│   │   │   │   ├── FileRowActions.xaml
+│   │   │   │   ├── FileRowActions.xaml.cs
 │   │   │   │   ├── FilesReview.cs
 │   │   │   │   ├── FilesTool.cs
+│   │   │   │   ├── FilesView.Actions.cs
+│   │   │   │   ├── FilesView.Photo.cs
+│   │   │   │   ├── FilesView.Review.cs
 │   │   │   │   ├── FilesView.xaml
 │   │   │   │   └── FilesView.xaml.cs
 │   │   │   ├── Map/

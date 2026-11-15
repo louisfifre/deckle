@@ -1,16 +1,19 @@
+using System.Collections.ObjectModel;
 using Microsoft.UI.Xaml;
 using Microsoft.UI.Xaml.Automation;
 using Microsoft.UI.Xaml.Controls;
+using Microsoft.UI.Xaml.Controls.Primitives;
 using Microsoft.UI.Xaml.Input;
+using Microsoft.UI.Xaml.Media;
 using Windows.System;
 
 namespace Deckle.Atelier.Views;
 
 // The file tool's centre, in the display chosen at its bottom right: the
 // list, the large rows or the gallery. A click selects an item and opens the
-// details panel; a double-click or Enter on a folder enters it, in every
-// display (spec, Behaviours: a click never opens the item). Opening a file is
-// not built yet.
+// details panel; it never opens the item (spec, Behaviours). A double-click
+// or Enter enters a folder and opens a file in its default application, in
+// every display, as File Explorer does.
 //
 // The three displays show the same items (FileRow). Only the shown one holds
 // them, so only its containers are realized: each is a ListView or a GridView,
@@ -18,20 +21,29 @@ namespace Deckle.Atelier.Views;
 // icon or picture when it realizes its container (FileRow.LoadAsync), off the
 // UI thread behind the icon seam. A folder of thousands of items scrolls as
 // one of ten in each display.
+//
+// This file holds the displays, the selection and the keys; the row actions
+// (FilesView.Actions.cs), the panel of a photo (FilesView.Photo.cs) and the
+// self-check's hooks (FilesView.Review.cs) each have their partial file.
 internal sealed partial class FilesView : UserControl, IAtelierToolView
 {
     private readonly IAtelierToolHost _host;
     private FolderPlace? _place;
-    private List<FileRow> _rows = [];
+    private ObservableCollection<FileRow> _rows = [];
 
     // Set while the items are replaced or moved to another display, so the
     // selection changes a control makes by itself are not taken for the
     // person's.
     private bool _filling;
 
-    public FilesView(IAtelierToolHost host)
+    public FilesView(IAtelierToolHost host, string moduleDirectory, PhotoMarkQueue marks,
+                     IRecycleBin bin, IFileLauncher launcher)
     {
         _host = host;
+        _moduleDirectory = moduleDirectory;
+        _marks = marks;
+        _bin = bin;
+        _launcher = launcher;
         InitializeComponent();
         Label(DisplayListButton, "Display_List");
         Label(DisplayLargeRowsButton, "Display_LargeRows");
@@ -54,21 +66,26 @@ internal sealed partial class FilesView : UserControl, IAtelierToolView
         FolderListingResult listing = await Task.Run(() => FolderListing.List(place.Path), cancellation);
         if (cancellation.IsCancellationRequested) return;
 
+        if (_place is null || !FolderPaths.Comparer.Equals(_place.Path, place.Path))
+        {
+            _readings.Clear();
+            Notice.IsOpen = false;
+        }
         _place = place;
         foreach (FileRow old in _rows) old.Release(Display);
-        List<FileRow> rows = [.. listing.Entries.Select(e => new FileRow(e))];
+        ObservableCollection<FileRow> rows = [.. listing.Entries.Select(e => new FileRow(e))];
         _rows = rows;
+        FileRow? selected;
         _filling = true;
         try
         {
             ListViewBase items = ItemsOf(Display);
             items.ItemsSource = rows;
-            FileRow? selected = selection is null
+            selected = selection is null
                 ? null
                 : rows.FirstOrDefault(r => FolderPaths.Comparer.Equals(r.Entry.Path, selection));
             items.SelectedItem = selected;
             if (selected is not null) items.ScrollIntoView(selected);
-            _host.Select(selected?.Entry.Path, selected is null ? null : FileDetails.For(selected.Entry));
         }
         finally
         {
@@ -82,6 +99,12 @@ internal sealed partial class FilesView : UserControl, IAtelierToolView
             FolderListingFailure.AccessDenied => AtelierText.Get("Files_AccessDenied"),
             _ => AtelierText.Get("Files_Unreadable"),
         };
+        ShowMessage(message);
+        await ShowDetailsAsync(selected);
+    }
+
+    private void ShowMessage(string? message)
+    {
         Message.Text = message ?? "";
         Message.Visibility = message is null ? Visibility.Collapsed : Visibility.Visible;
     }
@@ -184,33 +207,91 @@ internal sealed partial class FilesView : UserControl, IAtelierToolView
 
     private int PixelSize(double dips) => (int)Math.Round(dips * (XamlRoot?.RasterizationScale ?? 1.0));
 
-    // ── Selection and entering ────────────────────────────────────────────
+    // ── Selection and the panel ───────────────────────────────────────────
 
     private void OnSelectionChanged(object sender, SelectionChangedEventArgs e)
     {
         if (_filling) return;
-        if (((ListViewBase)sender).SelectedItem is FileRow row) _host.Select(row.Entry.Path, FileDetails.For(row.Entry));
-        else _host.Select(null, null);
+        _ = ShowDetailsAsync(((ListViewBase)sender).SelectedItem as FileRow);
     }
 
+    // A photo shows the photo tool's panel (spec, Details panel; 12.15); any
+    // other item, its size, date and location (12.1).
+    private Task ShowDetailsAsync(FileRow? row)
+    {
+        ForgetPhotoPanel();
+        if (row is null)
+        {
+            _host.Select(null, null);
+            return Task.CompletedTask;
+        }
+        if (IsPhoto(row)) return ShowPhotoDetailsAsync(row);
+        _host.Select(row.Entry.Path, FileDetails.For(row.Entry));
+        return Task.CompletedTask;
+    }
+
+    // ── Activation and keys ───────────────────────────────────────────────
+
+    // A double-click on one of the row's actions is two clicks on that
+    // action, not a request to open the row.
     private void OnItemsDoubleTapped(object sender, DoubleTappedRoutedEventArgs e)
     {
-        if ((e.OriginalSource as FrameworkElement)?.DataContext is FileRow row) Enter(row);
+        if (IsInButton(e.OriginalSource as DependencyObject, (DependencyObject)sender)) return;
+        if ((e.OriginalSource as FrameworkElement)?.DataContext is FileRow row) Activate(row);
     }
 
+    // Enter opens what is selected; Delete sends it to the Recycle Bin, as in
+    // File Explorer, but Shift+Delete, which Explorer uses to delete for good,
+    // does nothing here: this app never deletes for good. G and X mark a
+    // photo whose panel is shown, as in the photo tool. Keys pressed on a
+    // row's action button are that button's.
     private void OnItemsKeyDown(object sender, KeyRoutedEventArgs e)
     {
-        if (e.Key == VirtualKey.Enter && ((ListViewBase)sender).SelectedItem is FileRow row)
+        if (e.OriginalSource is ButtonBase) return;
+        if (((ListViewBase)sender).SelectedItem is not FileRow row) return;
+        bool modified = IsDown(VirtualKey.Control) || IsDown(VirtualKey.Menu);
+        switch (e.Key)
         {
-            Enter(row);
-            e.Handled = true;
+            case VirtualKey.Enter:
+                Activate(row);
+                e.Handled = true;
+                break;
+            case VirtualKey.Delete when !modified && !IsDown(VirtualKey.Shift):
+                _ = RecycleAsync(row);
+                e.Handled = true;
+                break;
+            case VirtualKey.G when !modified && _photoTile is not null:
+                MarkPhoto(PhotoMark.Keep);
+                e.Handled = true;
+                break;
+            case VirtualKey.X when !modified && _photoTile is not null:
+                MarkPhoto(PhotoMark.Delete);
+                e.Handled = true;
+                break;
         }
     }
 
-    private void Enter(FileRow row)
+    private void Activate(FileRow row)
     {
-        if (!row.Entry.IsFolder || _place is null) return;
-        _host.Open(_place.Enter(row.Entry.Path));
+        if (!row.Entry.IsFolder)
+        {
+            _ = OpenAsync(row);
+            return;
+        }
+        if (_place is not null) _host.Open(_place.Enter(row.Entry.Path));
+    }
+
+    private static bool IsDown(VirtualKey key) =>
+        Microsoft.UI.Input.InputKeyboardSource.GetKeyStateForCurrentThread(key)
+            .HasFlag(Windows.UI.Core.CoreVirtualKeyStates.Down);
+
+    private static bool IsInButton(DependencyObject? element, DependencyObject stop)
+    {
+        for (DependencyObject? e = element; e is not null && !ReferenceEquals(e, stop); e = VisualTreeHelper.GetParent(e))
+        {
+            if (e is ButtonBase) return true;
+        }
+        return false;
     }
 
     private static void Label(FrameworkElement element, string key)
