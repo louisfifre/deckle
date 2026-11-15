@@ -14,7 +14,8 @@ namespace Deckle.Projects.Views;
 // but opens over the page. So the display mode follows the state: LeftMinimal
 // while closed, Left (docked) when the person opens it in a window wide enough
 // to give the page its room, and LeftMinimal (over the page) when the window is
-// narrow. Only the hamburger opens it.
+// narrow. Only the hamburger opens it. The mode is chosen when the pane opens and
+// chosen again whenever the window is resized while it is open.
 public sealed partial class ProjectsWindow
 {
     // The window width, in DIPs, from which an open pane is docked: below it the
@@ -39,8 +40,7 @@ public sealed partial class ProjectsWindow
 
         if (open)
         {
-            bool docked = RootGrid.ActualWidth >= DockedFromWidth;
-            Nav.PaneDisplayMode = docked ? NavigationViewPaneDisplayMode.Left : NavigationViewPaneDisplayMode.LeftMinimal;
+            Nav.PaneDisplayMode = OpenPaneMode();
             Nav.IsPaneOpen = true;
         }
         else
@@ -48,6 +48,19 @@ public sealed partial class ProjectsWindow
             Nav.IsPaneOpen = false;
             Nav.PaneDisplayMode = NavigationViewPaneDisplayMode.LeftMinimal;
         }
+    }
+
+    private NavigationViewPaneDisplayMode OpenPaneMode() =>
+        RootGrid.ActualWidth >= DockedFromWidth ? NavigationViewPaneDisplayMode.Left : NavigationViewPaneDisplayMode.LeftMinimal;
+
+    // The window was resized: an open pane follows the width, docked once the
+    // window is wide enough and over the page once it is not, instead of keeping
+    // the mode it opened in. A closed pane has no mode to follow.
+    private void OnRootSizeChanged(object sender, SizeChangedEventArgs args)
+    {
+        if (!_paneOpen) return;
+        NavigationViewPaneDisplayMode mode = OpenPaneMode();
+        if (Nav.PaneDisplayMode != mode) Nav.PaneDisplayMode = mode;
     }
 
     // A pane that covers the page closes when the person clicks elsewhere: the
