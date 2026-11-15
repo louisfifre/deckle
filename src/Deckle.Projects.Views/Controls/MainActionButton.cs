@@ -1,7 +1,6 @@
 using Microsoft.UI.Xaml;
 using Microsoft.UI.Xaml.Automation;
 using Microsoft.UI.Xaml.Controls;
-using Microsoft.UI.Xaml.Media;
 
 namespace Deckle.Projects.Views;
 
@@ -108,17 +107,5 @@ internal sealed class MainActionButton : UserControl
         AutomationProperties.SetName(_warning, failed ? failure : "");
     }
 
-    // The nearest control around this one that the keyboard can stop on: the
-    // Home card, or the list item that holds a category row.
-    private void FocusOwner()
-    {
-        for (DependencyObject? e = VisualTreeHelper.GetParent(this); e is not null; e = VisualTreeHelper.GetParent(e))
-        {
-            if (e is Control { IsTabStop: true, IsEnabled: true } owner)
-            {
-                owner.Focus(FocusState.Programmatic);
-                return;
-            }
-        }
-    }
+    private void FocusOwner() => KeyboardFocus.HandToOwner(this);
 }

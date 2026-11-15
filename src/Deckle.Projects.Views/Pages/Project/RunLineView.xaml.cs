@@ -32,8 +32,16 @@ internal sealed partial class RunLineView : UserControl
 
     // Offers "Show terminal" next to the words of an ended run whose terminal
     // window is still open. The owner decides, since only it knows the run.
-    public void SetShowTerminal(bool visible) =>
+    //
+    // A button that goes away while the keyboard is on it would drop the focus
+    // to nowhere: the control around the line takes it (as MainActionButton does).
+    public void SetShowTerminal(bool visible)
+    {
+        bool hadFocus = !visible && TerminalButton.Visibility == Visibility.Visible
+            && TerminalButton.FocusState != FocusState.Unfocused;
         TerminalButton.Visibility = visible ? Visibility.Visible : Visibility.Collapsed;
+        if (hadFocus) KeyboardFocus.HandToOwner(this);
+    }
 
     private void OnTerminalClick(object sender, RoutedEventArgs e) => ShowTerminalRequested?.Invoke();
 

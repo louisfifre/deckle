@@ -2025,6 +2025,7 @@ _Generated from `git ls-files` — do not edit by hand._
 │   │   │   ├── Breadcrumb.cs
 │   │   │   ├── CategoryDropTarget.cs
 │   │   │   ├── InlineNameEditor.cs
+│   │   │   ├── KeyboardFocus.cs
 │   │   │   ├── MainActionButton.cs
 │   │   │   ├── MainActionState.cs
 │   │   │   ├── ProjectDragData.cs
