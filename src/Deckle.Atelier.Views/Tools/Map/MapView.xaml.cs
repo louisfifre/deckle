@@ -15,6 +15,8 @@ namespace Deckle.Atelier.Views;
 //
 // A click selects a row and opens the panel (spec, Behaviours). The boxes
 // filter the rows already read; ticking one never walks the disk again.
+// The large graph takes the list's place under the same boxes
+// (MapView.LargeGraph.cs).
 internal sealed partial class MapView : UserControl, IAtelierToolView
 {
     private readonly IAtelierToolHost _host;
@@ -48,6 +50,9 @@ internal sealed partial class MapView : UserControl, IAtelierToolView
         AutomationProperties.SetName(DisplayChoice, AtelierText.Get("Map_Display_Group"));
         Label(FlatButton, "Map_Display_Flat");
         Label(SectionsButton, "Map_Display_Sections");
+        AutomationProperties.SetName(DimensionChoice, AtelierText.Get("Map_LargeGraph_Dimension_Group"));
+        LeaveLargeGraphText.Text = AtelierText.Get("Map_LargeGraph_Leave");
+        ToolTipService.SetToolTip(LeaveLargeGraphButton, AtelierText.Get("Map_LargeGraph_Leave_Tip"));
         ToolTipService.SetToolTip(TokensHeader, AtelierText.Get("Map_TokensHint"));
         EmptyGlyph.Glyph = AtelierGlyphs.MapTool;
         foreach (MapItemKind kind in MapInventory.KindsLookedFor)
@@ -90,7 +95,11 @@ internal sealed partial class MapView : UserControl, IAtelierToolView
         bool listed = map.Succeeded && !map.IsEmpty;
         EmptyState.Visibility = map.IsEmpty ? Visibility.Visible : Visibility.Collapsed;
         EmptyBody.Text = MapKindText.LookedFor();
-        Toolbar.Visibility = Header.Visibility = Rows.Visibility = listed ? Visibility.Visible : Visibility.Collapsed;
+        Toolbar.Visibility = listed ? Visibility.Visible : Visibility.Collapsed;
+        Header.Visibility = Rows.Visibility = listed && !_largeGraph ? Visibility.Visible : Visibility.Collapsed;
+        LargeGraph.Visibility = listed && _largeGraph ? Visibility.Visible : Visibility.Collapsed;
+        DisplayChoice.Visibility = _largeGraph ? Visibility.Collapsed : Visibility.Visible;
+        LargeGraphCommands.Visibility = _largeGraph ? Visibility.Visible : Visibility.Collapsed;
 
         Truncated.IsOpen = map.IsTruncated;
         if (map.IsTruncated)
@@ -123,7 +132,7 @@ internal sealed partial class MapView : UserControl, IAtelierToolView
     // does (MapListOrder); by sections, a kind left without a row has no title.
     private int Fill(MapInventory map)
     {
-        var filter = new MapListFilter(AlwaysReadBox.IsChecked == true, _hiddenKinds);
+        MapListFilter filter = CurrentFilter();
         IReadOnlyList<MapItem> shown = filter.Apply(map.Items);
         var sharedNames = map.Items.GroupBy(i => i.Name, StringComparer.OrdinalIgnoreCase)
             .Where(g => g.Count() > 1).Select(g => g.Key).ToHashSet(StringComparer.OrdinalIgnoreCase);
@@ -152,25 +161,36 @@ internal sealed partial class MapView : UserControl, IAtelierToolView
         TotalLabel.Text = AtelierText.Format("Map_Total_Format", rows.Count);
         TotalTokens.Text = MapKindText.Count(MapListFilter.EstimatedTokensOf(shown));
 
+        MapRow? selected;
         _filling = true;
         try
         {
             Rows.ItemsSource = source;
-            MapRow? selected = _selection is null ? null : rows.FirstOrDefault(r => Matches(map, r.Item, _selection));
+            selected = _selection is null ? null : rows.FirstOrDefault(r => Matches(map, r.Item, _selection));
             Rows.SelectedItem = selected;
             if (selected is not null) Rows.ScrollIntoView(selected);
 
             // A selection this tool cannot show (a photo chosen in the file
             // tool, a row the filter hides) stays the window's, but the panel
             // closes: it would describe something not on screen.
-            _host.Select(_selection, selected is null ? null : MapDetails.For(map, selected.Item));
+            _host.Select(_selection, selected is null ? null : DetailsOf(map, selected.Item));
         }
         finally
         {
             _filling = false;
         }
+        if (_largeGraph) ShowLargeGraph(map, filter, selected?.Item);
         return rows.Count;
     }
+
+    // The boxes above the list, which the large graph shares: one state, so
+    // a box ticked in one is ticked in the other.
+    private MapListFilter CurrentFilter() => new(AlwaysReadBox.IsChecked == true, _hiddenKinds);
+
+    // The panel of an item; its graph's enlarge button opens the large graph,
+    // and goes while the large graph is open.
+    private UIElement DetailsOf(MapInventory map, MapItem item) =>
+        MapDetails.For(map, item, _largeGraph ? null : EnterLargeGraph);
 
     // The path the window keeps for an item: its file, plus "#name" for a
     // server, which shares its file with the others (MapItem.Id).
@@ -188,7 +208,7 @@ internal sealed partial class MapView : UserControl, IAtelierToolView
         if (Rows.SelectedItem is MapRow row)
         {
             _selection = SelectionOf(map, row.Item);
-            _host.Select(_selection, MapDetails.For(map, row.Item));
+            _host.Select(_selection, DetailsOf(map, row.Item));
         }
         else
         {

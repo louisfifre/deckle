@@ -15,7 +15,10 @@ namespace Deckle.Atelier.Views;
 // drawn the same way (MapPanelSection).
 internal static class MapDetails
 {
-    public static UIElement For(MapInventory map, MapItem item)
+    // enlarge opens the large graph from the button next to the graph's
+    // title; null while the large graph is open, where the button would
+    // enlarge what is already large.
+    public static UIElement For(MapInventory map, MapItem item, Action? enlarge)
     {
         var root = new StackPanel();
         root.Children.Add(Sheet(item).Element);
@@ -29,7 +32,7 @@ internal static class MapDetails
             return root;
         }
 
-        root.Children.Add(MapPanelSection.Create(AtelierText.Get("Map_Graph_Section"), new MapLinkGraph(around)));
+        root.Children.Add(MapPanelSection.Create(AtelierText.Get("Map_Graph_Section"), new MapLinkGraph(around), EnlargeButton(enlarge)));
         var lists = new StackPanel { Spacing = 12 };
         lists.Children.Add(LinkList("Map_Cites_Format", map, map.LinksFrom(item).Select(l => (map.Find(l.ToId)!, map.IsMutual(l)))));
         lists.Children.Add(LinkList("Map_CitedBy_Format", map, map.LinksTo(item).Select(l => (map.Find(l.FromId)!, map.IsMutual(l)))));
@@ -103,6 +106,29 @@ internal static class MapDetails
             list.Children.Add(line);
         }
         return list;
+    }
+
+    // A glyph alone, named by its tooltip and for a screen reader, in the
+    // subtle style of the window's other glyph buttons. Its negative margin
+    // keeps the title's line as tall as the title, so the graph starts where
+    // the other sections' contents do.
+    private static Button? EnlargeButton(Action? enlarge)
+    {
+        if (enlarge is null) return null;
+        var button = new Button
+        {
+            Width = 32,
+            Height = 32,
+            Padding = new Thickness(0),
+            Margin = new Thickness(0, -6, -8, -6),
+            Style = Resource<Style>("SubtleButtonStyle"),
+            Content = new FontIcon { Glyph = AtelierGlyphs.EnlargeGraph, FontSize = 14 },
+        };
+        string label = AtelierText.Get("Map_Graph_Enlarge");
+        ToolTipService.SetToolTip(button, label);
+        Microsoft.UI.Xaml.Automation.AutomationProperties.SetName(button, label);
+        button.Click += (_, _) => enlarge();
+        return button;
     }
 
     private static TextBlock Secondary(string text) => new()

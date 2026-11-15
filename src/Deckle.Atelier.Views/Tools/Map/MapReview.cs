@@ -32,4 +32,11 @@ public static class MapReview
     {
         if (Views.TryGetValue(window, out MapView? view)) view.SetBySectionsForReview(bySections);
     }
+
+    // Opens the large graph (12.9) the way the panel's enlarge button does,
+    // or leaves it the way "Quitter le grand graphe" does.
+    public static void SetLargeGraph(AtelierWindow window, bool open)
+    {
+        if (Views.TryGetValue(window, out MapView? view)) view.SetLargeGraphForReview(open);
+    }
 }

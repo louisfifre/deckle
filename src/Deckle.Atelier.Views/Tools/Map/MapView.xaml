@@ -29,7 +29,7 @@
         </Style>
     </UserControl.Resources>
 
-    <Grid Padding="12,8,12,0">
+    <Grid Padding="12,8,12,0" KeyDown="OnKeyDown">
         <Grid.RowDefinitions>
             <RowDefinition Height="Auto" />
             <RowDefinition Height="Auto" />
@@ -74,6 +74,37 @@
                 <ToggleButton x:Name="SectionsButton" Width="36" Height="32" Padding="0" Click="OnDisplayClick">
                     <FontIcon Glyph="&#xF168;" FontSize="16" />
                 </ToggleButton>
+            </StackPanel>
+
+            <!-- In the large graph (12.9), the display's place holds the
+                 choice between 2D and 3D, 3D disabled until it is built, then
+                 at the top right the way out. The filters stay as they are:
+                 the list and the graph share them. -->
+            <StackPanel x:Name="LargeGraphCommands"
+                        Grid.Column="1"
+                        Orientation="Horizontal"
+                        VerticalAlignment="Top"
+                        Spacing="12"
+                        Visibility="Collapsed">
+                <StackPanel x:Name="DimensionChoice" Orientation="Horizontal" Spacing="2">
+                    <StackPanel.Resources>
+                        <SolidColorBrush x:Key="ToggleButtonBackground" Color="Transparent" />
+                        <SolidColorBrush x:Key="ToggleButtonBorderBrush" Color="Transparent" />
+                        <SolidColorBrush x:Key="ToggleButtonBackgroundDisabled" Color="Transparent" />
+                        <SolidColorBrush x:Key="ToggleButtonBorderBrushDisabled" Color="Transparent" />
+                    </StackPanel.Resources>
+                    <ToggleButton x:Name="TwoDButton" x:Uid="MapLargeGraph2D" Height="32" IsChecked="True" Click="OnTwoDClick" />
+                    <ToggleButton x:Name="ThreeDButton" x:Uid="MapLargeGraph3D" Height="32" IsEnabled="False" />
+                </StackPanel>
+                <Button x:Name="LeaveLargeGraphButton"
+                        Height="32"
+                        Style="{StaticResource SubtleButtonStyle}"
+                        Click="OnLeaveLargeGraphClick">
+                    <StackPanel Orientation="Horizontal" Spacing="8">
+                        <FontIcon Glyph="&#xE73F;" FontSize="16" />
+                        <TextBlock x:Name="LeaveLargeGraphText" VerticalAlignment="Center" />
+                    </StackPanel>
+                </Button>
             </StackPanel>
         </Grid>
 
@@ -242,6 +273,14 @@
                 </Grid>
             </ListView.Footer>
         </ListView>
+
+        <!-- The large graph takes the place of the header and the rows
+             (spec, Map); the code puts its drawing here. -->
+        <Border x:Name="LargeGraph"
+                Grid.Row="2"
+                Grid.RowSpan="2"
+                Margin="4,8,4,12"
+                Visibility="Collapsed" />
 
         <!-- A filter that leaves no row, or a folder gone or unreadable (spec,
              Open 33: Windows' conventions, the sentence in the middle of the

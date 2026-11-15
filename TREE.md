@@ -743,6 +743,7 @@ _Generated from `git ls-files` — do not edit by hand._
 │   │   │   ├── FileLauncher.cs
 │   │   │   └── ShellFileLauncher.cs
 │   │   ├── Map/
+│   │   │   ├── DeckleAtelierSource.MapGraph.cs
 │   │   │   ├── FrontMatter.cs
 │   │   │   ├── MapConventions.cs
 │   │   │   ├── MapFileFacts.cs
@@ -824,6 +825,8 @@ _Generated from `git ls-files` — do not edit by hand._
 │   │   │   │   ├── FilesView.xaml
 │   │   │   │   └── FilesView.xaml.cs
 │   │   │   ├── Map/
+│   │   │   │   ├── IMapGraphDrawing.cs
+│   │   │   │   ├── MapColumnGraphDrawing.cs
 │   │   │   │   ├── MapDetails.cs
 │   │   │   │   ├── MapFilterPanel.cs
 │   │   │   │   ├── MapKindText.cs
@@ -833,6 +836,7 @@ _Generated from `git ls-files` — do not edit by hand._
 │   │   │   │   ├── MapRow.cs
 │   │   │   │   ├── MapRowGroup.cs
 │   │   │   │   ├── MapTool.cs
+│   │   │   │   ├── MapView.LargeGraph.cs
 │   │   │   │   ├── MapView.xaml
 │   │   │   │   └── MapView.xaml.cs
 │   │   │   ├── Photos/
