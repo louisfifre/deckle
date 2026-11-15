@@ -34,12 +34,12 @@ internal sealed partial class CategoryRow : UserControl
         // The fills of the row's states, in the control fills the Home cards use.
         // Released and exited also come through handledEventsToo: the list may
         // have marked the press as handled.
-        PointerEntered += (_, _) => Fill("ControlFillColorSecondaryBrush");
-        PointerExited += (_, _) => Fill(null);
-        AddHandler(PointerPressedEvent, new PointerEventHandler((_, _) => Fill("ControlFillColorTertiaryBrush")), handledEventsToo: true);
-        AddHandler(PointerReleasedEvent, new PointerEventHandler((_, _) => Fill("ControlFillColorSecondaryBrush")), handledEventsToo: true);
-        AddHandler(PointerCanceledEvent, new PointerEventHandler((_, _) => Fill(null)), handledEventsToo: true);
-        AddHandler(PointerCaptureLostEvent, new PointerEventHandler((_, _) => Fill(null)), handledEventsToo: true);
+        PointerEntered += (_, _) => GoTo("PointerOver");
+        PointerExited += (_, _) => GoTo("Normal");
+        AddHandler(PointerPressedEvent, new PointerEventHandler((_, _) => GoTo("Pressed")), handledEventsToo: true);
+        AddHandler(PointerReleasedEvent, new PointerEventHandler((_, _) => GoTo("PointerOver")), handledEventsToo: true);
+        AddHandler(PointerCanceledEvent, new PointerEventHandler((_, _) => GoTo("Normal")), handledEventsToo: true);
+        AddHandler(PointerCaptureLostEvent, new PointerEventHandler((_, _) => GoTo("Normal")), handledEventsToo: true);
 
         MainAction.Invoked += () => _ = _context.RunMainActionAsync(ProjectId);
 
@@ -81,10 +81,9 @@ internal sealed partial class CategoryRow : UserControl
         if (action is not null) MainAction.Apply(action);
     }
 
-    // The row's own fill: the card's at rest, or one of the control fills while
-    // the pointer is over or pressing it.
-    private void Fill(string? resource) =>
-        Root.Background = (Brush)Application.Current.Resources[resource ?? "CardBackgroundFillColorDefaultBrush"];
+    // The row's own fill: the card's at rest ("Normal"), or one of the control
+    // fills while the pointer is over or pressing it (CategoryRow.xaml).
+    private void GoTo(string state) => VisualStateManager.GoToState(this, state, true);
 
     private void OnPointerPressed(object sender, PointerRoutedEventArgs e) =>
         GripPressed = IsWithin(e.OriginalSource, Grip);

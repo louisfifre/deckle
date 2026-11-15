@@ -11,7 +11,8 @@
          (the same as a Home card's): the list's item container draws a square
          fill whatever corner radius it is given, so it is kept transparent
          (CategoryPage.xaml) and only draws the focus. The hover and pressed
-         fills are the row's too, set from the pointer in the code. -->
+         fills are the row's too, visual states (as the Home card's) that the
+         code enters from the pointer, so the brushes follow the app theme. -->
     <Grid x:Name="Root"
           MinHeight="64"
           Padding="16,10,16,10"
@@ -20,6 +21,21 @@
           BorderBrush="{ThemeResource CardStrokeColorDefaultBrush}"
           BorderThickness="1"
           CornerRadius="{ThemeResource OverlayCornerRadius}">
+        <VisualStateManager.VisualStateGroups>
+            <VisualStateGroup x:Name="CommonStates">
+                <VisualState x:Name="Normal" />
+                <VisualState x:Name="PointerOver">
+                    <VisualState.Setters>
+                        <Setter Target="Root.Background" Value="{ThemeResource ControlFillColorSecondaryBrush}" />
+                    </VisualState.Setters>
+                </VisualState>
+                <VisualState x:Name="Pressed">
+                    <VisualState.Setters>
+                        <Setter Target="Root.Background" Value="{ThemeResource ControlFillColorTertiaryBrush}" />
+                    </VisualState.Setters>
+                </VisualState>
+            </VisualStateGroup>
+        </VisualStateManager.VisualStateGroups>
 
         <!-- The last column has a fixed width so the buttons of different rows
              line up whatever sits beside them (WinUI has no shared column
