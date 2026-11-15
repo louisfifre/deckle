@@ -204,7 +204,15 @@ internal sealed class PinActionList : UserControl
         {
             bool pinned = project?.IsPinned(row.Action) == true;
             row.Pin.IsChecked = pinned;
-            row.Main.Visibility = pinned ? Visibility.Visible : Visibility.Collapsed;
+            // "Main" keeps its place when it is not offered: collapsed, it
+            // would give its column back and "Pin" would jump left under the
+            // pointer, so a second click would land on "Main".
+            row.Main.Opacity = pinned ? 1 : 0;
+            row.Main.IsHitTestVisible = pinned;
+            row.Main.IsTabStop = pinned;
+            AutomationProperties.SetAccessibilityView(row.Main, pinned
+                ? Microsoft.UI.Xaml.Automation.Peers.AccessibilityView.Content
+                : Microsoft.UI.Xaml.Automation.Peers.AccessibilityView.Raw);
             row.Main.IsChecked = pinned && project?.Main == row.Action;
         }
     }

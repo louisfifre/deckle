@@ -48,7 +48,14 @@ public sealed partial class ProjectsWindow
     }
 
     // Home, as the pane's "All projects" shows it.
-    public void ShowHomeForReview() => NavigateTo(new ProjectsTarget.Home());
+    public void ShowHomeForReview() => NavigateWithoutMotion(new ProjectsTarget.Home());
+
+    private void NavigateWithoutMotion(ProjectsTarget target)
+    {
+        _showWithoutMotion = true;
+        try { NavigateTo(target); }
+        finally { _showWithoutMotion = false; }
+    }
 
     // Refresh as F5 runs it, awaited: the readings are read again and the page
     // shows them.
@@ -88,7 +95,7 @@ public sealed partial class ProjectsWindow
     // Shows a place as a click does and fails when its page could not be built.
     public void ShowForReview(ProjectsTarget target)
     {
-        NavigateTo(target);
+        NavigateWithoutMotion(target);
         ThrowIfPageFailed(KindOf(target));
     }
 }

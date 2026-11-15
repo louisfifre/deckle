@@ -15,7 +15,12 @@ namespace Deckle.Projects;
 // The window refreshes when a screen opens, when it comes back to the front,
 // on F5 and when an action ends. Two refreshes of one project at once (F5
 // pressed twice) are one read: the second awaits the first.
-public sealed class ProjectReadings
+//
+// A read is shared, so it belongs to no caller: it runs on the cache's own
+// token, and a caller leaving (its token cancelled) only stops waiting for it.
+// Otherwise the page that left first would cancel the read the page that stayed
+// is waiting on, and nothing would be stored. Dispose cancels what still runs.
+public sealed class ProjectReadings : IDisposable
 {
     public const int MaxParallelReads = 3;
 
@@ -24,6 +29,7 @@ public sealed class ProjectReadings
     private readonly Dictionary<string, ProjectReading> _readings = [];
     private readonly Dictionary<string, Task> _inFlight = [];
     private readonly object _gate = new();
+    private readonly CancellationTokenSource _lifetime = new();
 
     public ProjectReadings(IProjectReader reader) => _reader = reader;
 
@@ -45,21 +51,33 @@ public sealed class ProjectReadings
     public async Task RefreshAsync(IEnumerable<ProjectEntry> projects, CancellationToken cancellation)
     {
         var clock = Stopwatch.StartNew();
-        List<Task> reads = [.. projects.Select(p => ReadOnceAsync(p, cancellation))];
+        List<Task> reads = [.. projects.Select(ReadOnceAsync)];
         if (reads.Count == 0) return;
 
-        await Task.WhenAll(reads).ConfigureAwait(false);
+        try
+        {
+            await Task.WhenAll(reads).WaitAsync(cancellation).ConfigureAwait(false);
+        }
+        catch (OperationCanceledException) when (cancellation.IsCancellationRequested)
+        {
+            // The person left the screen: the reads go on for whoever shares
+            // them, the previous readings stand, and this caller stops waiting.
+            return;
+        }
         DeckleProjectsSource.Log.ProjectsRead(reads.Count, clock.ElapsedMilliseconds);
     }
 
-    private Task ReadOnceAsync(ProjectEntry project, CancellationToken cancellation)
+    // Cancels the reads still running; the cache is not used after that.
+    public void Dispose() => _lifetime.Cancel();
+
+    private Task ReadOnceAsync(ProjectEntry project)
     {
         lock (_gate)
         {
             if (_inFlight.TryGetValue(project.Id, out Task? running)) return running;
             // On the pool, so the read cannot finish (and clear its entry)
             // before the entry is made.
-            Task task = Task.Run(() => ReadAsync(project, cancellation), CancellationToken.None);
+            Task task = Task.Run(() => ReadAsync(project, _lifetime.Token), CancellationToken.None);
             _inFlight[project.Id] = task;
             return task;
         }
@@ -83,7 +101,7 @@ public sealed class ProjectReadings
         }
         catch (OperationCanceledException)
         {
-            // The person left the screen: the previous reading stands.
+            // The cache was disposed: the previous reading stands.
         }
         catch (Exception ex) when (ex is IOException or UnauthorizedAccessException or InvalidOperationException)
         {

@@ -21,9 +21,20 @@ internal sealed record BreadcrumbStep(string Label, Action? Invoke);
 // (Judged from the bar's documented behaviour, not tried in the window.)
 internal sealed class Breadcrumb : UserControl
 {
+    private const double StepPadding = 6;
+
     public Breadcrumb(IReadOnlyList<BreadcrumbStep> steps, bool trailingChevron)
     {
-        var row = new StackPanel { Orientation = Orientation.Horizontal, Spacing = 2 };
+        // The first step's words sit StepPadding in from the row's edge (its
+        // button's padding). The row is pulled left by that much so the words,
+        // not the button's hover box, start on the page title's left edge, as
+        // Windows 11 Settings aligns its trail.
+        var row = new StackPanel
+        {
+            Orientation = Orientation.Horizontal,
+            Spacing = 2,
+            Margin = new Thickness(-StepPadding, 0, 0, 0),
+        };
 
         for (int i = 0; i < steps.Count; i++)
         {
@@ -32,7 +43,7 @@ internal sealed class Breadcrumb : UserControl
             {
                 Button button = Themed.SubtleButton("TextFillColorSecondaryBrush");
                 button.Content = step.Label;
-                button.Padding = new Thickness(6, 2, 6, 2);
+                button.Padding = new Thickness(StepPadding, 2, StepPadding, 2);
                 button.MinHeight = 0;
                 button.Click += (_, _) => invoke();
                 row.Children.Add(button);
@@ -42,7 +53,7 @@ internal sealed class Breadcrumb : UserControl
                 TextBlock plain = Themed.Text("TextFillColorSecondaryBrush");
                 plain.Text = step.Label;
                 plain.VerticalAlignment = VerticalAlignment.Center;
-                plain.Margin = new Thickness(6, 0, 6, 0);
+                plain.Margin = new Thickness(StepPadding, 0, StepPadding, 0);
                 row.Children.Add(plain);
             }
 

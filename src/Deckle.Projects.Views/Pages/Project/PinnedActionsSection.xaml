@@ -20,9 +20,12 @@
                        Style="{StaticResource SubtitleTextBlockStyle}"
                        VerticalAlignment="Center" />
 
+            <!-- Its right margin takes back the button's own padding (11), so
+                 the words end on the right edge of the header buttons above. -->
             <Button x:Name="PinActionButton"
                     Grid.Column="1"
                     Style="{StaticResource SubtleButtonStyle}"
+                    Margin="0,0,-11,0"
                     Click="OnPinClick">
                 <StackPanel Orientation="Horizontal" Spacing="8">
                     <FontIcon x:Name="PinIcon" FontSize="16" />

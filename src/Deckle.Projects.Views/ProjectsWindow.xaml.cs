@@ -19,11 +19,12 @@ namespace Deckle.Projects.Views;
 //
 // The window works on a ProjectsWorkspace: the store, the readings, the script
 // menus, the actions that run and the links. Given a module folder it builds
-// the workspace itself and owns it; given a workspace (the self-check injects
-// one with a fake terminal and a fixed clock) it only uses it.
+// the workspace itself and owns it; given a workspace (the app keeps one for
+// its lifetime, the self-check injects one with a fake terminal and a fixed
+// clock) it only uses it, and closing the window leaves it alone.
 //
 // Closing the window never stops an action: it lives in its terminal (spec,
-// Behaviours). Disposing the workspace only stops watching it.
+// Behaviours).
 public sealed partial class ProjectsWindow : Window, IProjectsHost
 {
     private readonly nint _hwnd;

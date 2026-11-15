@@ -26,6 +26,9 @@ internal sealed class InlineNameEditor : UserControl
     // The box's width on the project page (board P4).
     public const double BoxWidth = 320;
 
+    // The text box's left padding, which the box hangs out to the left.
+    private const double BoxPadding = 10;
+
     private readonly TextBlock _text = new()
     {
         TextTrimming = TextTrimming.CharacterEllipsis,
@@ -92,12 +95,25 @@ internal sealed class InlineNameEditor : UserControl
         _atRest.PointerEntered += (_, _) => SetPointerOver(true);
         _atRest.PointerExited += (_, _) => SetPointerOver(false);
 
+        // The box wears the name's own size and weight (TextStyle) and is laid
+        // out so the typed text starts where the title's did: its border and
+        // left padding hang out to the left, its border and the missing
+        // vertical padding keep the line's height (board P4).
         _box = new TextBox
         {
             Width = BoxWidth,
             VerticalAlignment = VerticalAlignment.Center,
+            MinHeight = 0,
+            Padding = new Thickness(BoxPadding, 0, 6, 0),
+            Margin = new Thickness(-(BoxPadding + 1), -1, 0, -1),
         };
         _box.KeyDown += OnBoxKeyDown;
+        _box.Loaded += (_, _) =>
+        {
+            _box.ApplyTemplate();
+            HideClearButton();
+            DispatcherQueue.TryEnqueue(HideClearButton);
+        };
         _box.LostFocus += (_, _) => Finish(commit: true, restoreFocus: false);
 
         _hint = Themed.Text("TextFillColorTertiaryBrush", "CaptionTextBlockStyle");
@@ -140,7 +156,38 @@ internal sealed class InlineNameEditor : UserControl
     public Style? TextStyle
     {
         get => _text.Style;
-        set => _text.Style = value;
+        set
+        {
+            _text.Style = value;
+            _box.FontSize = _text.FontSize;
+            _box.FontWeight = _text.FontWeight;
+        }
+    }
+
+    // The built-in clear (X) button only empties the text. Beside "Esc to
+    // cancel" it reads as a cancel, so it is taken out of the box. The TextBox
+    // template shows and hides the part by visual state, which would undo a
+    // Visibility, so the part is given no width and no focus instead.
+    private void HideClearButton()
+    {
+        if (FindPart(_box, "DeleteButton") is not Button clear) return;
+        clear.MinWidth = 0;
+        clear.Width = 0;
+        clear.Opacity = 0;
+        clear.IsTabStop = false;
+        clear.IsHitTestVisible = false;
+    }
+
+    private static FrameworkElement? FindPart(DependencyObject node, string name)
+    {
+        int count = Microsoft.UI.Xaml.Media.VisualTreeHelper.GetChildrenCount(node);
+        for (int i = 0; i < count; i++)
+        {
+            DependencyObject child = Microsoft.UI.Xaml.Media.VisualTreeHelper.GetChild(node, i);
+            if (child is FrameworkElement element && element.Name == name) return element;
+            if (FindPart(child, name) is { } deeper) return deeper;
+        }
+        return null;
     }
 
     // The sentence beside the box while editing (board P4); none on Home.

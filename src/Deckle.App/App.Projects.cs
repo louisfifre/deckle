@@ -14,11 +14,15 @@ namespace Deckle.App;
 // nothing at start: with no window open it costs nothing. Its data lives in
 // the module's own folder of the data root.
 //
-// Closing the window never stops an action: it runs in its own terminal, and
-// the workspace the window owned only stops watching it (spec, Behaviours).
+// Closing the window never stops an action: it runs in its own terminal. The
+// workspace that watches it (the run board, the last results) belongs to the
+// app, not to the window: it is built on the first open and kept until Deckle
+// closes, so a window reopened mid-run still sees the run and the results
+// (spec, Behaviours).
 public partial class App
 {
     private ProjectsWindow? _projectsWindow;
+    private ProjectsWorkspace? _projectsWorkspace;
 
     private static bool ProjectsPresent => ModulePresence.IsPresent(ModuleIds.Projects);
 
@@ -31,7 +35,10 @@ public partial class App
 
     private ProjectsWindow EnsureProjectsWindow()
         => _projectsWindow ?? CompleteProjectsWindow(() => new ProjectsWindow(
-            AppPaths.GetModuleDirectory(ModuleIds.Projects), BuildProjectsHooks()));
+            EnsureProjectsWorkspace(), BuildProjectsHooks()));
+
+    private ProjectsWorkspace EnsureProjectsWorkspace()
+        => _projectsWorkspace ??= new ProjectsWorkspace(AppPaths.GetModuleDirectory(ModuleIds.Projects));
 
     // The window around a built ProjectsWindow: where it sits, what happens when
     // it closes, its theme. The self-check builds the window on a workspace of

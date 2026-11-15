@@ -12,8 +12,14 @@ namespace Deckle.Projects;
 // window comes back. Every successful listing also brings the store's pins up to
 // date (labels and script names), so Home's card can name the main action
 // without reading the menu.
-public sealed class ScriptMenuCache(IScriptMenuReader reader, ProjectStore store)
+//
+// A read is shared and belongs to no caller: it runs on the cache's own token,
+// and a caller whose token is cancelled only stops waiting. Otherwise the page
+// that left first would cancel the read the page that stayed awaits. Dispose
+// cancels what still runs.
+public sealed class ScriptMenuCache(IScriptMenuReader reader, ProjectStore store) : IDisposable
 {
+    private readonly CancellationTokenSource _lifetime = new();
     private readonly object _gate = new();
     private readonly Dictionary<string, IReadOnlyList<ScriptMenuEntry>> _listed = [];
     private readonly Dictionary<string, Task<ScriptMenuListing>> _inFlight = [];
@@ -37,14 +43,21 @@ public sealed class ScriptMenuCache(IScriptMenuReader reader, ProjectStore store
     // are one read.
     public Task<ScriptMenuListing> RefreshAsync(ProjectEntry project, CancellationToken cancellation)
     {
+        Task<ScriptMenuListing> shared;
         lock (_gate)
         {
-            if (_inFlight.TryGetValue(project.Id, out Task<ScriptMenuListing>? running)) return running;
-            Task<ScriptMenuListing> task = Task.Run(() => ReadAsync(project, cancellation), CancellationToken.None);
-            _inFlight[project.Id] = task;
-            return task;
+            if (!_inFlight.TryGetValue(project.Id, out Task<ScriptMenuListing>? running))
+            {
+                running = Task.Run(() => ReadAsync(project, _lifetime.Token), CancellationToken.None);
+                _inFlight[project.Id] = running;
+            }
+            shared = running;
         }
+        return shared.WaitAsync(cancellation);
     }
+
+    // Cancels the reads still running; the cache is not used after that.
+    public void Dispose() => _lifetime.Cancel();
 
     // Forgets a project that left the store.
     public void Forget(string projectId)

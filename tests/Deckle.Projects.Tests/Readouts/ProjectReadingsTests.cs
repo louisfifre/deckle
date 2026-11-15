@@ -192,6 +192,26 @@ public sealed class ProjectReadingsTests
     }
 
     [Fact]
+    public async Task ACallerLeavingDoesNotCancelTheReadAnotherCallerWaitsOn()
+    {
+        var reader = new GatedReader();
+        var readings = new ProjectReadings(reader);
+        ProjectEntry a = Project("a");
+        using var leaving = new CancellationTokenSource();
+
+        Task first = readings.RefreshAsync([a], leaving.Token);
+        await Eventually(() => reader.IsWaiting(a.Path));
+        Task second = readings.RefreshAsync([a], CancellationToken.None);
+        leaving.Cancel();
+        await first;
+        reader.Release(a.Path, Reading("v1.0.0"));
+        await second;
+
+        Assert.Equal("v1.0.0", readings.Get("a")!.Version.Tag);
+        Assert.Equal(1, reader.Started);
+    }
+
+    [Fact]
     public async Task AForgottenProjectHasNoReadingAnyMore()
     {
         var reader = new GatedReader();

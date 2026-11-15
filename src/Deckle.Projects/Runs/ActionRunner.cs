@@ -145,9 +145,13 @@ public sealed class ActionRunner : IDisposable
             // Asking for a terminal starts a process: off the caller's thread.
             start = await Task.Run(() => _launcher.Launch(command)).ConfigureAwait(false);
         }
-        catch (Exception ex) when (ex is IOException or UnauthorizedAccessException)
+        catch (Exception ex)
         {
-            start = TerminalStart.Failed("none", "run-folder");
+            // Whatever broke (the run folder, the launcher), the project must
+            // not stay marked as running: the start below frees it. The cause
+            // is logged, since the person only sees a start that did nothing.
+            DeckleProjectsSource.Log.ActionRunStartFailed(ex.GetType().Name);
+            start = TerminalStart.Failed("none", "start-failed");
         }
 
         if (!start.Started)

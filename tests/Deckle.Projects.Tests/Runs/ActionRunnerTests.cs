@@ -126,6 +126,20 @@ public sealed class ActionRunnerTests : IDisposable
     }
 
     [Fact]
+    public async Task ALauncherThatThrowsWhateverItThrowsFreesTheProject()
+    {
+        _launcher.Throws = new InvalidOperationException("boom");
+        using ActionRunner runner = NewRunner();
+        ProjectEntry project = NewProject();
+
+        StartOutcome outcome = await runner.StartAsync(project, Pin("a.0", "A"));
+
+        Assert.Equal(StartRefusal.TerminalUnavailable, outcome.Refusal);
+        Assert.Null(_board.ActiveRun(project.Id));
+        Assert.Empty(Directory.GetDirectories(_runs));
+    }
+
+    [Fact]
     public async Task AFallbackToTheConsoleIsKnownOnTheRunAndItsResult()
     {
         _launcher.Answer = new TerminalStart(true, true, TerminalStart.Console);

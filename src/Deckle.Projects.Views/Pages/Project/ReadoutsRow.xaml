@@ -6,8 +6,16 @@
     <!-- The three readouts of a project (boards P1, P2): a label above its
          value, in one row, with no card around them and no line under them.
          The info button follows the version only when Deckle found versions
-         worth a look; it carries no colour. -->
-    <StackPanel Orientation="Horizontal" Spacing="48">
+         worth a look; it carries no colour. The columns have a minimum width of
+         their own, so a project's readouts line up with the next one's and do
+         not slide when the info button appears or when the values arrive. -->
+    <Grid ColumnSpacing="48">
+        <Grid.ColumnDefinitions>
+            <ColumnDefinition Width="Auto" MinWidth="128" />
+            <ColumnDefinition Width="Auto" MinWidth="144" />
+            <ColumnDefinition Width="Auto" />
+        </Grid.ColumnDefinitions>
+
         <StackPanel x:Name="VersionFact" Spacing="2">
             <TextBlock x:Name="VersionLabel"
                        Style="{StaticResource CaptionTextBlockStyle}"
@@ -31,7 +39,7 @@
             </StackPanel>
         </StackPanel>
 
-        <StackPanel Spacing="2">
+        <StackPanel Grid.Column="1" Spacing="2">
             <TextBlock x:Name="UncommittedLabel"
                        Style="{StaticResource CaptionTextBlockStyle}"
                        Foreground="{ThemeResource TextFillColorSecondaryBrush}" />
@@ -42,7 +50,7 @@
             </Grid>
         </StackPanel>
 
-        <StackPanel Spacing="2">
+        <StackPanel Grid.Column="2" Spacing="2">
             <TextBlock x:Name="AgentLabel"
                        Style="{StaticResource CaptionTextBlockStyle}"
                        Foreground="{ThemeResource TextFillColorSecondaryBrush}" />
@@ -52,5 +60,5 @@
                            VerticalAlignment="Center" />
             </Grid>
         </StackPanel>
-    </StackPanel>
+    </Grid>
 </UserControl>
