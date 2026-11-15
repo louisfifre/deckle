@@ -82,6 +82,20 @@ public static class ToolCatalog
                 ToolExecutionContract.ReadOnly),
 
             new(
+                "task_reports",
+                "A task's id and title, then every session report linked to it, newest first, one line each: date, report id, and the first line of its closing entry when it has one. Read a report with report_journal.",
+                Schema(required: [Prop("task", "string", "Task, name or id.")]),
+                async (args, ct) => await reads.TaskReportsAsync(Str(args, "task"), ct),
+                ToolExecutionContract.ReadOnly),
+
+            new(
+                "orchestration_overview",
+                "An orchestration task (type Orchestrer) read as a whole: id, title with its done box, Définition de fini, its checklist with the checked count, its reports newest first, then each task it orchestrates (archived included) with its done box, id and the last journal line of its latest report, and how many are still open. Refused for a task of another type.",
+                Schema(required: [Prop("task", "string", "Orchestration task, name or id.")]),
+                async (args, ct) => await reads.OrchestrationOverviewAsync(Str(args, "task"), ct),
+                ToolExecutionContract.ReadOnly),
+
+            new(
                 "task_notes",
                 "A task's id, title, and the notes section of its body (what to know before working on it). The checklist is left out.",
                 Schema(required: [Prop("task", "string", "Task, name or id.")]),

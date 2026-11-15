@@ -11,7 +11,8 @@ public class ToolCatalogTests
     static readonly string[] ExpectedToolNames =
     {
         "open_report", "log", "close_report",
-        "task_properties", "task_checklist", "task_notes", "project_overview", "today_overview",
+        "task_properties", "task_checklist", "task_notes", "task_reports", "orchestration_overview",
+        "project_overview", "today_overview",
         "epic_properties", "report_journal", "idea_text", "document_outline", "document_section",
         "create_task", "complete", "archive", "link", "unlink", "list_projects", "search", "subtask",
         "create_epic", "create_project", "create_idea", "create_document", "update", "replace_section",
@@ -22,7 +23,8 @@ public class ToolCatalogTests
     // would bring the measured context cost back.
     static readonly string[] TypedReadNames =
     {
-        "task_properties", "task_checklist", "task_notes", "project_overview", "today_overview",
+        "task_properties", "task_checklist", "task_notes", "task_reports", "orchestration_overview",
+        "project_overview", "today_overview",
         "epic_properties", "report_journal", "idea_text", "document_outline", "document_section",
     };
 
@@ -266,6 +268,8 @@ public class ToolCatalogTests
             ["task_properties"] = AmbiguousOutcomePolicy.SafeToRetry,
             ["task_checklist"] = AmbiguousOutcomePolicy.SafeToRetry,
             ["task_notes"] = AmbiguousOutcomePolicy.SafeToRetry,
+            ["task_reports"] = AmbiguousOutcomePolicy.SafeToRetry,
+            ["orchestration_overview"] = AmbiguousOutcomePolicy.SafeToRetry,
             ["epic_properties"] = AmbiguousOutcomePolicy.SafeToRetry,
             ["report_journal"] = AmbiguousOutcomePolicy.SafeToRetry,
             ["idea_text"] = AmbiguousOutcomePolicy.SafeToRetry,
@@ -305,6 +309,8 @@ public class ToolCatalogTests
             ["task_properties"] = ToolChangeKind.None,
             ["task_checklist"] = ToolChangeKind.None,
             ["task_notes"] = ToolChangeKind.None,
+            ["task_reports"] = ToolChangeKind.None,
+            ["orchestration_overview"] = ToolChangeKind.None,
             ["epic_properties"] = ToolChangeKind.None,
             ["report_journal"] = ToolChangeKind.None,
             ["idea_text"] = ToolChangeKind.None,

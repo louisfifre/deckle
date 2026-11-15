@@ -520,6 +520,7 @@ _Generated from `git ls-files` — do not edit by hand._
 │   │   │   ├── ProjectGestures.cs
 │   │   │   ├── QueryGestures.cs
 │   │   │   ├── ReadGestures.cs
+│   │   │   ├── ReportLines.cs
 │   │   │   ├── ReportTime.cs
 │   │   │   ├── Resolution.cs
 │   │   │   ├── SchemaAdminGestures.cs
@@ -2371,6 +2372,7 @@ _Generated from `git ls-files` — do not edit by hand._
 │   │   ├── QueryGesturesTests.cs
 │   │   ├── ReadGesturesBugNotes.md
 │   │   ├── ReadGesturesTests.cs
+│   │   ├── ReportLinesTests.cs
 │   │   ├── ReportTimeTests.cs
 │   │   ├── SchemaAdminGesturesTests.cs
 │   │   ├── SessionGesturesBugNotes.md

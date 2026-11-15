@@ -27,8 +27,6 @@ public sealed partial class ProjectGestures(
 
     // Reports shown under « Derniers rapports ».
     const int RecentReports = 3;
-    // Length of a report's latest entry shown beside it.
-    const int LastEntryChars = 120;
 
     readonly AnytypeV2ObjectReader _reader = new(v2);
     readonly AnytypeV2Searcher _searcher = new(v2);
@@ -382,21 +380,14 @@ public sealed partial class ProjectGestures(
             AnytypeV2ObjectDocument md = await _reader.ReadAsync(
                 r.Id, new AnytypeV2ObjectReadOptions { Markdown = true }, ct);
             string markdown = md.Body["markdown"]?.GetValue<string>() ?? "";
-            string date = JournalDay().Match(markdown) is { Success: true } m ? m.Groups[1].Value : "?";
-            // The latest entry says where the work stopped; the « # Journal »
-            // heading would only repeat the date. Clipped, report_journal reads
-            // it whole.
-            string? last = MarkdownBody.JournalEntries(markdown)
-                .LastOrDefault()?.Split('\n')[0];
-            sb.Append(date).Append(" · ").Append(r.Id);
-            if (last is not null)
-                sb.Append(" — ").Append(last.Length <= LastEntryChars ? last : last[..LastEntryChars] + "…");
+            // The latest entry says where the work stopped, clipped:
+            // report_journal reads it whole.
+            string? last = ReportLines.LastEntry(markdown);
+            sb.Append(ReportLines.Day(markdown) ?? "?").Append(" · ").Append(r.Id);
+            if (last is not null) sb.Append(" — ").Append(last);
             sb.Append('\n');
         }
     }
-
-    [GeneratedRegex(@"Journal (\d{4}-\d{2}-\d{2})")]
-    private static partial Regex JournalDay();
 
     static void AppendProjectLine(StringBuilder sb, AnytypeV2SearchRow p)
     {
