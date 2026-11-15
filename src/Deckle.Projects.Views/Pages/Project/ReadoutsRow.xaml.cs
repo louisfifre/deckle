@@ -89,8 +89,11 @@ internal sealed partial class ReadoutsRow : UserControl
         {
             // A popup shown with an explicit placement is drawn in a window of
             // its own even when constrained, so the review's is placed through
-            // the flyout's own property.
-            _flyout.Placement = FlyoutPlacementMode.Bottom;
+            // the flyout's own property. The edge aligned left keeps the list's
+            // left edge on the readout's; the centred Bottom placement put a
+            // 380 DIP list under a ~100 DIP readout and pushed it to the
+            // window's edge.
+            _flyout.Placement = FlyoutPlacementMode.BottomEdgeAlignedLeft;
             _flyout.ShowAt(VersionFact);
         }
         else _flyout.ShowAt(VersionFact, new FlyoutShowOptions { Placement = FlyoutPlacementMode.BottomEdgeAlignedLeft });

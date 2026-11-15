@@ -38,6 +38,7 @@ internal sealed class InlineNameEditor : UserControl
     private readonly TextBox _box;
     private readonly TextBlock _hint;
     private readonly StackPanel _editing;
+    private readonly Grid _root;
 
     private bool _isEditing;
     private bool _pointerOver;
@@ -112,7 +113,8 @@ internal sealed class InlineNameEditor : UserControl
             Children = { _box, _hint },
         };
 
-        Content = new Grid { Children = { _atRest, _editing } };
+        _root = new Grid { Children = { _atRest, _editing } };
+        Content = _root;
         HorizontalContentAlignment = HorizontalAlignment.Left;
     }
 
@@ -163,6 +165,19 @@ internal sealed class InlineNameEditor : UserControl
         if (_isEditing) return;
         _isEditing = true;
         _box.Text = _text.Text;
+
+        // The box is shorter than the title it replaces, so the editor keeps
+        // the height the name had: nothing below it moves when editing starts
+        // or ends (board P4). Measured when the name was never laid out, as on
+        // a page that opens already renaming.
+        double height = _atRest.ActualHeight;
+        if (height <= 0)
+        {
+            _atRest.Measure(new Windows.Foundation.Size(double.PositiveInfinity, double.PositiveInfinity));
+            height = _atRest.DesiredSize.Height;
+        }
+        _root.MinHeight = height;
+
         _atRest.Visibility = Visibility.Collapsed;
         _editing.Visibility = Visibility.Visible;
 
@@ -200,6 +215,7 @@ internal sealed class InlineNameEditor : UserControl
         string typed = _box.Text.Trim();
         _editing.Visibility = Visibility.Collapsed;
         _atRest.Visibility = Visibility.Visible;
+        _root.MinHeight = 0;
         if (restoreFocus) _name.Focus(FocusState.Programmatic);
         if (commit) Committed?.Invoke(typed);
         Ended?.Invoke();
