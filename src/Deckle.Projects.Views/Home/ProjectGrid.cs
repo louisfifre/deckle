@@ -28,7 +28,11 @@ namespace Deckle.Projects.Views;
 //
 // The plan is made on the first measure, from the width the parent offers, so
 // a new grid draws its cards in its first frame instead of waiting for a size
-// change.
+// change. Changing the items there is safe: the repeater is this control's own
+// child and is measured right after, in the same pass. What must not happen
+// inside a layout pass is the outside world reacting, so ShownChanged, raised
+// from a measure, is queued on the dispatcher and arrives after the pass. A
+// SizeChanged or a store change plans outside layout and raises it at once.
 internal sealed class ProjectGrid : UserControl
 {
     private readonly ProjectsContext _context;
@@ -122,11 +126,11 @@ internal sealed class ProjectGrid : UserControl
     {
         // The width the parent offers is the width the grid will have (it
         // stretches), so the cards are made now and measured in this same pass.
-        if (!double.IsInfinity(availableSize.Width)) Replan(availableSize.Width, force: false);
+        if (!double.IsInfinity(availableSize.Width)) Replan(availableSize.Width, force: false, inMeasure: true);
         return base.MeasureOverride(availableSize);
     }
 
-    private void Replan(double width, bool force)
+    private void Replan(double width, bool force, bool inMeasure = false)
     {
         // Before the first layout the width is not known; planning with zero
         // would draw one column's worth of cards and then change.
@@ -161,7 +165,10 @@ internal sealed class ProjectGrid : UserControl
         if (!shownIds.SequenceEqual(_shownIds))
         {
             _shownIds = shownIds;
-            ShownChanged?.Invoke(Shown);
+            // From a measure pass the observers (the page reads projects and may
+            // redraw) are told afterwards, never inside the layout pass.
+            if (inMeasure) DispatcherQueue.TryEnqueue(() => ShownChanged?.Invoke(Shown));
+            else ShownChanged?.Invoke(Shown);
         }
     }
 
