@@ -47,6 +47,22 @@ public static class FilesReview
             throw new InvalidOperationException(problem);
     }
 
+    // Waits until the tile of each item, on screen in the gallery, shows the
+    // preview of its content: a picture for a PDF, its text for a Markdown
+    // file. Throws after a few seconds with the items still without one, so
+    // the image of the previews fails rather than shows icons.
+    public static async Task RequirePreviewsAsync(Window window, params string[] names)
+    {
+        FilesView view = Find(window);
+        for (int attempt = 0; attempt < 40; attempt++)
+        {
+            if (view.MissingPreviewsForReview(names) is []) return;
+            await Task.Delay(150);
+        }
+        throw new InvalidOperationException(
+            $"No preview on the gallery tile of {string.Join(", ", view.MissingPreviewsForReview(names))}.");
+    }
+
     private static FilesView Find(Window window) =>
         FindIn(window.Content) ?? throw new InvalidOperationException("The file tool is not shown in this window.");
 

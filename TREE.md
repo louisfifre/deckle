@@ -664,6 +664,7 @@ _Generated from `git ls-files` — do not edit by hand._
 │   │   ├── App.SelfCheck.Atelier.FolderIcons.cs
 │   │   ├── App.SelfCheck.Atelier.Map.cs
 │   │   ├── App.SelfCheck.Atelier.Photos.cs
+│   │   ├── App.SelfCheck.Atelier.Previews.cs
 │   │   ├── App.SelfCheck.Atelier.Sizes.cs
 │   │   ├── App.SelfCheck.cs
 │   │   ├── App.SelfCheck.Diagnostics.cs

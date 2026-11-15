@@ -74,6 +74,28 @@ internal sealed partial class FilesView
         return $"The name of {name} has no tooltip in the {Display} display.";
     }
 
+    // The names among these whose gallery tile has no preview of its content
+    // yet, a picture or a text; each is scrolled into view first, which
+    // realizes its tile and so asks for its preview. Empty once they all have
+    // one.
+    internal IReadOnlyList<string> MissingPreviewsForReview(IReadOnlyList<string> names)
+    {
+        ListViewBase items = ItemsOf(Display);
+        var missing = new List<string>();
+        foreach (string name in names)
+        {
+            FileRow? row = _rows.FirstOrDefault(r => string.Equals(r.Name, name, StringComparison.OrdinalIgnoreCase));
+            if (row is null || Display != FileListDisplay.Gallery)
+            {
+                missing.Add(name);
+                continue;
+            }
+            items.ScrollIntoView(row);
+            if (row.Thumbnail is null && row.PreviewText is null) missing.Add(name);
+        }
+        return missing;
+    }
+
     private static IEnumerable<T> All<T>(DependencyObject element) where T : DependencyObject
     {
         if (element is T found) yield return found;
