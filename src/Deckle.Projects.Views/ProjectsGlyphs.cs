@@ -16,6 +16,7 @@ internal static class ProjectsGlyphs
     public const string Library = "";       // Deckle Folders
     public const string OpenInNew = "";     // Show terminal
     public const string Edit = "";          // the pencil
+    public const string MoveToFolder = "\uE8DE";
     public const string Remove = "";
     public const string Delete = "";
     public const string Warning = "";

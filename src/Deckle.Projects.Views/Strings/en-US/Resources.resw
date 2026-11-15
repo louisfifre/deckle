@@ -50,12 +50,13 @@
   <!-- ## Menus -->
   <data name="Menu_OpenInExplorer" xml:space="preserve"><value>Open in File Explorer</value></data>
   <data name="Menu_OpenInTerminal" xml:space="preserve"><value>Open in terminal</value></data>
-  <data name="Menu_MoveTo_Format" xml:space="preserve"><value>Move to {0}</value></data>
-  <data name="Menu_MoveToNewCategory" xml:space="preserve"><value>Move to a new category…</value></data>
-  <data name="Menu_MoveToWithoutCategory" xml:space="preserve"><value>Move to Without a category</value></data>
+  <data name="Menu_MoveTo" xml:space="preserve"><value>Move to</value></data>
+  <data name="Menu_MoveToNewCategory" xml:space="preserve"><value>New category…</value></data>
+  <data name="Menu_MoveToWithoutCategory" xml:space="preserve"><value>Without a category</value></data>
   <data name="Menu_Rename" xml:space="preserve"><value>Rename</value></data>
   <data name="Menu_Remove" xml:space="preserve"><value>Remove from Deckle</value></data>
   <data name="Menu_RemoveHint" xml:space="preserve"><value>Folder stays</value></data>
+  <data name="Menu_RemoveBusy" xml:space="preserve"><value>Not while an action of this project is running.</value></data>
 
   <!-- ## Category page -->
   <data name="Category_Breadcrumb_Projects" xml:space="preserve"><value>Projects</value></data>
