@@ -800,6 +800,7 @@ _Generated from `git ls-files` — do not edit by hand._
 │   │   │   ├── SizeProgress.cs
 │   │   │   ├── SizeReport.cs
 │   │   │   ├── SizeScan.cs
+│   │   │   ├── SizeScanGate.cs
 │   │   │   └── SizeScanOptions.cs
 │   │   ├── Deckle.Atelier.csproj
 │   │   └── DeckleAtelierSource.cs
@@ -2484,6 +2485,7 @@ _Generated from `git ls-files` — do not edit by hand._
 │   │   ├── PathRulesTests.cs
 │   │   ├── ScratchFolder.cs
 │   │   ├── SizeScanEventsTests.cs
+│   │   ├── SizeScanGateTests.cs
 │   │   ├── SizeScanTests.cs
 │   │   ├── SizesSampleTests.cs
 │   │   ├── WindowShortcutBugNotes.md
