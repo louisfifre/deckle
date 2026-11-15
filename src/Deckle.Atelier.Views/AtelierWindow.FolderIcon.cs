@@ -20,12 +20,12 @@ public sealed partial class AtelierWindow
     // first column sits where the slot's icon would, so reduced to the rail
     // the item shows the icon alone, and opened it shows the icon then the
     // name and the path.
-    private static Grid FolderItemContent(AddedFolder folder, UIElement text)
+    private static Grid FolderItemContent(out IconChoiceView icon, UIElement text)
     {
         var grid = new Grid { ColumnSpacing = 14 };
         grid.ColumnDefinitions.Add(new ColumnDefinition { Width = GridLength.Auto });
         grid.ColumnDefinitions.Add(new ColumnDefinition { Width = new GridLength(1, GridUnitType.Star) });
-        var icon = new IconChoiceView(folder.Icon, PaneIconBoxSize) { VerticalAlignment = VerticalAlignment.Center };
+        icon = new IconChoiceView { BoxSize = PaneIconBoxSize, VerticalAlignment = VerticalAlignment.Center };
         grid.Children.Add(icon);
         Grid.SetColumn((FrameworkElement)text, 1);
         grid.Children.Add(text);
@@ -35,8 +35,7 @@ public sealed partial class AtelierWindow
     private void OnFolderIconChosen(string rootPath, IconChoice choice)
     {
         if (_folders.ChangeIcon(rootPath, choice) is not { } changed) return;
-        RebuildFolderItems();
-        if (Place is { } place) SelectFolderItem(place.Root);
+        SyncFolderItems();
         Address.ShowIcon(changed);
     }
 

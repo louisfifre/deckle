@@ -38,7 +38,7 @@ public sealed partial class AtelierWindow : Window
         Address.IconChosen += OnFolderIconChosen;
 
         BuildToolButtons();
-        RebuildFolderItems();
+        SyncFolderItems();
         // The icon provider's shell threads end with the window.
         Closed += (_, _) => _icons.Dispose();
 
