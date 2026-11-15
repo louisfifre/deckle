@@ -769,7 +769,9 @@ _Generated from `git ls-files` — do not edit by hand._
 │   │   │   ├── PhotoMarkStore.cs
 │   │   │   ├── PhotoRenamer.cs
 │   │   │   ├── PhotoRenameRule.cs
-│   │   │   ├── PhotoSidecars.cs
+│   │   │   └── PhotoSidecars.cs
+│   │   ├── Recycling/
+│   │   │   ├── DeckleAtelierSource.Recycling.cs
 │   │   │   ├── RecycleBin.cs
 │   │   │   ├── ShellFileOperationInterop.cs
 │   │   │   └── ShellRecycleBin.cs
@@ -2419,7 +2421,8 @@ _Generated from `git ls-files` — do not edit by hand._
 │   │   │   ├── PhotoRenamerTests.cs
 │   │   │   ├── PhotosEventsTests.cs
 │   │   │   ├── RawReadingMaintenanceTests.cs
-│   │   │   ├── SamplePhotosTests.cs
+│   │   │   └── SamplePhotosTests.cs
+│   │   ├── Recycling/
 │   │   │   └── ShellRecycleBinTests.cs
 │   │   ├── AddedFolderStoreTests.cs
 │   │   ├── AddressResolverTests.cs

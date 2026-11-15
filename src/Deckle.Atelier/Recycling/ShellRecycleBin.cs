@@ -5,7 +5,9 @@ using static Deckle.Atelier.ShellFileOperationInterop;
 namespace Deckle.Atelier;
 
 // Sends files to the Windows Recycle Bin through the shell's IFileOperation,
-// so a photo lands where File Explorer would put it and "Restaurer" works.
+// so an item lands where File Explorer would put it and "Restaurer" works.
+// Shared by the photo tool, which recycles the photos marked for deletion,
+// and the file tool's row action.
 //
 // The shell's file operations want a single-threaded apartment, so a call runs
 // on a thread of its own, started for it and joined before it returns.
@@ -92,7 +94,7 @@ public sealed partial class ShellRecycleBin : IRecycleBin
                     ? Refused("not-recyclable", HR_CANCELLED, RecycleStatus.Refused)
                     : Refused("shell-error", performed < 0 ? performed : sink.DeleteResult, RecycleStatus.Failed);
             }
-            DeckleAtelierSource.Log.PhotoDeletedForGood(Path.GetExtension(path).ToLowerInvariant());
+            DeckleAtelierSource.Log.ItemDeletedForGood(Path.GetExtension(path).ToLowerInvariant());
             return new RecycleOutcome(RecycleStatus.DeletedForGood, sink.DeleteResult);
         }
         catch (COMException ex)
@@ -108,7 +110,7 @@ public sealed partial class ShellRecycleBin : IRecycleBin
 
     private static RecycleOutcome Refused(string reason, int hr, RecycleStatus status)
     {
-        DeckleAtelierSource.Log.PhotoRecycleRefused(reason, hr);
+        DeckleAtelierSource.Log.RecycleRefused(reason, hr);
         return new RecycleOutcome(status, hr);
     }
 

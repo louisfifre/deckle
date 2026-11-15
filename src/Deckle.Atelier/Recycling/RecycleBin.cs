@@ -22,8 +22,9 @@ public enum RecycleStatus
 public readonly record struct RecycleOutcome(RecycleStatus Status, int HResult = 0, string? RecycledPath = null);
 
 // Sends files to the Windows Recycle Bin, one outcome per file, in order.
-// The application of the marks depends on this seam, so its plan can be
-// exercised without the shell; ShellRecycleBin is the real one.
+// The application of the marks and the file tool's row action depend on this
+// seam, so what they do can be exercised without the shell; ShellRecycleBin
+// is the real one.
 public interface IRecycleBin
 {
     void Recycle(IReadOnlyList<string> paths, Action<int, RecycleOutcome> onEach, CancellationToken cancel);
