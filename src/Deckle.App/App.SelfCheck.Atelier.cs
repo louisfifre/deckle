@@ -10,9 +10,10 @@ namespace Deckle.App;
 // so the window first opens with no folder: the empty state of board 12.11.
 // Then a sample folder made under that root (SampleFolder, nothing from the
 // person's disk) is added the way the picker adds one, and the window is
-// photographed in the file tool, with an item selected, in its large rows and
-// its gallery, in each registered tool, with the pane open, and one folder
-// down. A state that fails to show
+// photographed in the file tool, with an item selected, with a row's two
+// actions shown, in its large rows and its gallery (each with a row's actions
+// too), in each registered tool, with the pane open, and one folder down.
+// A state that fails to show
 // fails its image, and so the run.
 public partial class App
 {
@@ -68,8 +69,20 @@ public partial class App
         // The other two displays, with the item still selected and its panel
         // open, as changing display leaves them; then back to the list, which
         // the later states photograph.
+        // A row with its two actions, in each display, as the pointer over it
+        // shows them: another row than the selected one, so both are seen.
+        // Nothing presses them: the walk never opens File Explorer nor sends
+        // a file to the Recycle Bin.
+        const string hovered = "Tarifs-2026.pdf";
+        await Capture("files-row-actions", () => FilesReview.ShowRowActionsAsync(window, hovered));
+        if (loaded) FilesReview.HideRowActions(window);
+
         await Capture("files-large-rows", () => FilesReview.ShowDisplayAsync(window, FileListDisplay.LargeRows));
+        await Capture("files-large-rows-actions", () => FilesReview.ShowRowActionsAsync(window, hovered));
+        if (loaded) FilesReview.HideRowActions(window);
         await Capture("files-gallery", () => FilesReview.ShowDisplayAsync(window, FileListDisplay.Gallery));
+        await Capture("files-gallery-actions", () => FilesReview.ShowRowActionsAsync(window, hovered));
+        if (loaded) FilesReview.HideRowActions(window);
         if (loaded) await FilesReview.ShowDisplayAsync(window, FileListDisplay.List);
 
         foreach (string tool in window.ToolIds.Where(t => t != "files"))

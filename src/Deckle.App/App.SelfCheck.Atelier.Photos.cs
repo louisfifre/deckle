@@ -8,7 +8,8 @@ namespace Deckle.App;
 // The self-check's walk of the photo tool, on a shoot made from nothing
 // (SamplePhotos) inside the sample folder: the gallery, a photo selected with
 // its panel, marks set with their counters, a photo seen large, and the
-// summary of "Appliquer les marques…". The summary is photographed open and
+// summary of "Appliquer les marques…", then the file tool on the same shoot,
+// as a gallery and with a photo selected. The summary is photographed open and
 // then closed with "Annuler": the self-check never sends a file to the
 // Recycle Bin. Marks a kept data root may hold are cleared first, so the
 // gallery is photographed without any.
@@ -87,6 +88,14 @@ public partial class App
             await window.ShowToolForReviewAsync("files");
             await FilesReview.ShowDisplayAsync(window, FileListDisplay.Gallery);
             await Task.Delay(600);
+        });
+
+        // A photo selected in the file list: the photo tool's panel, with the
+        // mark the walk set above, and no counters (12.15).
+        await Capture("files-photo-selected", async () =>
+        {
+            await FilesReview.ShowDisplayAsync(window, FileListDisplay.List);
+            await window.SelectForReviewAsync("DSC_0207.JPG");
         });
         await FilesReview.ShowDisplayAsync(window, FileListDisplay.List);
     }
