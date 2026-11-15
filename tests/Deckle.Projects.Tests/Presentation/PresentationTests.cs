@@ -195,6 +195,20 @@ public sealed class ProjectsTargetTests
     }
 
     [Fact]
+    public void ARenameArrivalIsNotPartOfThePlaceTheHistoryRecords()
+    {
+        var arrival = new ProjectsTarget.Project("p1", BeginRename: true);
+        var history = new NavigationHistory<ProjectsTarget>();
+        history.Navigate(new ProjectsTarget.Project("p1"));
+
+        Assert.True(arrival.BeginsRename);
+        Assert.Equal<ProjectsTarget>(new ProjectsTarget.Project("p1"), arrival.Place);
+        Assert.False(history.Navigate(arrival.Place));
+        Assert.False(new ProjectsTarget.Project("p1").BeginsRename);
+        Assert.Equal<ProjectsTarget>(new ProjectsTarget.Home(), new ProjectsTarget.Home().Place);
+    }
+
+    [Fact]
     public void BackLeadsToTheScreenTheCameFromAndNavigatingToTheCurrentPlaceChangesNothing()
     {
         var history = new NavigationHistory<ProjectsTarget>();

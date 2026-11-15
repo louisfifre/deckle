@@ -141,18 +141,11 @@ public sealed partial class ProjectsWindow
         foreach (object entry in items)
         {
             if (entry is not NavigationViewItem item) continue;
-            // A project's item is matched without its BeginRename arrival.
-            if (item.Tag is ProjectsTarget tag && SamePlace(tag, place)) return item;
+            if (item.Tag is ProjectsTarget tag && tag.Equals(place)) return item;
             if (FindPaneItem(item.MenuItems, place) is { } child) return child;
         }
         return null;
     }
-
-    private static bool SamePlace(ProjectsTarget a, ProjectsTarget b) => (a, b) switch
-    {
-        (ProjectsTarget.Project x, ProjectsTarget.Project y) => x.ProjectId == y.ProjectId,
-        _ => a.Equals(b),
-    };
 
     private void OnNavItemInvoked(NavigationView sender, NavigationViewItemInvokedEventArgs args)
     {

@@ -6,12 +6,22 @@ namespace Deckle.Projects;
 // shown" from a new one, and Forget can drop every place that names a project
 // or a category that was removed.
 //
-// BeginRename belongs to the place: "Rename" in a card's menu opens the
-// project's page with its name already a text box (spec), which is a different
-// arrival from clicking the card, so the two are different places.
+// BeginRename is how the person asked to arrive, not where they are: "Rename" in
+// a card's menu opens the project's page with its name already a text box
+// (spec), a one-shot of that first show. The history therefore records Place,
+// which drops it, so Back and Forward reopen the page as a page and the same
+// project is never two entries.
 public abstract record ProjectsTarget
 {
     private ProjectsTarget() { }
+
+    // The place to record in the history: this target without its arrival.
+    public ProjectsTarget Place => this is Project { BeginRename: true } project
+        ? project with { BeginRename = false }
+        : this;
+
+    // True when showing this target should open with the name in edit.
+    public bool BeginsRename => this is Project { BeginRename: true };
 
     public sealed record Home : ProjectsTarget;
 

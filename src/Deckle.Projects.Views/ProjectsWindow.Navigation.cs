@@ -10,9 +10,10 @@ namespace Deckle.Projects.Views;
 //
 // One ContentPresenter holds the page, swapped by NavigateTo. There is no
 // Frame: the window keeps its own history (Deckle Folders' NavigationHistory,
-// which holds any class with Equals) so that "Rename" can open the same project
-// page in a different arrival (ProjectsTarget.Project carries BeginRename), and
-// so a place whose project or category was removed can be dropped from Back.
+// which holds any class with Equals) so that a place whose project or category
+// was removed can be dropped from Back. It records places only: "Rename" arrives
+// on the project's page with BeginRename, which is a one-shot of that first show
+// and never part of the entry (ProjectsTarget.Place).
 //
 // A page is built at every visit and disposed when the person leaves, so what
 // it started (a reading, a timer, a subscription) ends with it.
@@ -31,7 +32,7 @@ public sealed partial class ProjectsWindow
 
     private void NavigateTo(ProjectsTarget target)
     {
-        if (_history.Navigate(target)) ShowCurrent();
+        if (_history.Navigate(target.Place)) ShowCurrent(target.BeginsRename);
     }
 
     private void GoBack()
@@ -39,7 +40,9 @@ public sealed partial class ProjectsWindow
         if (_history.GoBack() is not null) ShowCurrent();
     }
 
-    private void ShowCurrent()
+    // beginRename is the arrival of the first show only: Back and Forward call
+    // this without it.
+    private void ShowCurrent(bool beginRename = false)
     {
         ProjectsTarget target = _history.Current!;
         string kind = KindOf(target);
@@ -51,7 +54,7 @@ public sealed partial class ProjectsWindow
 
         try
         {
-            Page page = CreatePage(target);
+            Page page = CreatePage(target, beginRename);
             _page = (IProjectsPage)page;
             PageHost.Content = page;
             DeckleProjectsSource.Log.ProjectsPageShown(kind, clock.ElapsedMilliseconds);
@@ -69,10 +72,10 @@ public sealed partial class ProjectsWindow
         SelectPaneItem();
     }
 
-    private Page CreatePage(ProjectsTarget target) => target switch
+    private Page CreatePage(ProjectsTarget target, bool beginRename) => target switch
     {
         ProjectsTarget.Category category => new CategoryPage(_context, category.CategoryId),
-        ProjectsTarget.Project project => new ProjectPage(_context, project.ProjectId, project.BeginRename),
+        ProjectsTarget.Project project => new ProjectPage(_context, project.ProjectId, beginRename),
         _ => new HomePage(_context),
     };
 
