@@ -3,8 +3,10 @@
 //
 // The mark is a stack of sheets (d in front, a at the back) plus a flat blade (e).
 // A rear sheet shows only what the sheet in front leaves visible, minus a gap: the
-// gap is a parallel offset of the front sheet's edges, so it is equal everywhere by
-// construction, and an inner corner is the front corner's radius plus the gap.
+// gap is a parallel offset of the front sheet's edges, so it is equal along the
+// edges by construction. Around a corner, the front corner and the rear corner
+// facing it take the same radius, GROOVE_RADIUS: the gap widens a little there,
+// and both sides of it read as the same curve.
 //
 // The mark has two forms, because a gap that reads at 64 px closes at 16 px:
 // `normal`, four blades, and `small`, three blades and a wider gap, for where the
@@ -81,6 +83,7 @@ function polygon(corners) {
 
 const TOP_ANGLE = 27;   // every top edge slopes down to the right by this much
 const INNER_RADIUS = 10;
+const GROOVE_RADIUS = 50; // a corner the gap turns around, on both of its sides
 const PIVOT = [500, 960]; // where the blades converge; the tips sit around it
 
 // A sheet: its left edge, a point its top edge passes through, its right edge,
@@ -98,20 +101,20 @@ const FLAT = { tip: [515, 971], bottom: 22, rApex: 14, rEnd: 22 };
 const FORMS = {
   normal: {
     gap: 44, tipRadius: 3,
-    front: { ...FRONT, top: [395, 620], right: 92, rTL: 22, rTR: 22, rBL: 10 },
+    front: { ...FRONT, top: [395, 620], right: 92, rTL: 22, rTR: GROOVE_RADIUS, rBL: 10 },
     rear: [
-      { id: 'b', left: line([440, 470], 80), top: [570, 455], right: vertical(668), tip: [496, 955], bottom: 62, rTL: 30, rTR: 34, rBR: 30 },
+      { id: 'b', left: line([440, 470], 80), top: [570, 455], right: vertical(668), tip: [496, 955], bottom: 62, rTL: 30, rTR: GROOVE_RADIUS, rBR: GROOVE_RADIUS },
       { id: 'a', ...BACK, tip: [506, 964] }],
     flat: { ...FLAT, rApex: 18, rEnd: 28 },
   },
   small: {
     gap: 56, tipRadius: 4,
-    front: { ...FRONT, top: [400, 560], right: 80, rTL: 30, rTR: 30, rBL: 12 },
+    front: { ...FRONT, top: [400, 560], right: 80, rTL: 30, rTR: GROOVE_RADIUS, rBL: 12 },
     rear: [{ id: 'a', ...BACK, left: line([520, 360], 76), tip: [504, 962], bottom: 42 }],
     flat: { ...FLAT, rApex: 22, rEnd: 32 },
   },
   five: {
-    gap: 24, tipRadius: 1.5,
+    gap: 24, tipRadius: 1.5, evenCorners: true,
     front: FRONT,
     rear: [
       { id: 'c', left: vertical(396), top: [470, 545], right: vertical(548), tip: [492.5, 951.5], bottom: 78, rTL: 20, rTR: 22, rBR: 20 },
@@ -141,8 +144,11 @@ function buildBlades(form) {
     const pts = [[...TL, s.rTL], [...TR, s.rTR], [...BR, s.rBR], [...s.tip, tipRadius]];
     // The gap is not offset below the bend: the edge runs from this sheet's own
     // tip, so the gap narrows towards the pivot as in the first logo.
-    if (front.bottom) pts.push([...cross(offset(front.bottom, gap, front.c), oRight), front.rBR + gap]);
-    pts.push([...cross(oRight, oTop), front.rTR + gap]);
+    // The first drawing kept the gap even around corners too: its rear corner
+    // is the front one plus the gap.
+    const facing = r => form.evenCorners ? r + gap : r;
+    if (front.bottom) pts.push([...cross(offset(front.bottom, gap, front.c), oRight), facing(front.rBR)]);
+    pts.push([...cross(oRight, oTop), facing(front.rTR)]);
     pts.push([...cross(oTop, s.left), INNER_RADIUS]);
     out.push({ id: s.id, corners: rounded(pts) });
     front = { top: sTop, right: s.right, bottom, c: centre([TL, TR, BR, s.tip]), rTR: s.rTR, rBR: s.rBR };
