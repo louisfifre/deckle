@@ -13,10 +13,16 @@ namespace Deckle.Projects.Views;
 // The page only builds it when it has a project: with none, the fold is not
 // shown (spec: not drawn in v4). Like a category, the whole fold is a drop
 // target, so a card let go anywhere over it leaves its category.
+//
+// The fold is made once and kept while it has a project: Update gives it the
+// projects as the store has them now, and its grid keeps what the person did
+// there (the cards past the third row shown, a card with the keyboard on it).
 internal sealed class WithoutCategoryFold : UserControl
 {
     private readonly ProjectsContext _context;
+    private readonly Button _toggle;
     private readonly FontIcon _chevron;
+    private readonly TextBlock _count;
     private readonly StackPanel _body;
 
     public WithoutCategoryFold(ProjectsContext context, IProjectCardCommands commands, IReadOnlyList<ProjectEntry> projects)
@@ -24,7 +30,8 @@ internal sealed class WithoutCategoryFold : UserControl
         _context = context;
 
         _chevron = new FontIcon { FontSize = 12, VerticalAlignment = VerticalAlignment.Center };
-        var toggle = new Button
+        _count = Label("", "BodyTextBlockStyle", "TextFillColorTertiaryBrush");
+        _toggle = new Button
         {
             Style = (Style)Application.Current.Resources["SubtleButtonStyle"],
             Padding = new Thickness(0, 4, 8, 4),
@@ -37,15 +44,13 @@ internal sealed class WithoutCategoryFold : UserControl
                 {
                     _chevron,
                     Label(ProjectsText.Get("Home_WithoutCategory"), "BodyStrongTextBlockStyle", "TextFillColorSecondaryBrush"),
-                    Label(projects.Count.ToString(ProjectsText.Culture), "BodyTextBlockStyle", "TextFillColorTertiaryBrush"),
+                    _count,
                 },
             },
         };
-        AutomationProperties.SetName(toggle, ProjectsText.Format("Home_WithoutCategoryToggle_Format", projects.Count));
-        toggle.Click += (_, _) => IsOpen = !IsOpen;
+        _toggle.Click += (_, _) => IsOpen = !IsOpen;
 
         Cards = new ProjectGrid(context, commands);
-        Cards.SetProjects(projects, ProjectsText.Get("Home_WithoutCategory"), Cards.ShowAll);
 
         _body = new StackPanel
         {
@@ -61,16 +66,16 @@ internal sealed class WithoutCategoryFold : UserControl
         {
             Spacing = 12,
             Background = new SolidColorBrush(Microsoft.UI.Colors.Transparent),
-            Children = { toggle, _body },
+            Children = { _toggle, _body },
         };
-        CategoryDropTarget.Attach(panel, ProjectsText.Get("Home_WithoutCategory"), projectId =>
+        CategoryDropTarget.Attach(panel, () => ProjectsText.Get("Home_WithoutCategory"), projectId =>
         {
             if (context.Store.Find(projectId)?.CategoryId is not null) commands.Move(projectId, null);
         });
 
         Content = panel;
         HorizontalContentAlignment = HorizontalAlignment.Stretch;
-        Apply();
+        Update(projects);
     }
 
     public ProjectGrid Cards { get; }
@@ -92,6 +97,15 @@ internal sealed class WithoutCategoryFold : UserControl
             _context.WithoutCategoryOpen = value;
             Apply();
         }
+    }
+
+    // The projects in no category as the store has them now.
+    public void Update(IReadOnlyList<ProjectEntry> projects)
+    {
+        _count.Text = projects.Count.ToString(ProjectsText.Culture);
+        AutomationProperties.SetName(_toggle, ProjectsText.Format("Home_WithoutCategoryToggle_Format", projects.Count));
+        Cards.SetProjects(projects, ProjectsText.Get("Home_WithoutCategory"), Cards.ShowAll);
+        Apply();
     }
 
     private void Apply()

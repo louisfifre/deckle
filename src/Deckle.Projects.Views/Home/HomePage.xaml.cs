@@ -12,8 +12,9 @@ namespace Deckle.Projects.Views;
 // because the engine raises them wherever the work finished:
 //
 //   the store          a project or a category was added, moved, renamed or
-//                      removed: the page is drawn again, once for any number of
-//                      changes that arrive together
+//                      removed: the page is brought up to date, once for any
+//                      number of changes that arrive together (its sections
+//                      and cards are kept, see HomePage.Build.cs)
 //   the readings       one project's version or uncommitted count changed: only
 //                      its card is redrawn
 //   the board          an action began or ended: only that project's card is

@@ -13,9 +13,10 @@ namespace Deckle.Projects.Views;
 // transparent one.
 internal static class CategoryDropTarget
 {
-    // categoryName is what the caption names. onDrop gets the id of the project
+    // categoryName is what the caption names, read each time because a kept
+    // section follows its category's renaming. onDrop gets the id of the project
     // dropped; whether it already sits in the target is the caller's rule.
-    public static void Attach(UIElement target, string categoryName, Action<string> onDrop)
+    public static void Attach(UIElement target, Func<string> categoryName, Action<string> onDrop)
     {
         target.AllowDrop = true;
 
@@ -23,7 +24,7 @@ internal static class CategoryDropTarget
         {
             if (!ProjectDragData.IsProject(e.DataView)) return;
             e.AcceptedOperation = DataPackageOperation.Move;
-            e.DragUIOverride.Caption = ProjectsText.Format("Home_DropCaption_Format", categoryName);
+            e.DragUIOverride.Caption = ProjectsText.Format("Home_DropCaption_Format", categoryName());
             e.DragUIOverride.IsGlyphVisible = false;
             e.DragUIOverride.IsContentVisible = true;
         };
