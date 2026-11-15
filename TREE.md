@@ -1939,11 +1939,18 @@ _Generated from `git ls-files` — do not edit by hand._
 │   │   ├── Preset.cs
 │   │   └── PresetFamily.cs
 │   ├── Deckle.Projects/
+│   │   ├── Formatting/
+│   │   │   ├── ElapsedFormat.cs
+│   │   │   └── RunStateLine.cs
 │   │   ├── Model/
 │   │   │   ├── ActionRef.cs
 │   │   │   ├── PinnedAction.cs
 │   │   │   ├── ProjectCategory.cs
 │   │   │   └── ProjectEntry.cs
+│   │   ├── Opening/
+│   │   │   ├── DeckleProjectsSource.Opening.cs
+│   │   │   ├── IProjectOpener.cs
+│   │   │   └── ProjectOpener.cs
 │   │   ├── Readouts/
 │   │   │   ├── Manifests/
 │   │   │   │   ├── CargoManifest.cs
@@ -1964,12 +1971,32 @@ _Generated from `git ls-files` — do not edit by hand._
 │   │   │   ├── ProjectReadings.cs
 │   │   │   ├── UncommittedFiles.cs
 │   │   │   └── VersionReading.cs
+│   │   ├── Runs/
+│   │   │   ├── ActionRun.cs
+│   │   │   ├── ActionRunBoard.cs
+│   │   │   ├── ActionRunner.cs
+│   │   │   ├── DeckleProjectsSource.Runs.cs
+│   │   │   └── RunWrapper.cs
 │   │   ├── ScriptMenu/
-│   │   │   └── ScriptMenuEntry.cs
+│   │   │   ├── DeckleProjectsSource.ScriptMenu.cs
+│   │   │   ├── DeckleScriptsInstall.cs
+│   │   │   ├── ScriptMenuEntry.cs
+│   │   │   ├── ScriptMenuListing.cs
+│   │   │   ├── ScriptMenuParser.cs
+│   │   │   ├── ScriptMenuReader.cs
+│   │   │   └── ShellLocator.cs
 │   │   ├── Store/
 │   │   │   ├── DeckleProjectsSource.Store.cs
 │   │   │   ├── ProjectStore.cs
 │   │   │   └── StoredFile.cs
+│   │   ├── Terminal/
+│   │   │   ├── DefaultConsoleLauncher.cs
+│   │   │   ├── FallbackTerminalLauncher.cs
+│   │   │   ├── ITerminalLauncher.cs
+│   │   │   ├── TerminalChoice.cs
+│   │   │   ├── TerminalCommand.cs
+│   │   │   ├── TerminalWindowFinder.cs
+│   │   │   └── WindowsTerminalLauncher.cs
 │   │   ├── Deckle.Projects.csproj
 │   │   └── DeckleProjectsSource.cs
 │   ├── Deckle.Security/
@@ -3030,6 +3057,10 @@ _Generated from `git ls-files` — do not edit by hand._
 │   │   ├── Deckle.Presets.Tests.csproj
 │   │   └── PresetFamilyTests.cs
 │   ├── Deckle.Projects.Tests/
+│   │   ├── Formatting/
+│   │   │   └── FormattingTests.cs
+│   │   ├── Opening/
+│   │   │   └── ProjectOpenerTests.cs
 │   │   ├── Readouts/
 │   │   │   ├── AgentReadingTests.cs
 │   │   │   ├── GitRemoteTests.cs
@@ -3041,13 +3072,25 @@ _Generated from `git ls-files` — do not edit by hand._
 │   │   │   ├── ProjectReadingsTests.cs
 │   │   │   ├── UncommittedFilesTests.cs
 │   │   │   └── VersionReadingTests.cs
+│   │   ├── Runs/
+│   │   │   ├── ActionRunBoardTests.cs
+│   │   │   ├── ActionRunnerTests.cs
+│   │   │   ├── RunWrapperBehaviourTests.cs
+│   │   │   └── RunWrapperTests.cs
+│   │   ├── ScriptMenu/
+│   │   │   ├── ScriptMenuParserTests.cs
+│   │   │   └── ScriptMenuReaderTests.cs
 │   │   ├── Store/
 │   │   │   ├── ProjectStoreEventsTests.cs
 │   │   │   └── ProjectStoreTests.cs
+│   │   ├── Terminal/
+│   │   │   ├── TerminalLaunchersTests.cs
+│   │   │   └── TerminalWindowFinderTests.cs
 │   │   ├── Deckle.Projects.Tests.csproj
 │   │   ├── DeckleProjectsSourceEventIdTests.cs
 │   │   ├── MessageTemplateDoctrineTests.cs
 │   │   ├── ScratchFolder.cs
+│   │   ├── TestDoubles.cs
 │   │   └── Tools.cs
 │   ├── Deckle.Security.Tests/
 │   │   ├── Deckle.Security.Tests.csproj
