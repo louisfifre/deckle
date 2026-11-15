@@ -1656,6 +1656,8 @@ _Generated from `git ls-files` — do not edit by hand._
 │   │   ├── LlmOllamaContext.cs
 │   │   ├── LlmPage.xaml
 │   │   ├── LlmPage.xaml.cs
+│   │   ├── LlmPhotoDescriptionSection.xaml
+│   │   ├── LlmPhotoDescriptionSection.xaml.cs
 │   │   ├── LlmProfilePage.xaml
 │   │   ├── LlmProfilePage.xaml.cs
 │   │   ├── LlmProfilesSection.xaml
@@ -1663,6 +1665,7 @@ _Generated from `git ls-files` — do not edit by hand._
 │   │   ├── LlmProvidersSection.xaml
 │   │   ├── LlmProvidersSection.xaml.cs
 │   │   ├── LlmSettingsModule.cs
+│   │   ├── PhotoDescriptionModelSetting.cs
 │   │   ├── ProfileViewModel.cs
 │   │   ├── ProviderViewModel.cs
 │   │   ├── RewriteChangeView.cs

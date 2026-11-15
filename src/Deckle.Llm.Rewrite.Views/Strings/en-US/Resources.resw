@@ -266,6 +266,36 @@
   <data name="LlmModelsBlock.Caption" xml:space="preserve">
     <value>Installed in Ollama. Add them with ollama pull, then refresh.</value>
   </data>
+  <data name="LlmPhotoDescriptionBlock.Title" xml:space="preserve">
+    <value>Photo descriptions</value>
+  </data>
+  <data name="LlmPhotoDescriptionBlock.Caption" xml:space="preserve">
+    <value>A model on this PC describes the Atelier&apos;s photos. A photo is never sent anywhere else.</value>
+  </data>
+  <data name="LlmPhotoDescription_ProviderCard.Header" xml:space="preserve">
+    <value>Provider</value>
+  </data>
+  <data name="LlmPhotoDescription_ProviderBox.PlaceholderText" xml:space="preserve">
+    <value>Choose a provider on this PC</value>
+  </data>
+  <data name="LlmPhotoDescription_ProviderBox.[using:Microsoft.UI.Xaml.Automation]AutomationProperties.Name" xml:space="preserve">
+    <value>Provider for photo descriptions</value>
+  </data>
+  <data name="LlmPhotoDescription_NoLocalProvider" xml:space="preserve">
+    <value>No provider on this PC yet. Add one under Providers, such as Ollama at http://localhost:11434.</value>
+  </data>
+  <data name="LlmPhotoDescription_ModelCard.Header" xml:space="preserve">
+    <value>Model</value>
+  </data>
+  <data name="LlmPhotoDescription_ModelCard.Description" xml:space="preserve">
+    <value>One that reads images, such as a vision model.</value>
+  </data>
+  <data name="LlmPhotoDescription_ModelBox.PlaceholderText" xml:space="preserve">
+    <value>As the provider lists it</value>
+  </data>
+  <data name="LlmPhotoDescription_ModelBox.[using:Microsoft.UI.Xaml.Automation]AutomationProperties.Name" xml:space="preserve">
+    <value>Model for photo descriptions</value>
+  </data>
   <data name="LlmRefreshLabel.Text" xml:space="preserve">
     <value>Refresh</value>
   </data>

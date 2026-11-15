@@ -1,0 +1,44 @@
+<UserControl
+    x:Class="Deckle.Llm.Rewrite.Views.LlmPhotoDescriptionSection"
+    xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+    xmlns:controls="using:CommunityToolkit.WinUI.Controls"
+    xmlns:catalog="using:Deckle.Catalog">
+
+    <!-- The model that describes the Atelier's photos: a provider on this PC
+         and a model it serves. The caption says the one rule that holds
+         whatever is picked. Tag is the search index's scroll-to handle. -->
+    <catalog:SettingsSection x:Name="Section"
+                             x:Uid="LlmPhotoDescriptionBlock"
+                             Tag="LlmPhotoDescriptionSection"
+                             HasReset="True"
+                             ResetRequested="Reset_Click">
+        <StackPanel Spacing="{StaticResource SettingsCardSpacing}">
+            <!-- Only the enabled providers whose address is on this PC: a
+                 hosted API or a LAN server is never offered. -->
+            <controls:SettingsCard x:Name="ProviderCard"
+                                   x:Uid="LlmPhotoDescription_ProviderCard">
+                <ComboBox x:Name="ProviderBox"
+                          x:Uid="LlmPhotoDescription_ProviderBox"
+                          DisplayMemberPath="Name"
+                          MinWidth="280"
+                          SelectionChanged="ProviderBox_SelectionChanged" />
+            </controls:SettingsCard>
+
+            <!-- As on a profile's page: not an editable ComboBox, whose
+                 dropdown is unreliable in WinUI 3; the stored name shows even
+                 when the provider does not list it right now. -->
+            <controls:SettingsCard x:Name="ModelCard"
+                                   x:Uid="LlmPhotoDescription_ModelCard">
+                <AutoSuggestBox x:Name="ModelBox"
+                                x:Uid="LlmPhotoDescription_ModelBox"
+                                MinWidth="280"
+                                GotFocus="ModelBox_GotFocus"
+                                TextChanged="ModelBox_TextChanged"
+                                SuggestionChosen="ModelBox_SuggestionChosen"
+                                QuerySubmitted="ModelBox_QuerySubmitted"
+                                LostFocus="ModelBox_LostFocus" />
+            </controls:SettingsCard>
+        </StackPanel>
+    </catalog:SettingsSection>
+</UserControl>
