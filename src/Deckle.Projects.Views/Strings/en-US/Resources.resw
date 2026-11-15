@@ -65,8 +65,12 @@
   <data name="Category_CountNone" xml:space="preserve"><value>No project in this category yet</value></data>
   <data name="Category_Empty" xml:space="preserve"><value>Drag a project here to put it in this category.</value></data>
   <data name="Category_Delete" xml:space="preserve"><value>Delete this category</value></data>
-  <data name="Category_DeleteNote" xml:space="preserve"><value>Its projects go back to Without a category.</value></data>
+  <data name="Category_DeleteQuestionNone_Format" xml:space="preserve"><value>Delete {0}?</value></data>
+  <data name="Category_DeleteQuestionOne_Format" xml:space="preserve"><value>Delete {0}? Its project goes back to Without a category.</value></data>
+  <data name="Category_DeleteQuestion_Format" xml:space="preserve"><value>Delete {0}? Its {1} projects go back to Without a category.</value></data>
+  <data name="Category_DeleteConfirm" xml:space="preserve"><value>Delete</value></data>
   <data name="Category_Rename" xml:space="preserve"><value>Rename</value></data>
+  <data name="Category_Moved_Format" xml:space="preserve"><value>{0}, position {1} of {2}</value></data>
   <data name="Category_Grip" xml:space="preserve"><value>Drag to change the order</value></data>
 
   <!-- ## Project page -->

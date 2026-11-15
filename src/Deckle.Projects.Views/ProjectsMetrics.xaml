@@ -18,6 +18,11 @@
     <x:Double x:Key="ProjectsCardSpacing">12</x:Double>
     <x:Double x:Key="ProjectsActionCardMinWidth">340</x:Double>
 
+    <!-- The last column of a category page's rows: the main action's button
+         (up to about 128 for "Build & run"), 8 of gap and the 16 of the ring or
+         the warning mark, with some slack. Fixed, so the buttons line up. -->
+    <x:Double x:Key="ProjectsRowActionColumnWidth">176</x:Double>
+
     <!-- Left and right 56, bottom 40, on every page. The top is 16 under the
          title bar on a page that starts with its own heading, and Home's title
          row takes the same 16; the scrolling body under it starts 32 lower. -->

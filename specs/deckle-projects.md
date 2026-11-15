@@ -76,12 +76,12 @@ Its neighbours are Deckle Folders, which shows files and draws the map of a fold
 
 ### Category page (C1)
 
-- From top to bottom: the breadcrumb "Projects ›", the category's title, the line "4 projects · drag a row to change the order", the list, and "Delete this category" (session, C1).
+- From top to bottom: the breadcrumb "Projects ›", the category's title, the line "4 projects · drag a row to change the order", the list, and the "Delete this category" button (session, C1).
 - The list is plain: one row per project with a dotted gripper handle, the name over the full path, the same meta line as the card, and the main action's button when the project has one (session, C1; Louis, 2026-11-15, on v3: "a category page that is a plain list").
 - Clicking a row outside its button opens the project page (session).
 - Dragging a row by its gripper changes the order of the projects in the category; Home shows them in that order (session, C1).
 - The title is renamed in place the same way as a project's name: a pencil shows on hover or focus (session, C1; see Renaming).
-- "Delete this category" is followed by "Its projects go back to Without a category." and does exactly that; no project is removed (session, C1).
+- "Delete this category" opens a small flyout under the button that asks "Delete <name>? Its N projects go back to Without a category." with one "Delete" button; Esc or a click away cancels. Confirmed, it does exactly that, and no project is removed. It asks even for an empty category (session, C1; second pass).
 - A project added from this page joins this category (session). C1 does not draw the command "Add a project…" (session).
 
 ### Project page

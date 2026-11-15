@@ -8,7 +8,8 @@ namespace Deckle.Projects.Views;
 
 // A project's row on a category page (spec, Category page). Clicking it opens
 // the project's page (the list's ItemClick does that, so Enter and Space work
-// too); its button runs the main action; its handle is where a drag starts.
+// too); its button runs the main action; its handle is where a drag starts. The
+// list's item container around the row draws its fill, hover, pressed and focus.
 //
 // The row draws what the workspace knows when Refresh is called and keeps
 // nothing subscribed: the page listens to the store, the readings and the
@@ -24,15 +25,7 @@ internal sealed partial class CategoryRow : UserControl
         InitializeComponent();
 
         TrimmedTextToolTip.Attach(NameText);
-        // The whole path is written; only a path too long for the row is cut at
-        // its end, and then the tooltip carries the full value.
-        TrimmedTextToolTip.Attach(PathText);
         ToolTipService.SetToolTip(Grip, ProjectsText.Get("Category_Grip"));
-
-        PointerEntered += (_, _) => VisualStateManager.GoToState(this, "PointerOver", true);
-        PointerExited += (_, _) => VisualStateManager.GoToState(this, "Normal", true);
-        PointerCanceled += (_, _) => VisualStateManager.GoToState(this, "Normal", true);
-        PointerCaptureLost += (_, _) => VisualStateManager.GoToState(this, "Normal", true);
 
         // handledEventsToo: the list marks the press as handled when it starts
         // to track a drag, and the page still needs to know where it landed.
@@ -62,7 +55,11 @@ internal sealed partial class CategoryRow : UserControl
 
         string name = project.DisplayName;
         NameText.Text = name;
+        // The whole path is written and only the end is cut when the row is too
+        // narrow, which is the part that tells two paths apart: the tooltip
+        // always carries it, as Explorer's does for any trimmed text.
         PathText.Text = project.Path;
+        ToolTipService.SetToolTip(PathText, project.Path);
         MetaText.Text = CardMeta.Text(_context.Workspace.Readings.Get(ProjectId));
 
         AutomationProperties.SetName(this, name);

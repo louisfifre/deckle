@@ -5,59 +5,75 @@
     xmlns:local="using:Deckle.Projects.Views">
 
     <!-- A category's page (board C1), top to bottom: the breadcrumb, the title,
-         the count line, the plain list, and the delete link. The whole page
-         scrolls, so the list itself does not (a category rarely holds more than
-         a screen, and two nested scrollers make a drag hard to aim). -->
-    <ScrollViewer VerticalScrollBarVisibility="Auto">
-        <StackPanel Margin="{StaticResource ProjectsPageMargin}" Spacing="{StaticResource ProjectsSectionSpacing}">
+         the count line, the plain list, and the delete button. The list is the
+         page's one scroller and the fixed parts are its Header and Footer, so
+         they scroll away with the rows as they did before, and the list can
+         scroll itself when a row is dragged to its edge (a ListView scrolls
+         its own ScrollViewer, never an ancestor's). The page margin is the
+         list's padding, which the Header and the Footer sit inside. -->
+    <ListView x:Name="Rows"
+              Padding="{StaticResource ProjectsPageMargin}"
+              SelectionMode="None"
+              IsItemClickEnabled="True"
+              CanReorderItems="True"
+              AllowDrop="True"
+              ItemClick="OnRowClick"
+              DragItemsStarting="OnDragItemsStarting"
+              DragItemsCompleted="OnDragItemsCompleted">
+        <ListView.Resources>
+            <!-- The list's own hover and pressed fills (the container draws
+                 them), in the control fills the Home cards use. -->
+            <StaticResource x:Key="ListViewItemBackgroundPointerOver" ResourceKey="ControlFillColorSecondaryBrush" />
+            <StaticResource x:Key="ListViewItemBackgroundPressed" ResourceKey="ControlFillColorTertiaryBrush" />
+        </ListView.Resources>
 
-            <StackPanel Spacing="4">
-                <ContentControl x:Name="BreadcrumbHost" HorizontalAlignment="Left" HorizontalContentAlignment="Left" />
-                <local:InlineNameEditor x:Name="TitleEditor" HorizontalAlignment="Left" />
-                <TextBlock x:Name="CountText"
+        <ListView.Header>
+            <StackPanel Margin="0,0,0,32" Spacing="{StaticResource ProjectsSectionSpacing}">
+                <StackPanel Spacing="4">
+                    <ContentControl x:Name="BreadcrumbHost" HorizontalAlignment="Left" HorizontalContentAlignment="Left" />
+                    <local:InlineNameEditor x:Name="TitleEditor" HorizontalAlignment="Left" />
+                    <TextBlock x:Name="CountText"
+                               Style="{StaticResource CaptionTextBlockStyle}"
+                               Foreground="{ThemeResource TextFillColorTertiaryBrush}" />
+                </StackPanel>
+                <TextBlock x:Name="EmptyText"
                            Style="{StaticResource CaptionTextBlockStyle}"
-                           Foreground="{ThemeResource TextFillColorTertiaryBrush}" />
+                           Foreground="{ThemeResource TextFillColorSecondaryBrush}"
+                           Visibility="Collapsed" />
             </StackPanel>
+        </ListView.Header>
 
-            <ListView x:Name="Rows"
-                      SelectionMode="None"
-                      IsItemClickEnabled="True"
-                      CanReorderItems="True"
-                      AllowDrop="True"
-                      ScrollViewer.VerticalScrollMode="Disabled"
-                      ScrollViewer.VerticalScrollBarVisibility="Disabled"
-                      ItemClick="OnRowClick"
-                      DragItemsStarting="OnDragItemsStarting"
-                      DragItemsCompleted="OnDragItemsCompleted">
-                <ListView.ItemContainerStyle>
-                    <Style TargetType="ListViewItem">
-                        <Setter Property="Padding" Value="0" />
-                        <Setter Property="MinHeight" Value="0" />
-                        <Setter Property="Margin" Value="0,1,0,1" />
-                        <Setter Property="HorizontalContentAlignment" Value="Stretch" />
-                        <Setter Property="Background" Value="Transparent" />
-                        <Setter Property="CornerRadius" Value="{ThemeResource ControlCornerRadius}" />
-                    </Style>
-                </ListView.ItemContainerStyle>
-            </ListView>
+        <ListView.Footer>
+            <Button x:Name="DeleteButton"
+                    Margin="0,32,0,0"
+                    HorizontalAlignment="Left"
+                    Style="{StaticResource SubtleButtonStyle}">
+                <StackPanel Orientation="Horizontal" Spacing="8">
+                    <FontIcon Glyph="&#xE74D;" FontSize="16" />
+                    <TextBlock x:Name="DeleteLabel" />
+                </StackPanel>
+                <Button.Flyout>
+                    <Flyout x:Name="DeleteFlyout" Placement="Top">
+                        <StackPanel Width="280" Spacing="12">
+                            <TextBlock x:Name="DeleteQuestion" TextWrapping="Wrap" />
+                            <Button x:Name="DeleteConfirmButton" Click="OnDeleteConfirmed" />
+                        </StackPanel>
+                    </Flyout>
+                </Button.Flyout>
+            </Button>
+        </ListView.Footer>
 
-            <TextBlock x:Name="EmptyText"
-                       Style="{StaticResource CaptionTextBlockStyle}"
-                       Foreground="{ThemeResource TextFillColorSecondaryBrush}"
-                       Visibility="Collapsed" />
-
-            <StackPanel Orientation="Horizontal" Spacing="8">
-                <HyperlinkButton x:Name="DeleteButton" Click="OnDeleteClick" Padding="0,4,8,4">
-                    <StackPanel Orientation="Horizontal" Spacing="8">
-                        <FontIcon Glyph="&#xE74D;" FontSize="16" />
-                        <TextBlock x:Name="DeleteLabel" />
-                    </StackPanel>
-                </HyperlinkButton>
-                <TextBlock x:Name="DeleteNote"
-                           VerticalAlignment="Center"
-                           Style="{StaticResource CaptionTextBlockStyle}"
-                           Foreground="{ThemeResource TextFillColorTertiaryBrush}" />
-            </StackPanel>
-        </StackPanel>
-    </ScrollViewer>
+        <ListView.ItemContainerStyle>
+            <Style TargetType="ListViewItem">
+                <Setter Property="Padding" Value="0" />
+                <Setter Property="MinHeight" Value="0" />
+                <Setter Property="Margin" Value="0,1,0,1" />
+                <Setter Property="HorizontalContentAlignment" Value="Stretch" />
+                <Setter Property="Background" Value="{ThemeResource CardBackgroundFillColorDefaultBrush}" />
+                <Setter Property="BorderBrush" Value="{ThemeResource CardStrokeColorDefaultBrush}" />
+                <Setter Property="BorderThickness" Value="1" />
+                <Setter Property="CornerRadius" Value="{ThemeResource ControlCornerRadius}" />
+            </Style>
+        </ListView.ItemContainerStyle>
+    </ListView>
 </Page>

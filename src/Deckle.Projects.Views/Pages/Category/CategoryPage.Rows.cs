@@ -34,8 +34,8 @@ internal sealed partial class CategoryPage
         };
 
         // An empty category says in one sentence to drag a project onto it, as
-        // it does on Home, instead of an empty list.
-        Rows.Visibility = projects.Count == 0 ? Visibility.Collapsed : Visibility.Visible;
+        // it does on Home, under the heading and above the delete button (they
+        // are the list's header and footer, so the empty list stays in the tree).
         EmptyText.Visibility = projects.Count == 0 ? Visibility.Visible : Visibility.Collapsed;
 
         List<ProjectEntry> fresh = [.. projects.Where(p => !_drawn.Contains(p.Id))];
