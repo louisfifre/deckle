@@ -87,5 +87,7 @@ public partial class App
             window.EditAddressForReview();
             return Task.CompletedTask;
         });
+
+        if (loaded) await WalkAtelierFolderIconsAsync(report, run, outputFolder, step, window, sample, gate);
     }
 }
