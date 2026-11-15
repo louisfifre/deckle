@@ -12,10 +12,10 @@ public enum MarkState { Rest, Recording, Rewriting }
 // Deckle.App.csproj copies them next to the exe, under Assets/Icons/. The
 // files are drawn by logo/generate.mjs, never by hand.
 //
-// The mark has two forms. Where it is shown small and alone, the tray and a
-// title bar, it is the small form, bare, so it takes the whole height. Where
-// it stands among other apps, the taskbar and Alt+Tab, it is the normal form
-// on a tile, and the tile follows the Windows mode: see WindowsMode.
+// The mark has two forms, both bare, as Windows 11 icons are: the shape is the
+// icon, with no tile behind it. Where it is shown small and alone, the tray and
+// a title bar, it is the small form. Where it stands among other apps, the
+// taskbar and Alt+Tab, it is the normal form.
 public static class IconAssets
 {
     // The tray's .ico of a state, with the dot it shows while a user incident
@@ -23,10 +23,10 @@ public static class IconAssets
     private static string TrayIconFile(MarkState state, bool incident)
         => $"deckle--state--{Name(state)}{(incident ? "--incident--true" : "")}.ico";
 
-    // A window's .ico: the mark on the tile made for a light or a dark
-    // taskbar. A window shows the microphone, not the rewrite.
-    internal static string WindowIconFile(bool recording, bool lightMode)
-        => $"deckle--state--{Name(recording ? MarkState.Recording : MarkState.Rest)}--mode--{(lightMode ? "light" : "dark")}.ico";
+    // A window's .ico: the normal form. A window shows the microphone, not
+    // the rewrite.
+    internal static string WindowIconFile(bool recording)
+        => $"deckle--state--{Name(recording ? MarkState.Recording : MarkState.Rest)}--form--normal.ico";
 
     // The bare mark as a single 32 px bitmap, for a XAML image. A BitmapImage
     // of an .ico decodes only its first frame, the 16 px one, which a scaled
@@ -41,10 +41,8 @@ public static class IconAssets
         _                   => "rest",
     };
 
-    // The window icon for the Windows mode as it is now: asked again each time
-    // the icon is applied, so a mode change reaches the next apply.
     public static string? ResolvePath(bool recording)
-        => Resolve(WindowIconFile(recording, WindowsMode.IsLight()));
+        => Resolve(WindowIconFile(recording));
 
     public static string? ResolveTrayIconPath(MarkState state, bool incident)
         => Resolve(TrayIconFile(state, incident));

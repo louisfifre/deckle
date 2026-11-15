@@ -584,14 +584,12 @@ _Generated from `git ls-files` — do not edit by hand._
 │   │   │   │   └── BitcountSingle.ttf
 │   │   │   ├── Icons/
 │   │   │   │   ├── deckle--state--recording--32px.png
+│   │   │   │   ├── deckle--state--recording--form--normal.ico
 │   │   │   │   ├── deckle--state--recording--incident--true.ico
-│   │   │   │   ├── deckle--state--recording--mode--dark.ico
-│   │   │   │   ├── deckle--state--recording--mode--light.ico
 │   │   │   │   ├── deckle--state--recording.ico
 │   │   │   │   ├── deckle--state--rest--32px.png
+│   │   │   │   ├── deckle--state--rest--form--normal.ico
 │   │   │   │   ├── deckle--state--rest--incident--true.ico
-│   │   │   │   ├── deckle--state--rest--mode--dark.ico
-│   │   │   │   ├── deckle--state--rest--mode--light.ico
 │   │   │   │   ├── deckle--state--rest.ico
 │   │   │   │   ├── deckle--state--rewriting--32px.png
 │   │   │   │   ├── deckle--state--rewriting--incident--true.ico
@@ -2222,8 +2220,7 @@ _Generated from `git ls-files` — do not edit by hand._
 │   │   ├── SessionEndWatcher.cs
 │   │   ├── StartupService.cs
 │   │   ├── TrayIconManager.cs
-│   │   ├── TrayIconRegistration.cs
-│   │   └── WindowsMode.cs
+│   │   └── TrayIconRegistration.cs
 │   ├── Deckle.Shell.Foreground/
 │   │   ├── Interop/
 │   │   │   └── ForegroundNativeMethods.cs
