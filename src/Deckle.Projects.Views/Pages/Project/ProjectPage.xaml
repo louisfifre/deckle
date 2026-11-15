@@ -26,13 +26,18 @@
                 <Grid.RowDefinitions>
                     <RowDefinition Height="Auto" />
                     <RowDefinition Height="Auto" />
-                    <RowDefinition Height="Auto" />
+                    <!-- The path's row keeps the height of the tallest run line
+                         (the small "Show terminal" button, 24, is taller than
+                         the words) whether a line is shown or not, so the page
+                         below does not move when one appears or goes away. -->
+                    <RowDefinition Height="Auto" MinHeight="24" />
                 </Grid.RowDefinitions>
 
                 <ContentPresenter x:Name="BreadcrumbHost" HorizontalAlignment="Left" />
                 <local:InlineNameEditor x:Name="NameEditor" Grid.Row="1" HorizontalAlignment="Left" />
                 <TextBlock x:Name="PathText"
                            Grid.Row="2"
+                           VerticalAlignment="Center"
                            Style="{StaticResource CaptionTextBlockStyle}"
                            Foreground="{ThemeResource TextFillColorTertiaryBrush}"
                            TextTrimming="CharacterEllipsis"

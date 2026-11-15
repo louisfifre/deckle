@@ -52,6 +52,7 @@
                 Grid.Column="3"
                 Style="{StaticResource SubtleButtonStyle}"
                 Padding="6,2"
+                Height="24"
                 Margin="4,0,0,0"
                 VerticalAlignment="Center"
                 Visibility="Collapsed"
