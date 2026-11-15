@@ -98,6 +98,10 @@ internal sealed partial class ProjectCard : UserControl
                 + "<Setter Property=\"Background\" Value=\"{ThemeResource SolidBackgroundFillColorQuarternaryBrush}\" /></Style>");
         }
         if (at is { } position) menu.ShowAt(anchor, new FlyoutShowOptions { Position = position });
+        // A menu shown with an explicit placement is drawn in a window of its
+        // own even when constrained (seen in the self-check, 2026-11-15), so the
+        // review's menu is shown with no options and the system places it.
+        else if (constrainToWindow) menu.ShowAt(anchor);
         else
         {
             // Under the button and flush with its right edge, as the Mail and

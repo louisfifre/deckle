@@ -24,7 +24,7 @@ internal sealed partial class ProjectPage
     public bool OpenVersionsForReview()
     {
         if (!Readouts.InfoIsShown) return false;
-        Readouts.OpenVersions();
+        Readouts.OpenVersions(constrainToWindow: true);
         return true;
     }
 

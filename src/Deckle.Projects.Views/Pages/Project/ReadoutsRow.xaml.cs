@@ -64,14 +64,36 @@ internal sealed partial class ReadoutsRow : UserControl
 
     // Opens the list of versions under the readout, as a press on the info
     // button does.
-    public void OpenVersions()
+    //
+    // The review's list is kept inside the window: one a person opens may leave
+    // the window's edge, in a window of its own that a capture of this window
+    // does not see and that the self-check's guard takes for a window on a
+    // monitor. Inside the window the acrylic has nothing to blur, so the review's
+    // list takes the solid fill acrylic falls back to, as the card's menu does.
+    public void OpenVersions(bool constrainToWindow = false)
     {
         if (_detail is null) return;
         _flyout?.Hide();
         _flyout = VersionsFlyout.Build(_detail);
+        if (constrainToWindow)
+        {
+            _flyout.ShouldConstrainToRootBounds = true;
+            _flyout.FlyoutPresenterStyle = (Style)Microsoft.UI.Xaml.Markup.XamlReader.Load(
+                "<Style xmlns=\"http://schemas.microsoft.com/winfx/2006/xaml/presentation\" TargetType=\"FlyoutPresenter\" "
+                + "BasedOn=\"{StaticResource DefaultFlyoutPresenterStyle}\">"
+                + "<Setter Property=\"Background\" Value=\"{ThemeResource SolidBackgroundFillColorQuarternaryBrush}\" /></Style>");
+        }
         // Anchored on the whole readout, so the flyout lines up with the word
         // "Version" and not with the small button.
-        _flyout.ShowAt(VersionFact, new FlyoutShowOptions { Placement = FlyoutPlacementMode.BottomEdgeAlignedLeft });
+        if (constrainToWindow)
+        {
+            // A popup shown with an explicit placement is drawn in a window of
+            // its own even when constrained, so the review's is placed through
+            // the flyout's own property.
+            _flyout.Placement = FlyoutPlacementMode.Bottom;
+            _flyout.ShowAt(VersionFact);
+        }
+        else _flyout.ShowAt(VersionFact, new FlyoutShowOptions { Placement = FlyoutPlacementMode.BottomEdgeAlignedLeft });
     }
 
     public void CloseVersions() => _flyout?.Hide();
