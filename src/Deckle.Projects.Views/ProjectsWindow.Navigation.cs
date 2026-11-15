@@ -3,6 +3,7 @@ using Deckle.Atelier;
 using Microsoft.UI.Xaml;
 using Microsoft.UI.Xaml.Controls;
 using Microsoft.UI.Xaml.Media;
+using Microsoft.UI.Xaml.Media.Animation;
 
 namespace Deckle.Projects.Views;
 
@@ -56,6 +57,7 @@ public sealed partial class ProjectsWindow
         {
             Page page = CreatePage(target, beginRename);
             _page = (IProjectsPage)page;
+            PageHost.ContentTransitions = PageTransitions();
             PageHost.Content = page;
             DeckleProjectsSource.Log.ProjectsPageShown(kind, clock.ElapsedMilliseconds);
         }
@@ -70,6 +72,29 @@ public sealed partial class ProjectsWindow
 
         UpdateChrome();
         SelectPaneItem();
+    }
+
+    // The page comes in with the drill-in the Settings window uses, on going
+    // forward and on Back alike (a Frame replays the same one on Back too).
+    // It is Windows' own transition, so it follows the Windows "Animation
+    // effects" preference and not Deckle's own setting (ADR-0009: motion that
+    // WinUI draws stays with Windows). WinUI 3 does not read that preference
+    // for it, so it is read here, when the page is shown. Mail does the same in
+    // its ComponentMotion, which is internal to that module and so not shared.
+    // The self-check shows pages without it, so a capture never lands mid-motion.
+    private static readonly Windows.UI.ViewManagement.UISettings WindowsSettings = new();
+
+    private bool _showWithoutMotion;
+
+    private TransitionCollection PageTransitions()
+    {
+        bool animate;
+        try { animate = WindowsSettings.AnimationsEnabled; }
+        catch (Exception) { animate = true; }
+        var transitions = new TransitionCollection();
+        if (animate && !_showWithoutMotion)
+            transitions.Add(new NavigationThemeTransition { DefaultNavigationTransitionInfo = new DrillInNavigationTransitionInfo() });
+        return transitions;
     }
 
     private Page CreatePage(ProjectsTarget target, bool beginRename) => target switch
