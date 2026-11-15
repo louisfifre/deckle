@@ -45,6 +45,10 @@ public sealed class ClaudeEngine : IGenerationEngine
 
     public GenerationResult Generate(GenerationRequest request, CancellationToken cancellationToken)
     {
+        // A hosted API never receives a picture, whatever the caller asks:
+        // refused before the key is even read.
+        if (request.Image is not null) throw new LocalEndpointRequiredException();
+
         var sw = System.Diagnostics.Stopwatch.StartNew();
 
         string? key = _apiKey();

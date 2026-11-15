@@ -1560,13 +1560,17 @@ _Generated from `git ls-files` — do not edit by hand._
 │   ├── Deckle.Llm/
 │   │   ├── Engines/
 │   │   │   ├── ClaudeEngine.cs
+│   │   │   ├── ImageRequestTransport.cs
 │   │   │   ├── OllamaEngine.cs
+│   │   │   ├── OllamaEngine.Images.cs
 │   │   │   └── OpenAiCompatibleEngine.cs
 │   │   ├── Generation/
 │   │   │   ├── GenerationDeadline.cs
+│   │   │   ├── GenerationImage.cs
 │   │   │   ├── GenerationRequest.cs
 │   │   │   ├── GenerationResult.cs
 │   │   │   ├── IGenerationEngine.cs
+│   │   │   ├── LocalEndpoint.cs
 │   │   │   ├── PromptTemplates.cs
 │   │   │   └── ReasoningLevel.cs
 │   │   ├── Providers/
@@ -2840,6 +2844,7 @@ _Generated from `git ls-files` — do not edit by hand._
 │   │   ├── ClaudePromptCacheTests.cs
 │   │   ├── ClaudeReasoningTests.cs
 │   │   ├── Deckle.Llm.Tests.csproj
+│   │   ├── ImageRequestTests.cs
 │   │   ├── LlmUsageLogTests.cs
 │   │   └── ReasoningOnTheWireTests.cs
 │   ├── Deckle.Mail.Hub.Tests/

@@ -26,11 +26,18 @@ namespace Deckle.Llm;
 // failure outcomes live above the seam in the consumer. This engine throws
 // and lets the caller decide.
 
-public sealed class OllamaEngine : IGenerationEngine
+public sealed partial class OllamaEngine : IGenerationEngine
 {
     private readonly string _endpoint;
 
-    public OllamaEngine(string endpoint) => _endpoint = endpoint;
+    public OllamaEngine(string endpoint) : this(endpoint, ImageRequestTransport.Client) { }
+
+    // The tests hand in a client whose handler records what would be sent.
+    internal OllamaEngine(string endpoint, HttpClient imageHttp)
+    {
+        _endpoint = endpoint;
+        _imageHttp = imageHttp;
+    }
 
     // HttpClient's default 100 s timeout is too short for large rewrites (long
     // transcriptions, big context, CPU-only Ollama). The caller's
@@ -47,6 +54,10 @@ public sealed class OllamaEngine : IGenerationEngine
 
     public GenerationResult Generate(GenerationRequest request, CancellationToken cancellationToken)
     {
+        // Raw mode formats the prompt client-side and has no place for a
+        // picture; a request with one goes through /api/chat (OllamaEngine.Images.cs).
+        if (request.Image is not null) return GenerateWithImage(request, cancellationToken);
+
         var sw = System.Diagnostics.Stopwatch.StartNew();
 
         var (prompt, stops, family) = PromptTemplates.Build(request.Model, request.SystemPrompt, request.UserText);

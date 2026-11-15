@@ -35,16 +35,29 @@ public sealed class OpenAiCompatibleEngine : IGenerationEngine
     private readonly string _endpoint;
     private readonly Func<string?> _apiKey;
 
+    // A request with an image travels on its own client: no redirect, no
+    // proxy (ImageRequestTransport). The tests hand in one whose handler
+    // records what would be sent.
+    private readonly HttpClient _imageHttp;
+
     public OpenAiCompatibleEngine(string endpoint, Func<string?> apiKey)
+        : this(endpoint, apiKey, ImageRequestTransport.Client) { }
+
+    internal OpenAiCompatibleEngine(string endpoint, Func<string?> apiKey, HttpClient imageHttp)
     {
         _endpoint = endpoint;
         _apiKey = apiKey;
+        _imageHttp = imageHttp;
     }
 
     public GenerationResult Generate(GenerationRequest request, CancellationToken cancellationToken)
     {
-        var sw = System.Diagnostics.Stopwatch.StartNew();
         string url = NormalizeChatUrl(_endpoint);
+        // The same engine serves LM Studio on this machine and a hosted API:
+        // a picture goes only to the first (LocalEndpoint), checked before
+        // the body is built.
+        LocalEndpoint.RequireForImage(request, url);
+        var sw = System.Diagnostics.Stopwatch.StartNew();
 
         // RewriteService opens and closes the rewrite milestone; the engine
         // adds only what its transport sees.
@@ -54,7 +67,7 @@ public sealed class OpenAiCompatibleEngine : IGenerationEngine
         var messages = new List<object>(2);
         if (!string.IsNullOrWhiteSpace(request.SystemPrompt))
             messages.Add(new { role = "system", content = request.SystemPrompt });
-        messages.Add(new { role = "user", content = request.UserText });
+        messages.Add(new { role = "user", content = UserContent(request) });
 
         var body = new
         {
@@ -74,7 +87,10 @@ public sealed class OpenAiCompatibleEngine : IGenerationEngine
         if (!string.IsNullOrEmpty(apiKey))
             httpRequest.Headers.Authorization = new AuthenticationHeaderValue("Bearer", apiKey);
 
-        using var response = _http.SendAsync(httpRequest, cancellationToken).GetAwaiter().GetResult();
+        using var response = (request.Image is null ? _http : _imageHttp)
+            .SendAsync(httpRequest, cancellationToken).GetAwaiter().GetResult();
+        if (request.Image is not null)
+            ImageRequestTransport.ThrowIfFailed(response, cancellationToken);
         if (!response.IsSuccessStatusCode)
         {
             // The body usually says why (unknown model, bad key); the status
@@ -133,6 +149,24 @@ public sealed class OpenAiCompatibleEngine : IGenerationEngine
             EvalMs:       sw.ElapsedMilliseconds,
             PromptTokens: promptTokens,
             EvalTokens:   evalTokens);
+    }
+
+    // A text request keeps the plain string content it always sent. A
+    // request with an image sends the typed parts of the chat-completions
+    // shape: a text part, then an image part whose url is a base64 data URI.
+    // llama.cpp's server documents it (tools/server/README.md: "image_url.url
+    // can be ... base64 (raw or URI-encoded via data:image/...;base64)"); LM
+    // Studio lists image input on its OpenAI-compatible endpoint without
+    // showing the shape, which is OpenAI's own. Read on 2026-11-15.
+    static object UserContent(GenerationRequest request)
+    {
+        if (request.Image is null) return request.UserText;
+        string dataUri = $"data:{request.Image.MediaType};base64,{request.Image.ToBase64()}";
+        return new object[]
+        {
+            new { type = "text", text = request.UserText },
+            new { type = "image_url", image_url = new { url = dataUri } },
+        };
     }
 
     /// <summary>A stored endpoint may be the server root, its /v1 base, or
