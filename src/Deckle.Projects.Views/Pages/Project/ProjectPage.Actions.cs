@@ -17,10 +17,9 @@ internal sealed partial class ProjectPage
     }
 
     // Whether the script menu is there: the reading knows, and before the first
-    // reading the file is looked for.
+    // reading the probe does (false while neither has answered).
     private bool HasScriptMenu(ProjectEntry project) =>
-        _context.Workspace.Readings.Get(project.Id)?.HasScriptMenu
-        ?? File.Exists(Path.Combine(project.Path, "scripts", "menu.ps1"));
+        _context.Workspace.Readings.Get(project.Id)?.HasScriptMenu ?? _probe?.HasMenu ?? false;
 
     // The same reasons the engine refuses to start for (a folder that is gone, a
     // missing menu, no shell); the engine stays the safety net behind a button
@@ -32,6 +31,15 @@ internal sealed partial class ProjectPage
     {
         bool missing = FolderIsMissing(project);
         PinnedMenuKind kind = MenuKindOf(project);
+
+        // The section appears once, in its final state, when the menu has
+        // answered: showing "Pin an action..." first and taking it away when
+        // the menu turns out missing would make the page jump. The wait is a
+        // local read, short enough to need no ring.
+        bool awaitingMenu = kind == PinnedMenuKind.Listed && _listing is null;
+        Pinned.Visibility = awaitingMenu ? Visibility.Collapsed : Visibility.Visible;
+        if (awaitingMenu) return;
+
         bool canStart = CanStartAnAction(project, missing) && kind is PinnedMenuKind.Listed or PinnedMenuKind.Unreadable;
         DateTimeOffset now = _context.Workspace.Clock.GetUtcNow();
         ActionRunBoard board = _context.Workspace.Board;

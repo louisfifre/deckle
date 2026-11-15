@@ -1,3 +1,4 @@
+using Microsoft.UI.Xaml;
 using Microsoft.UI.Xaml.Controls;
 
 namespace Deckle.Projects.Views;
@@ -65,6 +66,7 @@ internal sealed partial class ProjectPage : Page, IProjectsPage
         // dispose it: the page lets go of what it subscribed to and started.
         try
         {
+            if (Project is { } opened) ProbeDiskIfUnread(opened);
             Apply();
             StartTimer();
 
@@ -117,6 +119,8 @@ internal sealed partial class ProjectPage : Page, IProjectsPage
 
         try
         {
+            // A folder nothing has read yet is known once the probe is back.
+            await _probing;
             Task reading = _context.RefreshReadingsAsync([project], _lifetime.Token);
             if (FolderIsMissing(project)) await reading;
 
@@ -171,6 +175,17 @@ internal sealed partial class ProjectPage : Page, IProjectsPage
         ApplyHeader(project, missing);
         ApplyMissing(missing);
         if (missing) return;
+
+        // Nothing is known of the folder yet (the probe is a few milliseconds):
+        // the header stands alone until it is.
+        bool unknown = FolderIsUnknown(project);
+        Readouts.Visibility = unknown ? Visibility.Collapsed : Visibility.Visible;
+        OpenIn.Visibility = unknown ? Visibility.Collapsed : Visibility.Visible;
+        if (unknown)
+        {
+            Pinned.Visibility = Visibility.Collapsed;
+            return;
+        }
 
         ApplyReadouts(project);
         ApplyOpenIn(project);
