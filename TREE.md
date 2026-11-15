@@ -727,7 +727,8 @@ _Generated from `git ls-files` — do not edit by hand._
 │   │   │   ├── FolderPlace.cs
 │   │   │   └── NavigationHistory.cs
 │   │   ├── Formatting/
-│   │   │   └── EntryFormat.cs
+│   │   │   ├── EntryFormat.cs
+│   │   │   └── SelectionSummary.cs
 │   │   ├── Icons/
 │   │   │   ├── FileContentPresence.cs
 │   │   │   ├── FileIconKey.cs
@@ -2468,6 +2469,7 @@ _Generated from `git ls-files` — do not edit by hand._
 │   │   ├── NavigationHistoryTests.cs
 │   │   ├── PathRulesTests.cs
 │   │   ├── ScratchFolder.cs
+│   │   ├── SelectionSummaryTests.cs
 │   │   ├── SizeScanEventsTests.cs
 │   │   ├── SizeScanTests.cs
 │   │   ├── SizesSampleTests.cs
