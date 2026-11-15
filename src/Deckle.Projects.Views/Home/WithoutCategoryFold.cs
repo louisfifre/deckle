@@ -45,8 +45,11 @@ internal sealed class WithoutCategoryFold : UserControl
             HorizontalAlignment = HorizontalAlignment.Left,
             HorizontalContentAlignment = HorizontalAlignment.Left,
             // The height of a category's header button: a 28 line of subtitle
-            // text and 4 above and below.
-            MinHeight = 36,
+            // text and 4 above and below. Fixed, not a minimum: the template's
+            // header was taller than that (seen in the self-check capture, the
+            // gap to the hint about twice a category's gap to its cards), and
+            // the Expander holds the header only, so nothing is clipped.
+            Height = 36,
             // The template reads the header's 16 DIP left padding with
             // StaticResource, which an override on the control does not reach
             // (seen in the self-check capture: the title stood 16 in from the
@@ -54,6 +57,13 @@ internal sealed class WithoutCategoryFold : UserControl
             Margin = new Thickness(-16, 0, 0, 0),
             Resources = Flat(),
         };
+        Cards = new ProjectGrid(context, commands);
+
+        TextBlock hint = Themed.Text("TextFillColorSecondaryBrush", "CaptionTextBlockStyle");
+        hint.Text = ProjectsText.Get("Home_WithoutCategoryHint");
+        hint.VerticalAlignment = VerticalAlignment.Center;
+        _body = new StackPanel { Spacing = 12, Children = { hint, Cards } };
+
         // The person's toggle is written the moment IsExpanded changes, not when
         // the Collapsed event ends the animation: a store change in between would
         // otherwise re-apply the old value against the click. Apply's own writes
@@ -64,13 +74,6 @@ internal sealed class WithoutCategoryFold : UserControl
             _context.WithoutCategoryOpen = _expander.IsExpanded;
             _body.Visibility = IsOpen ? Visibility.Visible : Visibility.Collapsed;
         });
-
-        Cards = new ProjectGrid(context, commands);
-
-        TextBlock hint = Themed.Text("TextFillColorSecondaryBrush", "CaptionTextBlockStyle");
-        hint.Text = ProjectsText.Get("Home_WithoutCategoryHint");
-        hint.VerticalAlignment = VerticalAlignment.Center;
-        _body = new StackPanel { Spacing = 12, Children = { hint, Cards } };
 
         var panel = new StackPanel
         {
@@ -113,9 +116,6 @@ internal sealed class WithoutCategoryFold : UserControl
             ["ExpanderContentDownBorderThickness"] = none,
             ["ExpanderContentUpBorderThickness"] = none,
             ["ExpanderContentPadding"] = none,
-            // The header's own minimum is 48; a category's header is 36, and the
-            // gap to what follows must be the same under both.
-            ["ExpanderMinHeight"] = 36.0,
             ["ExpanderChevronMargin"] = new Thickness(8, 0, 0, 0),
         };
     }
