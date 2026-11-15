@@ -193,7 +193,9 @@
         </ListView>
 
         <!-- The gallery (12.17): a tile per item, the picture of its content
-             where Windows draws one, its type's icon otherwise, the name under
+             where Windows draws one (a photo, a PDF's first page), the
+             beginning of its text for a Markdown or plain-text file, its
+             type's icon otherwise, the name under
              it as File Explorer centres it, on two lines at most. -->
         <GridView x:Name="Gallery"
                   Grid.Row="2"
@@ -240,6 +242,18 @@
                             <Image Margin="8"
                                    Source="{x:Bind Thumbnail, Mode=OneWay}"
                                    Stretch="Uniform" />
+                            <!-- A text file's beginning, as plain text in the
+                                 type ramp's smallest style; the cell cuts what
+                                 does not fit. -->
+                            <TextBlock Margin="10,8"
+                                       Text="{x:Bind PreviewText, Mode=OneWay}"
+                                       Visibility="{x:Bind PreviewTextVisibility, Mode=OneWay}"
+                                       Style="{StaticResource CaptionTextBlockStyle}"
+                                       Foreground="{ThemeResource TextFillColorSecondaryBrush}"
+                                       TextWrapping="Wrap"
+                                       TextTrimming="CharacterEllipsis"
+                                       IsTextSelectionEnabled="False"
+                                       AutomationProperties.AccessibilityView="Raw" />
                             <!-- On the picture's corner, where they cover
                                  nothing else and move nothing. -->
                             <local:FileRowActions Margin="4"
