@@ -2013,6 +2013,14 @@ _Generated from `git ls-files` — do not edit by hand._
 │   │   │   └── ProjectsWorkspace.cs
 │   │   ├── Deckle.Projects.csproj
 │   │   └── DeckleProjectsSource.cs
+│   ├── Deckle.Projects.Views/
+│   │   ├── Strings/
+│   │   │   └── en-US/
+│   │   │       └── Resources.resw
+│   │   ├── Deckle.Projects.Views.csproj
+│   │   ├── ProjectsGlyphs.cs
+│   │   ├── ProjectsText.cs
+│   │   └── ProjectStoreExtensions.cs
 │   ├── Deckle.Security/
 │   │   ├── Deckle.Security.csproj
 │   │   ├── GLOSSARY.md  — glossary-deckle-security Security vocabulary. It defines the trusted-session boundary, captured content,…

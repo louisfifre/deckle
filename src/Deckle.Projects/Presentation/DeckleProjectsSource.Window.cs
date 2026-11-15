@@ -11,6 +11,7 @@ public sealed partial class DeckleProjectsSource
 {
     public const int EvtProjectsPageShown  = 50;
     public const int EvtProjectsPageFailed = 51;
+    public const int EvtFolderPickFailed   = 52;
 
     [Event(EvtProjectsPageShown,
            Level = EventLevel.Verbose,
@@ -21,8 +22,9 @@ public sealed partial class DeckleProjectsSource
         if (IsEnabled()) WriteEvent(EvtProjectsPageShown, kind, elapsed_ms);
     }
 
-    // A page that throws while it is built: the window shows a message in its
-    // place and keeps the pane and the other pages.
+    // A page that throws while it is built or while it reads again: the window
+    // shows a message in place of one that could not be built and keeps the pane
+    // and the other pages.
     [Event(EvtProjectsPageFailed,
            Level = EventLevel.Warning,
            Keywords = (EventKeywords)Keywords.Lifecycle,
@@ -30,5 +32,16 @@ public sealed partial class DeckleProjectsSource
     public void ProjectsPageFailed(string kind, string ex_type)
     {
         if (IsEnabled()) WriteEvent(EvtProjectsPageFailed, kind, ex_type);
+    }
+
+    // The system's folder picker could not open: no project is added and the
+    // window goes on as it was.
+    [Event(EvtFolderPickFailed,
+           Level = EventLevel.Warning,
+           Keywords = (EventKeywords)Keywords.Lifecycle,
+           Message = "The folder picker could not open; no project was added\nex_type={0}")]
+    public void FolderPickFailed(string ex_type)
+    {
+        if (IsEnabled()) WriteEvent(EvtFolderPickFailed, ex_type);
     }
 }
