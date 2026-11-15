@@ -48,6 +48,15 @@ public static class EntryFormat
             : string.Join(separator, type, date);
     }
 
+    // A count in its sentence: "1 fichier", "2 fichiers", "1 234 fichiers".
+    // French puts 0 and 1 in the singular and English 1 alone, so the rule
+    // follows the culture; the number takes its group separator.
+    public static string Count(int count, string oneFormat, string manyFormat, CultureInfo culture)
+    {
+        bool singular = culture.TwoLetterISOLanguageName == "fr" ? count is 0 or 1 : count == 1;
+        return string.Format(culture, singular ? oneFormat : manyFormat, count.ToString("N0", culture));
+    }
+
     // French writes octets (Ko, Mo); every other culture gets the SI letters.
     private static string Unit(string french, CultureInfo culture) =>
         culture.TwoLetterISOLanguageName == "fr" ? french : french.Replace('o', 'B');

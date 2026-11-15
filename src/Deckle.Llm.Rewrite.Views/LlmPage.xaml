@@ -65,6 +65,12 @@
                 <llm:LlmModelsSection x:Name="ModelsSection"
                                       Visibility="Collapsed" />
 
+                <!-- The model that describes the Atelier's photos: not
+                     rewriting, so not behind the switch; shown by code only
+                     when the Atelier is installed. -->
+                <llm:LlmPhotoDescriptionSection x:Name="PhotoDescriptionSection"
+                                                Visibility="Collapsed" />
+
             </StackPanel>
         </Grid>
     </ScrollViewer>

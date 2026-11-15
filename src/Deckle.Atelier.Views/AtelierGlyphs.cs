@@ -21,6 +21,8 @@ internal static class AtelierGlyphs
     public const string SizesTool = "";
     public const string MapTool = "";
 
+    public const string EnlargeGraph = ""; // FullScreen: the map's graph, from the panel to the centre
+
     public const string ShowInFolder = "";  // FolderOpen
     public const string RecycleBin = "";    // Delete (the bin)
 

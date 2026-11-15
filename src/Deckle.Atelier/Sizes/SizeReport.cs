@@ -56,6 +56,7 @@ public sealed class SizeReport
         }
         rows.Sort(ByBytesThenName);
         Folders = rows;
+        MeasuredFolders = rows.Count(r => r.Bytes is not null);
     }
 
     public string Place { get; }
@@ -74,6 +75,11 @@ public sealed class SizeReport
     public int LooseFileCount { get; }
     public double LooseFilesShare { get; }
     public IReadOnlyList<FolderSizeRow> Folders { get; }
+
+    // How many of Folders have their size: all of them once the analysis ran
+    // to the end, what it reached when it was stopped.
+    public int MeasuredFolders { get; }
+
     public IReadOnlyList<HeavyFile> Heaviest { get; }
 
     // Folders beneath the place, the place included, that could not be read:

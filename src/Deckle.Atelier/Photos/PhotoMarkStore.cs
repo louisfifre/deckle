@@ -1,5 +1,3 @@
-using System.Security.Cryptography;
-using System.Text;
 using System.Text.Json;
 using System.Text.Json.Serialization;
 
@@ -53,7 +51,7 @@ public sealed class PhotoMarkStore
     public PhotoMarkStore(string moduleDirectory, string folder)
     {
         Folder = FolderPaths.Normalize(folder);
-        _path = Path.Combine(moduleDirectory, DirectoryName, KeyOf(Folder) + ".json");
+        _path = Path.Combine(moduleDirectory, DirectoryName, FolderDataKey.Of(Folder) + ".json");
         Load();
     }
 
@@ -117,11 +115,6 @@ public sealed class PhotoMarkStore
         _marks[fileName] = mark;
         return true;
     }
-
-    // First 16 hex digits of SHA-256 over the lower-cased path: stable across
-    // runs, unlike string.GetHashCode, and short enough for a file name.
-    private static string KeyOf(string folder) =>
-        Convert.ToHexString(SHA256.HashData(Encoding.UTF8.GetBytes(folder.ToLowerInvariant())))[..16].ToLowerInvariant();
 
     private void Load()
     {

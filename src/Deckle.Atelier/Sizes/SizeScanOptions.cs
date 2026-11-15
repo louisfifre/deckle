@@ -32,4 +32,9 @@ public sealed record SizeScanOptions
     // default (4 KiB). Measured on C:\Windows and C:\Program Files, warm, with
     // 6 workers: 64 KiB was no faster than the default, so the default stays.
     public int BufferSize { get; init; }
+
+    // Holds the scan back before some folders, for the self-check to see an
+    // analysis midway (SizeScanGate); null, as everywhere in the app, holds
+    // nothing.
+    public SizeScanGate? Gate { get; init; }
 }

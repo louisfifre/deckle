@@ -132,6 +132,73 @@ public sealed class AddedFolderStoreTests
     }
 
     [Fact]
+    public void ARemovedFolderIsGoneWhenTheStoreIsReadAgainAndStaysOnTheDisk()
+    {
+        using var scratch = new ScratchFolder();
+        string data = scratch.Folder("data");
+        string a = scratch.Folder("A");
+        string kept = scratch.File("x", "A", "inside.txt");
+        string b = scratch.Folder("B");
+        var store = new AddedFolderStore(data);
+        store.Add(a);
+        store.Add(b);
+        int changes = 0;
+        store.Changed += () => changes++;
+
+        bool removed = store.Remove(a.ToUpperInvariant() + "\\");
+
+        Assert.True(removed);
+        Assert.Equal(1, changes);
+        Assert.Equal(["B"], store.Folders.Select(f => f.Name));
+        Assert.Equal(["B"], new AddedFolderStore(data).Folders.Select(f => f.Name));
+        Assert.True(File.Exists(kept));
+    }
+
+    [Fact]
+    public void RemovingAPathNotAddedChangesNothing()
+    {
+        using var scratch = new ScratchFolder();
+        string data = scratch.Folder("data");
+        var store = new AddedFolderStore(data);
+        store.Add(scratch.Folder("A"));
+        int changes = 0;
+        store.Changed += () => changes++;
+
+        Assert.False(store.Remove(scratch.Folder("Elsewhere")));
+        Assert.Equal(0, changes);
+        Assert.Single(store.Folders);
+    }
+
+    [Fact]
+    public void AFolderRemovedThenAddedAgainComesBackLast()
+    {
+        using var scratch = new ScratchFolder();
+        var store = new AddedFolderStore(scratch.Folder("data"));
+        string a = scratch.Folder("A");
+        store.Add(a);
+        store.Add(scratch.Folder("B"));
+
+        store.Remove(a);
+        store.Add(a);
+
+        Assert.Equal(["B", "A"], store.Folders.Select(f => f.Name));
+    }
+
+    [Fact]
+    public void AFolderThatVanishedIsNotFoundAndAPresentOneIsReachable()
+    {
+        using var scratch = new ScratchFolder();
+        string present = scratch.Folder("Present");
+        string gone = scratch.Folder("Gone");
+        Directory.Delete(gone);
+
+        Assert.Equal(AddedFolderReachability.Reachable, AddedFolderReach.Check(present));
+        Assert.Equal(AddedFolderReachability.NotFound, AddedFolderReach.Check(gone));
+        // A file where the folder was is not the folder.
+        Assert.Equal(AddedFolderReachability.NotFound, AddedFolderReach.Check(scratch.File("x", "Gone")));
+    }
+
+    [Fact]
     public void ThePathBelongsToTheDeepestAddedFolderThatHoldsIt()
     {
         using var scratch = new ScratchFolder();

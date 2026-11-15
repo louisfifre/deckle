@@ -3,6 +3,7 @@ using Microsoft.UI.Xaml;
 using Microsoft.UI.Xaml.Automation;
 using Microsoft.UI.Xaml.Controls;
 using Microsoft.UI.Xaml.Controls.Primitives;
+using Microsoft.UI.Xaml.Data;
 using Microsoft.UI.Xaml.Input;
 using Microsoft.UI.Xaml.Media;
 using Windows.System;
@@ -14,6 +15,13 @@ namespace Deckle.Atelier.Views;
 // details panel; it never opens the item (spec, Behaviours). A double-click
 // or Enter enters a folder and opens a file in its default application, in
 // every display, as File Explorer does.
+//
+// Several items are selected as in File Explorer (spec, Open 33: Windows'
+// conventions): Ctrl+click, Shift+click, Ctrl+A and Shift+arrows, the
+// controls' own Extended selection. The panel then says how many and what
+// they weigh (SelectionDetails), and Delete sends them all to the Recycle
+// Bin. The window keeps one path across tools (IAtelierToolHost.Select): the
+// last item selected, so another tool shows the one the person last chose.
 //
 // The three displays show the same items (FileRow). Only the shown one holds
 // them, so only its containers are realized: each is a ListView or a GridView,
@@ -36,14 +44,18 @@ internal sealed partial class FilesView : UserControl, IAtelierToolView
     // person's.
     private bool _filling;
 
+    // The item last added to the selection, the path the window keeps.
+    private FileRow? _lastSelected;
+
     public FilesView(IAtelierToolHost host, string moduleDirectory, PhotoMarkQueue marks,
-                     IRecycleBin bin, IFileLauncher launcher)
+                     IRecycleBin bin, IFileLauncher launcher, PhotoDescriptions? descriptions = null)
     {
         _host = host;
         _moduleDirectory = moduleDirectory;
         _marks = marks;
         _bin = bin;
         _launcher = launcher;
+        _descriptions = descriptions;
         InitializeComponent();
         Label(DisplayListButton, "Display_List");
         Label(DisplayLargeRowsButton, "Display_LargeRows");
@@ -91,6 +103,7 @@ internal sealed partial class FilesView : UserControl, IAtelierToolView
         {
             _filling = false;
         }
+        _lastSelected = selected;
 
         string? message = listing.Failure switch
         {
@@ -121,10 +134,10 @@ internal sealed partial class FilesView : UserControl, IAtelierToolView
     }
 
     // The same folder in another display: the items move to its control with
-    // their selection, scrolled to it, and the details panel is left as it
-    // is, since what is selected has not changed. A click on the pressed
-    // button would release it; it stays pressed instead, as one display is
-    // always shown.
+    // their whole selection, scrolled to the last item selected, and the
+    // details panel is left as it is, since what is selected has not
+    // changed. A click on the pressed button would release it; it stays
+    // pressed instead, as one display is always shown.
     internal void ShowDisplay(FileListDisplay display)
     {
         MarkDisplay(display);
@@ -132,7 +145,7 @@ internal sealed partial class FilesView : UserControl, IAtelierToolView
 
         ListViewBase from = ItemsOf(Display);
         ListViewBase to = ItemsOf(display);
-        object? selected = from.SelectedItem;
+        int[] selected = [.. SelectedIndexes(from)];
         bool hadFocus = from.FocusState != FocusState.Unfocused;
         FileListDisplay left = Display;
         Display = display;
@@ -146,8 +159,8 @@ internal sealed partial class FilesView : UserControl, IAtelierToolView
 
             to.Visibility = Visibility.Visible;
             to.ItemsSource = _rows;
-            to.SelectedItem = selected;
-            if (selected is not null) to.ScrollIntoView(selected);
+            SelectIndexes(to, selected);
+            if (_lastSelected is not null && selected.Length > 0) to.ScrollIntoView(_lastSelected);
         }
         finally
         {
@@ -156,6 +169,20 @@ internal sealed partial class FilesView : UserControl, IAtelierToolView
 
         Header.Visibility = display == FileListDisplay.List ? Visibility.Visible : Visibility.Collapsed;
         if (hadFocus) to.Focus(FocusState.Programmatic);
+    }
+
+    // Selects the items at these indexes, in ascending order, one range per
+    // run of neighbours: Ctrl+A on a folder of thousands is one range, not
+    // thousands of single additions.
+    private static void SelectIndexes(ListViewBase items, int[] indexes)
+    {
+        int start = 0;
+        for (int i = 1; i <= indexes.Length; i++)
+        {
+            if (i < indexes.Length && indexes[i] == indexes[i - 1] + 1) continue;
+            items.SelectRange(new ItemIndexRange(indexes[start], (uint)(i - start)));
+            start = i;
+        }
     }
 
     private void MarkDisplay(FileListDisplay display)
@@ -212,7 +239,33 @@ internal sealed partial class FilesView : UserControl, IAtelierToolView
     private void OnSelectionChanged(object sender, SelectionChangedEventArgs e)
     {
         if (_filling) return;
-        _ = ShowDetailsAsync(((ListViewBase)sender).SelectedItem as FileRow);
+        if (e.AddedItems.OfType<FileRow>().LastOrDefault() is { } added) _lastSelected = added;
+        _ = ShowSelectionAsync();
+    }
+
+    // The selection of the shown display, in the folder's order. Read from
+    // its ranges of indexes, which Ctrl+A on thousands of items keeps as one.
+    private List<FileRow> SelectedRows() =>
+        [.. SelectedIndexes(ItemsOf(Display)).Where(i => i < _rows.Count).Select(i => _rows[i])];
+
+    private static IEnumerable<int> SelectedIndexes(ListViewBase items) =>
+        items.SelectedRanges
+            .OrderBy(r => r.FirstIndex)
+            .SelectMany(r => Enumerable.Range(r.FirstIndex, (int)r.Length));
+
+    // One item has its own panel; several, the panel of the group, handed to
+    // the window with the last one selected as the path it keeps. An item
+    // that left the selection is no longer the last one: the last in the
+    // folder's order then is.
+    private Task ShowSelectionAsync()
+    {
+        List<FileRow> selected = SelectedRows();
+        if (_lastSelected is null || !selected.Contains(_lastSelected)) _lastSelected = selected.LastOrDefault();
+        if (selected.Count <= 1 || _place is null) return ShowDetailsAsync(_lastSelected);
+
+        ForgetPhotoPanel();
+        _host.Select(_lastSelected!.Entry.Path, SelectionDetails.For([.. selected.Select(r => r.Entry)], _place.Path));
+        return Task.CompletedTask;
     }
 
     // A photo shows the photo tool's panel (spec, Details panel; 12.15); any
@@ -242,22 +295,26 @@ internal sealed partial class FilesView : UserControl, IAtelierToolView
 
     // Enter opens what is selected; Delete sends it to the Recycle Bin, as in
     // File Explorer, but Shift+Delete, which Explorer uses to delete for good,
-    // does nothing here: this app never deletes for good. G and X mark a
-    // photo whose panel is shown, as in the photo tool. Keys pressed on a
-    // row's action button are that button's.
+    // does nothing here: this app never deletes for good. With several items
+    // selected, Delete sends them all, and Enter opens none: File Explorer
+    // would open each, and a key that starts a dozen applications at once is
+    // not one to press by mistake. G and X mark a photo whose panel is shown,
+    // as in the photo tool. Keys pressed on a row's action button are that
+    // button's.
     private void OnItemsKeyDown(object sender, KeyRoutedEventArgs e)
     {
         if (e.OriginalSource is ButtonBase) return;
-        if (((ListViewBase)sender).SelectedItem is not FileRow row) return;
+        List<FileRow> selected = SelectedRows();
+        if (selected.Count == 0) return;
         bool modified = IsDown(VirtualKey.Control) || IsDown(VirtualKey.Menu);
         switch (e.Key)
         {
-            case VirtualKey.Enter:
-                Activate(row);
+            case VirtualKey.Enter when selected.Count == 1:
+                Activate(selected[0]);
                 e.Handled = true;
                 break;
             case VirtualKey.Delete when !modified && !IsDown(VirtualKey.Shift):
-                _ = RecycleAsync(row);
+                _ = RecycleAsync(selected);
                 e.Handled = true;
                 break;
             case VirtualKey.G when !modified && _photoTile is not null:

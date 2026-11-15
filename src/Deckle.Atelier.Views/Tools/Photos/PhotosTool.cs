@@ -7,11 +7,13 @@ namespace Deckle.Atelier.Views;
 // The marks live in the module's own data folder, the one the window keeps
 // its added folders in, and go through the queue the file tool shares, since
 // a photo selected there shows and sets the same marks (AtelierToolCatalog).
-internal sealed class PhotosTool(string moduleDirectory, PhotoMarkQueue marks) : IAtelierTool
+// The descriptions are the app's, shared with the file tool too; null when
+// the app has no model to ask.
+internal sealed class PhotosTool(string moduleDirectory, PhotoMarkQueue marks, PhotoDescriptions? descriptions) : IAtelierTool
 {
     public string Id => "photos";
     public string Name => AtelierText.Get("Tool_Photos");
     public string Glyph => AtelierGlyphs.PhotosTool;
 
-    public IAtelierToolView CreateView(IAtelierToolHost host) => new PhotosView(host, moduleDirectory, marks);
+    public IAtelierToolView CreateView(IAtelierToolHost host) => new PhotosView(host, moduleDirectory, marks, descriptions);
 }

@@ -26,6 +26,12 @@
   <data name="Nav_Up" xml:space="preserve"><value>Dossier parent (Alt+Haut)</value></data>
   <data name="Nav_Refresh" xml:space="preserve"><value>Actualiser (F5)</value></data>
   <data name="Search" xml:space="preserve"><value>Rechercher</value></data>
+  <!-- The search button's panel (12.13) -->
+  <data name="SearchAbsentTitle.Text" xml:space="preserve"><value>Command Palette n'est pas installé</value></data>
+  <data name="SearchAbsentBody.Text" xml:space="preserve"><value>La recherche de Deckle Folders passe par PowerToys Command Palette, un outil gratuit de Microsoft. Installez PowerToys pour l'utiliser.</value></data>
+  <data name="SearchInstallPowerToys.Content" xml:space="preserve"><value>Installer PowerToys…</value></data>
+  <data name="SearchLater.Content" xml:space="preserve"><value>Plus tard</value></data>
+  <data name="SearchInCommandPalette.Text" xml:space="preserve"><value>La recherche se fait dans PowerToys Command Palette : ouvrez-la avec Win+Alt+Espace, son raccourci par défaut.</value></data>
   <data name="Tools_Group" xml:space="preserve"><value>Outils</value></data>
 
   <!-- Address bar -->
@@ -40,7 +46,13 @@
   <data name="Folders_Pane" xml:space="preserve"><value>Dossiers ajoutés</value></data>
   <data name="Folders_Add" xml:space="preserve"><value>Ajouter un dossier…</value></data>
   <data name="Folders_Item_Format" xml:space="preserve"><value>{0}, {1}</value></data>
-
+  <data name="Folders_Item_NotFound_Format" xml:space="preserve"><value>{0}, introuvable : {1}</value></data>
+  <data name="Folders_Item_Unreadable_Format" xml:space="preserve"><value>{0}, inaccessible : {1}</value></data>
+  <data name="Folders_Remove" xml:space="preserve"><value>Retirer de Deckle Folders</value></data>
+  <data name="Folders_NotFound_Title" xml:space="preserve"><value>Ce dossier est introuvable</value></data>
+  <data name="Folders_NotFound_Body_Format" xml:space="preserve"><value>Deckle Folders ne trouve plus {0}. Le dossier a peut-être été déplacé, renommé ou supprimé, ou son disque n'est pas branché. Une fois qu'il est revenu, actualisez.</value></data>
+  <data name="Folders_Unreadable_Title" xml:space="preserve"><value>Ce dossier ne peut pas être lu</value></data>
+  <data name="Folders_Unreadable_Body_Format" xml:space="preserve"><value>Deckle Folders n'a pas accès à {0}. Vérifiez que vous avez le droit de l'ouvrir, puis actualisez.</value></data>
   <!-- Tools -->
   <data name="Tool_Files" xml:space="preserve"><value>Fichiers</value></data>
   <data name="Tool_Photos" xml:space="preserve"><value>Photos</value></data>
@@ -81,9 +93,21 @@
   <!-- What the file tool says when Windows did not do what was asked. -->
   <data name="Files_Recycle_Stayed_Format" xml:space="preserve"><value>« {0} » n'a pas pu aller à la Corbeille. Il reste dans le dossier.</value></data>
   <data name="Files_Recycle_Destroyed_Format" xml:space="preserve"><value>« {0} » a été supprimé définitivement au lieu d'aller à la Corbeille.</value></data>
+  <!-- The same, for several items sent by the Delete key; {0} is their number. -->
+  <data name="Files_Recycle_Stayed_Many_Format" xml:space="preserve"><value>{0} éléments n'ont pas pu aller à la Corbeille. Ils restent dans le dossier.</value></data>
+  <data name="Files_Recycle_Destroyed_Many_Format" xml:space="preserve"><value>{0} éléments ont été supprimés définitivement au lieu d'aller à la Corbeille.</value></data>
   <data name="Files_Open_Failed_Format" xml:space="preserve"><value>« {0} » n'a pas pu être ouvert.</value></data>
   <data name="Files_ShowInFolder_Failed_Format" xml:space="preserve"><value>L'Explorateur n'a pas pu montrer « {0} ».</value></data>
   <data name="Files_Gone_Format" xml:space="preserve"><value>« {0} » n'est plus dans ce dossier.</value></data>
+  <!-- The panel of several items selected (SelectionSummary): "One" is the
+       form a count of one takes, "Many" every other; {0} is the number. -->
+  <data name="Files_Selection_Items_One_Format" xml:space="preserve"><value>{0} élément sélectionné</value></data>
+  <data name="Files_Selection_Items_Many_Format" xml:space="preserve"><value>{0} éléments sélectionnés</value></data>
+  <data name="Files_Selection_Folders_One_Format" xml:space="preserve"><value>{0} dossier</value></data>
+  <data name="Files_Selection_Folders_Many_Format" xml:space="preserve"><value>{0} dossiers</value></data>
+  <data name="Files_Selection_Files_One_Format" xml:space="preserve"><value>{0} fichier</value></data>
+  <data name="Files_Selection_Files_Many_Format" xml:space="preserve"><value>{0} fichiers</value></data>
+  <data name="Files_Selection_Size_WithoutFolders_Format" xml:space="preserve"><value>{0}, sans les dossiers</value></data>
 
   <!-- Details panel -->
   <data name="Details_Panel" xml:space="preserve"><value>Détails</value></data>
@@ -150,6 +174,30 @@
   <data name="Photos_Destroyed_One" xml:space="preserve"><value>{0} photo a été supprimée définitivement au lieu d'aller à la Corbeille.</value></data>
   <data name="Photos_Destroyed_Other" xml:space="preserve"><value>{0} photos ont été supprimées définitivement au lieu d'aller à la Corbeille.</value></data>
   <data name="Photos_NamesMore_Format" xml:space="preserve"><value>{0} et {1} autres</value></data>
+  <data name="Photos_Describe_Folder" xml:space="preserve"><value>Décrire le dossier</value></data>
+  <data name="Photos_Describe_Progress_Format" xml:space="preserve"><value>{0} sur {1} décrites</value></data>
+  <data name="Photos_Describe_Stop" xml:space="preserve"><value>Arrêter la description du dossier</value></data>
+  <data name="Photos_Describe_Done_Format" xml:space="preserve"><value>Description du dossier terminée : {0} sur {1} photos décrites.</value></data>
+  <data name="Photos_Describe_Failed_One" xml:space="preserve"><value>{0} photo n'a pas pu être décrite.</value></data>
+  <data name="Photos_Describe_Failed_Other" xml:space="preserve"><value>{0} photos n'ont pas pu être décrites.</value></data>
+  <data name="Photos_Describe_Stopped_Format" xml:space="preserve"><value>Description du dossier arrêtée : {0} sur {1} photos décrites.</value></data>
+  <data name="Photos_Describe_NotDone" xml:space="preserve"><value>Le dossier n'a pas pu être décrit</value></data>
+  <data name="Photos_Section_Description" xml:space="preserve"><value>Description</value></data>
+  <data name="Photos_Description_None" xml:space="preserve"><value>Cette photo n'a pas encore de description.</value></data>
+  <data name="Photos_Description_DescribeOne" xml:space="preserve"><value>Décrire cette photo</value></data>
+  <data name="Photos_Description_InProgress" xml:space="preserve"><value>Description en cours…</value></data>
+  <data name="Photos_Description_Stop" xml:space="preserve"><value>Arrêter</value></data>
+  <data name="Photos_Description_WrittenBy" xml:space="preserve"><value>Écrite par un modèle sur cet ordinateur.</value></data>
+  <data name="Photos_Description_Again" xml:space="preserve"><value>Décrire à nouveau</value></data>
+  <data name="Photos_Description_Retry" xml:space="preserve"><value>Réessayer</value></data>
+  <data name="Photos_Description_Settings" xml:space="preserve"><value>Ouvrir les paramètres</value></data>
+  <data name="Photos_DescriptionFailure_NoModelChosen" xml:space="preserve"><value>Aucun modèle n'est choisi pour décrire les photos. Choisissez-en un dans les paramètres.</value></data>
+  <data name="Photos_DescriptionFailure_ServerUnreachable" xml:space="preserve"><value>Le serveur du modèle ne répond pas. Démarrez-le sur cet ordinateur, puis réessayez.</value></data>
+  <data name="Photos_DescriptionFailure_ImagesNotSupported" xml:space="preserve"><value>Le modèle choisi ne sait pas lire une image. Choisissez-en un autre dans les paramètres.</value></data>
+  <data name="Photos_DescriptionFailure_EndpointNotLocal" xml:space="preserve"><value>Le fournisseur choisi n'est pas sur cet ordinateur, et aucune photo n'en sort. Choisissez un fournisseur local dans les paramètres.</value></data>
+  <data name="Photos_DescriptionFailure_PhotoUnreadable" xml:space="preserve"><value>Cette photo ne peut pas être lue.</value></data>
+  <data name="Photos_DescriptionFailure_Stopped" xml:space="preserve"><value>La description a été arrêtée avant d'être écrite.</value></data>
+  <data name="Photos_DescriptionFailure_Other" xml:space="preserve"><value>Le modèle n'a pas décrit cette photo : il a refusé la demande ou n'a pas répondu à temps.</value></data>
   <!-- Sizes tool (boards 12.7, 12.21, 12.23) -->
   <data name="Sizes_HeaderName" xml:space="preserve"><value>Nom</value></data>
   <data name="Sizes_HeaderSize" xml:space="preserve"><value>Taille</value></data>
@@ -160,8 +208,13 @@
   <data name="Sizes_Progress_Name" xml:space="preserve"><value>Avancement de l'analyse</value></data>
   <data name="Sizes_Stop" xml:space="preserve"><value>Arrêter</value></data>
   <data name="Sizes_Stopped" xml:space="preserve"><value>Analyse arrêtée</value></data>
+  <data name="Sizes_Stopped_Format" xml:space="preserve"><value>Analyse arrêtée : {0} sur {1} mesurés</value></data>
   <data name="Sizes_Finished_Format" xml:space="preserve"><value>Analysé à {0}</value></data>
-  <data name="Sizes_Failed" xml:space="preserve"><value>L'analyse a échoué. Actualisez (F5) pour réessayer.</value></data>
+  <data name="Sizes_Finished_Earlier_Format" xml:space="preserve"><value>Analysé le {0}</value></data>
+  <data name="Sizes_Refresh" xml:space="preserve"><value>Analyser à nouveau (F5)</value></data>
+  <data name="Sizes_Refresh_Today_Format" xml:space="preserve"><value>Dernière analyse à {0}</value></data>
+  <data name="Sizes_Refresh_Earlier_Format" xml:space="preserve"><value>Dernière analyse le {0}</value></data>
+  <data name="Sizes_Failed" xml:space="preserve"><value>L'analyse a échoué. Appuyez sur F5 pour réessayer.</value></data>
   <data name="Sizes_Pending" xml:space="preserve"><value>…</value></data>
   <data name="Sizes_LooseFiles_Format" xml:space="preserve"><value>Fichiers de ce dossier ({0})</value></data>
   <data name="Sizes_Row_Automation_Format" xml:space="preserve"><value>{0}, {1}</value></data>
@@ -185,6 +238,9 @@
   <!-- Map tool (name not chosen): list, filters, empty state, panel -->
   <data name="MapFilters_Group" xml:space="preserve"><value>Filtres</value></data>
   <data name="MapAlwaysRead.Content" xml:space="preserve"><value>Toujours lu par un LLM</value></data>
+  <data name="Map_Display_Group" xml:space="preserve"><value>Affichage</value></data>
+  <data name="Map_Display_Flat" xml:space="preserve"><value>Liste</value></data>
+  <data name="Map_Display_Sections" xml:space="preserve"><value>Regrouper par type</value></data>
   <data name="MapHeaderName.Text" xml:space="preserve"><value>Nom</value></data>
   <data name="MapHeaderKind.Text" xml:space="preserve"><value>Type</value></data>
   <data name="MapHeaderLinks.Text" xml:space="preserve"><value>Liens</value></data>
@@ -235,6 +291,15 @@
   <data name="Map_Graph_Name_Format" xml:space="preserve"><value>Graphe des liens de {0}</value></data>
   <data name="Map_Graph_More_Format" xml:space="preserve"><value>+{0}</value></data>
   <data name="Map_Graph_More_Name_Format" xml:space="preserve"><value>{0} autres liens, listés plus bas</value></data>
+  <data name="Map_Graph_Enlarge" xml:space="preserve"><value>Agrandir le graphe</value></data>
+  <data name="Map_LargeGraph_Name" xml:space="preserve"><value>Grand graphe des liens</value></data>
+  <data name="Map_LargeGraph_Node_Name_Format" xml:space="preserve"><value>{0}, {1}</value></data>
+  <data name="Map_LargeGraph_More_Name_Format" xml:space="preserve"><value>{0} autres éléments, non dessinés</value></data>
+  <data name="Map_LargeGraph_Dimension_Group" xml:space="preserve"><value>Dimension</value></data>
+  <data name="MapLargeGraph2D.Content" xml:space="preserve"><value>2D</value></data>
+  <data name="MapLargeGraph3D.Content" xml:space="preserve"><value>3D · plus tard</value></data>
+  <data name="Map_LargeGraph_Leave" xml:space="preserve"><value>Quitter le grand graphe</value></data>
+  <data name="Map_LargeGraph_Leave_Tip" xml:space="preserve"><value>Quitter le grand graphe (Échap)</value></data>
   <data name="Map_Links_Section" xml:space="preserve"><value>Liens</value></data>
   <data name="Map_Cites_Format" xml:space="preserve"><value>Cite ({0})</value></data>
   <data name="Map_CitedBy_Format" xml:space="preserve"><value>Est cité par ({0})</value></data>

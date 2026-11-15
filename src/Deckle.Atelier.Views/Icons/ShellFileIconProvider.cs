@@ -13,7 +13,8 @@ namespace Deckle.Atelier.Views;
 // back to the UI thread, the one a XAML object can be created on. Two queues,
 // so the cheap asks never wait behind a slow one: icons, file probes and
 // cached thumbnails go on the first, thumbnail extraction, which reads a
-// photo or renders a PDF page, goes on the second.
+// photo, goes on the second. A PDF's first page is drawn by Windows.Data.Pdf
+// instead, on the thread pool, two at a time (RenderPdfAsync).
 //
 // Caches. Both live on the UI thread, which serialises them. Icons are keyed
 // by type and size, by file for the types that draw one per file
@@ -43,6 +44,7 @@ internal sealed class ShellFileIconProvider : IFileIconProvider, IDisposable
     private readonly ShellWorkQueue _extraction = new("Atelier shell thumbnails");
     private readonly MemoryBoundedCache<FileIconKey, ImageSource?> _icons = new(IconBudgetBytes);
     private readonly MemoryBoundedCache<FileThumbnailKey, ImageSource?> _thumbnails = new(ThumbnailBudgetBytes);
+    private readonly SemaphoreSlim _pdfRenders = new(2);
 
     public async Task<ImageSource?> GetAsync(string path, bool isFolder, int pixelSize, CancellationToken cancellation)
     {
@@ -76,7 +78,11 @@ internal sealed class ShellFileIconProvider : IFileIconProvider, IDisposable
             // reading it would download it. Its picture shows only if the
             // shell already holds one.
             if (image is null && probe.IsLocal)
-                image = await _extraction.RunAsync(() => ShellImageReader.ExtractThumbnail(path, pixelSize), cancellation);
+            {
+                image = PdfFirstPageReader.Previews(path)
+                    ? await RenderPdfAsync(path, pixelSize, cancellation)
+                    : await _extraction.RunAsync(() => ShellImageReader.ExtractThumbnail(path, pixelSize), cancellation);
+            }
 
             ImageSource? source = image is null ? null : ToBitmap(image);
             _thumbnails.Add(key, source, image?.Bytes ?? EmptyEntryBytes);
@@ -85,6 +91,24 @@ internal sealed class ShellFileIconProvider : IFileIconProvider, IDisposable
         catch (OperationCanceledException)
         {
             return null;
+        }
+    }
+
+    // A PDF's first page, drawn by Windows' own PDF renderer: a plain Windows
+    // has no thumbnail provider for PDFs, so the shell would answer none. Two
+    // at a time, so a gallery scrolled fast over a folder of PDFs does not
+    // start a render per tile it passes: a tile that left before its turn
+    // stops waiting and costs nothing.
+    private async Task<ShellImage?> RenderPdfAsync(string path, int pixelSize, CancellationToken cancellation)
+    {
+        await _pdfRenders.WaitAsync(cancellation);
+        try
+        {
+            return await Task.Run(() => PdfFirstPageReader.ReadAsync(path, pixelSize, cancellation), cancellation);
+        }
+        finally
+        {
+            _pdfRenders.Release();
         }
     }
 
@@ -103,5 +127,8 @@ internal sealed class ShellFileIconProvider : IFileIconProvider, IDisposable
     {
         _quick.Dispose();
         _extraction.Dispose();
+        // _pdfRenders is not disposed: a render still running releases it
+        // after the window closed, and a SemaphoreSlim whose wait handle is
+        // never asked for holds nothing to free.
     }
 }

@@ -21,6 +21,7 @@ public partial class App
         SelfCheckReport report, InterfaceCaptureRun run, string outputFolder, Action<string> step,
         SelfCheckWalkGate gate)
     {
+        UseReviewPhotoDescriptions();
         var clock = System.Diagnostics.Stopwatch.StartNew();
         AtelierWindow window = EnsureAtelierWindow();
         OffscreenWindow.ShowInactive(window);
@@ -83,7 +84,9 @@ public partial class App
         await Capture("files-gallery", () => FilesReview.ShowDisplayAsync(window, FileListDisplay.Gallery));
         await Capture("files-gallery-actions", () => FilesReview.ShowRowActionsAsync(window, hovered));
         if (loaded) FilesReview.HideRowActions(window);
+        if (loaded) await WalkAtelierPreviewsAsync(window, Capture);
         if (loaded) await FilesReview.ShowDisplayAsync(window, FileListDisplay.List);
+        if (loaded) await WalkAtelierFileSelectionAsync(window, Capture);
 
         foreach (string tool in window.ToolIds.Where(t => t != "files"))
             await Capture(tool, () => window.ShowToolForReviewAsync(tool));
@@ -110,5 +113,7 @@ public partial class App
         });
 
         if (loaded) await WalkAtelierFolderIconsAsync(report, run, outputFolder, step, window, sample, gate);
+        if (loaded) await WalkAtelierSearchAsync(report, run, outputFolder, step, window, gate);
+        if (loaded) await WalkAtelierAddedFoldersAsync(report, run, outputFolder, step, window, sample, gate);
     }
 }

@@ -29,9 +29,13 @@ public sealed record FolderListingResult(IReadOnlyList<FolderEntry> Entries, Fol
 // "10"). The listing touches the disk, so callers run it off the UI thread.
 public static class FolderListing
 {
+    // IgnoreInaccessible stays off: the listing is one level deep, so the only
+    // folder it could skip is the one asked for, and skipping it made a folder
+    // Windows refuses to list read as an empty one. Off, the refusal throws
+    // and the tool says the folder cannot be opened (FolderListingTests).
     private static readonly EnumerationOptions Options = new()
     {
-        IgnoreInaccessible = true,
+        IgnoreInaccessible = false,
         RecurseSubdirectories = false,
         AttributesToSkip = FileAttributes.Hidden | FileAttributes.System,
     };
