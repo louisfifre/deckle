@@ -118,7 +118,7 @@ From top to bottom: header, three readouts, "Open in", "Pinned actions" (session
 - "Pin an action…", on the section's title line, lists the entries the project's menu gives (`scripts/menu.ps1 -List`). Louis pins and unpins entries there, and marks one pinned entry as main (session; the list itself is not drawn in v4).
 - An entry with variants is pinned with one of them (session, P1: "self-check.ps1 · Debug").
 - A card shows the menu's label, the script's file name and the variant, a state line, and "Run": "Self-check", "self-check.ps1 · Debug", "Not run yet" (session, P1).
-- Under the cards: "Actions run in Windows Terminal, one at a time per project. Every other script is in the script menu." (session, after the v4 review, P1).
+- Under the cards: "Actions run in a terminal window, one at a time per project. Every other script is in the script menu." (it names no product, because the terminal is a choice with a fallback) (session, after the v4 review, P1).
 - "Run" opens Windows Terminal running `scripts/menu.ps1 -Run <id>` in the project's folder (session). The header's accent button and the Home card's button do the same for the main action (session).
 - While a pinned action runs, its state line shows a progress ring and "Running · 1 min 12 s", and "Run" gives way to "Show terminal", which brings its terminal to the front (session, after the v4 review, P3).
 - While an action runs, each other pinned action reads "Waits for Self-check to end", with the running action's label, and its "Run" is disabled; the header's accent button is disabled too (session, after the v4 review, P3). "Open script menu" and the links stay usable, and so do the other projects (session, P3).

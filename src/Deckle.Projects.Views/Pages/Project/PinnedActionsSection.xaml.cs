@@ -82,7 +82,7 @@ internal sealed partial class PinnedActionsSection : UserControl
         SetCards(cards);
         Cards.Visibility = cards.Count > 0 ? Visibility.Visible : Visibility.Collapsed;
 
-        // "Actions run in Windows Terminal, ..." belongs with a menu that can be
+        // "Actions run in a terminal window, ..." belongs with a menu that can be
         // pinned from; with nothing pinned it still reads under the empty list
         // (spec).
         NoteText.Visibility = kind == PinnedMenuKind.Listed ? Visibility.Visible : Visibility.Collapsed;

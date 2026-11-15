@@ -107,7 +107,7 @@
   <data name="Pinned_Pin" xml:space="preserve"><value>Pin an action…</value></data>
   <data name="Pinned_Run" xml:space="preserve"><value>Run</value></data>
   <data name="Pinned_ShowTerminal" xml:space="preserve"><value>Show terminal</value></data>
-  <data name="Pinned_Note" xml:space="preserve"><value>Actions run in Windows Terminal, one at a time per project. Every other script is in the script menu.</value></data>
+  <data name="Pinned_Note" xml:space="preserve"><value>Actions run in a terminal window, one at a time per project. Every other script is in the script menu.</value></data>
   <data name="Pinned_NoMenu" xml:space="preserve"><value>This project has no script menu, so there is nothing to pin.</value></data>
   <data name="Pinned_CopyInstall" xml:space="preserve"><value>Copy the install command</value></data>
   <data name="Pinned_Copied" xml:space="preserve"><value>Copied</value></data>
