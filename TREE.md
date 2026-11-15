@@ -26,12 +26,6 @@ _Generated from `git ls-files` — do not edit by hand._
 │       │   └── SKILL.md  — deckle-versioning Use when you record a Deckle version, touch CHANGELOG.md or prepare release not…
 │       ├── microsoft-docs/
 │       │   └── SKILL.md  — microsoft-docs Find official Microsoft documentation and code samples. Use for Microsoft techn…
-│       ├── ux-copy/
-│       │   ├── references/
-│       │   │   ├── patterns.md
-│       │   │   ├── voice-and-tone.md
-│       │   │   └── windows-fluent.md
-│       │   └── SKILL.md  — ux-copy Write or review interface wording — CTAs, errors, empty states, confirmations,…
 │       └── winui-app/
 │           ├── agents/
 │           │   └── openai.yaml
@@ -536,6 +530,7 @@ _Generated from `git ls-files` — do not edit by hand._
 │   │   │   ├── SessionGestures.cs
 │   │   │   └── TaskGestures.cs
 │   │   ├── Plan/
+│   │   │   ├── EditRefusal.cs
 │   │   │   ├── example.space-plan.json
 │   │   │   ├── PlanApi.cs
 │   │   │   ├── PlanJson.cs
@@ -665,6 +660,7 @@ _Generated from `git ls-files` — do not edit by hand._
 │   │   ├── App.PrecisionScroll.cs
 │   │   ├── App.Relocate.cs
 │   │   ├── App.SelfCheck.Atelier.cs
+│   │   ├── App.SelfCheck.Atelier.FolderIcons.cs
 │   │   ├── App.SelfCheck.Atelier.Map.cs
 │   │   ├── App.SelfCheck.Atelier.Photos.cs
 │   │   ├── App.SelfCheck.Atelier.Sizes.cs
@@ -722,7 +718,8 @@ _Generated from `git ls-files` — do not edit by hand._
 │   ├── Deckle.Atelier/
 │   │   ├── AddedFolders/
 │   │   │   ├── AddedFolder.cs
-│   │   │   └── AddedFolderStore.cs
+│   │   │   ├── AddedFolderStore.cs
+│   │   │   └── FolderIconRule.cs
 │   │   ├── Browsing/
 │   │   │   ├── AddressResolver.cs
 │   │   │   ├── FolderListing.cs
@@ -798,6 +795,7 @@ _Generated from `git ls-files` — do not edit by hand._
 │   │   └── DeckleAtelierSource.cs
 │   ├── Deckle.Atelier.Views/
 │   │   ├── Address/
+│   │   │   ├── AddressBar.Icon.cs
 │   │   │   ├── AddressBar.xaml
 │   │   │   ├── AddressBar.xaml.cs
 │   │   │   └── AddressCrumb.cs
@@ -859,6 +857,7 @@ _Generated from `git ls-files` — do not edit by hand._
 │   │   │   └── ToolPlaceholderView.cs
 │   │   ├── AtelierGlyphs.cs
 │   │   ├── AtelierText.cs
+│   │   ├── AtelierWindow.FolderIcon.cs
 │   │   ├── AtelierWindow.Folders.cs
 │   │   ├── AtelierWindow.Navigation.cs
 │   │   ├── AtelierWindow.Review.cs
@@ -1111,6 +1110,12 @@ _Generated from `git ls-files` — do not edit by hand._
 │   │   │   ├── SettingsComposer.Numeric.cs
 │   │   │   ├── SettingsPageHeader.cs
 │   │   │   └── SettingsSection.cs
+│   │   ├── IconPicker/
+│   │   │   ├── IconChoiceView.cs
+│   │   │   ├── IconPicker.cs
+│   │   │   ├── IconSymbolGlyphs.cs
+│   │   │   ├── IconTintPalette.cs
+│   │   │   └── IconTintSwatch.cs
 │   │   ├── ConfirmationService.cs
 │   │   ├── ConsentService.cs
 │   │   ├── Deckle.Catalog.csproj
@@ -1153,6 +1158,10 @@ _Generated from `git ls-files` — do not edit by hand._
 │   │   ├── Hotkeys/
 │   │   │   ├── HotkeyChord.cs
 │   │   │   └── HotkeyModifiers.cs
+│   │   ├── Icons/
+│   │   │   ├── IconChoice.cs
+│   │   │   ├── IconSymbol.cs
+│   │   │   └── IconTint.cs
 │   │   ├── Interop/
 │   │   │   ├── NativeMethods.Audio.cs
 │   │   │   ├── NativeMethods.cs
@@ -2357,6 +2366,7 @@ _Generated from `git ls-files` — do not edit by hand._
 │   │   ├── DevSpaceBugNotes.md
 │   │   ├── DevSpaceTests.cs
 │   │   ├── DocumentGesturesTests.cs
+│   │   ├── EditRefusalTests.cs
 │   │   ├── FakeV2Handler.cs
 │   │   ├── GatewayKeyFingerprintTests.cs
 │   │   ├── GatewayPayloadTests.cs
@@ -2389,6 +2399,7 @@ _Generated from `git ls-files` — do not edit by hand._
 │   │   ├── SchemaAdminGesturesTests.cs
 │   │   ├── SessionGesturesBugNotes.md
 │   │   ├── SessionGesturesTests.cs
+│   │   ├── SpacePlanBugNotes.md
 │   │   ├── SpacePlanFragmentsTests.cs
 │   │   ├── SpacePlanTests.cs
 │   │   ├── SpacePlanTrialTests.cs
@@ -2438,9 +2449,12 @@ _Generated from `git ls-files` — do not edit by hand._
 │   │   │   └── ShellRecycleBinTests.cs
 │   │   ├── AddedFolderStoreTests.cs
 │   │   ├── AddressResolverTests.cs
+│   │   ├── AtelierEventIdBugNotes.md
 │   │   ├── Deckle.Atelier.Tests.csproj
+│   │   ├── DeckleAtelierSourceEventIdTests.cs
 │   │   ├── DeckleAtelierSourceTests.cs
 │   │   ├── EntryFormatTests.cs
+│   │   ├── FolderIconRuleTests.cs
 │   │   ├── FolderListingTests.cs
 │   │   ├── HeaviestFilesTests.cs
 │   │   ├── MapInventoryTests.cs

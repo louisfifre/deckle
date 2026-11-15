@@ -3,15 +3,17 @@ using Deckle.Diagnostics;
 
 namespace Deckle.Atelier;
 
-// The file tool's events. EventIds 50-59 belong to it, so the tools built side
-// by side each add theirs without taking one another's numbers.
+// The file tool's events. EventIds 60-69 belong to it, so the tools built side
+// by side each add theirs without taking one another's numbers; 50-59 are the
+// added folders' icons (DeckleAtelierSource.cs). Two events sharing a number
+// put the whole source in error and it then writes nothing at all.
 //
 // An item's name and path are the person's own disk: an event carries the
 // action, the extension, a reason and an error code, never a name or a path.
 public sealed partial class DeckleAtelierSource
 {
-    public const int EvtItemLaunched    = 50;
-    public const int EvtItemNotLaunched = 51;
+    public const int EvtItemLaunched    = 60;
+    public const int EvtItemNotLaunched = 61;
 
     // action: "open" (the file's default application) or "show-in-folder"
     // (File Explorer, the item selected).
