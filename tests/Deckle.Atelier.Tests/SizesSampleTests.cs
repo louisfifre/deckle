@@ -25,6 +25,26 @@ public sealed class SizesSampleTests
     }
 
     [Fact]
+    public void ItHoldsAnEmptyFolderAndCanLendAnUnreadableOneThatLeavesNoTrace()
+    {
+        using var scratch = new ScratchFolder();
+        string root = SampleFolder.Create(scratch.Path);
+        SizesSample.AddTo(root);
+
+        SizeReport empty = SizeScan.Start(SizesSample.EmptyFolderPath(root)).Completion.GetAwaiter().GetResult();
+        string locked;
+        SizeReport refused;
+        using (SizesSample.AddUnreadableFolder(root, out locked))
+            refused = SizeScan.Start(locked).Completion.GetAwaiter().GetResult();
+
+        Assert.True(empty.IsComplete);
+        Assert.Empty(empty.Folders);
+        Assert.Equal(0, empty.LooseFileCount);
+        Assert.Equal(FolderListingFailure.AccessDenied, refused.PlaceFailure);
+        Assert.False(Directory.Exists(locked));
+    }
+
+    [Fact]
     public void ItsLargeFilesTakeNoRoomOnTheDisk()
     {
         using var scratch = new ScratchFolder();

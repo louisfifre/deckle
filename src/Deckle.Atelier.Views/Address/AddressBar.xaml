@@ -28,7 +28,8 @@
               Background="Transparent"
               Padding="2,0,4,0"
               ColumnSpacing="2"
-              Tapped="OnSegmentsModeTapped">
+              Tapped="OnSegmentsModeTapped"
+              SizeChanged="OnSegmentsModeSizeChanged">
             <Grid.ColumnDefinitions>
                 <ColumnDefinition Width="Auto" />
                 <ColumnDefinition Width="*" />
@@ -59,8 +60,18 @@
                 </BreadcrumbBar.Resources>
                 <BreadcrumbBar.ItemTemplate>
                     <DataTemplate x:DataType="local:AddressCrumb">
+                        <!-- A name too long for the bar is cut with an
+                             ellipsis and says itself whole in a tooltip, as
+                             File Explorer's segments do. Its ceiling follows
+                             the bar's width (AddressBar.xaml.cs). -->
                         <StackPanel Orientation="Horizontal" Spacing="2">
-                            <TextBlock Text="{x:Bind Name}" VerticalAlignment="Center" />
+                            <TextBlock Text="{x:Bind Name}"
+                                       VerticalAlignment="Center"
+                                       TextWrapping="NoWrap"
+                                       TextTrimming="CharacterEllipsis"
+                                       Loaded="OnCrumbNameLoaded"
+                                       Unloaded="OnCrumbNameUnloaded"
+                                       IsTextTrimmedChanged="OnCrumbNameTrimmedChanged" />
                             <Button Width="24"
                                     Height="24"
                                     Padding="0"

@@ -87,8 +87,9 @@ public sealed partial class AtelierWindow : IAtelierToolHost
             CentreHost.Content = view.Content;
             // The selection stays across tools, but what the panel holds is
             // the active tool's to say: it is emptied here and the tool fills
-            // it again for the selection it is handed.
+            // it again for the selection it is handed. Refresh's label too.
             Select(_selection, null);
+            SetRefreshLabel(null);
             await view.ShowAsync(place, _selection, showing.Token);
             if (!showing.IsCancellationRequested)
                 DeckleAtelierSource.Log.ToolShown(tool.Id, clock.ElapsedMilliseconds);
@@ -124,4 +125,25 @@ public sealed partial class AtelierWindow : IAtelierToolHost
         DetailsHost.Content = details;
         DetailsPanel.Visibility = details is null ? Visibility.Collapsed : Visibility.Visible;
     }
+
+    // Refresh's tooltip is one ToolTip the window keeps, so its text can
+    // change while it stays attached to the button. The accessible name is
+    // the action; the second line, when there is one, is its help text.
+    private readonly ToolTip _refreshTip = new();
+
+    void IAtelierToolHost.SetRefreshLabel(string? label, string? detail) => SetRefreshLabel(label, detail);
+
+    private void SetRefreshLabel(string? label, string? detail = null)
+    {
+        label ??= AtelierText.Get("Nav_Refresh");
+        _refreshTip.Content = detail is null ? label : label + Environment.NewLine + detail;
+        if (!ReferenceEquals(ToolTipService.GetToolTip(RefreshButton), _refreshTip)) ToolTipService.SetToolTip(RefreshButton, _refreshTip);
+        AutomationProperties.SetName(RefreshButton, label);
+        AutomationProperties.SetHelpText(RefreshButton, detail ?? "");
+    }
+
+    // What the self-check reads instead of photographing the tooltip: a
+    // tooltip opened on a window nobody sees is moved onto a monitor by WinUI
+    // (WindowShortcutBugNotes.md), which the self-check's guard refuses.
+    public string RefreshLabelForReview => _refreshTip.Content as string ?? "";
 }

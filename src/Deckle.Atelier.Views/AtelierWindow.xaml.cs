@@ -78,7 +78,10 @@ public sealed partial class AtelierWindow : Window
             Math.Min((int)(800 * scale), work.Height)));
 
         var presenter = OverlappedPresenter.Create();
-        presenter.PreferredMinimumWidth = (int)(720 * scale);
+        // The narrowest the top row holds whole: the buttons, the active
+        // tool with its name, search, and an address bar of its icon and a
+        // few letters (AtelierWindow.xaml).
+        presenter.PreferredMinimumWidth = (int)(840 * scale);
         presenter.PreferredMinimumHeight = (int)(480 * scale);
         AppWindow.SetPresenter(presenter);
     }
@@ -90,17 +93,14 @@ public sealed partial class AtelierWindow : Window
         Label(BackButton, "Nav_Back");
         Label(ForwardButton, "Nav_Forward");
         Label(UpButton, "Nav_Up");
-        Label(RefreshButton, "Nav_Refresh");
+        // The active tool may say what Refresh does for it (AtelierWindow.Tools.cs).
+        SetRefreshLabel(null);
         Label(SearchButton, "Search");
         AutomationProperties.SetName(ToolButtons, AtelierText.Get("Tools_Group"));
         AutomationProperties.SetName(DetailsPanel, AtelierText.Get("Details_Panel"));
         AutomationProperties.SetName(Nav, AtelierText.Get("Folders_Pane"));
         AddFolderItem.Content = AtelierText.Get("Folders_Add");
         EmptyAddLabel.Text = AtelierText.Get("Folders_Add");
-
-        // Search goes through PowerToys Command Palette (spec, Search), not
-        // built yet: the button is in its place and disabled.
-        SearchButton.IsEnabled = false;
     }
 
     private static void Label(FrameworkElement element, string key)

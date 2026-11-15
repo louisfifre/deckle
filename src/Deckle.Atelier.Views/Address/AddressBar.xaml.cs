@@ -54,6 +54,7 @@ internal sealed partial class AddressBar : UserControl
             .Select((s, i) => new AddressCrumb(s, new FolderPlace(place.Root, s.Path), hasSubfolders[i]))
             .ToList();
         Crumbs.Visibility = Visibility.Visible;
+        FitSegmentNames();
         ShowIcon(place.Root);
         IconButton.Visibility = Visibility.Visible;
         Placeholder.Visibility = Visibility.Collapsed;

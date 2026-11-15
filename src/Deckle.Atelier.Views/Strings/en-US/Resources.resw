@@ -26,6 +26,12 @@
   <data name="Nav_Up" xml:space="preserve"><value>Dossier parent (Alt+Haut)</value></data>
   <data name="Nav_Refresh" xml:space="preserve"><value>Actualiser (F5)</value></data>
   <data name="Search" xml:space="preserve"><value>Rechercher</value></data>
+  <!-- The search button's panel (12.13) -->
+  <data name="SearchAbsentTitle.Text" xml:space="preserve"><value>Command Palette n'est pas installé</value></data>
+  <data name="SearchAbsentBody.Text" xml:space="preserve"><value>La recherche de Deckle Folders passe par PowerToys Command Palette, un outil gratuit de Microsoft. Installez PowerToys pour l'utiliser.</value></data>
+  <data name="SearchInstallPowerToys.Content" xml:space="preserve"><value>Installer PowerToys…</value></data>
+  <data name="SearchLater.Content" xml:space="preserve"><value>Plus tard</value></data>
+  <data name="SearchInCommandPalette.Text" xml:space="preserve"><value>La recherche se fait dans PowerToys Command Palette : ouvrez-la avec Win+Alt+Espace, son raccourci par défaut.</value></data>
   <data name="Tools_Group" xml:space="preserve"><value>Outils</value></data>
 
   <!-- Address bar -->
@@ -40,7 +46,13 @@
   <data name="Folders_Pane" xml:space="preserve"><value>Dossiers ajoutés</value></data>
   <data name="Folders_Add" xml:space="preserve"><value>Ajouter un dossier…</value></data>
   <data name="Folders_Item_Format" xml:space="preserve"><value>{0}, {1}</value></data>
-
+  <data name="Folders_Item_NotFound_Format" xml:space="preserve"><value>{0}, introuvable : {1}</value></data>
+  <data name="Folders_Item_Unreadable_Format" xml:space="preserve"><value>{0}, inaccessible : {1}</value></data>
+  <data name="Folders_Remove" xml:space="preserve"><value>Retirer de Deckle Folders</value></data>
+  <data name="Folders_NotFound_Title" xml:space="preserve"><value>Ce dossier est introuvable</value></data>
+  <data name="Folders_NotFound_Body_Format" xml:space="preserve"><value>Deckle Folders ne trouve plus {0}. Le dossier a peut-être été déplacé, renommé ou supprimé, ou son disque n'est pas branché. Une fois qu'il est revenu, actualisez.</value></data>
+  <data name="Folders_Unreadable_Title" xml:space="preserve"><value>Ce dossier ne peut pas être lu</value></data>
+  <data name="Folders_Unreadable_Body_Format" xml:space="preserve"><value>Deckle Folders n'a pas accès à {0}. Vérifiez que vous avez le droit de l'ouvrir, puis actualisez.</value></data>
   <!-- Tools -->
   <data name="Tool_Files" xml:space="preserve"><value>Fichiers</value></data>
   <data name="Tool_Photos" xml:space="preserve"><value>Photos</value></data>
@@ -160,8 +172,13 @@
   <data name="Sizes_Progress_Name" xml:space="preserve"><value>Avancement de l'analyse</value></data>
   <data name="Sizes_Stop" xml:space="preserve"><value>Arrêter</value></data>
   <data name="Sizes_Stopped" xml:space="preserve"><value>Analyse arrêtée</value></data>
+  <data name="Sizes_Stopped_Format" xml:space="preserve"><value>Analyse arrêtée : {0} sur {1} mesurés</value></data>
   <data name="Sizes_Finished_Format" xml:space="preserve"><value>Analysé à {0}</value></data>
-  <data name="Sizes_Failed" xml:space="preserve"><value>L'analyse a échoué. Actualisez (F5) pour réessayer.</value></data>
+  <data name="Sizes_Finished_Earlier_Format" xml:space="preserve"><value>Analysé le {0}</value></data>
+  <data name="Sizes_Refresh" xml:space="preserve"><value>Analyser à nouveau (F5)</value></data>
+  <data name="Sizes_Refresh_Today_Format" xml:space="preserve"><value>Dernière analyse à {0}</value></data>
+  <data name="Sizes_Refresh_Earlier_Format" xml:space="preserve"><value>Dernière analyse le {0}</value></data>
+  <data name="Sizes_Failed" xml:space="preserve"><value>L'analyse a échoué. Appuyez sur F5 pour réessayer.</value></data>
   <data name="Sizes_Pending" xml:space="preserve"><value>…</value></data>
   <data name="Sizes_LooseFiles_Format" xml:space="preserve"><value>Fichiers de ce dossier ({0})</value></data>
   <data name="Sizes_Row_Automation_Format" xml:space="preserve"><value>{0}, {1}</value></data>

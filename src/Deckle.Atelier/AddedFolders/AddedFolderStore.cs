@@ -8,7 +8,7 @@ namespace Deckle.Atelier;
 //
 // Why not JsonSettingsStore: that primitive debounces, watches the file and
 // holds a cross-process mutex, which settings edited by hand need. This list
-// changes only on an explicit gesture (add a folder, change its icon), is
+// changes only on an explicit gesture (add, remove a folder, change its icon), is
 // written at once, and
 // is read by one window, so a plain atomic write (temp file, then move) is the
 // whole need.
@@ -84,6 +84,25 @@ public sealed class AddedFolderStore
         DeckleAtelierSource.Log.FolderIconChangedDetail(icon.Symbol.ToString(), icon.Tint.ToString(), icon.HasBackground);
         Changed?.Invoke();
         return changed;
+    }
+
+    // Forgets the added folder at this path and saves at once. Only the entry
+    // goes: the folder and everything in it stay on the disk as they are, so
+    // adding it again undoes the removal (it then gets its icon from the rule
+    // again, as any folder just added). Returns false when no added folder
+    // sits at that path.
+    public bool Remove(string path)
+    {
+        string normalized = FolderPaths.Normalize(path);
+        int index = _folders.FindIndex(f => FolderPaths.Comparer.Equals(f.Path, normalized));
+        if (index < 0) return false;
+
+        _folders.RemoveAt(index);
+        Save();
+        DeckleAtelierSource.Log.FolderRemoved();
+        DeckleAtelierSource.Log.FolderRemovedDetail(_folders.Count);
+        Changed?.Invoke();
+        return true;
     }
 
     // The added folder that holds this path, the deepest one when added

@@ -138,6 +138,7 @@ public sealed class SizeScan
         {
             await foreach (SizeNode node in _queue.Reader.ReadAllAsync(cancel).ConfigureAwait(false))
             {
+                if (_options.Gate?.Defer(node.Path, () => _queue.Writer.TryWrite(node)) == true) continue;
                 Measure(node, subfolders, cancel);
             }
         }

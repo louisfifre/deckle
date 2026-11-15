@@ -659,10 +659,12 @@ _Generated from `git ls-files` — do not edit by hand._
 │   │   ├── App.ParagraphRewrite.cs
 │   │   ├── App.PrecisionScroll.cs
 │   │   ├── App.Relocate.cs
+│   │   ├── App.SelfCheck.Atelier.AddedFolders.cs
 │   │   ├── App.SelfCheck.Atelier.cs
 │   │   ├── App.SelfCheck.Atelier.FolderIcons.cs
 │   │   ├── App.SelfCheck.Atelier.Map.cs
 │   │   ├── App.SelfCheck.Atelier.Photos.cs
+│   │   ├── App.SelfCheck.Atelier.Search.cs
 │   │   ├── App.SelfCheck.Atelier.Sizes.cs
 │   │   ├── App.SelfCheck.cs
 │   │   ├── App.SelfCheck.Diagnostics.cs
@@ -718,7 +720,9 @@ _Generated from `git ls-files` — do not edit by hand._
 │   ├── Deckle.Atelier/
 │   │   ├── AddedFolders/
 │   │   │   ├── AddedFolder.cs
+│   │   │   ├── AddedFolderReach.cs
 │   │   │   ├── AddedFolderStore.cs
+│   │   │   ├── DeckleAtelierSource.AddedFolders.cs
 │   │   │   └── FolderIconRule.cs
 │   │   ├── Browsing/
 │   │   │   ├── AddressResolver.cs
@@ -781,21 +785,31 @@ _Generated from `git ls-files` — do not edit by hand._
 │   │   │   ├── SampleFolder.cs
 │   │   │   ├── SamplePhotos.cs
 │   │   │   └── SizesSample.cs
+│   │   ├── Search/
+│   │   │   ├── DeckleAtelierSource.Search.cs
+│   │   │   ├── ICommandPaletteProbe.cs
+│   │   │   ├── PackagedCommandPaletteProbe.cs
+│   │   │   ├── PowerToysInstallPage.cs
+│   │   │   └── SearchRouting.cs
 │   │   ├── Sizes/
 │   │   │   ├── FolderReader.cs
 │   │   │   ├── HeaviestFiles.cs
 │   │   │   ├── HeavyFile.cs
 │   │   │   ├── ScanCounters.cs
+│   │   │   ├── SizeAnalysisMoment.cs
 │   │   │   ├── SizeNode.cs
 │   │   │   ├── SizeProgress.cs
 │   │   │   ├── SizeReport.cs
+│   │   │   ├── SizeReportReuse.cs
 │   │   │   ├── SizeScan.cs
+│   │   │   ├── SizeScanGate.cs
 │   │   │   └── SizeScanOptions.cs
 │   │   ├── Deckle.Atelier.csproj
 │   │   └── DeckleAtelierSource.cs
 │   ├── Deckle.Atelier.Views/
 │   │   ├── Address/
 │   │   │   ├── AddressBar.Icon.cs
+│   │   │   ├── AddressBar.SegmentWidth.cs
 │   │   │   ├── AddressBar.xaml
 │   │   │   ├── AddressBar.xaml.cs
 │   │   │   └── AddressCrumb.cs
@@ -804,6 +818,8 @@ _Generated from `git ls-files` — do not edit by hand._
 │   │   ├── Icons/
 │   │   │   ├── IFileIconProvider.cs
 │   │   │   └── ShellFileIconProvider.cs
+│   │   ├── Search/
+│   │   │   └── AtelierWindow.Search.cs
 │   │   ├── Strings/
 │   │   │   └── en-US/
 │   │   │       └── Resources.resw
@@ -849,6 +865,7 @@ _Generated from `git ls-files` — do not edit by hand._
 │   │   │   │   ├── SizeRow.cs
 │   │   │   │   ├── SizesPanel.xaml
 │   │   │   │   ├── SizesPanel.xaml.cs
+│   │   │   │   ├── SizesReview.cs
 │   │   │   │   ├── SizesTool.cs
 │   │   │   │   ├── SizesView.xaml
 │   │   │   │   └── SizesView.xaml.cs
@@ -2447,6 +2464,9 @@ _Generated from `git ls-files` — do not edit by hand._
 │   │   ├── Recycling/
 │   │   │   ├── RecycleOutcomeTests.cs
 │   │   │   └── ShellRecycleBinTests.cs
+│   │   ├── Search/
+│   │   │   ├── PackagedCommandPaletteProbeTests.cs
+│   │   │   └── SearchRoutingTests.cs
 │   │   ├── AddedFolderStoreTests.cs
 │   │   ├── AddressResolverTests.cs
 │   │   ├── AtelierEventIdBugNotes.md
@@ -2467,7 +2487,11 @@ _Generated from `git ls-files` — do not edit by hand._
 │   │   ├── NavigationHistoryTests.cs
 │   │   ├── PathRulesTests.cs
 │   │   ├── ScratchFolder.cs
+│   │   ├── SizeAnalysisMomentTests.cs
+│   │   ├── SizeReportReuseTests.cs
+│   │   ├── SizesBugNotes.md
 │   │   ├── SizeScanEventsTests.cs
+│   │   ├── SizeScanGateTests.cs
 │   │   ├── SizeScanTests.cs
 │   │   ├── SizesSampleTests.cs
 │   │   ├── WindowShortcutBugNotes.md

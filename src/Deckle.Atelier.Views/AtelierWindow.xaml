@@ -69,7 +69,11 @@
                 <Grid Margin="4,0,0,0" ColumnSpacing="4">
                     <Grid.ColumnDefinitions>
                         <ColumnDefinition Width="Auto" />
-                        <ColumnDefinition Width="*" MinWidth="160" />
+                        <!-- The address bar's floor is its icon and a few
+                             letters: at the window's minimum width, with the
+                             active tool's name shown, a larger one pushed the
+                             tools and search out of the row. -->
+                        <ColumnDefinition Width="*" MinWidth="96" />
                         <ColumnDefinition Width="Auto" />
                         <ColumnDefinition Width="Auto" />
                     </Grid.ColumnDefinitions>
@@ -103,8 +107,30 @@
                         </StackPanel.Resources>
                     </StackPanel>
 
-                    <Button x:Name="SearchButton" Grid.Column="3" Style="{StaticResource SubtleButtonStyle}" Width="36" Height="32" Padding="0" Margin="0,0,4,0">
+                    <!-- Search goes through PowerToys Command Palette (spec,
+                         Search). A click asks whether it is installed, then
+                         opens the small panel under the button (12.13, Open
+                         9): absent, it says so and offers PowerToys' page;
+                         present, it gives the palette's shortcut. -->
+                    <Button x:Name="SearchButton" Grid.Column="3" Style="{StaticResource SubtleButtonStyle}" Width="36" Height="32" Padding="0" Margin="0,0,4,0" Click="OnSearchClick">
                         <FontIcon Glyph="&#xE721;" FontSize="16" />
+                        <FlyoutBase.AttachedFlyout>
+                            <Flyout x:Name="SearchFlyout" Placement="BottomEdgeAlignedRight">
+                                <Grid MaxWidth="320">
+                                    <StackPanel x:Name="SearchAbsentPanel" Spacing="12">
+                                        <StackPanel Spacing="4">
+                                            <TextBlock x:Uid="SearchAbsentTitle" Style="{StaticResource BodyStrongTextBlockStyle}" TextWrapping="Wrap" />
+                                            <TextBlock x:Uid="SearchAbsentBody" TextWrapping="Wrap" />
+                                        </StackPanel>
+                                        <StackPanel Orientation="Horizontal" Spacing="8" HorizontalAlignment="Right">
+                                            <Button x:Uid="SearchInstallPowerToys" Style="{StaticResource AccentButtonStyle}" Click="OnInstallPowerToysClick" />
+                                            <Button x:Uid="SearchLater" Click="OnSearchLaterClick" />
+                                        </StackPanel>
+                                    </StackPanel>
+                                    <TextBlock x:Name="SearchPresentText" x:Uid="SearchInCommandPalette" TextWrapping="Wrap" Visibility="Collapsed" />
+                                </Grid>
+                            </Flyout>
+                        </FlyoutBase.AttachedFlyout>
                     </Button>
                 </Grid>
             </TitleBar.Content>
