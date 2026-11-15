@@ -24,7 +24,6 @@ internal sealed partial class CategoryRow : UserControl
         InitializeComponent();
 
         TrimmedTextToolTip.Attach(NameText);
-        TrimmedTextToolTip.Attach(PathText);
         ToolTipService.SetToolTip(Grip, ProjectsText.Get("Category_Grip"));
 
         PointerEntered += (_, _) => VisualStateManager.GoToState(this, "PointerOver", true);
@@ -60,7 +59,8 @@ internal sealed partial class CategoryRow : UserControl
 
         string name = project.DisplayName;
         NameText.Text = name;
-        PathText.Text = project.Path;
+        PathText.Text = PathDisplay.Shorten(project.Path);
+        ToolTipService.SetToolTip(PathText, project.Path);
         MetaText.Text = CardMeta.Text(_context.Workspace.Readings.Get(ProjectId));
 
         AutomationProperties.SetName(this, name);

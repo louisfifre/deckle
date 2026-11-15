@@ -9,8 +9,10 @@
          while the action runs, the warning glyph in the critical colour on a
          failure. A note under the words says the action ran in the Windows
          console because Windows Terminal was missing. The words sit in a star
-         column, so in a narrow card they wrap instead of running under the
-         button beside them. -->
+         column and stay on one line: a state that wraps ("Running · 1" over
+         "min 12 s") reads worse than one that is trimmed, and the card is kept
+         wide enough (see PinnedActionsSection) that the usual states fit. The
+         ring is centred on that one line. -->
     <Grid RowSpacing="2">
         <Grid.RowDefinitions>
             <RowDefinition Height="Auto" />
@@ -40,7 +42,8 @@
                    Grid.Column="2"
                    Style="{StaticResource CaptionTextBlockStyle}"
                    Foreground="{ThemeResource TextFillColorSecondaryBrush}"
-                   TextWrapping="Wrap"
+                   TextWrapping="NoWrap"
+                   TextTrimming="CharacterEllipsis"
                    VerticalAlignment="Center" />
         <TextBlock x:Name="NoteText"
                    Grid.Row="1"

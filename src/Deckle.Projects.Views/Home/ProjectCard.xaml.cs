@@ -98,7 +98,14 @@ internal sealed partial class ProjectCard : UserControl
                 + "<Setter Property=\"Background\" Value=\"{ThemeResource SolidBackgroundFillColorQuarternaryBrush}\" /></Style>");
         }
         if (at is { } position) menu.ShowAt(anchor, new FlyoutShowOptions { Position = position });
-        else menu.ShowAt(anchor);
+        else
+        {
+            // Under the button and flush with its right edge, as the Mail and
+            // Settings overflow menus open. Left to Auto, the flyout chose to
+            // open upward and covered the card it belongs to. The system still
+            // flips it above when there is no room below.
+            menu.ShowAt(anchor, new FlyoutShowOptions { Placement = FlyoutPlacementMode.BottomEdgeAlignedRight });
+        }
     }
 
     private void OnContextRequested(UIElement sender, ContextRequestedEventArgs args)

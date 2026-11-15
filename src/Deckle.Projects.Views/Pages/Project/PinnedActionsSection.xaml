@@ -44,7 +44,7 @@
         <ItemsRepeater x:Name="Cards">
             <ItemsRepeater.Layout>
                 <UniformGridLayout Orientation="Horizontal"
-                                   MinItemWidth="260"
+                                   MinItemWidth="340"
                                    MinItemHeight="112"
                                    MinColumnSpacing="12"
                                    MinRowSpacing="12"

@@ -2027,6 +2027,7 @@ _Generated from `git ls-files` — do not edit by hand._
 │   │   │   ├── InlineNameEditor.cs
 │   │   │   ├── MainActionButton.cs
 │   │   │   ├── MainActionState.cs
+│   │   │   ├── PathDisplay.cs
 │   │   │   ├── ProjectDragData.cs
 │   │   │   ├── Themed.cs
 │   │   │   └── TrimmedTextToolTip.cs
