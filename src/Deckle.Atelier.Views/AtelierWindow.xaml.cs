@@ -93,7 +93,8 @@ public sealed partial class AtelierWindow : Window
         Label(BackButton, "Nav_Back");
         Label(ForwardButton, "Nav_Forward");
         Label(UpButton, "Nav_Up");
-        Label(RefreshButton, "Nav_Refresh");
+        // The active tool may say what Refresh does for it (AtelierWindow.Tools.cs).
+        SetRefreshLabel(null);
         Label(SearchButton, "Search");
         AutomationProperties.SetName(ToolButtons, AtelierText.Get("Tools_Group"));
         AutomationProperties.SetName(DetailsPanel, AtelierText.Get("Details_Panel"));

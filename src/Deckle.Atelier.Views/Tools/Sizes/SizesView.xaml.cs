@@ -17,12 +17,11 @@ namespace Deckle.Atelier.Views;
 // stops the scan, so no analysis runs for a list nobody looks at.
 //
 // When the disk is not read again. The window calls ShowAsync on navigation,
-// on a tool switch and on Refresh (F5) alike. A completed report already holds
-// its sub-folders' own reports (SizeReport.ForFolder), so going into one of
-// them, by a double-click or the address bar, reuses it. Coming back to this
-// tool on the same place reuses the report too: the view was unloaded in
-// between, which a Refresh never does, and that is how the two are told apart
-// without changing the tool seam. Refresh always measures again.
+// on a tool switch and on Refresh (F5) alike. A show of the place already on
+// screen is a Refresh unless the view was unloaded in between, which is coming
+// back to this tool: that is how the two are told apart without changing the
+// tool seam. SizeReportReuse decides from there: Refresh always measures again,
+// even after a stopped or failed analysis (SizesBugNotes.md).
 internal sealed partial class SizesView : UserControl, IAtelierToolView
 {
     // How often the list follows a running analysis: often enough to read as
@@ -44,6 +43,10 @@ internal sealed partial class SizesView : UserControl, IAtelierToolView
 
     private SizeScan? _scan;
     private bool _leftSinceShown;
+
+    // When an analysis of which place last ended, for Refresh's tooltip; it
+    // stays while a new analysis of the same place runs.
+    private (string Place, DateTimeOffset At)? _lastRun;
 
     // The heavy file picked in the panel, shown under its folder's row.
     private HeavyFile? _heavy;
@@ -68,6 +71,7 @@ internal sealed partial class SizesView : UserControl, IAtelierToolView
         AutomationProperties.SetName(Rows, AtelierText.Get("Tool_Sizes"));
         _panel.HeavyPicked += OnHeavyPicked;
         Unloaded += (_, _) => _leftSinceShown = true;
+        SizesReview.Register(host, this);
     }
 
     FrameworkElement IAtelierToolView.Content => this;
@@ -78,9 +82,10 @@ internal sealed partial class SizesView : UserControl, IAtelierToolView
         _leftSinceShown = false;
         _scan?.Cancel();
 
-        SizeReport? reuse = Reusable(place, cameBack);
         bool newPlace = _place is null || !FolderPaths.Comparer.Equals(_place.Path, place.Path);
+        SizeReport? reuse = SizeReportReuse.For(place.Path, refresh: !newPlace && !cameBack, _report, _measured);
         _place = place;
+        ShowRefreshLabel();
         if (newPlace)
         {
             _heavy = null;
@@ -97,7 +102,7 @@ internal sealed partial class SizesView : UserControl, IAtelierToolView
         // The panel is about the folder from the start and fills in as the
         // analysis goes (12.23).
         _host.Select(selection, _panel);
-        SizeScan scan = SizeScan.Start(place.Path);
+        SizeScan scan = SizeScan.Start(place.Path, new SizeScanOptions { Gate = SizesReview.GateFor(_host) });
         _scan = scan;
         using CancellationTokenRegistration stop = cancellation.Register(scan.Cancel);
         while (!scan.Completion.IsCompleted)
@@ -114,17 +119,11 @@ internal sealed partial class SizesView : UserControl, IAtelierToolView
         Show(report, progress: null);
     }
 
-    // A report that already says what this place weighs, or null to measure.
-    private SizeReport? Reusable(FolderPlace place, bool cameBack)
-    {
-        if (_report is { IsComplete: true } shown && FolderPaths.Comparer.Equals(shown.Place, place.Path))
-            return cameBack ? shown : null;
-        return _measured?.ForFolder(place.Path);
-    }
-
     private void Show(SizeReport report, SizeProgress? progress)
     {
         _report = report;
+        if (report.FinishedAt is { } at) _lastRun = (report.Place, at);
+        ShowRefreshLabel();
         ShowStatus(report, progress);
         ShowRows(report);
         _panel.Show(report, FolderPaths.DisplayName(report.Place));
@@ -139,18 +138,21 @@ internal sealed partial class SizesView : UserControl, IAtelierToolView
     {
         bool running = report.State == SizeScanState.Running;
         string total = EntryFormat.Size(report.TotalBytes, AtelierText.Culture);
-        ShareLine.Text = report.PlaceFailure != FolderListingFailure.None
+        ShareLine.Text = report.State == SizeScanState.Failed
             ? ""
             : AtelierText.Format(report.IsComplete ? "Sizes_Share_Total_Format" : "Sizes_Share_Measured_Format", total);
 
+        // Stopped, the line says how far the analysis got, as it said while it
+        // ran; the rows not measured keep their "…" (spec, Open 33).
         StateLine.Text = report.State switch
         {
             SizeScanState.Running when progress is { ChildFolders: >= 0 } p =>
                 AtelierText.Format("Sizes_Progress_Format", p.ChildFoldersMeasured, p.ChildFolders),
             SizeScanState.Running => AtelierText.Get("Sizes_Progress_Reading"),
+            SizeScanState.Cancelled when report.Folders.Count > 0 =>
+                AtelierText.Format("Sizes_Stopped_Format", report.MeasuredFolders, report.Folders.Count),
             SizeScanState.Cancelled => AtelierText.Get("Sizes_Stopped"),
-            SizeScanState.Completed when report.FinishedAt is { } at =>
-                AtelierText.Format("Sizes_Finished_Format", at.ToLocalTime().ToString("t", AtelierText.Culture)),
+            SizeScanState.Completed when report.FinishedAt is { } at => Moment(at, "Sizes_Finished_Format", "Sizes_Finished_Earlier_Format"),
             _ => "",
         };
 
@@ -191,10 +193,33 @@ internal sealed partial class SizesView : UserControl, IAtelierToolView
         Message.Visibility = message is null ? Visibility.Collapsed : Visibility.Visible;
     }
 
+    // "Analyser à nouveau (F5)", and beneath it when this place was last
+    // analysed (12.21).
+    private void ShowRefreshLabel()
+    {
+        string? detail = _lastRun is { } run && _place is not null && FolderPaths.Comparer.Equals(run.Place, _place.Path)
+            ? Moment(run.At, "Sizes_Refresh_Today_Format", "Sizes_Refresh_Earlier_Format")
+            : null;
+        _host.SetRefreshLabel(AtelierText.Get("Sizes_Refresh"), detail);
+    }
+
+    private static string Moment(DateTimeOffset at, string todayKey, string earlierKey)
+    {
+        SizeAnalysisMoment moment = SizeAnalysisMoment.Of(at.LocalDateTime, DateTime.Now, AtelierText.Culture);
+        return AtelierText.Format(moment.IsToday ? todayKey : earlierKey, moment.Text);
+    }
+
     // The rows of a report, in its order (heaviest first, a folder not measured
-    // yet last), with the picked heavy file under the row of its folder.
+    // yet last), with the picked heavy file under the row of its folder. An
+    // analysis that failed shows no row: what it read before the error is no
+    // size of anything, and its message stands alone.
     private void ShowRows(SizeReport report)
     {
+        if (report.State == SizeScanState.Failed)
+        {
+            Replace([]);
+            return;
+        }
         var wanted = new List<SizeRow>(report.Folders.Count + 2);
         string? heavyUnder = _heavy is null ? null : TopFolderOf(_heavy, report.Place);
 
@@ -378,4 +403,11 @@ internal sealed partial class SizesView : UserControl, IAtelierToolView
     // Stops the analysis and keeps what it measured (12.23); Refresh runs it
     // again.
     private void OnStopClick(object sender, RoutedEventArgs e) => _scan?.Cancel();
+
+    // What SizesReview reads and presses for the self-check.
+    internal SizeProgress? ProgressForReview => _scan?.Progress;
+
+    internal void StopForReview() => OnStopClick(StopButton, new RoutedEventArgs());
+
+    internal bool ShowsCompleteReportForReview => _scan is null && _report is { IsComplete: true };
 }

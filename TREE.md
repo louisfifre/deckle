@@ -865,6 +865,7 @@ _Generated from `git ls-files` — do not edit by hand._
 │   │   │   │   ├── SizeRow.cs
 │   │   │   │   ├── SizesPanel.xaml
 │   │   │   │   ├── SizesPanel.xaml.cs
+│   │   │   │   ├── SizesReview.cs
 │   │   │   │   ├── SizesTool.cs
 │   │   │   │   ├── SizesView.xaml
 │   │   │   │   └── SizesView.xaml.cs

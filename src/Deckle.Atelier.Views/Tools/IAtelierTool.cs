@@ -62,4 +62,11 @@ public interface IAtelierToolHost
     // Maps a path and a pixel size to the icon a list shows for it, or null
     // for the neutral glyph.
     IFileIconProvider Icons { get; }
+
+    // What the Refresh button says on hover and to a screen reader while this
+    // tool is active: what Refresh does here, and a second line beneath, or
+    // null for the window's own "Actualiser (F5)". A tool that never calls it
+    // keeps the window's; the window puts its own back each time it shows a
+    // tool, so a tool sets it again from ShowAsync.
+    void SetRefreshLabel(string? label, string? detail = null);
 }
