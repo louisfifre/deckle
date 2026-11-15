@@ -33,6 +33,7 @@ internal sealed class WithoutCategoryFold : UserControl
     private readonly Expander _expander;
     private readonly SectionHeaderLabel _label = new();
     private readonly StackPanel _body;
+    private bool _applying;
 
     public WithoutCategoryFold(ProjectsContext context, IProjectCardCommands commands, IReadOnlyList<ProjectEntry> projects)
     {
@@ -53,8 +54,16 @@ internal sealed class WithoutCategoryFold : UserControl
             Margin = new Thickness(-16, 0, 0, 0),
             Resources = Flat(),
         };
-        _expander.Expanding += (_, _) => IsOpen = true;
-        _expander.Collapsed += (_, _) => IsOpen = false;
+        // The person's toggle is written the moment IsExpanded changes, not when
+        // the Collapsed event ends the animation: a store change in between would
+        // otherwise re-apply the old value against the click. Apply's own writes
+        // are told apart by _applying, so nothing loops.
+        _expander.RegisterPropertyChangedCallback(Expander.IsExpandedProperty, (_, _) =>
+        {
+            if (_applying) return;
+            _context.WithoutCategoryOpen = _expander.IsExpanded;
+            _body.Visibility = IsOpen ? Visibility.Visible : Visibility.Collapsed;
+        });
 
         Cards = new ProjectGrid(context, commands);
 
@@ -104,6 +113,9 @@ internal sealed class WithoutCategoryFold : UserControl
             ["ExpanderContentDownBorderThickness"] = none,
             ["ExpanderContentUpBorderThickness"] = none,
             ["ExpanderContentPadding"] = none,
+            // The header's own minimum is 48; a category's header is 36, and the
+            // gap to what follows must be the same under both.
+            ["ExpanderMinHeight"] = 36.0,
             ["ExpanderChevronMargin"] = new Thickness(8, 0, 0, 0),
         };
     }
@@ -131,7 +143,15 @@ internal sealed class WithoutCategoryFold : UserControl
 
     private void Apply()
     {
-        _expander.IsExpanded = IsOpen;
+        _applying = true;
+        try
+        {
+            if (_expander.IsExpanded != IsOpen) _expander.IsExpanded = IsOpen;
+        }
+        finally
+        {
+            _applying = false;
+        }
         _body.Visibility = IsOpen ? Visibility.Visible : Visibility.Collapsed;
     }
 }
