@@ -26,6 +26,24 @@ public sealed class DeckleAtelierSourceTests
             [DeckleAtelierSource.EvtFolderAdded, DeckleAtelierSource.EvtFolderAddedDetail],
             listener.Events.Select(e => e.EventId));
         Assert.Equal(1, listener.Events[1].Payload?[0]);
+        Assert.Equal("Photos", listener.Events[1].Payload?[1]);
+    }
+
+    [Fact]
+    public void ChangingAnIconIsOneMilestoneThenTheChoiceWithoutThePath()
+    {
+        using var scratch = new ScratchFolder();
+        var store = new AddedFolderStore(scratch.Folder("data"));
+        string folder = scratch.Folder("A");
+        store.Add(folder);
+        using var listener = new TestEventListener("Deckle-Atelier");
+
+        store.ChangeIcon(folder, new Deckle.Core.IconChoice(Deckle.Core.IconSymbol.Home, Deckle.Core.IconTint.Purple, true));
+
+        Assert.Equal(
+            [DeckleAtelierSource.EvtFolderIconChanged, DeckleAtelierSource.EvtFolderIconChangedDetail],
+            listener.Events.Select(e => e.EventId));
+        Assert.Equal(["Home", "Purple", true], listener.Events[1].Payload!);
     }
 
     [Fact]
