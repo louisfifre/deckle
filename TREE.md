@@ -772,6 +772,8 @@ _Generated from `git ls-files` — do not edit by hand._
 │   │   │   ├── PhotoDescription.cs
 │   │   │   ├── PhotoDescriptionModelChoice.cs
 │   │   │   ├── PhotoDescriptionPrompt.cs
+│   │   │   ├── PhotoDescriptionQueue.cs
+│   │   │   ├── PhotoDescriptionRun.cs
 │   │   │   ├── PhotoDescriptionStore.cs
 │   │   │   ├── PhotoFolder.cs
 │   │   │   ├── PhotoFormats.cs
@@ -2452,6 +2454,8 @@ _Generated from `git ls-files` — do not edit by hand._
 │   │   │   ├── ExifSample.cs
 │   │   │   ├── MarksApplierTests.cs
 │   │   │   ├── PhotoDescriberTests.cs
+│   │   │   ├── PhotoDescriptionEventsTests.cs
+│   │   │   ├── PhotoDescriptionQueueTests.cs
 │   │   │   ├── PhotoDescriptionStoreTests.cs
 │   │   │   ├── PhotoFolderTests.cs
 │   │   │   ├── PhotoMarkStoreTests.cs
