@@ -659,6 +659,7 @@ _Generated from `git ls-files` — do not edit by hand._
 │   │   ├── App.ParagraphRewrite.cs
 │   │   ├── App.PrecisionScroll.cs
 │   │   ├── App.Relocate.cs
+│   │   ├── App.SelfCheck.Atelier.AddedFolders.cs
 │   │   ├── App.SelfCheck.Atelier.cs
 │   │   ├── App.SelfCheck.Atelier.FolderIcons.cs
 │   │   ├── App.SelfCheck.Atelier.Map.cs

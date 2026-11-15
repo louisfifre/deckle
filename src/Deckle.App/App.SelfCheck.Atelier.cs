@@ -110,5 +110,6 @@ public partial class App
         });
 
         if (loaded) await WalkAtelierFolderIconsAsync(report, run, outputFolder, step, window, sample, gate);
+        if (loaded) await WalkAtelierAddedFoldersAsync(report, run, outputFolder, step, window, sample, gate);
     }
 }
