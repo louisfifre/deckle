@@ -2050,8 +2050,25 @@ _Generated from `git ls-files` — do not edit by hand._
 │   │   │   │   ├── CategoryRow.xaml
 │   │   │   │   └── CategoryRow.xaml.cs
 │   │   │   └── Project/
+│   │   │       ├── NoScriptMenuNotice.xaml
+│   │   │       ├── NoScriptMenuNotice.xaml.cs
+│   │   │       ├── OpenInRow.xaml
+│   │   │       ├── OpenInRow.xaml.cs
+│   │   │       ├── PinActionFlyout.cs
+│   │   │       ├── PinnedActionCard.xaml
+│   │   │       ├── PinnedActionCard.xaml.cs
+│   │   │       ├── PinnedActionsSection.xaml
+│   │   │       ├── PinnedActionsSection.xaml.cs
 │   │   │       ├── ProjectPage.xaml
-│   │   │       └── ProjectPage.xaml.cs
+│   │   │       ├── ProjectPage.xaml.cs
+│   │   │       ├── ReadoutsRow.xaml
+│   │   │       ├── ReadoutsRow.xaml.cs
+│   │   │       ├── ReadoutText.cs
+│   │   │       ├── RunLineView.xaml
+│   │   │       ├── RunLineView.xaml.cs
+│   │   │       ├── ScriptMenuErrorNotice.cs
+│   │   │       ├── VersionsFlyout.cs
+│   │   │       └── WrapRow.cs
 │   │   ├── Strings/
 │   │   │   └── en-US/
 │   │   │       └── Resources.resw

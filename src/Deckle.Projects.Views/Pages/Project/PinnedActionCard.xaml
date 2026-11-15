@@ -1,0 +1,59 @@
+<UserControl
+    x:Class="Deckle.Projects.Views.PinnedActionCard"
+    xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+    xmlns:local="using:Deckle.Projects.Views"
+    HorizontalContentAlignment="Stretch">
+
+    <!-- One pinned action (boards P1, P3): the menu's label, the script's file
+         name with its variant, and a footer with the state line and the button.
+         The card is a surface and only its button acts: the action starts from
+         "Run", never from a click on the card, so a stray click cannot start a
+         build. Same card brushes and corner as Home's cards. -->
+    <Grid x:Name="Root"
+          MinHeight="112"
+          Padding="16"
+          RowSpacing="2"
+          Background="{ThemeResource CardBackgroundFillColorDefaultBrush}"
+          BorderBrush="{ThemeResource CardStrokeColorDefaultBrush}"
+          BorderThickness="1"
+          CornerRadius="{ThemeResource OverlayCornerRadius}">
+        <Grid.RowDefinitions>
+            <RowDefinition Height="Auto" />
+            <RowDefinition Height="Auto" />
+            <RowDefinition Height="*" />
+            <RowDefinition Height="Auto" />
+        </Grid.RowDefinitions>
+
+        <TextBlock x:Name="TitleText"
+                   Style="{StaticResource BodyStrongTextBlockStyle}"
+                   TextTrimming="CharacterEllipsis"
+                   TextWrapping="NoWrap" />
+
+        <TextBlock x:Name="DetailText"
+                   Grid.Row="1"
+                   Style="{StaticResource CaptionTextBlockStyle}"
+                   Foreground="{ThemeResource TextFillColorTertiaryBrush}"
+                   TextTrimming="CharacterEllipsis"
+                   TextWrapping="NoWrap" />
+
+        <Grid Grid.Row="3" ColumnSpacing="8" MinHeight="32">
+            <Grid.ColumnDefinitions>
+                <ColumnDefinition Width="*" />
+                <ColumnDefinition Width="Auto" />
+            </Grid.ColumnDefinitions>
+
+            <local:RunLineView x:Name="Line" VerticalAlignment="Center" />
+
+            <Button x:Name="ActionButton"
+                    Grid.Column="1"
+                    VerticalAlignment="Center"
+                    Click="OnActionClick">
+                <StackPanel Orientation="Horizontal" Spacing="8">
+                    <FontIcon x:Name="ActionIcon" FontSize="14" />
+                    <TextBlock x:Name="ActionLabel" />
+                </StackPanel>
+            </Button>
+        </Grid>
+    </Grid>
+</UserControl>

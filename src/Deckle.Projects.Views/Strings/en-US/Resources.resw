@@ -91,6 +91,11 @@
   <data name="Project_OpenInExplorer" xml:space="preserve"><value>File Explorer</value></data>
   <data name="Project_OpenInTerminal" xml:space="preserve"><value>Terminal</value></data>
   <data name="Project_Missing" xml:space="preserve"><value>This folder was not found.</value></data>
+  <data name="Project_VersionFoundOne" xml:space="preserve"><value>1 version found</value></data>
+  <data name="Project_VersionInfo" xml:space="preserve"><value>Where the versions come from</value></data>
+  <data name="Project_Unknown" xml:space="preserve"><value>—</value></data>
+  <data name="Project_TokensFloor" xml:space="preserve"><value>The folder is large, so this counts only what was read before the map stopped.</value></data>
+  <data name="Project_OpenInHost_Format" xml:space="preserve"><value>Open the project's page on {0}</value></data>
 
   <!-- ## Pinned actions -->
   <data name="Pinned_Title" xml:space="preserve"><value>Pinned actions</value></data>
@@ -105,4 +110,12 @@
   <data name="Pinned_FlyoutEmpty" xml:space="preserve"><value>The script menu has no action to pin.</value></data>
   <data name="Pinned_FlyoutPin" xml:space="preserve"><value>Pin</value></data>
   <data name="Pinned_FlyoutMain" xml:space="preserve"><value>Main</value></data>
+  <data name="Pinned_NoShell" xml:space="preserve"><value>PowerShell was not found on this machine, so actions cannot run.</value></data>
+  <data name="Pinned_FlyoutReading" xml:space="preserve"><value>Reading the script menu…</value></data>
+  <data name="Pinned_FlyoutGone" xml:space="preserve"><value>No longer in the script menu</value></data>
+  <data name="Pinned_FlyoutPin_Format" xml:space="preserve"><value>Pin {0}</value></data>
+  <data name="Pinned_FlyoutMain_Format" xml:space="preserve"><value>Make {0} the main action</value></data>
+  <data name="Pinned_FlyoutMainHint" xml:space="preserve"><value>The main action sits in the page's header and on the project's card on Home.</value></data>
+  <data name="Pinned_RunNamed_Format" xml:space="preserve"><value>Run {0}</value></data>
+  <data name="Pinned_ShowTerminalNamed_Format" xml:space="preserve"><value>Show the terminal of {0}</value></data>
 </root>
