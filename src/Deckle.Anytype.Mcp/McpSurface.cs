@@ -47,7 +47,7 @@ public sealed record McpSurfaceDescriptor(string Name, string Title, string Inst
         + "report's journal and the task's checklist before the next action, and "
         + "trust them where they differ from the summary. Reads are typed and "
         + "named by what they return (task_properties, task_checklist, task_notes, "
-        + "project_overview, epic_properties, report_journal, idea_text, document_outline, "
+        + "task_reports, orchestration_overview, project_overview, epic_properties, report_journal, idea_text, document_outline, "
         + "document_section); each answers with the object id first. They accept "
         + "words, not only an exact name or an id: an exact name wins, else a "
         + "single match wins, else the candidates are listed. So a typed read given "
