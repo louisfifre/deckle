@@ -784,6 +784,12 @@ _Generated from `git ls-files` — do not edit by hand._
 │   │   │   ├── SampleFolder.cs
 │   │   │   ├── SamplePhotos.cs
 │   │   │   └── SizesSample.cs
+│   │   ├── Search/
+│   │   │   ├── DeckleAtelierSource.Search.cs
+│   │   │   ├── ICommandPaletteProbe.cs
+│   │   │   ├── PackagedCommandPaletteProbe.cs
+│   │   │   ├── PowerToysInstallPage.cs
+│   │   │   └── SearchRouting.cs
 │   │   ├── Sizes/
 │   │   │   ├── FolderReader.cs
 │   │   │   ├── HeaviestFiles.cs
@@ -2451,6 +2457,9 @@ _Generated from `git ls-files` — do not edit by hand._
 │   │   ├── Recycling/
 │   │   │   ├── RecycleOutcomeTests.cs
 │   │   │   └── ShellRecycleBinTests.cs
+│   │   ├── Search/
+│   │   │   ├── PackagedCommandPaletteProbeTests.cs
+│   │   │   └── SearchRoutingTests.cs
 │   │   ├── AddedFolderStoreTests.cs
 │   │   ├── AddressResolverTests.cs
 │   │   ├── AtelierEventIdBugNotes.md
