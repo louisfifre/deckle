@@ -22,8 +22,10 @@ public enum RemoveOutcome
 // self-check and the tests inject (a clock, a terminal, the links, the reader of
 // folders) go through the constructor; none of them is a setting.
 //
-// Closing the window disposes the workspace, which stops watching the actions
-// and nothing else: an action lives in its terminal (spec, Behaviours).
+// The app holds one workspace for its lifetime and gives it to each window it
+// opens, so the run board survives a window closing. Disposing it (when Deckle
+// closes) stops watching the actions and nothing else: an action lives in its
+// terminal (spec, Behaviours).
 public sealed class ProjectsWorkspace : IDisposable
 {
     public ProjectsWorkspace(
