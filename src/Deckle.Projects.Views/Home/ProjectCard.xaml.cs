@@ -29,6 +29,13 @@ internal sealed partial class ProjectCard : UserControl
 
         TrimmedTextToolTip.Attach(NameText);
 
+        // A press on one of the two buttons is theirs (a button handles its
+        // own press), so only a press on the card itself shows the card pressed.
+        PointerPressed += (_, e) =>
+        {
+            if (e.GetCurrentPoint(this).Properties.IsLeftButtonPressed) VisualStateManager.GoToState(this, "Pressed", true);
+        };
+        PointerReleased += (_, _) => VisualStateManager.GoToState(this, "PointerOver", true);
         PointerEntered += (_, _) => VisualStateManager.GoToState(this, "PointerOver", true);
         PointerExited += (_, _) => VisualStateManager.GoToState(this, "Normal", true);
         PointerCanceled += (_, _) => VisualStateManager.GoToState(this, "Normal", true);
@@ -126,7 +133,30 @@ internal sealed partial class ProjectCard : UserControl
     private void OnTapped(object sender, TappedRoutedEventArgs e)
     {
         if (IsWithin(e.OriginalSource, MoreButton) || IsWithin(e.OriginalSource, MainAction)) return;
-        _context.Navigate(new ProjectsTarget.Project(ProjectId));
+        Open();
+    }
+
+    // What a click, Enter, Space and a screen reader's "invoke" all do.
+    private void Open() => _context.Navigate(new ProjectsTarget.Project(ProjectId));
+
+    // The card is a button to Narrator and Voice Access: they can name it and
+    // invoke it, which a plain UserControl does not offer. Its two real buttons
+    // stay reachable inside it.
+    protected override Microsoft.UI.Xaml.Automation.Peers.AutomationPeer OnCreateAutomationPeer() => new CardPeer(this);
+
+    private sealed class CardPeer(ProjectCard owner)
+        : Microsoft.UI.Xaml.Automation.Peers.FrameworkElementAutomationPeer(owner),
+          Microsoft.UI.Xaml.Automation.Provider.IInvokeProvider
+    {
+        protected override string GetClassNameCore() => nameof(ProjectCard);
+
+        protected override Microsoft.UI.Xaml.Automation.Peers.AutomationControlType GetAutomationControlTypeCore() =>
+            Microsoft.UI.Xaml.Automation.Peers.AutomationControlType.Button;
+
+        protected override object? GetPatternCore(Microsoft.UI.Xaml.Automation.Peers.PatternInterface pattern) =>
+            pattern == Microsoft.UI.Xaml.Automation.Peers.PatternInterface.Invoke ? this : base.GetPatternCore(pattern);
+
+        public void Invoke() => owner.Open();
     }
 
     // Enter and Space on the card itself, as on a button.
@@ -136,7 +166,7 @@ internal sealed partial class ProjectCard : UserControl
         if (e.Key is VirtualKey.Enter or VirtualKey.Space)
         {
             e.Handled = true;
-            _context.Navigate(new ProjectsTarget.Project(ProjectId));
+            Open();
         }
     }
 

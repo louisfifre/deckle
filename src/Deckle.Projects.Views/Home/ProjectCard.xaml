@@ -5,6 +5,7 @@
     xmlns:local="using:Deckle.Projects.Views"
     IsTabStop="True"
     UseSystemFocusVisuals="True"
+    CornerRadius="{ThemeResource OverlayCornerRadius}"
     HorizontalContentAlignment="Stretch">
 
     <!-- One card per project (board H1): the name with its "..." button, one
@@ -28,6 +29,11 @@
                 <VisualState x:Name="PointerOver">
                     <VisualState.Setters>
                         <Setter Target="Root.Background" Value="{ThemeResource ControlFillColorSecondaryBrush}" />
+                    </VisualState.Setters>
+                </VisualState>
+                <VisualState x:Name="Pressed">
+                    <VisualState.Setters>
+                        <Setter Target="Root.Background" Value="{ThemeResource ControlFillColorTertiaryBrush}" />
                     </VisualState.Setters>
                 </VisualState>
             </VisualStateGroup>
