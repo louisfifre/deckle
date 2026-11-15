@@ -2014,10 +2014,21 @@ _Generated from `git ls-files` — do not edit by hand._
 │   │   ├── Deckle.Projects.csproj
 │   │   └── DeckleProjectsSource.cs
 │   ├── Deckle.Projects.Views/
+│   │   ├── Controls/
+│   │   │   ├── Breadcrumb.cs
+│   │   │   ├── CategoryDropTarget.cs
+│   │   │   ├── InlineNameEditor.cs
+│   │   │   ├── MainActionButton.cs
+│   │   │   ├── MainActionState.cs
+│   │   │   ├── ProjectDragData.cs
+│   │   │   └── TrimmedTextToolTip.cs
 │   │   ├── Strings/
 │   │   │   └── en-US/
 │   │   │       └── Resources.resw
 │   │   ├── Deckle.Projects.Views.csproj
+│   │   ├── IProjectsHost.cs
+│   │   ├── IProjectsPage.cs
+│   │   ├── ProjectsContext.cs
 │   │   ├── ProjectsGlyphs.cs
 │   │   ├── ProjectsText.cs
 │   │   └── ProjectStoreExtensions.cs
