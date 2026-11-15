@@ -75,13 +75,28 @@ internal sealed partial class ProjectCard : UserControl
     }
 
     // Opens the menu under "...", as pressing the button does; what the
-    // self-check calls to photograph board H3.
-    public void ShowMenuForReview() => ShowMenu(MoreButton, null);
+    // self-check calls to photograph board H3. A menu a person opens may leave
+    // the window's edge, in a window of its own that a capture of this window
+    // does not see (and that the self-check's guard takes for a window on a
+    // monitor). The review's menu is kept inside the window, as the Mail
+    // window's capture steps do.
+    public void ShowMenuForReview() => ShowMenu(MoreButton, null, constrainToWindow: true);
 
-    private void ShowMenu(FrameworkElement anchor, Windows.Foundation.Point? at)
+    private void ShowMenu(FrameworkElement anchor, Windows.Foundation.Point? at, bool constrainToWindow = false)
     {
         if (_context.Store.Find(ProjectId) is not { } project) return;
         MenuFlyout menu = ProjectCardMenu.Build(_context, project, _commands);
+        if (constrainToWindow)
+        {
+            menu.ShouldConstrainToRootBounds = true;
+            // Inside the window the menu's acrylic has nothing to blur, so the
+            // page shows through it and the words overlap. The review's menu
+            // takes the solid fill acrylic falls back to.
+            menu.MenuFlyoutPresenterStyle = (Style)Microsoft.UI.Xaml.Markup.XamlReader.Load(
+                "<Style xmlns=\"http://schemas.microsoft.com/winfx/2006/xaml/presentation\" TargetType=\"MenuFlyoutPresenter\" "
+                + "BasedOn=\"{StaticResource DefaultMenuFlyoutPresenterStyle}\">"
+                + "<Setter Property=\"Background\" Value=\"{ThemeResource SolidBackgroundFillColorQuarternaryBrush}\" /></Style>");
+        }
         if (at is { } position) menu.ShowAt(anchor, new FlyoutShowOptions { Position = position });
         else menu.ShowAt(anchor);
     }
