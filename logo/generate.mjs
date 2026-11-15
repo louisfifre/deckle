@@ -97,17 +97,17 @@ const FLAT = { tip: [515, 971], bottom: 22, rApex: 14, rEnd: 22 };
 // and rounder corners, so the mark stays open when it is a few pixels wide.
 const FORMS = {
   normal: {
-    gap: 34, tipRadius: 3,
+    gap: 44, tipRadius: 3,
     front: { ...FRONT, top: [395, 620], right: 92, rTL: 22, rTR: 22, rBL: 10 },
     rear: [
       { id: 'b', left: line([440, 470], 80), top: [570, 455], right: vertical(668), tip: [496, 955], bottom: 62, rTL: 30, rTR: 34, rBR: 30 },
-      { id: 'a', ...BACK, top: [728.5, 400], tip: [506, 964] }],
+      { id: 'a', ...BACK, tip: [506, 964] }],
     flat: { ...FLAT, rApex: 18, rEnd: 28 },
   },
   small: {
     gap: 56, tipRadius: 4,
     front: { ...FRONT, top: [400, 560], right: 80, rTL: 30, rTR: 30, rBL: 12 },
-    rear: [{ id: 'a', ...BACK, top: [728.5, 400], left: line([520, 360], 76), tip: [504, 962], bottom: 42 }],
+    rear: [{ id: 'a', ...BACK, left: line([520, 360], 76), tip: [504, 962], bottom: 42 }],
     flat: { ...FLAT, rApex: 22, rEnd: 32 },
   },
   five: {
@@ -191,14 +191,13 @@ const STATES = { rest: [], recording: ['a'], rewriting: ['a', 'e'] };
 // --- Views ------------------------------------------------------------------
 
 // The square a mark is shown in: its own box, centred, with a thin margin, so it
-// takes all the pixels a 16 px tray icon has. With `shadow`, the margin also
-// holds the shadow's fall below the mark.
-function markView(blades, shadow = false) {
+// takes all the pixels a 16 px tray icon has. No room is kept for the shadow:
+// it would shrink the mark, and what the edge cuts of it is faint, under the tips.
+function markView(blades) {
   const pts = blades.flatMap(b => polygon(b.corners));
   const xs = pts.map(p => p[0]), ys = pts.map(p => p[1]);
   const x0 = Math.min(...xs), x1 = Math.max(...xs), y0 = Math.min(...ys), y1 = Math.max(...ys);
-  const fall = shadow ? SHADOW.dy + 2 * SHADOW.blur : 0;
-  const side = Math.max(x1 - x0, y1 - y0) * 1.03 + 2 * fall;
+  const side = Math.max(x1 - x0, y1 - y0) * 1.03;
   return { x: (x0 + x1 - side) / 2, y: (y0 + y1 - side) / 2, side };
 }
 
@@ -313,7 +312,7 @@ function raster(blades, litIds, size, { incident = false } = {}) {
     s.colour = lit(s, litIds.includes(b.id) ? emberColour : restColour);
     return s;
   });
-  const shadowed = size >= SHADOW_MIN_SIZE, view = markView(blades, shadowed);
+  const shadowed = size >= SHADOW_MIN_SIZE, view = markView(blades);
   if (incident) {
     // The dot sits in the top-left corner, the one the mark leaves empty.
     const c = [view.x + view.side * 0.125, view.y + view.side * 0.125], r = view.side * 0.115;
@@ -408,7 +407,7 @@ function sheet(forms) {
   const sizes = [16, 20, 24, 32, 48, 64, 128];
   const n = v => Math.round(v * 10) / 10;
   const symbols = Object.entries(forms).map(([name, blades]) => {
-    const v = markView(blades, true);
+    const v = markView(blades);
     return `<symbol id="${name}" viewBox="${n(v.x)} ${n(v.y)} ${n(v.side)} ${n(v.side)}"><g filter="url(#shadow)">`
       + blades.map(b => `<path class="${b.id}" d="${pathData(b.corners)}"/>`).join('') + `</g>`
       + blades.map(b => `<path class="sheen" d="${pathData(b.corners)}"/>`).join('') + `</symbol>`;
