@@ -7,13 +7,19 @@
 
     <!-- One project in a category's list (board C1): a dotted handle, the name
          over the full path, the same meta line as the card, and the main
-         action's button. The row draws only its content: the list's item
-         container around it (CategoryPage.xaml) paints the card fill and
-         stroke, the same corner radius as a card, and the hover, pressed and focus states. -->
+         action's button. The row paints its own card fill, stroke and corner
+         (the same as a Home card's): the list's item container draws a square
+         fill whatever corner radius it is given, so it is kept transparent
+         (CategoryPage.xaml) and only draws the focus. The hover and pressed
+         fills are the row's too, set from the pointer in the code. -->
     <Grid x:Name="Root"
           MinHeight="64"
           Padding="16,10,16,10"
-          ColumnSpacing="12">
+          ColumnSpacing="12"
+          Background="{ThemeResource CardBackgroundFillColorDefaultBrush}"
+          BorderBrush="{ThemeResource CardStrokeColorDefaultBrush}"
+          BorderThickness="1"
+          CornerRadius="{ThemeResource OverlayCornerRadius}">
 
         <!-- The last column has a fixed width so the buttons of different rows
              line up whatever sits beside them (WinUI has no shared column

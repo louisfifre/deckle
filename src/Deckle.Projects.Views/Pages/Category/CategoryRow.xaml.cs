@@ -9,7 +9,7 @@ namespace Deckle.Projects.Views;
 // A project's row on a category page (spec, Category page). Clicking it opens
 // the project's page (the list's ItemClick does that, so Enter and Space work
 // too); its button runs the main action; its handle is where a drag starts. The
-// list's item container around the row draws its fill, hover, pressed and focus.
+// list's item container around the row draws the focus only.
 //
 // The row draws what the workspace knows when Refresh is called and keeps
 // nothing subscribed: the page listens to the store, the readings and the
@@ -30,6 +30,16 @@ internal sealed partial class CategoryRow : UserControl
         // handledEventsToo: the list marks the press as handled when it starts
         // to track a drag, and the page still needs to know where it landed.
         AddHandler(PointerPressedEvent, new PointerEventHandler(OnPointerPressed), handledEventsToo: true);
+
+        // The fills of the row's states, in the control fills the Home cards use.
+        // Released and exited also come through handledEventsToo: the list may
+        // have marked the press as handled.
+        PointerEntered += (_, _) => Fill("ControlFillColorSecondaryBrush");
+        PointerExited += (_, _) => Fill(null);
+        AddHandler(PointerPressedEvent, new PointerEventHandler((_, _) => Fill("ControlFillColorTertiaryBrush")), handledEventsToo: true);
+        AddHandler(PointerReleasedEvent, new PointerEventHandler((_, _) => Fill("ControlFillColorSecondaryBrush")), handledEventsToo: true);
+        AddHandler(PointerCanceledEvent, new PointerEventHandler((_, _) => Fill(null)), handledEventsToo: true);
+        AddHandler(PointerCaptureLostEvent, new PointerEventHandler((_, _) => Fill(null)), handledEventsToo: true);
 
         MainAction.Invoked += () => _ = _context.RunMainActionAsync(ProjectId);
 
@@ -70,6 +80,11 @@ internal sealed partial class CategoryRow : UserControl
         MainAction.Visibility = action is null ? Visibility.Collapsed : Visibility.Visible;
         if (action is not null) MainAction.Apply(action);
     }
+
+    // The row's own fill: the card's at rest, or one of the control fills while
+    // the pointer is over or pressing it.
+    private void Fill(string? resource) =>
+        Root.Background = (Brush)Application.Current.Resources[resource ?? "CardBackgroundFillColorDefaultBrush"];
 
     private void OnPointerPressed(object sender, PointerRoutedEventArgs e) =>
         GripPressed = IsWithin(e.OriginalSource, Grip);

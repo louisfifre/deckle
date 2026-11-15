@@ -25,23 +25,19 @@
               DragItemsCompleted="OnDragItemsCompleted">
         <ListView.Resources>
             <ResourceDictionary>
-            <!-- The item template gives the presenter its corner from this
-                 resource, not from the container's CornerRadius, so the rows
-                 take the cards' corner here. -->
-            <StaticResource x:Key="ListViewItemCornerRadius" ResourceKey="OverlayCornerRadius" />
-            <!-- The list's own hover and pressed fills (the container draws
-                 them), in the control fills the Home cards use. -->
+            <!-- The item container draws a square fill whatever corner radius it
+                 is given, so the rows draw their own card (CategoryRow) and the
+                 container's fills are transparent: it keeps only the focus. -->
             <ResourceDictionary.ThemeDictionaries>
                 <ResourceDictionary x:Key="Default">
-                    <StaticResource x:Key="ListViewItemBackgroundPointerOver" ResourceKey="ControlFillColorSecondaryBrush" />
-                    <StaticResource x:Key="ListViewItemBackgroundPressed" ResourceKey="ControlFillColorTertiaryBrush" />
+                    <SolidColorBrush x:Key="ListViewItemBackgroundPointerOver" Color="Transparent" />
+                    <SolidColorBrush x:Key="ListViewItemBackgroundPressed" Color="Transparent" />
                 </ResourceDictionary>
                 <ResourceDictionary x:Key="HighContrast">
-                    <StaticResource x:Key="ListViewItemBackgroundPointerOver" ResourceKey="SystemColorHighlightColorBrush" />
-                    <StaticResource x:Key="ListViewItemBackgroundPressed" ResourceKey="SystemColorHighlightColorBrush" />
+                    <SolidColorBrush x:Key="ListViewItemBackgroundPointerOver" Color="Transparent" />
+                    <SolidColorBrush x:Key="ListViewItemBackgroundPressed" Color="Transparent" />
                 </ResourceDictionary>
-            </ResourceDictionary.ThemeDictionaries>
-            </ResourceDictionary>
+            </ResourceDictionary.ThemeDictionaries>            </ResourceDictionary>
         </ListView.Resources>
 
         <ListView.Header>
@@ -84,14 +80,8 @@
             <Style TargetType="ListViewItem">
                 <Setter Property="Padding" Value="0" />
                 <Setter Property="MinHeight" Value="0" />
-                <!-- The presenter draws its fill 4 px in from the container on
-                     each side; the margin takes that back so the rows run from
-                     the title's left edge to the page's right edge. -->
-                <Setter Property="Margin" Value="-4,1,-4,1" />
+                <Setter Property="Margin" Value="0,1,0,1" />
                 <Setter Property="HorizontalContentAlignment" Value="Stretch" />
-                <Setter Property="Background" Value="{ThemeResource CardBackgroundFillColorDefaultBrush}" />
-                <Setter Property="BorderBrush" Value="{ThemeResource CardStrokeColorDefaultBrush}" />
-                <Setter Property="BorderThickness" Value="1" />
             </Style>
         </ListView.ItemContainerStyle>
     </ListView>
