@@ -17,12 +17,12 @@ internal static class FileDetails
                 (AtelierText.Get("Details_Location"), System.IO.Path.GetDirectoryName(entry.Path)))
             .Element;
 
-    private static string Kind(FolderEntry entry)
+    // Also the first part of a large row's line (FileRow.Summary).
+    public static string Kind(FolderEntry entry)
     {
         if (entry.IsFolder) return AtelierText.Get("Kind_Folder");
-        string extension = System.IO.Path.GetExtension(entry.Name).TrimStart('.');
-        return extension.Length == 0
-            ? AtelierText.Get("Kind_File")
-            : AtelierText.Format("Kind_File_Format", extension.ToUpperInvariant());
+        return EntryFormat.TypeExtension(entry.Name) is { } extension
+            ? AtelierText.Format("Kind_File_Format", extension)
+            : AtelierText.Get("Kind_File");
     }
 }

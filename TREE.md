@@ -807,6 +807,7 @@ _Generated from `git ls-files` — do not edit by hand._
 │   │   │   ├── Files/
 │   │   │   │   ├── FileDetails.cs
 │   │   │   │   ├── FileRow.cs
+│   │   │   │   ├── FilesReview.cs
 │   │   │   │   ├── FilesTool.cs
 │   │   │   │   ├── FilesView.xaml
 │   │   │   │   └── FilesView.xaml.cs

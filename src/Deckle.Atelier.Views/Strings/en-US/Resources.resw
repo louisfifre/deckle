@@ -71,6 +71,7 @@
   <data name="Display_List" xml:space="preserve"><value>Liste</value></data>
   <data name="Display_LargeRows" xml:space="preserve"><value>Grandes lignes</value></data>
   <data name="Display_Gallery" xml:space="preserve"><value>Galerie</value></data>
+  <data name="Files_Summary_Separator" xml:space="preserve"><value> · </value></data>
 
   <!-- Details panel -->
   <data name="Details_Panel" xml:space="preserve"><value>Détails</value></data>
