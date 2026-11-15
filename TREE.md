@@ -2022,6 +2022,22 @@ _Generated from `git ls-files` — do not edit by hand._
 │   │   │   ├── MainActionState.cs
 │   │   │   ├── ProjectDragData.cs
 │   │   │   └── TrimmedTextToolTip.cs
+│   │   ├── Home/
+│   │   │   ├── CategoryHeader.cs
+│   │   │   ├── CategorySection.cs
+│   │   │   ├── HomeEmptyState.xaml
+│   │   │   ├── HomeEmptyState.xaml.cs
+│   │   │   ├── HomePage.Build.cs
+│   │   │   ├── HomePage.Commands.cs
+│   │   │   ├── HomePage.Review.cs
+│   │   │   ├── HomePage.xaml
+│   │   │   ├── HomePage.xaml.cs
+│   │   │   ├── MoreTile.cs
+│   │   │   ├── ProjectCard.xaml
+│   │   │   ├── ProjectCard.xaml.cs
+│   │   │   ├── ProjectCardMenu.cs
+│   │   │   ├── ProjectGrid.cs
+│   │   │   └── WithoutCategoryFold.cs
 │   │   ├── Strings/
 │   │   │   └── en-US/
 │   │   │       └── Resources.resw

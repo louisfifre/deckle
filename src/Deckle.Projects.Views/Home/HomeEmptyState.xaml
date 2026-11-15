@@ -1,0 +1,34 @@
+<UserControl
+    x:Class="Deckle.Projects.Views.HomeEmptyState"
+    xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml">
+
+    <!-- Before any project is added (board H0): what a project is, and the one
+         button that adds the first. This is the only screen where "Add a
+         project..." takes the accent colour, since there is nothing else to do
+         here. -->
+    <StackPanel HorizontalAlignment="Center"
+                VerticalAlignment="Center"
+                Spacing="16"
+                Padding="32">
+        <TextBlock x:Name="TitleText"
+                   Style="{StaticResource BodyLargeTextBlockStyle}"
+                   MaxWidth="520"
+                   TextAlignment="Center"
+                   TextWrapping="Wrap" />
+        <TextBlock x:Name="BodyText"
+                   MaxWidth="460"
+                   Foreground="{ThemeResource TextFillColorSecondaryBrush}"
+                   TextAlignment="Center"
+                   TextWrapping="Wrap" />
+        <Button x:Name="AddButton"
+                Style="{StaticResource AccentButtonStyle}"
+                HorizontalAlignment="Center"
+                Click="OnAddClick">
+            <StackPanel Orientation="Horizontal" Spacing="8">
+                <FontIcon Glyph="&#xE710;" FontSize="16" />
+                <TextBlock x:Name="AddLabel" />
+            </StackPanel>
+        </Button>
+    </StackPanel>
+</UserControl>

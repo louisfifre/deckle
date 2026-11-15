@@ -1,0 +1,79 @@
+<UserControl
+    x:Class="Deckle.Projects.Views.ProjectCard"
+    xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+    xmlns:local="using:Deckle.Projects.Views"
+    IsTabStop="True"
+    UseSystemFocusVisuals="True"
+    HorizontalContentAlignment="Stretch">
+
+    <!-- One card per project (board H1): the name with its "..." button, one
+         meta line, and a footer that holds the main action's button or stays
+         empty at the same height, so the cards of a row line up. No icon and
+         no path. The card is a surface, not a Button: it holds two buttons,
+         and a button inside a button is neither valid for the keyboard nor for
+         a screen reader. Its fill is the card brush; the hover is the control
+         fill File Explorer's and Settings' clickable cards use. -->
+    <Grid x:Name="Root"
+          MinHeight="120"
+          Padding="16,14,8,12"
+          RowSpacing="2"
+          Background="{ThemeResource CardBackgroundFillColorDefaultBrush}"
+          BorderBrush="{ThemeResource CardStrokeColorDefaultBrush}"
+          BorderThickness="1"
+          CornerRadius="{ThemeResource OverlayCornerRadius}">
+        <VisualStateManager.VisualStateGroups>
+            <VisualStateGroup x:Name="CommonStates">
+                <VisualState x:Name="Normal" />
+                <VisualState x:Name="PointerOver">
+                    <VisualState.Setters>
+                        <Setter Target="Root.Background" Value="{ThemeResource ControlFillColorSecondaryBrush}" />
+                    </VisualState.Setters>
+                </VisualState>
+            </VisualStateGroup>
+        </VisualStateManager.VisualStateGroups>
+
+        <Grid.RowDefinitions>
+            <RowDefinition Height="Auto" />
+            <RowDefinition Height="Auto" />
+            <RowDefinition Height="*" />
+            <RowDefinition Height="Auto" />
+        </Grid.RowDefinitions>
+
+        <Grid Grid.Row="0" ColumnSpacing="4">
+            <Grid.ColumnDefinitions>
+                <ColumnDefinition Width="*" />
+                <ColumnDefinition Width="Auto" />
+            </Grid.ColumnDefinitions>
+            <TextBlock x:Name="NameText"
+                       Style="{StaticResource BodyStrongTextBlockStyle}"
+                       VerticalAlignment="Center"
+                       TextTrimming="CharacterEllipsis"
+                       TextWrapping="NoWrap" />
+            <Button x:Name="MoreButton"
+                    Grid.Column="1"
+                    Style="{StaticResource SubtleButtonStyle}"
+                    Width="32"
+                    Height="32"
+                    Padding="0"
+                    VerticalAlignment="Center">
+                <FontIcon Glyph="&#xE712;" FontSize="16" />
+            </Button>
+        </Grid>
+
+        <TextBlock x:Name="MetaText"
+                   Grid.Row="1"
+                   Margin="0,0,8,0"
+                   Style="{StaticResource CaptionTextBlockStyle}"
+                   Foreground="{ThemeResource TextFillColorSecondaryBrush}"
+                   TextTrimming="CharacterEllipsis"
+                   TextWrapping="NoWrap" />
+
+        <Grid x:Name="Footer" Grid.Row="3" MinHeight="32">
+            <local:MainActionButton x:Name="MainAction"
+                                    HorizontalAlignment="Left"
+                                    VerticalAlignment="Center"
+                                    Visibility="Collapsed" />
+        </Grid>
+    </Grid>
+</UserControl>
