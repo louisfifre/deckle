@@ -1,12 +1,63 @@
 <Page
     x:Class="Deckle.Projects.Views.CategoryPage"
     xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
-    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml">
+    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+    xmlns:local="using:Deckle.Projects.Views">
 
-    <!-- A category's page (board C1). This is the skeleton the window step
-         leaves: the title and nothing else. The page step owns this file from
-         here and fills in the breadcrumb, the list of rows and the delete link. -->
-    <Grid Margin="56,12,56,40">
-        <TextBlock x:Name="TitleText" Style="{StaticResource TitleTextBlockStyle}" />
-    </Grid>
+    <!-- A category's page (board C1), top to bottom: the breadcrumb, the title,
+         the count line, the plain list, and the delete link. The whole page
+         scrolls, so the list itself does not (a category rarely holds more than
+         a screen, and two nested scrollers make a drag hard to aim). -->
+    <ScrollViewer VerticalScrollBarVisibility="Auto">
+        <StackPanel Margin="56,12,56,40" Spacing="24">
+
+            <StackPanel Spacing="4">
+                <ContentControl x:Name="BreadcrumbHost" HorizontalAlignment="Left" HorizontalContentAlignment="Left" />
+                <local:InlineNameEditor x:Name="TitleEditor" HorizontalAlignment="Left" />
+                <TextBlock x:Name="CountText"
+                           Style="{StaticResource CaptionTextBlockStyle}"
+                           Foreground="{ThemeResource TextFillColorTertiaryBrush}" />
+            </StackPanel>
+
+            <ListView x:Name="Rows"
+                      SelectionMode="None"
+                      IsItemClickEnabled="True"
+                      CanReorderItems="True"
+                      AllowDrop="True"
+                      ScrollViewer.VerticalScrollMode="Disabled"
+                      ScrollViewer.VerticalScrollBarVisibility="Disabled"
+                      ItemClick="OnRowClick"
+                      DragItemsStarting="OnDragItemsStarting"
+                      DragItemsCompleted="OnDragItemsCompleted">
+                <ListView.ItemContainerStyle>
+                    <Style TargetType="ListViewItem">
+                        <Setter Property="Padding" Value="0" />
+                        <Setter Property="MinHeight" Value="0" />
+                        <Setter Property="Margin" Value="0,1,0,1" />
+                        <Setter Property="HorizontalContentAlignment" Value="Stretch" />
+                        <Setter Property="Background" Value="Transparent" />
+                        <Setter Property="CornerRadius" Value="{ThemeResource ControlCornerRadius}" />
+                    </Style>
+                </ListView.ItemContainerStyle>
+            </ListView>
+
+            <TextBlock x:Name="EmptyText"
+                       Style="{StaticResource CaptionTextBlockStyle}"
+                       Foreground="{ThemeResource TextFillColorSecondaryBrush}"
+                       Visibility="Collapsed" />
+
+            <StackPanel Orientation="Horizontal" Spacing="8">
+                <HyperlinkButton x:Name="DeleteButton" Click="OnDeleteClick" Padding="0,4,8,4">
+                    <StackPanel Orientation="Horizontal" Spacing="8">
+                        <FontIcon Glyph="&#xE74D;" FontSize="16" />
+                        <TextBlock x:Name="DeleteLabel" />
+                    </StackPanel>
+                </HyperlinkButton>
+                <TextBlock x:Name="DeleteNote"
+                           VerticalAlignment="Center"
+                           Style="{StaticResource CaptionTextBlockStyle}"
+                           Foreground="{ThemeResource TextFillColorTertiaryBrush}" />
+            </StackPanel>
+        </StackPanel>
+    </ScrollViewer>
 </Page>

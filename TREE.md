@@ -2041,8 +2041,13 @@ _Generated from `git ls-files` — do not edit by hand._
 │   │   │   └── WithoutCategoryFold.cs
 │   │   ├── Pages/
 │   │   │   ├── Category/
+│   │   │   │   ├── CategoryPage.Delete.cs
+│   │   │   │   ├── CategoryPage.Reorder.cs
+│   │   │   │   ├── CategoryPage.Rows.cs
 │   │   │   │   ├── CategoryPage.xaml
-│   │   │   │   └── CategoryPage.xaml.cs
+│   │   │   │   ├── CategoryPage.xaml.cs
+│   │   │   │   ├── CategoryRow.xaml
+│   │   │   │   └── CategoryRow.xaml.cs
 │   │   │   └── Project/
 │   │   │       ├── ProjectPage.xaml
 │   │   │       └── ProjectPage.xaml.cs
@@ -2060,6 +2065,7 @@ _Generated from `git ls-files` — do not edit by hand._
 │   │   ├── ProjectsWindow.Navigation.cs
 │   │   ├── ProjectsWindow.Pane.cs
 │   │   ├── ProjectsWindow.Refresh.cs
+│   │   ├── ProjectsWindow.Review.Category.cs
 │   │   ├── ProjectsWindow.Review.cs
 │   │   ├── ProjectsWindow.xaml
 │   │   └── ProjectsWindow.xaml.cs
