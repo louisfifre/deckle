@@ -214,6 +214,9 @@
   <!-- Map tool (name not chosen): list, filters, empty state, panel -->
   <data name="MapFilters_Group" xml:space="preserve"><value>Filtres</value></data>
   <data name="MapAlwaysRead.Content" xml:space="preserve"><value>Toujours lu par un LLM</value></data>
+  <data name="Map_Display_Group" xml:space="preserve"><value>Affichage</value></data>
+  <data name="Map_Display_Flat" xml:space="preserve"><value>Liste</value></data>
+  <data name="Map_Display_Sections" xml:space="preserve"><value>Regrouper par type</value></data>
   <data name="MapHeaderName.Text" xml:space="preserve"><value>Nom</value></data>
   <data name="MapHeaderKind.Text" xml:space="preserve"><value>Type</value></data>
   <data name="MapHeaderLinks.Text" xml:space="preserve"><value>Liens</value></data>
@@ -264,6 +267,15 @@
   <data name="Map_Graph_Name_Format" xml:space="preserve"><value>Graphe des liens de {0}</value></data>
   <data name="Map_Graph_More_Format" xml:space="preserve"><value>+{0}</value></data>
   <data name="Map_Graph_More_Name_Format" xml:space="preserve"><value>{0} autres liens, listés plus bas</value></data>
+  <data name="Map_Graph_Enlarge" xml:space="preserve"><value>Agrandir le graphe</value></data>
+  <data name="Map_LargeGraph_Name" xml:space="preserve"><value>Grand graphe des liens</value></data>
+  <data name="Map_LargeGraph_Node_Name_Format" xml:space="preserve"><value>{0}, {1}</value></data>
+  <data name="Map_LargeGraph_More_Name_Format" xml:space="preserve"><value>{0} autres éléments, non dessinés</value></data>
+  <data name="Map_LargeGraph_Dimension_Group" xml:space="preserve"><value>Dimension</value></data>
+  <data name="MapLargeGraph2D.Content" xml:space="preserve"><value>2D</value></data>
+  <data name="MapLargeGraph3D.Content" xml:space="preserve"><value>3D · plus tard</value></data>
+  <data name="Map_LargeGraph_Leave" xml:space="preserve"><value>Quitter le grand graphe</value></data>
+  <data name="Map_LargeGraph_Leave_Tip" xml:space="preserve"><value>Quitter le grand graphe (Échap)</value></data>
   <data name="Map_Links_Section" xml:space="preserve"><value>Liens</value></data>
   <data name="Map_Cites_Format" xml:space="preserve"><value>Cite ({0})</value></data>
   <data name="Map_CitedBy_Format" xml:space="preserve"><value>Est cité par ({0})</value></data>
