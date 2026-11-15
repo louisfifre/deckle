@@ -1,0 +1,76 @@
+<UserControl
+    x:Class="Deckle.Projects.Views.CategoryRow"
+    xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+    xmlns:local="using:Deckle.Projects.Views"
+    HorizontalContentAlignment="Stretch">
+
+    <!-- One project in a category's list (board C1): a dotted handle, the name
+         over the full path, the same meta line as the card, and the main
+         action's button. The row is a surface and not a Button, for the reason
+         the card is not one: it holds a button. Its fill is the card brush, its
+         hover the control fill the cards use, and its corners the 4 px
+         control radius the board draws (a list row is smaller than a card). -->
+    <Grid x:Name="Root"
+          MinHeight="64"
+          Padding="16,10,16,10"
+          ColumnSpacing="12"
+          Background="{ThemeResource CardBackgroundFillColorDefaultBrush}"
+          BorderBrush="{ThemeResource CardStrokeColorDefaultBrush}"
+          BorderThickness="1"
+          CornerRadius="{ThemeResource ControlCornerRadius}">
+        <VisualStateManager.VisualStateGroups>
+            <VisualStateGroup x:Name="CommonStates">
+                <VisualState x:Name="Normal" />
+                <VisualState x:Name="PointerOver">
+                    <VisualState.Setters>
+                        <Setter Target="Root.Background" Value="{ThemeResource ControlFillColorSecondaryBrush}" />
+                    </VisualState.Setters>
+                </VisualState>
+            </VisualStateGroup>
+        </VisualStateManager.VisualStateGroups>
+
+        <Grid.ColumnDefinitions>
+            <ColumnDefinition Width="Auto" />
+            <ColumnDefinition Width="*" />
+            <ColumnDefinition Width="220" />
+            <ColumnDefinition Width="Auto" MinWidth="140" />
+        </Grid.ColumnDefinitions>
+
+        <!-- The handle is the only place a drag starts (spec: "dragging a row by
+             its gripper"). -->
+        <FontIcon x:Name="Grip"
+                  Glyph="&#xE76F;"
+                  FontSize="16"
+                  VerticalAlignment="Center"
+                  Foreground="{ThemeResource TextFillColorTertiaryBrush}" />
+
+        <StackPanel Grid.Column="1" VerticalAlignment="Center">
+            <TextBlock x:Name="NameText"
+                       Style="{StaticResource BodyStrongTextBlockStyle}"
+                       TextTrimming="CharacterEllipsis"
+                       TextWrapping="NoWrap" />
+            <TextBlock x:Name="PathText"
+                       Style="{StaticResource CaptionTextBlockStyle}"
+                       Foreground="{ThemeResource TextFillColorTertiaryBrush}"
+                       TextTrimming="CharacterEllipsis"
+                       TextWrapping="NoWrap" />
+        </StackPanel>
+
+        <TextBlock x:Name="MetaText"
+                   Grid.Column="2"
+                   VerticalAlignment="Center"
+                   Style="{StaticResource CaptionTextBlockStyle}"
+                   Foreground="{ThemeResource TextFillColorSecondaryBrush}"
+                   TextTrimming="CharacterEllipsis"
+                   TextWrapping="NoWrap" />
+
+        <!-- Always in the column, empty or not, so the buttons of the rows that
+             have one line up. -->
+        <local:MainActionButton x:Name="MainAction"
+                                Grid.Column="3"
+                                HorizontalAlignment="Right"
+                                VerticalAlignment="Center"
+                                Visibility="Collapsed" />
+    </Grid>
+</UserControl>

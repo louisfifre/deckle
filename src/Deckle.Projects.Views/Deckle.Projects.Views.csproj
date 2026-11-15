@@ -1,0 +1,29 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <RootNamespace>Deckle.Projects.Views</RootNamespace>
+    <UseWinUI>true</UseWinUI>
+    <DefaultLanguage>en-US</DefaultLanguage>
+    <!-- Generates the lib's own .pri so x:Uid lookups and Loc.GetFrom resolve
+         against the Deckle.Projects.Views/Resources subtree. -->
+    <EnableMsixTooling>true</EnableMsixTooling>
+  </PropertyGroup>
+
+  <!-- The Deckle Projects window: Home, a category's page, a project's page.
+       Dependencies point one way: this project reads Deckle.Projects (its
+       engine), which knows nothing of it. It does not reference
+       Deckle.Atelier.Views: "Open in Deckle Folders" is a hook the host hands
+       the window (ProjectsHooks), so the two windows never learn each other. -->
+  <ItemGroup>
+    <PackageReference Include="Microsoft.WindowsAppSDK" />
+    <PackageReference Include="Microsoft.Windows.SDK.BuildTools" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\Deckle.Projects\Deckle.Projects.csproj" />
+    <ProjectReference Include="..\Deckle.Localization\Deckle.Localization.csproj" />
+    <ProjectReference Include="..\Deckle.Core\Deckle.Core.csproj" />
+    <ProjectReference Include="..\Deckle.Diagnostics\Deckle.Diagnostics.csproj" />
+    <ProjectReference Include="..\Deckle.Shell\Deckle.Shell.csproj" />
+    <ProjectReference Include="..\Deckle.Shell.WindowChrome\Deckle.Shell.WindowChrome.csproj" />
+  </ItemGroup>
+</Project>

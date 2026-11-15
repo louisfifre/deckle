@@ -1,0 +1,85 @@
+<Window
+    x:Class="Deckle.Projects.Views.ProjectsWindow"
+    xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+    Title="Deckle Projects">
+
+    <!-- Hidden: an element that carries accelerators gets a tooltip naming the
+         first one, opened when keyboard focus lands anywhere inside it. On the
+         root that is a stray "F5" under the window whenever focus arrives by
+         keyboard; the title bar's buttons carry their own tooltips. -->
+    <Grid x:Name="RootGrid" KeyboardAcceleratorPlacementMode="Hidden">
+        <Grid.RowDefinitions>
+            <RowDefinition Height="Auto" />
+            <RowDefinition Height="*" />
+        </Grid.RowDefinitions>
+
+        <Grid.KeyboardAccelerators>
+            <KeyboardAccelerator Key="F5" Invoked="OnRefreshAccelerator" />
+            <KeyboardAccelerator Key="Left" Modifiers="Menu" Invoked="OnBackAccelerator" />
+        </Grid.KeyboardAccelerators>
+
+        <!-- The top row is the title bar itself, at the standard height: it
+             carries only the icon and the title, so its caption buttons stay
+             inside it and the page starts right under it. The hamburger
+             toggles the pane and the back button shows on a category's page
+             and a project's page, never on Home (spec, Window); the window
+             sets both from the store and the history. -->
+        <TitleBar x:Name="AppTitleBar"
+                  Grid.Row="0"
+                  Title="Deckle Projects"
+                  IsBackButtonVisible="False"
+                  IsPaneToggleButtonVisible="False"
+                  BackRequested="OnBackRequested"
+                  PaneToggleRequested="OnPaneToggleRequested">
+            <TitleBar.IconSource>
+                <ImageIconSource x:Name="AppTitleBarIcon" />
+            </TitleBar.IconSource>
+        </TitleBar>
+
+        <!-- The pane: "All projects", each category as a node holding its
+             projects, then "Without a category" as a node (board H2). It is
+             closed when the window opens and opened by the hamburger only. Its
+             own toggle is hidden because the title bar's opens it. The
+             display mode is set in code (ProjectsWindow.Pane.cs): hidden when
+             closed, docked beside the page when open and the window is wide,
+             over the page when it is narrow. -->
+        <NavigationView x:Name="Nav"
+                        Grid.Row="1"
+                        PaneDisplayMode="LeftMinimal"
+                        IsPaneToggleButtonVisible="False"
+                        IsBackButtonVisible="Collapsed"
+                        IsSettingsVisible="False"
+                        IsTitleBarAutoPaddingEnabled="False"
+                        AlwaysShowHeader="False"
+                        OpenPaneLength="280"
+                        SelectionFollowsFocus="Disabled"
+                        ItemInvoked="OnNavItemInvoked"
+                        Expanding="OnNavExpanding"
+                        Collapsed="OnNavCollapsed"
+                        PaneClosed="OnPaneClosed">
+            <!-- One ground for the whole window, as Windows 11 Settings and
+                 PowerToys draw it: the page sits on the window's Mica beside
+                 the pane, without the content layer NavigationView paints by
+                 default, which would lift every card a step off the ground the
+                 boards draw them on. -->
+            <NavigationView.Resources>
+                <ResourceDictionary>
+                    <ResourceDictionary.ThemeDictionaries>
+                        <ResourceDictionary x:Key="Default">
+                            <StaticResource x:Key="NavigationViewContentBackground" ResourceKey="SystemControlTransparentBrush" />
+                            <StaticResource x:Key="NavigationViewContentGridBorderBrush" ResourceKey="SystemControlTransparentBrush" />
+                        </ResourceDictionary>
+                        <ResourceDictionary x:Key="Light">
+                            <StaticResource x:Key="NavigationViewContentBackground" ResourceKey="SystemControlTransparentBrush" />
+                            <StaticResource x:Key="NavigationViewContentGridBorderBrush" ResourceKey="SystemControlTransparentBrush" />
+                        </ResourceDictionary>
+                    </ResourceDictionary.ThemeDictionaries>
+                </ResourceDictionary>
+            </NavigationView.Resources>
+
+            <!-- The page the window shows, built again at every navigation. -->
+            <ContentPresenter x:Name="PageHost" />
+        </NavigationView>
+    </Grid>
+</Window>

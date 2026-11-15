@@ -1,0 +1,23 @@
+<UserControl
+    x:Class="Deckle.Projects.Views.NoScriptMenuNotice"
+    xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml">
+
+    <!-- Board P2: the project has no script menu. One sentence and a link that
+         copies the install command; the person runs it in a terminal and the
+         page finds the menu when the window comes back to the front. Deckle
+         installs nothing itself. -->
+    <StackPanel Orientation="Horizontal" Spacing="12">
+        <TextBlock x:Name="SentenceText"
+                   Style="{StaticResource BodyTextBlockStyle}"
+                   Foreground="{ThemeResource TextFillColorSecondaryBrush}"
+                   VerticalAlignment="Center"
+                   TextWrapping="Wrap" />
+        <HyperlinkButton x:Name="CopyLink" Click="OnCopyClick" VerticalAlignment="Center">
+            <StackPanel Orientation="Horizontal" Spacing="8">
+                <FontIcon x:Name="CopyIcon" FontSize="14" />
+                <TextBlock x:Name="CopyLabel" />
+            </StackPanel>
+        </HyperlinkButton>
+    </StackPanel>
+</UserControl>

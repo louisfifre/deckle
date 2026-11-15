@@ -1,0 +1,56 @@
+<UserControl
+    x:Class="Deckle.Projects.Views.ReadoutsRow"
+    xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml">
+
+    <!-- The three readouts of a project (boards P1, P2): a label above its
+         value, in one row, with no card around them and no line under them.
+         The info button follows the version only when Deckle found versions
+         worth a look; it carries no colour. -->
+    <StackPanel Orientation="Horizontal" Spacing="48">
+        <StackPanel x:Name="VersionFact" Spacing="2">
+            <TextBlock x:Name="VersionLabel"
+                       Style="{StaticResource CaptionTextBlockStyle}"
+                       Foreground="{ThemeResource TextFillColorSecondaryBrush}" />
+            <StackPanel Orientation="Horizontal" Spacing="4" MinHeight="32">
+                <TextBlock x:Name="VersionValue"
+                           Style="{StaticResource BodyLargeTextBlockStyle}"
+                           VerticalAlignment="Center" />
+                <Button x:Name="InfoButton"
+                        Style="{StaticResource SubtleButtonStyle}"
+                        Width="28"
+                        Height="28"
+                        Padding="0"
+                        VerticalAlignment="Center"
+                        Visibility="Collapsed"
+                        Click="OnInfoClick">
+                    <FontIcon x:Name="InfoIcon"
+                              FontSize="14"
+                              Foreground="{ThemeResource TextFillColorSecondaryBrush}" />
+                </Button>
+            </StackPanel>
+        </StackPanel>
+
+        <StackPanel Spacing="2">
+            <TextBlock x:Name="UncommittedLabel"
+                       Style="{StaticResource CaptionTextBlockStyle}"
+                       Foreground="{ThemeResource TextFillColorSecondaryBrush}" />
+            <Grid MinHeight="32">
+                <TextBlock x:Name="UncommittedValue"
+                           Style="{StaticResource BodyLargeTextBlockStyle}"
+                           VerticalAlignment="Center" />
+            </Grid>
+        </StackPanel>
+
+        <StackPanel Spacing="2">
+            <TextBlock x:Name="AgentLabel"
+                       Style="{StaticResource CaptionTextBlockStyle}"
+                       Foreground="{ThemeResource TextFillColorSecondaryBrush}" />
+            <Grid MinHeight="32">
+                <TextBlock x:Name="AgentValue"
+                           Style="{StaticResource BodyLargeTextBlockStyle}"
+                           VerticalAlignment="Center" />
+            </Grid>
+        </StackPanel>
+    </StackPanel>
+</UserControl>

@@ -42,7 +42,7 @@ public sealed partial class DeckleAppSource
 
     // Each time the person opens a window, created or already there:
     // milestone-tagged so log.jsonl says what was on screen. Only the
-    // window's name: settings, log, mail, atelier.
+    // window's name: settings, log, mail, atelier, projects.
     [Event(EvtWindowOpened,
            Level = EventLevel.Informational,
            Keywords = (EventKeywords)Keywords.Lifecycle,

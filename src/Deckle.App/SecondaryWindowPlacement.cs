@@ -12,6 +12,7 @@ internal static class SecondaryWindowPlacement
     public const string Log = "log";
     public const string Mail = "mail";
     public const string Atelier = "atelier";
+    public const string Projects = "projects";
     public const string TranscribeRewrite = "transcribe-rewrite";
 
     private const int SW_SHOWNORMAL = 1;

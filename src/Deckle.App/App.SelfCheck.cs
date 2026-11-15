@@ -25,8 +25,8 @@ namespace Deckle.App;
 // with scripts/self-check.ps1) and exits 0 when all is well, 1 otherwise.
 //
 // `--only <target>` after the folder keeps the run to one window, or to one
-// view of Settings, Mail or the Atelier (SelfCheckTarget): the check of a
-// single change, in seconds.
+// view of Settings, Mail, the Atelier or Projects (SelfCheckTarget): the check
+// of a single change, in seconds.
 //
 // What it composes, in one place. Everything else of the boot is left out, and
 // each piece has its reason in LeftOutOfSelfCheck: a piece that acts on the
@@ -49,8 +49,9 @@ public partial class App
         "module registry and presence flags (a fresh root has no choice, so every module is present)",
         "settings surface: host hooks and every module's pages and search entries, as the resident app registers them",
         "theme from the settings of the run's own root",
-        "windows: Settings, Log, Mail, Atelier, created by the same lazy paths the tray uses",
+        "windows: Settings, Log, Mail, Atelier, Projects, created by the same lazy paths the tray uses",
         "atelier: a sample folder generated under the run's own root, added as the picker adds one",
+        "projects: sample projects (folders, git repositories, stub script menus) generated under the run's own root, with a terminal that opens nothing and a fixed clock",
         "microphone: one shared open and close through MicrophoneCapture.Probe",
         "interface capture: the walk and the WindowSnapshot of the interface capture",
     ];
@@ -445,6 +446,15 @@ public partial class App
             // there (SelfCheckWalkGate): that end is not a failure.
             var gate = new SelfCheckWalkGate(target?.View);
             try { await WalkAtelierAsync(report, run, outputFolder, Step, gate); }
+            catch (OperationCanceledException) when (gate.Done) { }
+            if (target?.View is not null && !gate.Reached) report.Views = gate.Offered;
+        }
+
+        if (Wants("projects"))
+        {
+            Step("projects");
+            var gate = new SelfCheckWalkGate(target?.View);
+            try { await WalkProjectsAsync(report, run, outputFolder, Step, gate); }
             catch (OperationCanceledException) when (gate.Done) { }
             if (target?.View is not null && !gate.Reached) report.Views = gate.Offered;
         }

@@ -162,5 +162,12 @@ public partial class App
             context.Compose(ModuleIds.Atelier, () => { });
         else
             context.Skip(ModuleIds.Atelier, SkipNotPresent);
+
+        // Same as the Atelier: nothing runs at start, the tray builds the window
+        // (App.Projects.cs).
+        if (ModulePresence.IsPresent(ModuleIds.Projects))
+            context.Compose(ModuleIds.Projects, () => { });
+        else
+            context.Skip(ModuleIds.Projects, SkipNotPresent);
     }
 }

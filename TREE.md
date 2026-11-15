@@ -439,6 +439,7 @@ _Generated from `git ls-files` — do not edit by hand._
 │   ├── atelier.md
 │   ├── deckle-dictation-rewriting.md
 │   ├── deckle-mail.md
+│   ├── deckle-projects.md
 │   └── deckle-transcribe-and-rewrite.md
 ├── src/
 │   ├── Deckle.Anytype/
@@ -660,6 +661,7 @@ _Generated from `git ls-files` — do not edit by hand._
 │   │   ├── App.Orchestration.cs
 │   │   ├── App.ParagraphRewrite.cs
 │   │   ├── App.PrecisionScroll.cs
+│   │   ├── App.Projects.cs
 │   │   ├── App.Relocate.cs
 │   │   ├── App.SelfCheck.Atelier.AddedFolders.cs
 │   │   ├── App.SelfCheck.Atelier.cs
@@ -672,6 +674,10 @@ _Generated from `git ls-files` — do not edit by hand._
 │   │   ├── App.SelfCheck.Atelier.Sizes.cs
 │   │   ├── App.SelfCheck.cs
 │   │   ├── App.SelfCheck.Diagnostics.cs
+│   │   ├── App.SelfCheck.Projects.Category.cs
+│   │   ├── App.SelfCheck.Projects.cs
+│   │   ├── App.SelfCheck.Projects.Home.cs
+│   │   ├── App.SelfCheck.Projects.Project.cs
 │   │   ├── App.SelfCheck.Rewriting.cs
 │   │   ├── App.SpeechRepair.cs
 │   │   ├── App.Startup.CommandLine.cs
@@ -909,6 +915,7 @@ _Generated from `git ls-files` — do not edit by hand._
 │   │   │   └── ToolPlaceholderView.cs
 │   │   ├── AtelierGlyphs.cs
 │   │   ├── AtelierText.cs
+│   │   ├── AtelierWindow.External.cs
 │   │   ├── AtelierWindow.FolderIcon.cs
 │   │   ├── AtelierWindow.Folders.cs
 │   │   ├── AtelierWindow.Navigation.cs
@@ -1937,6 +1944,163 @@ _Generated from `git ls-files` — do not edit by hand._
 │   │   ├── IPresetStore.cs
 │   │   ├── Preset.cs
 │   │   └── PresetFamily.cs
+│   ├── Deckle.Projects/
+│   │   ├── Formatting/
+│   │   │   ├── ElapsedFormat.cs
+│   │   │   └── RunStateLine.cs
+│   │   ├── Model/
+│   │   │   ├── ActionRef.cs
+│   │   │   ├── PinnedAction.cs
+│   │   │   ├── ProjectCategory.cs
+│   │   │   └── ProjectEntry.cs
+│   │   ├── Opening/
+│   │   │   ├── DeckleProjectsSource.Opening.cs
+│   │   │   ├── IProjectOpener.cs
+│   │   │   └── ProjectOpener.cs
+│   │   ├── Presentation/
+│   │   │   ├── ActionStates.cs
+│   │   │   ├── CardGridCapacity.cs
+│   │   │   ├── CardMeta.cs
+│   │   │   ├── DeckleProjectsSource.Window.cs
+│   │   │   └── ProjectsTarget.cs
+│   │   ├── Readouts/
+│   │   │   ├── Manifests/
+│   │   │   │   ├── CargoManifest.cs
+│   │   │   │   ├── GradleManifest.cs
+│   │   │   │   ├── MsBuildManifest.cs
+│   │   │   │   ├── PackageJsonManifest.cs
+│   │   │   │   ├── PyProjectManifest.cs
+│   │   │   │   ├── TomlVersion.cs
+│   │   │   │   └── VersionText.cs
+│   │   │   ├── AgentReading.cs
+│   │   │   ├── DeckleProjectsSource.Readouts.cs
+│   │   │   ├── GitCommand.cs
+│   │   │   ├── GitRemote.cs
+│   │   │   ├── GitTags.cs
+│   │   │   ├── ManifestVersions.cs
+│   │   │   ├── ProjectReader.cs
+│   │   │   ├── ProjectReading.cs
+│   │   │   ├── ProjectReadings.cs
+│   │   │   ├── UncommittedFiles.cs
+│   │   │   └── VersionReading.cs
+│   │   ├── Runs/
+│   │   │   ├── ActionRun.cs
+│   │   │   ├── ActionRunBoard.cs
+│   │   │   ├── ActionRunner.cs
+│   │   │   ├── DeckleProjectsSource.Runs.cs
+│   │   │   └── RunWrapper.cs
+│   │   ├── Sample/
+│   │   │   ├── ProjectsSampleWorld.cs
+│   │   │   ├── SampleGit.cs
+│   │   │   └── SampleManifests.cs
+│   │   ├── ScriptMenu/
+│   │   │   ├── DeckleProjectsSource.ScriptMenu.cs
+│   │   │   ├── DeckleScriptsInstall.cs
+│   │   │   ├── IScriptMenuReader.cs
+│   │   │   ├── ScriptMenuCache.cs
+│   │   │   ├── ScriptMenuEntry.cs
+│   │   │   ├── ScriptMenuListing.cs
+│   │   │   ├── ScriptMenuParser.cs
+│   │   │   ├── ScriptMenuReader.cs
+│   │   │   └── ShellLocator.cs
+│   │   ├── Store/
+│   │   │   ├── DeckleProjectsSource.Store.cs
+│   │   │   ├── ProjectStore.cs
+│   │   │   └── StoredFile.cs
+│   │   ├── Terminal/
+│   │   │   ├── DefaultConsoleLauncher.cs
+│   │   │   ├── FallbackTerminalLauncher.cs
+│   │   │   ├── ITerminalLauncher.cs
+│   │   │   ├── TerminalChoice.cs
+│   │   │   ├── TerminalCommand.cs
+│   │   │   ├── TerminalWindowFinder.cs
+│   │   │   └── WindowsTerminalLauncher.cs
+│   │   ├── Workspace/
+│   │   │   ├── ProjectsHooks.cs
+│   │   │   └── ProjectsWorkspace.cs
+│   │   ├── Deckle.Projects.csproj
+│   │   └── DeckleProjectsSource.cs
+│   ├── Deckle.Projects.Views/
+│   │   ├── Controls/
+│   │   │   ├── Breadcrumb.cs
+│   │   │   ├── CategoryDropTarget.cs
+│   │   │   ├── InlineNameEditor.cs
+│   │   │   ├── MainActionButton.cs
+│   │   │   ├── MainActionState.cs
+│   │   │   ├── ProjectDragData.cs
+│   │   │   ├── Themed.cs
+│   │   │   └── TrimmedTextToolTip.cs
+│   │   ├── Home/
+│   │   │   ├── CategoryHeader.cs
+│   │   │   ├── CategorySection.cs
+│   │   │   ├── HomeEmptyState.xaml
+│   │   │   ├── HomeEmptyState.xaml.cs
+│   │   │   ├── HomePage.Build.cs
+│   │   │   ├── HomePage.Commands.cs
+│   │   │   ├── HomePage.Review.cs
+│   │   │   ├── HomePage.xaml
+│   │   │   ├── HomePage.xaml.cs
+│   │   │   ├── MoreTile.cs
+│   │   │   ├── ProjectCard.xaml
+│   │   │   ├── ProjectCard.xaml.cs
+│   │   │   ├── ProjectCardMenu.cs
+│   │   │   ├── ProjectGrid.cs
+│   │   │   └── WithoutCategoryFold.cs
+│   │   ├── Pages/
+│   │   │   ├── Category/
+│   │   │   │   ├── CategoryPage.Delete.cs
+│   │   │   │   ├── CategoryPage.Reorder.cs
+│   │   │   │   ├── CategoryPage.Rows.cs
+│   │   │   │   ├── CategoryPage.xaml
+│   │   │   │   ├── CategoryPage.xaml.cs
+│   │   │   │   ├── CategoryRow.xaml
+│   │   │   │   └── CategoryRow.xaml.cs
+│   │   │   └── Project/
+│   │   │       ├── NoScriptMenuNotice.xaml
+│   │   │       ├── NoScriptMenuNotice.xaml.cs
+│   │   │       ├── OpenInRow.xaml
+│   │   │       ├── OpenInRow.xaml.cs
+│   │   │       ├── PinActionFlyout.cs
+│   │   │       ├── PinnedActionCard.xaml
+│   │   │       ├── PinnedActionCard.xaml.cs
+│   │   │       ├── PinnedActionsSection.xaml
+│   │   │       ├── PinnedActionsSection.xaml.cs
+│   │   │       ├── ProjectPage.Actions.cs
+│   │   │       ├── ProjectPage.Header.cs
+│   │   │       ├── ProjectPage.Missing.cs
+│   │   │       ├── ProjectPage.OpenIn.cs
+│   │   │       ├── ProjectPage.Readouts.cs
+│   │   │       ├── ProjectPage.Review.cs
+│   │   │       ├── ProjectPage.Timer.cs
+│   │   │       ├── ProjectPage.xaml
+│   │   │       ├── ProjectPage.xaml.cs
+│   │   │       ├── ReadoutsRow.xaml
+│   │   │       ├── ReadoutsRow.xaml.cs
+│   │   │       ├── ReadoutText.cs
+│   │   │       ├── RunLineView.xaml
+│   │   │       ├── RunLineView.xaml.cs
+│   │   │       ├── ScriptMenuErrorNotice.cs
+│   │   │       ├── VersionsFlyout.cs
+│   │   │       └── WrapRow.cs
+│   │   ├── Strings/
+│   │   │   └── en-US/
+│   │   │       └── Resources.resw
+│   │   ├── Deckle.Projects.Views.csproj
+│   │   ├── IProjectsHost.cs
+│   │   ├── IProjectsPage.cs
+│   │   ├── ProjectsContext.cs
+│   │   ├── ProjectsGlyphs.cs
+│   │   ├── ProjectsText.cs
+│   │   ├── ProjectStoreExtensions.cs
+│   │   ├── ProjectsWindow.Chrome.cs
+│   │   ├── ProjectsWindow.Navigation.cs
+│   │   ├── ProjectsWindow.Pane.cs
+│   │   ├── ProjectsWindow.Refresh.cs
+│   │   ├── ProjectsWindow.Review.Category.cs
+│   │   ├── ProjectsWindow.Review.cs
+│   │   ├── ProjectsWindow.Review.Project.cs
+│   │   ├── ProjectsWindow.xaml
+│   │   └── ProjectsWindow.xaml.cs
 │   ├── Deckle.Security/
 │   │   ├── Deckle.Security.csproj
 │   │   ├── GLOSSARY.md  — glossary-deckle-security Security vocabulary. It defines the trusted-session boundary, captured content,…
@@ -2528,7 +2692,6 @@ _Generated from `git ls-files` — do not edit by hand._
 │   │   ├── FolderIconRuleTests.cs
 │   │   ├── FolderListingBugNotes.md
 │   │   ├── FolderListingTests.cs
-│   │   ├── FolderPaneBugNotes.md
 │   │   ├── HeaviestFilesTests.cs
 │   │   ├── MapGraphLayoutTests.cs
 │   │   ├── MapInventoryTests.cs
@@ -2995,6 +3158,49 @@ _Generated from `git ls-files` — do not edit by hand._
 │   ├── Deckle.Presets.Tests/
 │   │   ├── Deckle.Presets.Tests.csproj
 │   │   └── PresetFamilyTests.cs
+│   ├── Deckle.Projects.Tests/
+│   │   ├── Formatting/
+│   │   │   └── FormattingTests.cs
+│   │   ├── Opening/
+│   │   │   └── ProjectOpenerTests.cs
+│   │   ├── Presentation/
+│   │   │   ├── ActionStatesTests.cs
+│   │   │   └── PresentationTests.cs
+│   │   ├── Readouts/
+│   │   │   ├── AgentReadingTests.cs
+│   │   │   ├── GitRemoteTests.cs
+│   │   │   ├── GitTagsTests.cs
+│   │   │   ├── ManifestParsersTests.cs
+│   │   │   ├── ManifestVersionsTests.cs
+│   │   │   ├── ProjectReaderGitTests.cs
+│   │   │   ├── ProjectReaderUnavailableTests.cs
+│   │   │   ├── ProjectReadingsTests.cs
+│   │   │   ├── UncommittedFilesTests.cs
+│   │   │   └── VersionReadingTests.cs
+│   │   ├── Runs/
+│   │   │   ├── ActionRunBoardTests.cs
+│   │   │   ├── ActionRunnerTests.cs
+│   │   │   ├── RunWrapperBehaviourTests.cs
+│   │   │   └── RunWrapperTests.cs
+│   │   ├── Sample/
+│   │   │   └── ProjectsSampleWorldTests.cs
+│   │   ├── ScriptMenu/
+│   │   │   ├── ScriptMenuParserTests.cs
+│   │   │   └── ScriptMenuReaderTests.cs
+│   │   ├── Store/
+│   │   │   ├── ProjectStoreEventsTests.cs
+│   │   │   └── ProjectStoreTests.cs
+│   │   ├── Terminal/
+│   │   │   ├── TerminalLaunchersTests.cs
+│   │   │   └── TerminalWindowFinderTests.cs
+│   │   ├── Workspace/
+│   │   │   └── ProjectsWorkspaceTests.cs
+│   │   ├── Deckle.Projects.Tests.csproj
+│   │   ├── DeckleProjectsSourceEventIdTests.cs
+│   │   ├── MessageTemplateDoctrineTests.cs
+│   │   ├── ScratchFolder.cs
+│   │   ├── TestDoubles.cs
+│   │   └── Tools.cs
 │   ├── Deckle.Security.Tests/
 │   │   ├── Deckle.Security.Tests.csproj
 │   │   ├── SecretVaultTests.cs

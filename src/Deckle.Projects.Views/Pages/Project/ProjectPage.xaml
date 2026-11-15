@@ -1,0 +1,75 @@
+<Page
+    x:Class="Deckle.Projects.Views.ProjectPage"
+    xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+    xmlns:local="using:Deckle.Projects.Views">
+
+    <!-- A project's page (boards P1 to P4), top to bottom: the header, the three
+         readouts, "Open in", "Pinned actions". The links come before the actions
+         because the hub of links matters most (spec). The page scrolls, since a
+         real window holds more than a board draws. A project whose folder is
+         gone keeps its header and one sentence; the rest is hidden. -->
+    <ScrollViewer x:Name="Scroll" VerticalScrollBarVisibility="Auto">
+        <StackPanel Margin="56,12,56,40" Spacing="32">
+
+            <Grid ColumnSpacing="8">
+                <Grid.ColumnDefinitions>
+                    <ColumnDefinition Width="*" />
+                    <ColumnDefinition Width="Auto" />
+                </Grid.ColumnDefinitions>
+
+                <StackPanel Spacing="4">
+                    <ContentPresenter x:Name="BreadcrumbHost" HorizontalAlignment="Left" />
+                    <local:InlineNameEditor x:Name="NameEditor" HorizontalAlignment="Left" />
+                    <TextBlock x:Name="PathText"
+                               Style="{StaticResource CaptionTextBlockStyle}"
+                               Foreground="{ThemeResource TextFillColorTertiaryBrush}"
+                               TextTrimming="CharacterEllipsis"
+                               TextWrapping="NoWrap" />
+                </StackPanel>
+
+                <!-- The script menu and the main action, side by side, and under
+                     them the main action's last result. The main action appears
+                     here and nowhere else on the page. -->
+                <StackPanel Grid.Column="1" Margin="0,28,0,0" Spacing="6" HorizontalAlignment="Right">
+                    <StackPanel Orientation="Horizontal" Spacing="8" HorizontalAlignment="Right">
+                        <Button x:Name="ScriptMenuButton" Click="OnScriptMenuClick">
+                            <StackPanel Orientation="Horizontal" Spacing="8">
+                                <FontIcon x:Name="ScriptMenuIcon" FontSize="16" />
+                                <TextBlock x:Name="ScriptMenuLabel" />
+                            </StackPanel>
+                        </Button>
+                        <Button x:Name="MainButton"
+                                Style="{StaticResource AccentButtonStyle}"
+                                Click="OnMainClick">
+                            <StackPanel Orientation="Horizontal" Spacing="8">
+                                <FontIcon x:Name="MainIcon" FontSize="16" />
+                                <TextBlock x:Name="MainLabel" />
+                            </StackPanel>
+                        </Button>
+                        <Button x:Name="ShowTerminalButton"
+                                Visibility="Collapsed"
+                                Click="OnShowMainTerminalClick">
+                            <StackPanel Orientation="Horizontal" Spacing="8">
+                                <FontIcon x:Name="ShowTerminalIcon" FontSize="16" />
+                                <TextBlock x:Name="ShowTerminalLabel" />
+                            </StackPanel>
+                        </Button>
+                    </StackPanel>
+                    <local:RunLineView x:Name="MainLine" HorizontalAlignment="Right" Visibility="Collapsed" />
+                </StackPanel>
+            </Grid>
+
+            <TextBlock x:Name="MissingText"
+                       Style="{StaticResource BodyTextBlockStyle}"
+                       Foreground="{ThemeResource TextFillColorSecondaryBrush}"
+                       Visibility="Collapsed" />
+
+            <local:ReadoutsRow x:Name="Readouts" HorizontalAlignment="Left" />
+
+            <local:OpenInRow x:Name="OpenIn" />
+
+            <local:PinnedActionsSection x:Name="Pinned" />
+        </StackPanel>
+    </ScrollViewer>
+</Page>

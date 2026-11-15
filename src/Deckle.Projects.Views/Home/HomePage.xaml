@@ -1,0 +1,56 @@
+<Page
+    x:Class="Deckle.Projects.Views.HomePage"
+    xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+    xmlns:local="using:Deckle.Projects.Views">
+
+    <!-- Home (boards H0 to H3). The title row stays put and the categories
+         scroll under it, because a real window holds more than a board draws.
+         No button here takes the accent colour except on the empty screen
+         (spec, after the v4 review). -->
+    <Grid>
+        <Grid.RowDefinitions>
+            <RowDefinition Height="Auto" />
+            <RowDefinition Height="*" />
+        </Grid.RowDefinitions>
+
+        <Grid x:Name="TopRow" Grid.Row="0" Margin="56,20,56,0" ColumnSpacing="8">
+            <Grid.ColumnDefinitions>
+                <ColumnDefinition Width="*" />
+                <ColumnDefinition Width="Auto" />
+                <ColumnDefinition Width="Auto" />
+            </Grid.ColumnDefinitions>
+
+            <TextBlock x:Name="TitleText"
+                       Style="{StaticResource TitleTextBlockStyle}"
+                       VerticalAlignment="Center" />
+
+            <Button x:Name="NewCategoryButton"
+                    Grid.Column="1"
+                    Style="{StaticResource SubtleButtonStyle}"
+                    Click="OnNewCategoryClick">
+                <StackPanel Orientation="Horizontal" Spacing="8">
+                    <FontIcon Glyph="&#xE710;" FontSize="16" />
+                    <TextBlock x:Name="NewCategoryLabel" />
+                </StackPanel>
+            </Button>
+
+            <Button x:Name="AddButton"
+                    Grid.Column="2"
+                    Click="OnAddProjectClick">
+                <StackPanel Orientation="Horizontal" Spacing="8">
+                    <FontIcon Glyph="&#xE710;" FontSize="16" />
+                    <TextBlock x:Name="AddLabel" />
+                </StackPanel>
+            </Button>
+        </Grid>
+
+        <Grid Grid.Row="1">
+            <ScrollViewer x:Name="ListScroll" VerticalScrollBarVisibility="Auto">
+                <StackPanel x:Name="Sections" Margin="56,32,56,40" Spacing="32" />
+            </ScrollViewer>
+
+            <local:HomeEmptyState x:Name="EmptyState" Visibility="Collapsed" />
+        </Grid>
+    </Grid>
+</Page>

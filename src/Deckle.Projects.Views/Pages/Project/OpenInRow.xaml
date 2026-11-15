@@ -1,0 +1,14 @@
+<UserControl
+    x:Class="Deckle.Projects.Views.OpenInRow"
+    xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+    xmlns:local="using:Deckle.Projects.Views">
+
+    <!-- "Open in" (boards P1 to P4): one row of standard buttons, each an icon
+         and a name. The row wraps when the window is narrow, each button keeping
+         its own width; Windows App SDK has no wrapping panel, see WrapRow. -->
+    <StackPanel Spacing="12">
+        <TextBlock x:Name="TitleText" Style="{StaticResource SubtitleTextBlockStyle}" />
+        <local:WrapRow x:Name="Links" ColumnSpacing="8" RowSpacing="8" />
+    </StackPanel>
+</UserControl>

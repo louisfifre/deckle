@@ -1,0 +1,121 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Deckle Projects' wording. One catalog for the whole library: Loc.GetFrom
+     reads "<library>/Resources" and nothing else. The window step wrote every
+     string the spec and the boards name, in the blocks below; the category and
+     the project pages add a key only inside their own block. Product names
+     ("Deckle Projects", "Deckle Folders", "Windows Terminal") stay in code or
+     in the sentence the spec quotes, as Loc.cs asks. Code reads these keys
+     through ProjectsText (Loc.GetFrom), so they need no copy in Deckle.App. -->
+<root>
+  <resheader name="resmimetype">
+    <value>text/microsoft-resx</value>
+  </resheader>
+  <resheader name="version">
+    <value>2.0</value>
+  </resheader>
+  <resheader name="reader">
+    <value>System.Resources.ResXResourceReader, System.Windows.Forms, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
+  </resheader>
+  <resheader name="writer">
+    <value>System.Resources.ResXResourceWriter, System.Windows.Forms, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
+  </resheader>
+
+  <!-- ## Window and pane -->
+  <data name="Pane_Label" xml:space="preserve"><value>Projects</value></data>
+  <data name="Pane_AllProjects" xml:space="preserve"><value>All projects</value></data>
+  <data name="Pane_WithoutCategory" xml:space="preserve"><value>Without a category</value></data>
+  <data name="Window_PageFailed" xml:space="preserve"><value>This page could not be shown.</value></data>
+  <data name="Window_PageFailedHint" xml:space="preserve"><value>Go back, or press F5 to try again.</value></data>
+
+  <!-- ## Home -->
+  <data name="Home_Title" xml:space="preserve"><value>Projects</value></data>
+  <data name="Home_NewCategory" xml:space="preserve"><value>New category</value></data>
+  <data name="Home_AddProject" xml:space="preserve"><value>Add a project…</value></data>
+  <data name="Home_EmptyTitle" xml:space="preserve"><value>No projects yet</value></data>
+  <data name="Home_EmptyBody" xml:space="preserve"><value>A project is a folder you add. Deckle reads its version, its scripts and what an agent reads there.</value></data>
+  <data name="Home_CategoryEmpty" xml:space="preserve"><value>Drag a project here to put it in this category.</value></data>
+  <data name="Home_CategoryOpen_Format" xml:space="preserve"><value>Open the {0} category</value></data>
+  <data name="Home_WithoutCategory" xml:space="preserve"><value>Without a category</value></data>
+  <data name="Home_WithoutCategoryHint" xml:space="preserve"><value>Drag a card onto a category, or use its menu.</value></data>
+  <data name="Home_WithoutCategoryToggle_Format" xml:space="preserve"><value>Without a category, {0} projects</value></data>
+  <data name="Home_MoreTile_Format" xml:space="preserve"><value>{0} more projects, open {1}</value></data>
+  <data name="Home_DropCaption_Format" xml:space="preserve"><value>Move to {0}</value></data>
+  <data name="Home_NewCategoryTitleBox" xml:space="preserve"><value>Category title</value></data>
+
+  <!-- ## Card -->
+  <data name="Card_More_Format" xml:space="preserve"><value>More options for {0}</value></data>
+  <data name="Card_Running" xml:space="preserve"><value>An action is running</value></data>
+  <data name="Card_LastFailed_Format" xml:space="preserve"><value>{0} failed the last time it ran</value></data>
+
+  <!-- ## Menus -->
+  <data name="Menu_OpenInExplorer" xml:space="preserve"><value>Open in File Explorer</value></data>
+  <data name="Menu_OpenInTerminal" xml:space="preserve"><value>Open in terminal</value></data>
+  <data name="Menu_MoveTo_Format" xml:space="preserve"><value>Move to {0}</value></data>
+  <data name="Menu_MoveToNewCategory" xml:space="preserve"><value>Move to a new category…</value></data>
+  <data name="Menu_MoveToWithoutCategory" xml:space="preserve"><value>Move to Without a category</value></data>
+  <data name="Menu_Rename" xml:space="preserve"><value>Rename</value></data>
+  <data name="Menu_Remove" xml:space="preserve"><value>Remove from Deckle</value></data>
+  <data name="Menu_RemoveHint" xml:space="preserve"><value>Folder stays</value></data>
+
+  <!-- ## Category page -->
+  <data name="Category_Breadcrumb_Projects" xml:space="preserve"><value>Projects</value></data>
+  <data name="Category_Count_Format" xml:space="preserve"><value>{0} projects · drag a row to change the order</value></data>
+  <data name="Category_CountOne" xml:space="preserve"><value>1 project · drag a row to change the order</value></data>
+  <data name="Category_CountNone" xml:space="preserve"><value>No project in this category yet</value></data>
+  <data name="Category_Empty" xml:space="preserve"><value>Drag a project here to put it in this category.</value></data>
+  <data name="Category_Delete" xml:space="preserve"><value>Delete this category</value></data>
+  <data name="Category_DeleteNote" xml:space="preserve"><value>Its projects go back to Without a category.</value></data>
+  <data name="Category_Rename" xml:space="preserve"><value>Rename</value></data>
+  <data name="Category_Grip" xml:space="preserve"><value>Drag to change the order</value></data>
+
+  <!-- ## Project page -->
+  <data name="Project_Breadcrumb_Projects" xml:space="preserve"><value>Projects</value></data>
+  <data name="Project_Rename" xml:space="preserve"><value>Rename</value></data>
+  <data name="Project_RenameHint" xml:space="preserve"><value>Enter to keep, Esc to cancel. The folder on disk keeps its name.</value></data>
+  <data name="Project_OpenScriptMenu" xml:space="preserve"><value>Open script menu</value></data>
+  <data name="Project_Version" xml:space="preserve"><value>Version</value></data>
+  <data name="Project_Uncommitted" xml:space="preserve"><value>Uncommitted</value></data>
+  <data name="Project_AgentReads" xml:space="preserve"><value>An agent always reads</value></data>
+  <data name="Project_NoVersion" xml:space="preserve"><value>No version yet</value></data>
+  <data name="Project_FilesOne" xml:space="preserve"><value>1 file</value></data>
+  <data name="Project_FilesMany_Format" xml:space="preserve"><value>{0} files</value></data>
+  <data name="Project_Nothing" xml:space="preserve"><value>Nothing</value></data>
+  <data name="Project_NotARepository" xml:space="preserve"><value>Not a Git repository</value></data>
+  <data name="Project_Tokens_Format" xml:space="preserve"><value>≈ {0:N0} tokens</value></data>
+  <data name="Project_VersionsFound_Format" xml:space="preserve"><value>{0} versions found</value></data>
+  <data name="Project_VersionsFooter" xml:space="preserve"><value>When a repository holds several parts, different versions can be normal.</value></data>
+  <data name="Project_VersionsMore_Format" xml:space="preserve"><value>and {0} more</value></data>
+  <data name="Project_GitTag" xml:space="preserve"><value>Git tag</value></data>
+  <data name="Project_OpenIn" xml:space="preserve"><value>Open in</value></data>
+  <data name="Project_OpenInFolders" xml:space="preserve"><value>Deckle Folders</value></data>
+  <data name="Project_OpenInExplorer" xml:space="preserve"><value>File Explorer</value></data>
+  <data name="Project_OpenInTerminal" xml:space="preserve"><value>Terminal</value></data>
+  <data name="Project_Missing" xml:space="preserve"><value>This folder was not found.</value></data>
+  <data name="Project_VersionFoundOne" xml:space="preserve"><value>1 version found</value></data>
+  <data name="Project_VersionInfo" xml:space="preserve"><value>Where the versions come from</value></data>
+  <data name="Project_Unknown" xml:space="preserve"><value>—</value></data>
+  <data name="Project_TokensFloor" xml:space="preserve"><value>The folder is large, so this counts only what was read before the map stopped.</value></data>
+  <data name="Project_OpenInHost_Format" xml:space="preserve"><value>Open the project's page on {0}</value></data>
+
+  <!-- ## Pinned actions -->
+  <data name="Pinned_Title" xml:space="preserve"><value>Pinned actions</value></data>
+  <data name="Pinned_Pin" xml:space="preserve"><value>Pin an action…</value></data>
+  <data name="Pinned_Run" xml:space="preserve"><value>Run</value></data>
+  <data name="Pinned_ShowTerminal" xml:space="preserve"><value>Show terminal</value></data>
+  <data name="Pinned_Note" xml:space="preserve"><value>Actions run in Windows Terminal, one at a time per project. Every other script is in the script menu.</value></data>
+  <data name="Pinned_NoMenu" xml:space="preserve"><value>This project has no script menu, so there is nothing to pin.</value></data>
+  <data name="Pinned_CopyInstall" xml:space="preserve"><value>Copy the install command</value></data>
+  <data name="Pinned_Copied" xml:space="preserve"><value>Copied</value></data>
+  <data name="Pinned_MenuError" xml:space="preserve"><value>The script menu could not be read</value></data>
+  <data name="Pinned_FlyoutEmpty" xml:space="preserve"><value>The script menu has no action to pin.</value></data>
+  <data name="Pinned_FlyoutPin" xml:space="preserve"><value>Pin</value></data>
+  <data name="Pinned_FlyoutMain" xml:space="preserve"><value>Main</value></data>
+  <data name="Pinned_NoShell" xml:space="preserve"><value>PowerShell was not found on this machine, so actions cannot run.</value></data>
+  <data name="Pinned_FlyoutReading" xml:space="preserve"><value>Reading the script menu…</value></data>
+  <data name="Pinned_FlyoutGone" xml:space="preserve"><value>No longer in the script menu</value></data>
+  <data name="Pinned_FlyoutPin_Format" xml:space="preserve"><value>Pin {0}</value></data>
+  <data name="Pinned_FlyoutMain_Format" xml:space="preserve"><value>Make {0} the main action</value></data>
+  <data name="Pinned_FlyoutMainHint" xml:space="preserve"><value>The main action sits in the page's header and on the project's card on Home.</value></data>
+  <data name="Pinned_RunNamed_Format" xml:space="preserve"><value>Run {0}</value></data>
+  <data name="Pinned_ShowTerminalNamed_Format" xml:space="preserve"><value>Show the terminal of {0}</value></data>
+</root>
