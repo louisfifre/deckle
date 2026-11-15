@@ -1,0 +1,101 @@
+using Microsoft.UI.Xaml;
+using Microsoft.UI.Xaml.Controls;
+
+namespace Deckle.Projects.Views;
+
+// The header: on the left the breadcrumb, the name and the path; on the right
+// "Open script menu" and the main action's accent button, with the main action's
+// last result under them (spec, Project page, Header).
+internal sealed partial class ProjectPage
+{
+    // The breadcrumb is made again only when what it says changes (the project
+    // moved to another category, or its category was renamed).
+    private string? _crumbKey;
+
+    private void ConfigureHeader()
+    {
+        NameEditor.TextStyle = (Style)Application.Current.Resources["TitleTextBlockStyle"];
+        NameEditor.HintText = ProjectsText.Get("Project_RenameHint");
+        NameEditor.Committed += OnNameCommitted;
+
+        TrimmedTextToolTip.Attach(PathText);
+
+        ScriptMenuIcon.Glyph = ProjectsGlyphs.Apps;
+        ScriptMenuLabel.Text = ProjectsText.Get("Project_OpenScriptMenu");
+        MainIcon.Glyph = ProjectsGlyphs.Play;
+        ShowTerminalIcon.Glyph = ProjectsGlyphs.OpenInNew;
+        ShowTerminalLabel.Text = ProjectsText.Get("Pinned_ShowTerminal");
+    }
+
+    private void ApplyHeader(ProjectEntry project, bool missing)
+    {
+        // The box holds what the person is typing: it is not overwritten while
+        // it is open.
+        if (!NameEditor.IsEditing) NameEditor.Text = project.DisplayName;
+        PathText.Text = project.Path;
+        ApplyBreadcrumb(project);
+        ApplyHeaderAction(project, missing);
+    }
+
+    private void ApplyBreadcrumb(ProjectEntry project)
+    {
+        string? categoryName = project.CategoryId is { } id ? _context.Store.FindCategory(id)?.Name : null;
+        string key = $"{project.CategoryId}|{categoryName}";
+        if (key == _crumbKey) return;
+        _crumbKey = key;
+        BreadcrumbHost.Content = Breadcrumb.ForProjectPage(_context, project);
+    }
+
+    // Enter keeps the name. An empty name brings back the folder's name, and the
+    // path never changes: the name is the person's label in Deckle only (spec).
+    private void OnNameCommitted(string typed)
+    {
+        ProjectEntry? renamed = _context.Store.RenameProject(_projectId, string.IsNullOrWhiteSpace(typed) ? null : typed);
+        if (renamed is not null) NameEditor.Text = renamed.DisplayName;
+    }
+
+    // "Open script menu" and the main action's button, the line under them.
+    // A project without the script menu has neither button (board P2); one with
+    // no main action has no accent button.
+    private void ApplyHeaderAction(ProjectEntry project, bool missing)
+    {
+        bool hasMenu = !missing && HasScriptMenu(project);
+        ScriptMenuButton.Visibility = hasMenu ? Visibility.Visible : Visibility.Collapsed;
+        ScriptMenuButton.IsEnabled = _context.Workspace.Shell is not null;
+
+        PinnedAction? main = project.MainAction;
+        if (!hasMenu || main is null)
+        {
+            MainButton.Visibility = Visibility.Collapsed;
+            ShowTerminalButton.Visibility = Visibility.Collapsed;
+            MainLine.Visibility = Visibility.Collapsed;
+            return;
+        }
+
+        HeaderActionState state = ActionStates.ForHeader(
+            main,
+            _context.Workspace.Board.ActiveRun(_projectId),
+            _context.Workspace.Board.LastResult(_projectId, main.Action),
+            CanStartAnAction(project, missing),
+            _context.Workspace.Clock.GetUtcNow());
+
+        bool showTerminal = state.Button == ActionButtonMode.ShowTerminal;
+        MainLabel.Text = state.Label;
+        MainButton.IsEnabled = state.ButtonEnabled;
+        MainButton.Visibility = showTerminal ? Visibility.Collapsed : Visibility.Visible;
+        ShowTerminalButton.Visibility = showTerminal ? Visibility.Visible : Visibility.Collapsed;
+
+        MainLine.Apply(state.Line);
+        MainLine.Visibility = state.Line is null ? Visibility.Collapsed : Visibility.Visible;
+    }
+
+    private void OnScriptMenuClick(object sender, RoutedEventArgs e)
+    {
+        if (Project is { } project) _context.Workspace.Opener.OpenScriptMenu(project.Path);
+    }
+
+    private void OnMainClick(object sender, RoutedEventArgs e) =>
+        _ = StartAsync(() => _context.Workspace.StartMainActionAsync(_projectId));
+
+    private void OnShowMainTerminalClick(object sender, RoutedEventArgs e) => ShowTerminal();
+}

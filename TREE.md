@@ -2059,6 +2059,13 @@ _Generated from `git ls-files` — do not edit by hand._
 │   │   │       ├── PinnedActionCard.xaml.cs
 │   │   │       ├── PinnedActionsSection.xaml
 │   │   │       ├── PinnedActionsSection.xaml.cs
+│   │   │       ├── ProjectPage.Actions.cs
+│   │   │       ├── ProjectPage.Header.cs
+│   │   │       ├── ProjectPage.Missing.cs
+│   │   │       ├── ProjectPage.OpenIn.cs
+│   │   │       ├── ProjectPage.Readouts.cs
+│   │   │       ├── ProjectPage.Review.cs
+│   │   │       ├── ProjectPage.Timer.cs
 │   │   │       ├── ProjectPage.xaml
 │   │   │       ├── ProjectPage.xaml.cs
 │   │   │       ├── ReadoutsRow.xaml
@@ -2085,6 +2092,7 @@ _Generated from `git ls-files` — do not edit by hand._
 │   │   ├── ProjectsWindow.Refresh.cs
 │   │   ├── ProjectsWindow.Review.Category.cs
 │   │   ├── ProjectsWindow.Review.cs
+│   │   ├── ProjectsWindow.Review.Project.cs
 │   │   ├── ProjectsWindow.xaml
 │   │   └── ProjectsWindow.xaml.cs
 │   ├── Deckle.Security/
