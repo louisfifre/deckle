@@ -98,6 +98,7 @@ public sealed partial class LlmPage : Page, ISettingsSubpageSample
         try
         {
             ProfilesSection.SetProviders();
+            PhotoDescriptionSection.Reload();
             await RefreshProvidersAsync();
         }
         catch (Exception ex)
@@ -128,6 +129,7 @@ public sealed partial class LlmPage : Page, ISettingsSubpageSample
         ProvidersSection.Reload();
         ProfilesSection.Reload();
         DictationSection.Reload();
+        PhotoDescriptionSection.Reload();
     }
 
     // ── Provider refresh ────────────────────────────────────────────────────

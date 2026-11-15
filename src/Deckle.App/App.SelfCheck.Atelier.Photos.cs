@@ -1,6 +1,7 @@
 using Deckle.App.SelfCheck;
 using Deckle.Atelier;
 using Deckle.Atelier.Views;
+using Deckle.Core;
 using Deckle.Vision;
 
 namespace Deckle.App;
@@ -79,6 +80,8 @@ public partial class App
         PhotosReview.CloseApplySummary(window);
         await Task.Delay(300);
 
+        await WalkAtelierPhotoDescriptionsAsync(window, (state, reach) => Capture(state, reach));
+
         // The file tool's gallery on the same shoot: the one folder of the
         // sample whose files Windows draws a picture of, so the tiles show
         // their content and not only their type's icon. Back to the list
@@ -98,5 +101,146 @@ public partial class App
             await window.SelectForReviewAsync("DSC_0207.JPG");
         });
         await FilesReview.ShowDisplayAsync(window, FileListDisplay.List);
+    }
+
+    // ── Descriptions ──────────────────────────────────────────────────────
+    //
+    // The panel's description in its states and the folder run, with the
+    // model the walk gives the app (ReviewPhotoDescriptionModel): it answers
+    // what each state needs and never reaches a model server. The photos are
+    // the walk's own sample; the descriptions it writes land in the run's
+    // data root, cleared before the window opens (UseReviewPhotoDescriptions).
+
+    private static readonly ReviewPhotoDescriptionModel ReviewDescriber = new();
+
+    // Called before the Atelier window is built, since the window's tools
+    // take the model when they are made. A kept data root may hold the last
+    // run's descriptions: they go, so "no description yet" is there to see.
+    private static void UseReviewPhotoDescriptions()
+    {
+        AtelierToolCatalog.PhotoDescriptionModel = ReviewDescriber;
+        AtelierToolCatalog.PhotoDescriptionReadiness = null;
+        string stored = Path.Combine(AppPaths.GetModuleDirectory(Deckle.Modules.ModuleIds.Atelier), PhotoDescriptionStore.DirectoryName);
+        try { if (Directory.Exists(stored)) Directory.Delete(stored, recursive: true); }
+        catch (IOException) { }
+        catch (UnauthorizedAccessException) { }
+    }
+
+    private static async Task WalkAtelierPhotoDescriptionsAsync(
+        AtelierWindow window, Func<string, Func<Task>, Task> capture)
+    {
+        TimeSpan timeout = TimeSpan.FromSeconds(20);
+
+        await capture("photos-description-none", () => window.SelectForReviewAsync("DSC_0205.JPG"));
+
+        await capture("photos-description-progress", async () =>
+        {
+            ReviewDescriber.Hold();
+            await PhotosReview.DescribeSelectedAsync(window);
+        });
+
+        await capture("photos-description-written", async () =>
+        {
+            ReviewDescriber.Answer(_ => ReviewPhotoDescriptionModel.Written());
+            await PhotosReview.WaitForSelectedAsync(window, timeout);
+        });
+
+        await capture("photos-description-failed", async () =>
+        {
+            ReviewDescriber.Answer(_ => PhotoDescriptionResult.Failed(PhotoDescriptionFailure.ServerUnreachable));
+            await window.SelectForReviewAsync("DSC_0211.JPG");
+            await PhotosReview.DescribeSelectedAsync(window);
+            await PhotosReview.WaitForSelectedAsync(window, timeout);
+        });
+
+        await capture("photos-description-stopped", async () =>
+        {
+            ReviewDescriber.Hold();
+            await window.SelectForReviewAsync("DSC_0212.JPG");
+            await PhotosReview.DescribeSelectedAsync(window);
+            PhotosReview.StopSelected(window);
+            await PhotosReview.WaitForSelectedAsync(window, timeout);
+        });
+
+        // The folder run under way: five photos answered, then the model
+        // holds, so the counter, the bar and the way to stop stay on screen.
+        await capture("photos-describe-folder", async () =>
+        {
+            await window.SelectForReviewAsync("DSC_0205.JPG");
+            ReviewDescriber.Answer(n => n < 5 ? ReviewPhotoDescriptionModel.Written() : null);
+            await PhotosReview.DescribeFolderAsync(window);
+            await PhotosReview.WaitForFolderAsync(window, r => r is { Described: >= 6 }, timeout);
+        });
+
+        // Stopped, then run again to its end with one photo failing: the
+        // line above the gallery says how many have a description and how
+        // many failed.
+        PhotosReview.StopFolder(window);
+        await PhotosReview.WaitForFolderAsync(window, r => r is null, timeout);
+        await capture("photos-describe-folder-ended", async () =>
+        {
+            ReviewDescriber.Answer(n => n == 0
+                ? PhotoDescriptionResult.Failed(PhotoDescriptionFailure.Other)
+                : ReviewPhotoDescriptionModel.Written());
+            await PhotosReview.DescribeFolderAsync(window);
+            await PhotosReview.WaitForFolderAsync(window, r => r is null, timeout);
+        });
+    }
+
+    // The walk's model: it answers by the script the walk sets, numbering
+    // the requests from the last change of script; a script that answers
+    // null holds the request until the script changes or the request is
+    // stopped. It reads nothing and sends nothing.
+    private sealed class ReviewPhotoDescriptionModel : IPhotoDescriptionModel
+    {
+        private readonly object _lock = new();
+        private Func<int, PhotoDescriptionResult?> _script = _ => null;
+        private TaskCompletionSource _changed = new(TaskCreationOptions.RunContinuationsAsynchronously);
+        private int _asked;
+
+        // An invented sentence: no model wrote it.
+        public static PhotoDescriptionResult Written() => PhotoDescriptionResult.Of(new PhotoDescription(
+            "Deux personnes sous un arbre, en fin d'après-midi ; la lumière vient de la gauche.",
+            "self-check", DateTimeOffset.Now));
+
+        public void Hold() => Answer(_ => null);
+
+        public void Answer(Func<int, PhotoDescriptionResult?> script)
+        {
+            TaskCompletionSource changed;
+            lock (_lock)
+            {
+                _script = script;
+                _asked = 0;
+                changed = _changed;
+                _changed = new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously);
+            }
+            changed.TrySetResult();
+        }
+
+        public async Task<PhotoDescriptionResult> DescribeAsync(byte[] jpeg, string prompt, CancellationToken cancellationToken)
+        {
+            while (true)
+            {
+                Task changed;
+                lock (_lock)
+                {
+                    if (_script(_asked) is { } answer)
+                    {
+                        _asked++;
+                        return answer;
+                    }
+                    changed = _changed.Task;
+                }
+                try
+                {
+                    await changed.WaitAsync(cancellationToken);
+                }
+                catch (OperationCanceledException)
+                {
+                    return PhotoDescriptionResult.Failed(PhotoDescriptionFailure.Stopped);
+                }
+            }
+        }
     }
 }

@@ -21,6 +21,7 @@ public partial class App
         SelfCheckReport report, InterfaceCaptureRun run, string outputFolder, Action<string> step,
         SelfCheckWalkGate gate)
     {
+        UseReviewPhotoDescriptions();
         var clock = System.Diagnostics.Stopwatch.StartNew();
         AtelierWindow window = EnsureAtelierWindow();
         OffscreenWindow.ShowInactive(window);

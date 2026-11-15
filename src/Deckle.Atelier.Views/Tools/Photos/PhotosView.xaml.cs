@@ -18,7 +18,8 @@ namespace Deckle.Atelier.Views;
 // tiles on screen, so a folder of thousands of photos scrolls as one of ten.
 //
 // This file holds the gallery and the selection; the photo seen large, the
-// application of the marks and darktable each have their partial file.
+// description of the folder, the application of the marks and darktable each
+// have their partial file.
 internal sealed partial class PhotosView : UserControl, IAtelierToolView
 {
     private readonly IAtelierToolHost _host;
@@ -41,14 +42,16 @@ internal sealed partial class PhotosView : UserControl, IAtelierToolView
     // makes by itself are not taken for the person's.
     private bool _filling;
 
-    public PhotosView(IAtelierToolHost host, string moduleDirectory, PhotoMarkQueue queue)
+    public PhotosView(IAtelierToolHost host, string moduleDirectory, PhotoMarkQueue queue, PhotoDescriptions? descriptions)
     {
         _host = host;
         _moduleDirectory = moduleDirectory;
         _queue = queue;
+        _descriptions = descriptions;
         InitializeComponent();
         Root.AddHandler(KeyDownEvent, new KeyEventHandler(OnRootKeyDown), handledEventsToo: true);
         ApplyLabels();
+        ListenToRunWhileLoaded();
     }
 
     FrameworkElement IAtelierToolView.Content => this;
@@ -103,6 +106,7 @@ internal sealed partial class PhotosView : UserControl, IAtelierToolView
         Message.Visibility = message is null ? Visibility.Collapsed : Visibility.Visible;
 
         ShowCounts();
+        ShowDescribing();
         ShowDarktable(listing.Succeeded);
         await ShowPanelAsync();
     }
@@ -186,7 +190,7 @@ internal sealed partial class PhotosView : UserControl, IAtelierToolView
         }
 
         bool large = _largeTile is not null;
-        _details = PhotoDetails.For(tile, reading, MarkSelection, large, _tiles.IndexOf(tile) + 1, _tiles.Count);
+        _details = PhotoDetails.For(tile, reading, MarkSelection, large, _tiles.IndexOf(tile) + 1, _tiles.Count, _descriptions);
         _host.Select(tile.Photo.Path, _details.Element);
     }
 
@@ -297,9 +301,11 @@ internal sealed partial class PhotosView : UserControl, IAtelierToolView
 
     private void ApplyLabels()
     {
+        DescribeButton.Content = AtelierText.Get("Photos_Describe_Folder");
         ApplyButton.Content = AtelierText.Get("Photos_Apply");
         DarktableButton.Content = AtelierText.Get("Photos_Darktable");
         AutomationProperties.SetName(Gallery, AtelierText.Get("Photos_Gallery"));
+        Label(StopDescribingButton, "Photos_Describe_Stop");
         Label(LeaveLargeButton, "Photos_LeaveLarge");
         Label(PreviousButton, "Photos_Previous");
         Label(NextButton, "Photos_Next");

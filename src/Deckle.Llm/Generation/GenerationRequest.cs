@@ -19,7 +19,11 @@ namespace Deckle.Llm;
 /// cache drops it.
 /// <paramref name="Reasoning"/> says how much the model reasons before it
 /// answers; null keeps the engine's own default, and an engine whose provider
-/// has no such knob drops it, as with the hints above.</summary>
+/// has no such knob drops it, as with the hints above.
+/// <paramref name="Image"/> is one picture for a model that reads images;
+/// null for every text request. A request that carries one is sent only to a
+/// server on this machine (<see cref="LocalEndpoint"/>), and a hosted engine
+/// refuses it.</summary>
 public readonly record struct GenerationRequest(
     string Model,
     string SystemPrompt,
@@ -31,7 +35,8 @@ public readonly record struct GenerationRequest(
     double? RepeatPenalty = null,
     string KeepAlive = "5m",
     PromptCacheScope Cache = PromptCacheScope.None,
-    ReasoningLevel? Reasoning = null);
+    ReasoningLevel? Reasoning = null,
+    GenerationImage? Image = null);
 
 /// <summary>How much of a request a hosted API keeps for the next call. The
 /// cache matches a request from its first byte, so only calls that start

@@ -160,6 +160,7 @@ public partial class App
             Llm.Rewrite.Views.LlmSettingsModule.TranscriptionStreams = () =>
                 transcriptionPresent
                 && TranscriptionSettingsService.Instance.Current.Streaming.Strategy == PipelineStrategyKind.Streaming;
+            ConfigureAtelierPhotoDescriptionSetting();
             RegisterSettingsModule(Llm.Rewrite.Views.LlmSettingsModule.Describe(order: 200), Llm.Rewrite.Views.SettingsSearch.Entries);
         }
         if (context.AutocorrectPresent)
