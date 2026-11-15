@@ -741,6 +741,10 @@ _Generated from `git ls-files` — do not edit by hand._
 │   │   │   ├── ShellImagePixels.cs
 │   │   │   ├── ShellImageReader.cs
 │   │   │   └── ShellWorkQueue.cs
+│   │   ├── Launching/
+│   │   │   ├── DeckleAtelierSource.Launching.cs
+│   │   │   ├── FileLauncher.cs
+│   │   │   └── ShellFileLauncher.cs
 │   │   ├── Map/
 │   │   │   ├── FrontMatter.cs
 │   │   │   ├── MapConventions.cs
@@ -2411,6 +2415,8 @@ _Generated from `git ls-files` — do not edit by hand._
 │   │   │   ├── ShellImageReaderSystemTests.cs
 │   │   │   ├── ShellPixelRulesTests.cs
 │   │   │   └── ShellWorkQueueTests.cs
+│   │   ├── Launching/
+│   │   │   └── ShellFileLauncherTests.cs
 │   │   ├── Photos/
 │   │   │   ├── CaptureDataTests.cs
 │   │   │   ├── DarktableTests.cs
