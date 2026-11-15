@@ -18,6 +18,10 @@ internal sealed partial class NoScriptMenuNotice : UserControl
         SentenceText.Text = ProjectsText.Get("Pinned_NoMenu");
         CopyIcon.Glyph = ProjectsGlyphs.Copy;
         CopyLabel.Text = ProjectsText.Get("Pinned_CopyInstall");
+
+        // The tooltip shows the exact line the link copies, so the person sees what
+        // they are about to run in a terminal.
+        ToolTipService.SetToolTip(CopyLink, DeckleScriptsInstall.Command);
         Unloaded += (_, _) => _timer?.Stop();
     }
 
