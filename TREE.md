@@ -584,12 +584,14 @@ _Generated from `git ls-files` — do not edit by hand._
 │   │   │   │   └── BitcountSingle.ttf
 │   │   │   ├── Icons/
 │   │   │   │   ├── deckle--state--recording--32px.png
-│   │   │   │   ├── deckle--state--recording--form--normal.ico
 │   │   │   │   ├── deckle--state--recording--incident--true.ico
+│   │   │   │   ├── deckle--state--recording--mode--dark.ico
+│   │   │   │   ├── deckle--state--recording--mode--light.ico
 │   │   │   │   ├── deckle--state--recording.ico
 │   │   │   │   ├── deckle--state--rest--32px.png
-│   │   │   │   ├── deckle--state--rest--form--normal.ico
 │   │   │   │   ├── deckle--state--rest--incident--true.ico
+│   │   │   │   ├── deckle--state--rest--mode--dark.ico
+│   │   │   │   ├── deckle--state--rest--mode--light.ico
 │   │   │   │   ├── deckle--state--rest.ico
 │   │   │   │   ├── deckle--state--rewriting--32px.png
 │   │   │   │   ├── deckle--state--rewriting--incident--true.ico
@@ -2023,6 +2025,7 @@ _Generated from `git ls-files` — do not edit by hand._
 │   │   │   ├── Breadcrumb.cs
 │   │   │   ├── CategoryDropTarget.cs
 │   │   │   ├── InlineNameEditor.cs
+│   │   │   ├── KeyboardFocus.cs
 │   │   │   ├── MainActionButton.cs
 │   │   │   ├── MainActionState.cs
 │   │   │   ├── ProjectDragData.cs
@@ -2043,6 +2046,7 @@ _Generated from `git ls-files` — do not edit by hand._
 │   │   │   ├── ProjectCard.xaml.cs
 │   │   │   ├── ProjectCardMenu.cs
 │   │   │   ├── ProjectGrid.cs
+│   │   │   ├── SectionHeaderLabel.cs
 │   │   │   └── WithoutCategoryFold.cs
 │   │   ├── Pages/
 │   │   │   ├── Category/
@@ -2069,6 +2073,7 @@ _Generated from `git ls-files` — do not edit by hand._
 │   │   │       ├── ProjectPage.OpenIn.cs
 │   │   │       ├── ProjectPage.Readouts.cs
 │   │   │       ├── ProjectPage.Review.cs
+│   │   │       ├── ProjectPage.Terminals.cs
 │   │   │       ├── ProjectPage.Timer.cs
 │   │   │       ├── ProjectPage.xaml
 │   │   │       ├── ProjectPage.xaml.cs
@@ -2088,6 +2093,7 @@ _Generated from `git ls-files` — do not edit by hand._
 │   │   ├── IProjectsPage.cs
 │   │   ├── ProjectsContext.cs
 │   │   ├── ProjectsGlyphs.cs
+│   │   ├── ProjectsMetrics.xaml
 │   │   ├── ProjectsText.cs
 │   │   ├── ProjectStoreExtensions.cs
 │   │   ├── ProjectsWindow.Chrome.cs
@@ -2220,7 +2226,8 @@ _Generated from `git ls-files` — do not edit by hand._
 │   │   ├── SessionEndWatcher.cs
 │   │   ├── StartupService.cs
 │   │   ├── TrayIconManager.cs
-│   │   └── TrayIconRegistration.cs
+│   │   ├── TrayIconRegistration.cs
+│   │   └── WindowsMode.cs
 │   ├── Deckle.Shell.Foreground/
 │   │   ├── Interop/
 │   │   │   └── ForegroundNativeMethods.cs

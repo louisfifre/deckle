@@ -12,7 +12,9 @@
          column and stay on one line: a state that wraps ("Running · 1" over
          "min 12 s") reads worse than one that is trimmed, and the card is kept
          wide enough (see PinnedActionsSection) that the usual states fit. The
-         ring is centred on that one line. -->
+         ring is centred on that one line. After a run that ended while its
+         terminal window is still open, a small button after the words brings
+         that window up, so the output can be read. -->
     <Grid RowSpacing="2">
         <Grid.RowDefinitions>
             <RowDefinition Height="Auto" />
@@ -22,6 +24,7 @@
             <ColumnDefinition Width="Auto" />
             <ColumnDefinition Width="Auto" />
             <ColumnDefinition Width="*" />
+            <ColumnDefinition Width="Auto" />
         </Grid.ColumnDefinitions>
 
         <ProgressRing x:Name="Ring"
@@ -45,9 +48,20 @@
                    TextWrapping="NoWrap"
                    TextTrimming="CharacterEllipsis"
                    VerticalAlignment="Center" />
+        <Button x:Name="TerminalButton"
+                Grid.Column="3"
+                Style="{StaticResource SubtleButtonStyle}"
+                Padding="6,2"
+                Height="24"
+                Margin="4,0,0,0"
+                VerticalAlignment="Center"
+                Visibility="Collapsed"
+                Click="OnTerminalClick">
+            <FontIcon x:Name="TerminalIcon" FontSize="12" />
+        </Button>
         <TextBlock x:Name="NoteText"
                    Grid.Row="1"
-                   Grid.ColumnSpan="3"
+                   Grid.ColumnSpan="4"
                    Style="{StaticResource CaptionTextBlockStyle}"
                    Foreground="{ThemeResource TextFillColorTertiaryBrush}"
                    TextWrapping="Wrap"

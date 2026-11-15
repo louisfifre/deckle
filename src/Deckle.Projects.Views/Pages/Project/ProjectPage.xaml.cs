@@ -1,3 +1,4 @@
+using Microsoft.UI.Xaml;
 using Microsoft.UI.Xaml.Controls;
 
 namespace Deckle.Projects.Views;
@@ -16,6 +17,7 @@ namespace Deckle.Projects.Views;
 //   ProjectPage.Actions.cs    the pinned actions and what their buttons start
 //   ProjectPage.Missing.cs    a project whose folder is gone
 //   ProjectPage.Timer.cs      the one-second tick of "Running · 1 min 12 s"
+//   ProjectPage.Terminals.cs  which ended runs still have their terminal open
 //   ProjectPage.Review.cs     what the self-check drives
 //
 // The page listens to three things, each marshalled to the window's thread
@@ -61,14 +63,26 @@ internal sealed partial class ProjectPage : Page, IProjectsPage
         _context.Workspace.Readings.ReadingChanged += OnReadingChanged;
         _context.Workspace.Board.Changed += OnBoardChanged;
 
-        Apply();
-        StartTimer();
+        // The window never receives a page whose constructor threw, so it cannot
+        // dispose it: the page lets go of what it subscribed to and started.
+        try
+        {
+            if (Project is { } opened) ProbeDiskIfUnread(opened);
+            Apply();
+            StartTimer();
+            RefreshTerminals();
 
-        // "Rename" in a card's menu opens the page with the name already a text
-        // box (spec, Renaming).
-        if (beginRename) NameEditor.BeginEdit();
+            // "Rename" in a card's menu opens the page with the name already a text
+            // box (spec, Renaming).
+            if (beginRename) NameEditor.BeginEdit();
 
-        _initialLoad = LoadAsync(refreshMenu: false, estimateAgent: true);
+            _initialLoad = LoadAsync(refreshMenu: false, estimateAgent: true);
+        }
+        catch (Exception)
+        {
+            Dispose();
+            throw;
+        }
     }
 
     private ProjectEntry? Project => _context.Store.Find(_projectId);
@@ -77,9 +91,13 @@ internal sealed partial class ProjectPage : Page, IProjectsPage
     // AGENTS.md wants to see the number move. The window coming back to the
     // front reads the folder again, and the menu only if it was not found, since
     // the person may have just run the install command in a terminal.
-    public Task RefreshAsync(RefreshReason reason) => reason == RefreshReason.Requested
-        ? LoadAsync(refreshMenu: true, estimateAgent: true)
-        : LoadAsync(refreshMenu: _listing is not ScriptMenuListing.Listed, estimateAgent: false);
+    public Task RefreshAsync(RefreshReason reason)
+    {
+        RefreshTerminals();
+        return reason == RefreshReason.Requested
+            ? LoadAsync(refreshMenu: true, estimateAgent: true)
+            : LoadAsync(refreshMenu: _listing is not ScriptMenuListing.Listed, estimateAgent: false);
+    }
 
     public void Dispose()
     {
@@ -107,6 +125,8 @@ internal sealed partial class ProjectPage : Page, IProjectsPage
 
         try
         {
+            // A folder nothing has read yet is known once the probe is back.
+            await _probing;
             Task reading = _context.RefreshReadingsAsync([project], _lifetime.Token);
             if (FolderIsMissing(project)) await reading;
 
@@ -138,8 +158,19 @@ internal sealed partial class ProjectPage : Page, IProjectsPage
             return;
         }
 
+        // A read that fails is an answer too: the section is shown in its error
+        // state, with the pinned cards, instead of staying hidden for good. A
+        // cancelled read means the page was left and needs nothing.
         ScriptMenuCache menus = _context.Workspace.Menus;
-        _listing = await (refresh ? menus.RefreshAsync(project, _lifetime.Token) : menus.GetAsync(project, _lifetime.Token));
+        try
+        {
+            _listing = await (refresh ? menus.RefreshAsync(project, _lifetime.Token) : menus.GetAsync(project, _lifetime.Token));
+        }
+        catch (Exception ex) when (ex is IOException or UnauthorizedAccessException or InvalidOperationException)
+        {
+            DeckleProjectsSource.Log.ProjectsPageFailed("project", ex.GetType().Name);
+            _listing = new ScriptMenuListing.Unreadable("");
+        }
     }
 
     private async Task EstimateAgentAsync(ProjectEntry project)
@@ -162,6 +193,17 @@ internal sealed partial class ProjectPage : Page, IProjectsPage
         ApplyMissing(missing);
         if (missing) return;
 
+        // Nothing is known of the folder yet (the probe is a few milliseconds):
+        // the header stands alone until it is.
+        bool unknown = FolderIsUnknown(project);
+        Readouts.Visibility = unknown ? Visibility.Collapsed : Visibility.Visible;
+        OpenIn.Visibility = unknown ? Visibility.Collapsed : Visibility.Visible;
+        if (unknown)
+        {
+            Pinned.Visibility = Visibility.Collapsed;
+            return;
+        }
+
         ApplyReadouts(project);
         ApplyOpenIn(project);
         ApplyPinned(project);
@@ -176,7 +218,12 @@ internal sealed partial class ProjectPage : Page, IProjectsPage
 
     private void OnBoardChanged(string projectId)
     {
-        if (projectId == _projectId) _context.Dispatch(ApplyActions);
+        if (projectId != _projectId) return;
+        _context.Dispatch(() =>
+        {
+            ApplyActions();
+            RefreshTerminals();
+        });
     }
 
     // The board moved or a second went by: only what shows an action's state is

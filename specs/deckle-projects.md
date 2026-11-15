@@ -69,19 +69,19 @@ Its neighbours are Deckle Folders, which shows files and draws the map of a fold
 - When Deckle found several versions that differ, the meta line says so in words, without an icon: "v0.32.0 · 3 versions found"; the detail is on the project page (session, after the v4 review, H1, P2). With uncommitted files too, the count of versions comes before them (session; not drawn in v4).
 - A project with a main action has, alone in its card's footer, a button named after that action: "Build & run" on deckle, "Server power" on homelab. A project without one has an empty footer (session, H1).
 - Clicking the button runs the main action. Clicking anywhere else on the card, outside "…", opens the project page (Louis, 2026-11-15, on v3).
-- The "…" menu holds "Open in File Explorer" and "Open in terminal"; then "Move to <category>" for each category the project is not in, and "Move to a new category…"; then "Rename" and "Remove from Deckle", which carries the hint "Folder stays" (session, after the v4 review, H3, drawn on a project without a category). The menu has no "Open": clicking the card does that (session, after the v4 review).
-- On a project that is in a category, the menu also holds an entry that puts it back in Without a category (session; not drawn in v4).
+- The "…" menu holds "Open in File Explorer" and "Open in terminal"; then "Move to", a submenu that holds one item per category the project is not in, then "New category…"; then "Rename" and "Remove from Deckle", whose tooltip says "Folder stays" (session, after the v4 review, H3; the submenu is from the second pass). "Open in File Explorer" and "Open in terminal" are off on a project whose folder was not found. The menu has no "Open": clicking the card does that (session, after the v4 review).
+- On a project that is in a category, the "Move to" submenu also holds an entry that puts it back in Without a category (session; not drawn in v4).
 - "Rename" opens the project page with its name already a text box (session, after the v4 review).
 - A card dragged onto a category joins it; dragged onto "Without a category", it leaves its category (session; Louis, 2026-11-15, on v3: by selecting a project or by drag and drop).
 
 ### Category page (C1)
 
-- From top to bottom: the breadcrumb "Projects ›", the category's title, the line "4 projects · drag a row to change the order", the list, and "Delete this category" (session, C1).
+- From top to bottom: the breadcrumb "Projects ›", the category's title, the line "4 projects · drag a row to change the order", the list, and the "Delete this category" button (session, C1).
 - The list is plain: one row per project with a dotted gripper handle, the name over the full path, the same meta line as the card, and the main action's button when the project has one (session, C1; Louis, 2026-11-15, on v3: "a category page that is a plain list").
 - Clicking a row outside its button opens the project page (session).
 - Dragging a row by its gripper changes the order of the projects in the category; Home shows them in that order (session, C1).
 - The title is renamed in place the same way as a project's name: a pencil shows on hover or focus (session, C1; see Renaming).
-- "Delete this category" is followed by "Its projects go back to Without a category." and does exactly that; no project is removed (session, C1).
+- "Delete this category" opens a small flyout under the button that asks "Delete <name>? Its N projects go back to Without a category." with one "Delete" button; Esc or a click away cancels. Confirmed, it does exactly that, and no project is removed. It asks even for an empty category (session, C1; second pass).
 - A project added from this page joins this category (session). C1 does not draw the command "Add a project…" (session).
 
 ### Project page
@@ -118,18 +118,18 @@ From top to bottom: header, three readouts, "Open in", "Pinned actions" (session
 - "Pin an action…", on the section's title line, lists the entries the project's menu gives (`scripts/menu.ps1 -List`). Louis pins and unpins entries there, and marks one pinned entry as main (session; the list itself is not drawn in v4).
 - An entry with variants is pinned with one of them (session, P1: "self-check.ps1 · Debug").
 - A card shows the menu's label, the script's file name and the variant, a state line, and "Run": "Self-check", "self-check.ps1 · Debug", "Not run yet" (session, P1).
-- Under the cards: "Actions run in Windows Terminal, one at a time per project. Every other script is in the script menu." (session, after the v4 review, P1).
+- Under the cards: "Actions run in a terminal window, one at a time per project. Every other script is in the script menu." (it names no product, because the terminal is a choice with a fallback) (session, after the v4 review, P1).
 - "Run" opens Windows Terminal running `scripts/menu.ps1 -Run <id>` in the project's folder (session). The header's accent button and the Home card's button do the same for the main action (session).
 - While a pinned action runs, its state line shows a progress ring and "Running · 1 min 12 s", and "Run" gives way to "Show terminal", which brings its terminal to the front (session, after the v4 review, P3).
-- While an action runs, each other pinned action reads "Waits for Self-check to end", with the running action's label, and its "Run" is disabled; the header's accent button is disabled too (session, after the v4 review, P3). "Open script menu" and the links stay usable, and so do the other projects (session, P3).
+- While an action runs, each other pinned action reads "Waits for Self-check to end", with the running action's label, and its "Run" is disabled; the header's accent button is disabled too, and the line under it reads "Build & run waits for Self-check to end" in place of the main action's last result, which comes back when nothing runs (session, after the v4 review, P3; third pass). "Open script menu" and the links stay usable, and so do the other projects (session, P3).
 - Deckle has no Stop button: Louis stops an action in its terminal (session, P3).
 - When a pinned action ends, its state line reads "Succeeded 4 min ago · exit code 0" or, with a warning icon in the critical colour, "Failed 4 min ago · exit code 1" (session; not drawn in v4).
 - The main action's last result shows as one line under the header's buttons: a warning icon in the critical colour and "Build & run failed 4 min ago · exit code 1" (session, after the v4 review, P3). A success reads "Build & run succeeded 4 min ago · exit code 0", without an icon (session; not drawn in v4).
 - While the main action runs, that line shows the ring and "Build & run running · 1 min 12 s", and the accent button gives way to "Show terminal" (session; not drawn in v4).
-- The output stays in the terminal; Deckle shows none of it (session).
-- An action's result stays until that action runs again or Deckle closes (session, P3: the failure of "Build & run" stays while "Self-check" runs).
+- The output stays in the terminal; Deckle shows none of it (session). After a run that ended by itself, its window waits for a key, and while it is still open a small "Show terminal" button after the action's result line brings it to the front, on the card and in the header; once the window is closed the button goes (session, third pass).
+- An action's result stays until that action runs again or Deckle closes (session, P3: the failure of "Build & run" is kept while "Self-check" runs, though the header's line gives way to the wait).
 - With a script menu and nothing pinned, the section shows "Pin an action…" and the line under the cards, and the header has "Open script menu" alone (session; not drawn in v4).
-- A project without the script menu shows, under "Pinned actions", one line, "This project has no script menu, so there is nothing to pin.", and the link "Copy the install command" (session, after the v4 review, P2). The link copies the install line of deckle-scripts; Louis runs it in a terminal, and the page finds the menu when the window comes back to the front (session). Deckle installs nothing itself (session).
+- A project without the script menu shows, under "Pinned actions", one line, "This project has no script menu, so there is nothing to pin.", and the link "Copy the install command" (session, after the v4 review, P2). The link copies the install line of deckle-scripts, and its tooltip shows that line; Louis runs it in a terminal, and the page finds the menu when the window comes back to the front (session). Deckle installs nothing itself (session).
 - A menu that cannot be read shows "The script menu could not be read" and the error's last lines (session; not drawn in v4).
 - A pinned entry the menu no longer gives keeps its card, with "Run" disabled and a state line saying the menu no longer has it (session; not drawn in v4).
 

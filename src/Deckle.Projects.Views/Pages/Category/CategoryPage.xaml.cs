@@ -5,10 +5,10 @@ using Microsoft.UI.Xaml.Controls;
 namespace Deckle.Projects.Views;
 
 // A category's page (board C1): its title (renamed in place), the number of its
-// projects, one row per project in the order Home shows them, and the link that
-// deletes the category. This file holds the page's lifetime and what keeps it
+// projects, one row per project in the order Home shows them, and the button
+// that deletes the category. This file holds the page's lifetime and what keeps it
 // up to date; CategoryPage.Rows.cs draws the list, CategoryPage.Reorder.cs
-// holds the drag, CategoryPage.Delete.cs the link.
+// holds the drag, CategoryPage.Delete.cs the delete button and its flyout.
 //
 // Like Home, the page listens to three things, each marshalled to the window's
 // thread because the engine raises them wherever the work finished:
@@ -43,15 +43,26 @@ internal sealed partial class CategoryPage : Page, IProjectsPage
         TitleEditor.Committed += OnTitleCommitted;
 
         DeleteLabel.Text = ProjectsText.Get("Category_Delete");
-        DeleteNote.Text = ProjectsText.Get("Category_DeleteNote");
+        DeleteFlyout.Opening += OnDeleteFlyoutOpening;
+        DeleteConfirmButton.Content = ProjectsText.Get("Category_DeleteConfirm");
         EmptyText.Text = ProjectsText.Get("Category_Empty");
 
         _context.Store.Changed += OnStoreChanged;
         _context.Workspace.Readings.ReadingChanged += OnReadingChanged;
         _context.Workspace.Board.Changed += OnBoardChanged;
 
-        Wire();
-        _ = ReadAsync(Build());
+        // The window never receives a page whose constructor threw, so it cannot
+        // dispose it: the page lets go of what it subscribed to.
+        try
+        {
+            Wire();
+            _ = ReadAsync(Build());
+        }
+        catch (Exception)
+        {
+            Dispose();
+            throw;
+        }
     }
 
     // F5 and the window coming back to the front: every row is read again, and

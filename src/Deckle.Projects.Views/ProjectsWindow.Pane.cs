@@ -14,7 +14,8 @@ namespace Deckle.Projects.Views;
 // but opens over the page. So the display mode follows the state: LeftMinimal
 // while closed, Left (docked) when the person opens it in a window wide enough
 // to give the page its room, and LeftMinimal (over the page) when the window is
-// narrow. Only the hamburger opens it.
+// narrow. Only the hamburger opens it. The mode is chosen when the pane opens and
+// chosen again whenever the window is resized while it is open.
 public sealed partial class ProjectsWindow
 {
     // The window width, in DIPs, from which an open pane is docked: below it the
@@ -23,6 +24,7 @@ public sealed partial class ProjectsWindow
 
     private bool _paneOpen;
     private bool _rebuildingPane;
+    private bool _switchingMode;
 
     // Nodes the person opened or closed, by key. A node absent from it is in its
     // default state: a category open, "Without a category" closed (board H2).
@@ -39,8 +41,7 @@ public sealed partial class ProjectsWindow
 
         if (open)
         {
-            bool docked = RootGrid.ActualWidth >= DockedFromWidth;
-            Nav.PaneDisplayMode = docked ? NavigationViewPaneDisplayMode.Left : NavigationViewPaneDisplayMode.LeftMinimal;
+            Nav.PaneDisplayMode = OpenPaneMode();
             Nav.IsPaneOpen = true;
         }
         else
@@ -50,10 +51,39 @@ public sealed partial class ProjectsWindow
         }
     }
 
+    private NavigationViewPaneDisplayMode OpenPaneMode() =>
+        RootGrid.ActualWidth >= DockedFromWidth ? NavigationViewPaneDisplayMode.Left : NavigationViewPaneDisplayMode.LeftMinimal;
+
+    // The window was resized: an open pane follows the width, docked once the
+    // window is wide enough and over the page once it is not, instead of keeping
+    // the mode it opened in. A closed pane has no mode to follow.
+    private void OnRootSizeChanged(object sender, SizeChangedEventArgs args)
+    {
+        if (!_paneOpen) return;
+        NavigationViewPaneDisplayMode mode = OpenPaneMode();
+        if (Nav.PaneDisplayMode == mode) return;
+
+        // NavigationView may close its pane while it changes mode (a guard, not
+        // an observed fault: its documentation does not say). A change made here is not
+        // the person closing it, so PaneClosed is ignored during it and the pane
+        // is kept open afterwards.
+        _switchingMode = true;
+        try
+        {
+            Nav.PaneDisplayMode = mode;
+            if (!Nav.IsPaneOpen) Nav.IsPaneOpen = true;
+        }
+        finally
+        {
+            _switchingMode = false;
+        }
+    }
+
     // A pane that covers the page closes when the person clicks elsewhere: the
     // state follows, so the next press of the hamburger opens it again.
     private void OnPaneClosed(NavigationView sender, object args)
     {
+        if (_switchingMode) return;
         _paneOpen = false;
         Nav.PaneDisplayMode = NavigationViewPaneDisplayMode.LeftMinimal;
     }

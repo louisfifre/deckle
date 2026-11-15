@@ -56,8 +56,8 @@ public partial class App
         window.CloseVersionsFlyoutForReview();
 
         // Board P3. "Build & run" failed four minutes ago (it is the main
-        // action, so the line sits under the header), and "Self-check" has run
-        // for 1 min 12 s: "Update prod" waits for it.
+        // action; its failure is kept but the header's line says it waits), and
+        // "Self-check" has run for 1 min 12 s: "Update prod" waits for it.
         ProjectEntry deckle = workspace.Store.FindByPath(sample.PathOf(SampleProjectNames.Deckle))
             ?? throw new InvalidOperationException("The sample's project is not in the store.");
         await capture("p3", async () =>
@@ -71,8 +71,8 @@ public partial class App
 
             await window.ShowProjectForReviewAsync(SampleProjectNames.Deckle);
             IReadOnlyList<string> page = window.ProjectOutlineForReview;
-            ProjectsCheck(page.Any(l => l.StartsWith("main line: ") && l.Contains("failed 4 min ago")),
-                "The line under the header does not say the main action failed 4 min ago.");
+            ProjectsCheck(page.Any(l => l.StartsWith("main line: ") && l.Contains("waits for Self-check to end")),
+                "The line under the header does not say the main action waits for Self-check.");
             if (menu)
             {
                 ProjectsCheck(page.Any(l => l.StartsWith("accent: Build & run") && l.EndsWith("(off)")),

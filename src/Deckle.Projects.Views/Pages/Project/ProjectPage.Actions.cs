@@ -12,15 +12,14 @@ internal sealed partial class ProjectPage
     {
         Pinned.RunRequested += action =>
             _ = StartAsync(() => _context.Workspace.StartPinnedActionAsync(_projectId, action));
-        Pinned.ShowTerminalRequested += _ => ShowTerminal();
+        Pinned.ShowTerminalRequested += ShowTerminal;
         Pinned.PinRequested += ShowPinFlyout;
     }
 
     // Whether the script menu is there: the reading knows, and before the first
-    // reading the file is looked for.
+    // reading the probe does (false while neither has answered).
     private bool HasScriptMenu(ProjectEntry project) =>
-        _context.Workspace.Readings.Get(project.Id)?.HasScriptMenu
-        ?? File.Exists(Path.Combine(project.Path, "scripts", "menu.ps1"));
+        _context.Workspace.Readings.Get(project.Id)?.HasScriptMenu ?? _probe?.HasMenu ?? false;
 
     // The same reasons the engine refuses to start for (a folder that is gone, a
     // missing menu, no shell); the engine stays the safety net behind a button
@@ -32,6 +31,15 @@ internal sealed partial class ProjectPage
     {
         bool missing = FolderIsMissing(project);
         PinnedMenuKind kind = MenuKindOf(project);
+
+        // The section appears once, in its final state, when the menu has
+        // answered: showing "Pin an action..." first and taking it away when
+        // the menu turns out missing would make the page jump. The wait is a
+        // local read, short enough to need no ring.
+        bool awaitingMenu = kind == PinnedMenuKind.Listed && _listing is null;
+        Pinned.Visibility = awaitingMenu ? Visibility.Collapsed : Visibility.Visible;
+        if (awaitingMenu) return;
+
         bool canStart = CanStartAnAction(project, missing) && kind is PinnedMenuKind.Listed or PinnedMenuKind.Unreadable;
         DateTimeOffset now = _context.Workspace.Clock.GetUtcNow();
         ActionRunBoard board = _context.Workspace.Board;
@@ -51,7 +59,8 @@ internal sealed partial class ProjectPage
                 pin, running, board.LastResult(project.Id, pin.Action), menuGivesIt, canStart, now);
 
             string detail = pin.Action.Variant is { } variant ? $"{pin.Script} · {variant}" : pin.Script;
-            cards.Add(new PinnedCardModel(pin.Action, pin.Label, detail, state));
+            bool terminalOpen = running is null && TerminalIsOpen(pin.Action);
+            cards.Add(new PinnedCardModel(pin.Action, pin.Label, detail, state, terminalOpen));
         }
 
         Pinned.Apply(new PinnedSectionModel(kind, (_listing as ScriptMenuListing.Unreadable)?.LastLines, cards));
@@ -85,9 +94,16 @@ internal sealed partial class ProjectPage
         }
     }
 
-    // Brings the terminal of the running action to the front. Nothing is said
-    // when no window is found: the action's own state line stays.
-    private void ShowTerminal() => _context.Workspace.Runner.TryShowTerminal(_projectId);
+    // Brings the terminal of the action to the front: the one it runs in, or the
+    // one a run that just ended left open. Nothing is said when no window is
+    // found: the action's own state line stays, and the line is drawn again so
+    // an offer of a window that is gone goes away.
+    private void ShowTerminal(ActionRef action)
+    {
+        _context.Workspace.Runner.TryShowTerminal(_projectId, action);
+        RefreshTerminals();
+        ApplyActions();
+    }
 
     // The list of the menu's entries, under "Pin an action...". Opens at once; when
     // the menu has not answered yet, the list shows a progress ring and fills.

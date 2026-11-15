@@ -177,11 +177,41 @@ public sealed class ActionRunner : IDisposable
     // Brings the terminal of the project's running action to the front. False
     // when no action runs or no window carries its title; the run's own state
     // line stays, nothing more is said.
-    public bool TryShowTerminal(string projectId)
+    //
+    // With an action, the window of that action's last run is brought up when
+    // it is not the one running (see TerminalIsOpen).
+    public bool TryShowTerminal(string projectId, ActionRef? action = null)
     {
         ActionRun? run = _board.ActiveRun(projectId);
-        return run is not null && _finder.Show(run.Title);
+        if (run is not null && (action is null || run.Action == action)) return _finder.Show(run.Title);
+        return action is not null && EndedTerminalTitle(projectId, action) is { } title && _finder.Show(title);
     }
+
+    // Whether the terminal of an action's last run, one that ended by itself,
+    // is still on screen (the wrapper waits for a key before it closes). A run
+    // that was closed or never started has no window to show.
+    public bool TerminalIsOpen(string projectId, ActionRef action) =>
+        EndedTerminalTitle(projectId, action) is { } title && _finder.Exists(title);
+
+    // TerminalIsOpen for several actions of a project from one look at the
+    // windows, which walks every top-level window: the caller asks once per
+    // refresh, off the UI thread, and shares the answer between its controls.
+    // Returns the actions whose terminal is still open.
+    public IReadOnlySet<ActionRef> ActionsWithOpenTerminal(string projectId, IEnumerable<ActionRef> actions)
+    {
+        var titles = new Dictionary<ActionRef, string>();
+        foreach (ActionRef action in actions)
+            if (EndedTerminalTitle(projectId, action) is { } title) titles[action] = title;
+        if (titles.Count == 0) return new HashSet<ActionRef>();
+
+        IReadOnlySet<string> open = _finder.ExistingAmong(titles.Values);
+        return titles.Where(t => open.Contains(t.Value)).Select(t => t.Key).ToHashSet();
+    }
+
+    private string? EndedTerminalTitle(string projectId, ActionRef action) =>
+        _board.LastResult(projectId, action) is { Outcome: RunOutcome.Succeeded or RunOutcome.Failed } result
+            ? result.TerminalTitle
+            : null;
 
     // One look at every running action, as the timer does. Returns how many are
     // still running.

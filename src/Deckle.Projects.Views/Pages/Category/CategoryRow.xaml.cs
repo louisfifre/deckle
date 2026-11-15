@@ -8,7 +8,8 @@ namespace Deckle.Projects.Views;
 
 // A project's row on a category page (spec, Category page). Clicking it opens
 // the project's page (the list's ItemClick does that, so Enter and Space work
-// too); its button runs the main action; its handle is where a drag starts.
+// too); its button runs the main action; its handle is where a drag starts. The
+// list's item container around the row draws the focus only.
 //
 // The row draws what the workspace knows when Refresh is called and keeps
 // nothing subscribed: the page listens to the store, the readings and the
@@ -24,19 +25,21 @@ internal sealed partial class CategoryRow : UserControl
         InitializeComponent();
 
         TrimmedTextToolTip.Attach(NameText);
-        // The whole path is written; only a path too long for the row is cut at
-        // its end, and then the tooltip carries the full value.
-        TrimmedTextToolTip.Attach(PathText);
         ToolTipService.SetToolTip(Grip, ProjectsText.Get("Category_Grip"));
-
-        PointerEntered += (_, _) => VisualStateManager.GoToState(this, "PointerOver", true);
-        PointerExited += (_, _) => VisualStateManager.GoToState(this, "Normal", true);
-        PointerCanceled += (_, _) => VisualStateManager.GoToState(this, "Normal", true);
-        PointerCaptureLost += (_, _) => VisualStateManager.GoToState(this, "Normal", true);
 
         // handledEventsToo: the list marks the press as handled when it starts
         // to track a drag, and the page still needs to know where it landed.
         AddHandler(PointerPressedEvent, new PointerEventHandler(OnPointerPressed), handledEventsToo: true);
+
+        // The fills of the row's states, in the control fills the Home cards use.
+        // Released and exited also come through handledEventsToo: the list may
+        // have marked the press as handled.
+        PointerEntered += (_, _) => GoTo("PointerOver");
+        PointerExited += (_, _) => GoTo("Normal");
+        AddHandler(PointerPressedEvent, new PointerEventHandler((_, _) => GoTo("Pressed")), handledEventsToo: true);
+        AddHandler(PointerReleasedEvent, new PointerEventHandler((_, _) => GoTo("PointerOver")), handledEventsToo: true);
+        AddHandler(PointerCanceledEvent, new PointerEventHandler((_, _) => GoTo("Normal")), handledEventsToo: true);
+        AddHandler(PointerCaptureLostEvent, new PointerEventHandler((_, _) => GoTo("Normal")), handledEventsToo: true);
 
         MainAction.Invoked += () => _ = _context.RunMainActionAsync(ProjectId);
 
@@ -62,7 +65,11 @@ internal sealed partial class CategoryRow : UserControl
 
         string name = project.DisplayName;
         NameText.Text = name;
+        // The whole path is written and only the end is cut when the row is too
+        // narrow, which is the part that tells two paths apart: the tooltip
+        // always carries it, as Explorer's does for any trimmed text.
         PathText.Text = project.Path;
+        ToolTipService.SetToolTip(PathText, project.Path);
         MetaText.Text = CardMeta.Text(_context.Workspace.Readings.Get(ProjectId));
 
         AutomationProperties.SetName(this, name);
@@ -73,6 +80,10 @@ internal sealed partial class CategoryRow : UserControl
         MainAction.Visibility = action is null ? Visibility.Collapsed : Visibility.Visible;
         if (action is not null) MainAction.Apply(action);
     }
+
+    // The row's own fill: the card's at rest ("Normal"), or one of the control
+    // fills while the pointer is over or pressing it (CategoryRow.xaml).
+    private void GoTo(string state) => VisualStateManager.GoToState(this, state, true);
 
     private void OnPointerPressed(object sender, PointerRoutedEventArgs e) =>
         GripPressed = IsWithin(e.OriginalSource, Grip);

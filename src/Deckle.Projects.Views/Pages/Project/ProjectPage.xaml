@@ -10,56 +10,76 @@
          real window holds more than a board draws. A project whose folder is
          gone keeps its header and one sentence; the rest is hidden. -->
     <ScrollViewer x:Name="Scroll" VerticalScrollBarVisibility="Auto">
-        <StackPanel Margin="56,12,56,40" Spacing="32">
+        <StackPanel Margin="{StaticResource ProjectsPageMargin}" Spacing="{StaticResource ProjectsSectionSpacing}">
 
-            <Grid ColumnSpacing="8">
+            <!-- The breadcrumb, the name and the path on the left; on the right,
+                 on the name's own line, "Open script menu" and the main action,
+                 and on the path's line the main action's last result. The main
+                 action appears here and nowhere else on the page. The right
+                 column has a maximum width so a long failure is trimmed (its
+                 tooltip has the whole line) instead of pushing the name aside. -->
+            <Grid ColumnSpacing="8" RowSpacing="4">
                 <Grid.ColumnDefinitions>
                     <ColumnDefinition Width="*" />
                     <ColumnDefinition Width="Auto" />
                 </Grid.ColumnDefinitions>
+                <Grid.RowDefinitions>
+                    <RowDefinition Height="Auto" />
+                    <RowDefinition Height="Auto" />
+                    <!-- The path's row keeps the height of the tallest run line
+                         (the small "Show terminal" button, 24, is taller than
+                         the words) whether a line is shown or not, so the page
+                         below does not move when one appears or goes away. -->
+                    <RowDefinition Height="Auto" MinHeight="24" />
+                </Grid.RowDefinitions>
 
-                <StackPanel Spacing="4">
-                    <ContentPresenter x:Name="BreadcrumbHost" HorizontalAlignment="Left" />
-                    <local:InlineNameEditor x:Name="NameEditor" HorizontalAlignment="Left" />
-                    <TextBlock x:Name="PathText"
-                               Style="{StaticResource CaptionTextBlockStyle}"
-                               Foreground="{ThemeResource TextFillColorTertiaryBrush}"
-                               TextTrimming="CharacterEllipsis"
-                               TextWrapping="NoWrap" />
-                </StackPanel>
+                <ContentPresenter x:Name="BreadcrumbHost" HorizontalAlignment="Left" />
+                <local:InlineNameEditor x:Name="NameEditor" Grid.Row="1" HorizontalAlignment="Left" />
+                <TextBlock x:Name="PathText"
+                           Grid.Row="2"
+                           VerticalAlignment="Center"
+                           Style="{StaticResource CaptionTextBlockStyle}"
+                           Foreground="{ThemeResource TextFillColorTertiaryBrush}"
+                           TextTrimming="CharacterEllipsis"
+                           TextWrapping="NoWrap" />
 
-                <!-- The script menu and the main action, side by side, and under
-                     them the main action's last result. The main action appears
-                     here and nowhere else on the page. -->
-                <StackPanel Grid.Column="1" Margin="0,28,0,0" Spacing="6" HorizontalAlignment="Right">
-                    <StackPanel Orientation="Horizontal" Spacing="8" HorizontalAlignment="Right">
-                        <Button x:Name="ScriptMenuButton" Click="OnScriptMenuClick">
-                            <StackPanel Orientation="Horizontal" Spacing="8">
-                                <FontIcon x:Name="ScriptMenuIcon" FontSize="16" />
-                                <TextBlock x:Name="ScriptMenuLabel" />
-                            </StackPanel>
-                        </Button>
-                        <Button x:Name="MainButton"
-                                Style="{StaticResource AccentButtonStyle}"
-                                Click="OnMainClick">
-                            <StackPanel Orientation="Horizontal" Spacing="8">
-                                <FontIcon x:Name="MainIcon" FontSize="16" />
-                                <TextBlock x:Name="MainLabel" />
-                            </StackPanel>
-                        </Button>
-                        <Button x:Name="ShowTerminalButton"
-                                Visibility="Collapsed"
-                                Click="OnShowMainTerminalClick">
-                            <StackPanel Orientation="Horizontal" Spacing="8">
-                                <FontIcon x:Name="ShowTerminalIcon" FontSize="16" />
-                                <TextBlock x:Name="ShowTerminalLabel" />
-                            </StackPanel>
-                        </Button>
-                    </StackPanel>
-                    <local:RunLineView x:Name="MainLine" HorizontalAlignment="Right" Visibility="Collapsed" />
+                <StackPanel Grid.Row="1"
+                            Grid.Column="1"
+                            Orientation="Horizontal"
+                            Spacing="8"
+                            MaxWidth="{StaticResource ProjectsHeaderActionsMaxWidth}"
+                            HorizontalAlignment="Right"
+                            VerticalAlignment="Center">
+                    <Button x:Name="ScriptMenuButton" Click="OnScriptMenuClick">
+                        <StackPanel Orientation="Horizontal" Spacing="8">
+                            <FontIcon x:Name="ScriptMenuIcon" FontSize="16" />
+                            <TextBlock x:Name="ScriptMenuLabel" />
+                        </StackPanel>
+                    </Button>
+                    <Button x:Name="MainButton"
+                            Style="{StaticResource AccentButtonStyle}"
+                            Click="OnMainClick">
+                        <StackPanel Orientation="Horizontal" Spacing="8">
+                            <FontIcon x:Name="MainIcon" FontSize="16" />
+                            <TextBlock x:Name="MainLabel" />
+                        </StackPanel>
+                    </Button>
+                    <Button x:Name="ShowTerminalButton"
+                            Visibility="Collapsed"
+                            Click="OnShowMainTerminalClick">
+                        <StackPanel Orientation="Horizontal" Spacing="8">
+                            <FontIcon x:Name="ShowTerminalIcon" FontSize="16" />
+                            <TextBlock x:Name="ShowTerminalLabel" />
+                        </StackPanel>
+                    </Button>
                 </StackPanel>
+                <local:RunLineView x:Name="MainLine"
+                                   Grid.Row="2"
+                                   Grid.Column="1"
+                                   MaxWidth="{StaticResource ProjectsHeaderActionsMaxWidth}"
+                                   HorizontalAlignment="Right"
+                                   Visibility="Collapsed" />
             </Grid>
-
             <TextBlock x:Name="MissingText"
                        Style="{StaticResource BodyTextBlockStyle}"
                        Foreground="{ThemeResource TextFillColorSecondaryBrush}"

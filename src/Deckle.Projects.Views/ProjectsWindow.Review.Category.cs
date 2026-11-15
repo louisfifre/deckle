@@ -15,6 +15,6 @@ public sealed partial class ProjectsWindow
         return true;
     }
 
-    // The "Delete this category" link of the page shown, or null on another page.
-    public HyperlinkButton? DeleteCategoryButtonForReview => (_page as CategoryPage)?.DeleteLink;
+    // The "Delete this category" button of the page shown, or null on another page.
+    public Button? DeleteCategoryButtonForReview => (_page as CategoryPage)?.DeleteLink;
 }

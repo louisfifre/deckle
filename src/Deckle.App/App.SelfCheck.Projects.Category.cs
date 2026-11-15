@@ -4,7 +4,7 @@ using Deckle.Projects.Views;
 namespace Deckle.App;
 
 // The Projects walk's category page (board C1): the title, the projects of the
-// category in the order the person keeps them, and the link that deletes the
+// category in the order the person keeps them, and the button that deletes the
 // category.
 public partial class App
 {
@@ -17,7 +17,7 @@ public partial class App
             await window.RefreshForReviewAsync();
             ProjectsCheck(window.CurrentKindForReview == "category", "The window is not on the category's page.");
             ProjectsCheck(window.BackButtonShownForReview, "The back button is missing on a category's page.");
-            ProjectsCheck(window.DeleteCategoryButtonForReview is not null, "The category's page has no delete link.");
+            ProjectsCheck(window.DeleteCategoryButtonForReview is not null, "The category's page has no delete button.");
         });
     }
 }

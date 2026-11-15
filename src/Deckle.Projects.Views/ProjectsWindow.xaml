@@ -8,7 +8,7 @@
          first one, opened when keyboard focus lands anywhere inside it. On the
          root that is a stray "F5" under the window whenever focus arrives by
          keyboard; the title bar's buttons carry their own tooltips. -->
-    <Grid x:Name="RootGrid" KeyboardAcceleratorPlacementMode="Hidden">
+    <Grid x:Name="RootGrid" KeyboardAcceleratorPlacementMode="Hidden" SizeChanged="OnRootSizeChanged">
         <Grid.RowDefinitions>
             <RowDefinition Height="Auto" />
             <RowDefinition Height="*" />

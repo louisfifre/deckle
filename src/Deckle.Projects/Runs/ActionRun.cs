@@ -34,7 +34,12 @@ public enum RunOutcome
 // How the last run of an action ended. It stays until that action runs again or
 // Deckle closes (spec): the failure of "Build & run" is still there while
 // "Self-check" runs. Nothing is saved to disk (spec, Open 2, answer A).
-public sealed record ActionResult(RunOutcome Outcome, int? ExitCode, DateTimeOffset EndedAt, bool UsedFallback = false)
+//
+// TerminalTitle is the title of the window the run had. The wrapper keeps that
+// window open after a run that ended by itself, until a key is pressed, so
+// "Show terminal" can still bring it to the front to read the output.
+public sealed record ActionResult(
+    RunOutcome Outcome, int? ExitCode, DateTimeOffset EndedAt, bool UsedFallback = false, string? TerminalTitle = null)
 {
     public bool IsFailure => Outcome != RunOutcome.Succeeded;
 }

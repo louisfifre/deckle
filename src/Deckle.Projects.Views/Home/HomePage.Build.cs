@@ -2,7 +2,14 @@ using Microsoft.UI.Xaml;
 
 namespace Deckle.Projects.Views;
 
-// Draws Home from the store.
+// Draws Home from the store, and keeps it drawn.
+//
+// Home is not made again at each change of the store: a section is kept for
+// each category and the fold while it has a project, and Build only adds,
+// removes and reorders them and hands each its current projects. What the
+// person is in the middle of therefore survives a redraw: the scroll offset,
+// the keyboard on a card, a category title being typed, and the cards of the
+// fold shown past the third row.
 internal sealed partial class HomePage
 {
     private readonly List<CategorySection> _categorySections = [];
@@ -16,10 +23,6 @@ internal sealed partial class HomePage
     {
         ProjectStore store = _context.Store;
 
-        // A redraw must not take a title away from the person typing it.
-        foreach (CategorySection open in _categorySections)
-            if (open.Header.IsRenaming) _renameCategoryId = open.CategoryId;
-
         // Nothing at all: the empty screen (H0).
         bool empty = store.HoldsNothing();
         EmptyState.Visibility = empty ? Visibility.Visible : Visibility.Collapsed;
@@ -27,25 +30,63 @@ internal sealed partial class HomePage
         NewCategoryButton.Visibility = empty ? Visibility.Collapsed : Visibility.Visible;
         AddButton.Visibility = empty ? Visibility.Collapsed : Visibility.Visible;
 
-        Sections.Children.Clear();
-        _categorySections.Clear();
-        _fold = null;
-        if (empty) return;
+        if (empty)
+        {
+            Sections.Children.Clear();
+            _categorySections.Clear();
+            _fold = null;
+            return;
+        }
 
+        // The sections in the order the store keeps the categories, then the
+        // fold: a kept one is updated, a new one is made.
+        List<CategorySection> sections = [];
         foreach (ProjectCategory category in store.Categories)
         {
-            var section = new CategorySection(_context, this, category, store.ProjectsIn(category.Id));
-            section.Cards.ShownChanged += OnShownChanged;
-            _categorySections.Add(section);
-            Sections.Children.Add(section);
+            IReadOnlyList<ProjectEntry> projects = store.ProjectsIn(category.Id);
+            CategorySection? section = _categorySections.FirstOrDefault(s => s.CategoryId == category.Id);
+            if (section is null)
+            {
+                section = new CategorySection(_context, this, category, projects);
+                section.Cards.ShownChanged += OnShownChanged;
+            }
+            else
+            {
+                section.Update(category, projects);
+            }
+            sections.Add(section);
         }
 
         IReadOnlyList<ProjectEntry> loose = store.ProjectsIn(null);
-        if (loose.Count > 0)
+        if (loose.Count == 0)
+        {
+            _fold = null;
+        }
+        else if (_fold is null)
         {
             _fold = new WithoutCategoryFold(_context, this, loose);
             _fold.Cards.ShownChanged += OnShownChanged;
-            Sections.Children.Add(_fold);
+        }
+        else
+        {
+            _fold.Update(loose);
+        }
+
+        _categorySections.Clear();
+        _categorySections.AddRange(sections);
+
+        // Put the page's children in that order, touching only what is not
+        // already in place.
+        List<UIElement> wanted = [.. sections];
+        if (_fold is not null) wanted.Add(_fold);
+        for (int i = Sections.Children.Count - 1; i >= 0; i--)
+            if (!wanted.Contains(Sections.Children[i])) Sections.Children.RemoveAt(i);
+        for (int i = 0; i < wanted.Count; i++)
+        {
+            int at = Sections.Children.IndexOf(wanted[i]);
+            if (at == i) continue;
+            if (at > i) Sections.Children.RemoveAt(at);
+            Sections.Children.Insert(i, wanted[i]);
         }
 
         if (_renameCategoryId is { } renaming)

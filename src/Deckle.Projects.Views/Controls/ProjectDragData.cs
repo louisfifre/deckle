@@ -15,10 +15,17 @@ internal static class ProjectDragData
     public static void Put(DataPackage data, string projectId)
     {
         data.SetData(Format, projectId);
+        data.Properties[Format] = projectId;
         data.RequestedOperation = DataPackageOperation.Move;
     }
 
     public static bool IsProject(DataPackageView data) => data.Contains(Format);
+
+    // The id of the project being dragged, read at once (a target needs it while
+    // the drag is over it, before anything is dropped), or null when the package
+    // does not say.
+    public static string? PeekId(DataPackageView data) =>
+        data.Properties.TryGetValue(Format, out object? id) ? id as string : null;
 
     // The id dropped, or null when the package carries none.
     public static async Task<string?> TakeAsync(DataPackageView data)

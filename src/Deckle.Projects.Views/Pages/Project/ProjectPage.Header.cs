@@ -1,11 +1,12 @@
 using Microsoft.UI.Xaml;
 using Microsoft.UI.Xaml.Controls;
+using Microsoft.UI.Xaml.Input;
 
 namespace Deckle.Projects.Views;
 
-// The header: on the left the breadcrumb, the name and the path; on the right
-// "Open script menu" and the main action's accent button, with the main action's
-// last result under them (spec, Project page, Header).
+// The header: on the left the breadcrumb, the name and the path; on the right,
+// on the name's line, "Open script menu" and the main action's accent button, and
+// on the path's line the main action's last result (spec, Project page, Header).
 internal sealed partial class ProjectPage
 {
     // The breadcrumb is made again only when what it says changes (the project
@@ -25,6 +26,10 @@ internal sealed partial class ProjectPage
         MainIcon.Glyph = ProjectsGlyphs.Play;
         ShowTerminalIcon.Glyph = ProjectsGlyphs.OpenInNew;
         ShowTerminalLabel.Text = ProjectsText.Get("Pinned_ShowTerminal");
+        MainLine.ShowTerminalRequested += () =>
+        {
+            if (Project?.MainAction is { } main) ShowTerminal(main.Action);
+        };
     }
 
     private void ApplyHeader(ProjectEntry project, bool missing)
@@ -80,14 +85,36 @@ internal sealed partial class ProjectPage
             _context.Workspace.Clock.GetUtcNow());
 
         bool showTerminal = state.Button == ActionButtonMode.ShowTerminal;
+
+        // The two buttons take turns in the same place. A button that goes away
+        // while the keyboard is on it would drop the focus to nowhere, so the
+        // other one takes it.
+        bool mainHadFocus = HasFocus(MainButton);
+        bool terminalHadFocus = HasFocus(ShowTerminalButton);
+
         MainLabel.Text = state.Label;
         MainButton.IsEnabled = state.ButtonEnabled;
         MainButton.Visibility = showTerminal ? Visibility.Collapsed : Visibility.Visible;
         ShowTerminalButton.Visibility = showTerminal ? Visibility.Visible : Visibility.Collapsed;
 
+        if (showTerminal && mainHadFocus) ShowTerminalButton.Focus(FocusState.Programmatic);
+        else if (!showTerminal && terminalHadFocus) MainButton.Focus(FocusState.Programmatic);
+
+        // The main button stays on screen but is switched off while another
+        // action runs: with the keyboard on it, the focus would drop to nowhere,
+        // so the button beside it takes it (as MainActionButton does).
+        else if (!showTerminal && mainHadFocus && !state.ButtonEnabled && ScriptMenuButton is { IsEnabled: true, Visibility: Visibility.Visible })
+            ScriptMenuButton.Focus(FocusState.Programmatic);
+
         MainLine.Apply(state.Line);
+        MainLine.SetShowTerminal(
+            !showTerminal && _context.Workspace.Board.ActiveRun(_projectId) is null
+            && TerminalIsOpen(main.Action));
         MainLine.Visibility = state.Line is null ? Visibility.Collapsed : Visibility.Visible;
     }
+
+    private bool HasFocus(Control control) =>
+        XamlRoot is { } root && ReferenceEquals(FocusManager.GetFocusedElement(root), control);
 
     private void OnScriptMenuClick(object sender, RoutedEventArgs e)
     {
@@ -97,5 +124,8 @@ internal sealed partial class ProjectPage
     private void OnMainClick(object sender, RoutedEventArgs e) =>
         _ = StartAsync(() => _context.Workspace.StartMainActionAsync(_projectId));
 
-    private void OnShowMainTerminalClick(object sender, RoutedEventArgs e) => ShowTerminal();
+    private void OnShowMainTerminalClick(object sender, RoutedEventArgs e)
+    {
+        if (Project?.MainAction is { } main) ShowTerminal(main.Action);
+    }
 }

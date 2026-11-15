@@ -323,6 +323,60 @@ public sealed class ActionRunnerTests : IDisposable
         Assert.Empty(windows.Calls);
     }
 
+    [Fact]
+    public async Task AnEndedRunsTerminalIsOfferedWhileItsWindowIsOpenAndBroughtToTheFront()
+    {
+        var windows = new FakeWindowSystem();
+        using ActionRunner runner = NewRunner(finder: new TerminalWindowFinder(windows));
+        ProjectEntry project = NewProject();
+        PinnedAction pin = Pin("a.0", "A");
+        StartOutcome outcome = await runner.StartAsync(project, pin);
+        runner.PollOnce();
+        Write(RunFolder(), RunWrapper.ResultFile, "1");
+        runner.PollOnce();
+
+        Assert.False(runner.TerminalIsOpen(project.Id, pin.Action));
+
+        // The wrapper waits for a key, so the window is still there after the end.
+        windows.Windows.Add(new TopWindow(9, outcome.Run!.Title));
+        Assert.True(runner.TerminalIsOpen(project.Id, pin.Action));
+        Assert.True(runner.TryShowTerminal(project.Id, pin.Action));
+        Assert.Equal(["front 9"], windows.Calls);
+    }
+
+    [Fact]
+    public async Task ARunThatWasClosedLeavesNoTerminalToShow()
+    {
+        var windows = new FakeWindowSystem();
+        using ActionRunner runner = NewRunner(finder: new TerminalWindowFinder(windows));
+        ProjectEntry project = NewProject();
+        PinnedAction pin = Pin("a.0", "A");
+        StartOutcome outcome = await runner.StartAsync(project, pin);
+        windows.Windows.Add(new TopWindow(9, outcome.Run!.Title));
+        _board.End(project.Id, RunOutcome.Closed, null, _clock.GetUtcNow());
+
+        Assert.False(runner.TerminalIsOpen(project.Id, pin.Action));
+    }
+
+    [Fact]
+    public async Task TheOpenTerminalsOfSeveralActionsAreFoundFromTheSameWindowList()
+    {
+        var windows = new FakeWindowSystem();
+        using ActionRunner runner = NewRunner(finder: new TerminalWindowFinder(windows));
+        ProjectEntry project = NewProject();
+        PinnedAction pin = Pin("a.0", "A");
+        PinnedAction never = Pin("b.0", "B");
+        StartOutcome outcome = await runner.StartAsync(project, pin);
+        runner.PollOnce();
+        Write(RunFolder(), RunWrapper.ResultFile, "0");
+        runner.PollOnce();
+
+        Assert.Empty(runner.ActionsWithOpenTerminal(project.Id, [pin.Action, never.Action]));
+
+        windows.Windows.Add(new TopWindow(9, outcome.Run!.Title));
+        Assert.Equal([pin.Action], runner.ActionsWithOpenTerminal(project.Id, [pin.Action, never.Action]));
+    }
+
     // ── The runs folder ────────────────────────────────────────────────────
 
     [Fact]

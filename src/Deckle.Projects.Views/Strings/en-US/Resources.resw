@@ -38,6 +38,8 @@
   <data name="Home_WithoutCategory" xml:space="preserve"><value>Without a category</value></data>
   <data name="Home_WithoutCategoryHint" xml:space="preserve"><value>Drag a card onto a category, or use its menu.</value></data>
   <data name="Home_WithoutCategoryToggle_Format" xml:space="preserve"><value>Without a category, {0} projects</value></data>
+  <data name="Home_WithoutCategory_Expanded" xml:space="preserve"><value>Expanded</value></data>
+  <data name="Home_WithoutCategory_Collapsed" xml:space="preserve"><value>Collapsed</value></data>
   <data name="Home_MoreTile_Format" xml:space="preserve"><value>{0} more projects, open {1}</value></data>
   <data name="Home_DropCaption_Format" xml:space="preserve"><value>Move to {0}</value></data>
   <data name="Home_NewCategoryTitleBox" xml:space="preserve"><value>Category title</value></data>
@@ -50,12 +52,13 @@
   <!-- ## Menus -->
   <data name="Menu_OpenInExplorer" xml:space="preserve"><value>Open in File Explorer</value></data>
   <data name="Menu_OpenInTerminal" xml:space="preserve"><value>Open in terminal</value></data>
-  <data name="Menu_MoveTo_Format" xml:space="preserve"><value>Move to {0}</value></data>
-  <data name="Menu_MoveToNewCategory" xml:space="preserve"><value>Move to a new category…</value></data>
-  <data name="Menu_MoveToWithoutCategory" xml:space="preserve"><value>Move to Without a category</value></data>
+  <data name="Menu_MoveTo" xml:space="preserve"><value>Move to</value></data>
+  <data name="Menu_MoveToNewCategory" xml:space="preserve"><value>New category…</value></data>
+  <data name="Menu_MoveToWithoutCategory" xml:space="preserve"><value>Without a category</value></data>
   <data name="Menu_Rename" xml:space="preserve"><value>Rename</value></data>
   <data name="Menu_Remove" xml:space="preserve"><value>Remove from Deckle</value></data>
   <data name="Menu_RemoveHint" xml:space="preserve"><value>Folder stays</value></data>
+  <data name="Menu_RemoveBusy" xml:space="preserve"><value>Not while an action of this project is running.</value></data>
 
   <!-- ## Category page -->
   <data name="Category_Breadcrumb_Projects" xml:space="preserve"><value>Projects</value></data>
@@ -64,8 +67,12 @@
   <data name="Category_CountNone" xml:space="preserve"><value>No project in this category yet</value></data>
   <data name="Category_Empty" xml:space="preserve"><value>Drag a project here to put it in this category.</value></data>
   <data name="Category_Delete" xml:space="preserve"><value>Delete this category</value></data>
-  <data name="Category_DeleteNote" xml:space="preserve"><value>Its projects go back to Without a category.</value></data>
+  <data name="Category_DeleteQuestionNone_Format" xml:space="preserve"><value>Delete {0}?</value></data>
+  <data name="Category_DeleteQuestionOne_Format" xml:space="preserve"><value>Delete {0}? Its project goes back to Without a category.</value></data>
+  <data name="Category_DeleteQuestion_Format" xml:space="preserve"><value>Delete {0}? Its {1} projects go back to Without a category.</value></data>
+  <data name="Category_DeleteConfirm" xml:space="preserve"><value>Delete</value></data>
   <data name="Category_Rename" xml:space="preserve"><value>Rename</value></data>
+  <data name="Category_Moved_Format" xml:space="preserve"><value>{0}, position {1} of {2}</value></data>
   <data name="Category_Grip" xml:space="preserve"><value>Drag to change the order</value></data>
 
   <!-- ## Project page -->
@@ -102,7 +109,7 @@
   <data name="Pinned_Pin" xml:space="preserve"><value>Pin an action…</value></data>
   <data name="Pinned_Run" xml:space="preserve"><value>Run</value></data>
   <data name="Pinned_ShowTerminal" xml:space="preserve"><value>Show terminal</value></data>
-  <data name="Pinned_Note" xml:space="preserve"><value>Actions run in Windows Terminal, one at a time per project. Every other script is in the script menu.</value></data>
+  <data name="Pinned_Note" xml:space="preserve"><value>Actions run in a terminal window, one at a time per project. Every other script is in the script menu.</value></data>
   <data name="Pinned_NoMenu" xml:space="preserve"><value>This project has no script menu, so there is nothing to pin.</value></data>
   <data name="Pinned_CopyInstall" xml:space="preserve"><value>Copy the install command</value></data>
   <data name="Pinned_Copied" xml:space="preserve"><value>Copied</value></data>

@@ -62,7 +62,7 @@ public sealed class ActionRunBoard
         {
             if (!_active.Remove(projectId, out ActionRun? run)) return;
             if (!_results.TryGetValue(projectId, out var byAction)) _results[projectId] = byAction = [];
-            byAction[run.Action] = new ActionResult(outcome, exitCode, endedAt, run.UsedFallback);
+            byAction[run.Action] = new ActionResult(outcome, exitCode, endedAt, run.UsedFallback, run.Title);
         }
         Changed?.Invoke(projectId);
     }
