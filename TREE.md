@@ -814,6 +814,8 @@ _Generated from `git ls-files` — do not edit by hand._
 │   │   ├── Icons/
 │   │   │   ├── IFileIconProvider.cs
 │   │   │   └── ShellFileIconProvider.cs
+│   │   ├── Search/
+│   │   │   └── AtelierWindow.Search.cs
 │   │   ├── Strings/
 │   │   │   └── en-US/
 │   │   │       └── Resources.resw

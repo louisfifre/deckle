@@ -100,10 +100,6 @@ public sealed partial class AtelierWindow : Window
         AutomationProperties.SetName(Nav, AtelierText.Get("Folders_Pane"));
         AddFolderItem.Content = AtelierText.Get("Folders_Add");
         EmptyAddLabel.Text = AtelierText.Get("Folders_Add");
-
-        // Search goes through PowerToys Command Palette (spec, Search), not
-        // built yet: the button is in its place and disabled.
-        SearchButton.IsEnabled = false;
     }
 
     private static void Label(FrameworkElement element, string key)

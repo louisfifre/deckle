@@ -26,6 +26,12 @@
   <data name="Nav_Up" xml:space="preserve"><value>Dossier parent (Alt+Haut)</value></data>
   <data name="Nav_Refresh" xml:space="preserve"><value>Actualiser (F5)</value></data>
   <data name="Search" xml:space="preserve"><value>Rechercher</value></data>
+  <!-- The search button's panel (12.13) -->
+  <data name="SearchAbsentTitle.Text" xml:space="preserve"><value>Command Palette n'est pas installé</value></data>
+  <data name="SearchAbsentBody.Text" xml:space="preserve"><value>La recherche de Deckle Folders passe par PowerToys Command Palette, un outil gratuit de Microsoft. Installez PowerToys pour l'utiliser.</value></data>
+  <data name="SearchInstallPowerToys.Content" xml:space="preserve"><value>Installer PowerToys…</value></data>
+  <data name="SearchLater.Content" xml:space="preserve"><value>Plus tard</value></data>
+  <data name="SearchInCommandPalette.Text" xml:space="preserve"><value>La recherche se fait dans PowerToys Command Palette : ouvrez-la avec Win+Alt+Espace, son raccourci par défaut.</value></data>
   <data name="Tools_Group" xml:space="preserve"><value>Outils</value></data>
 
   <!-- Address bar -->
