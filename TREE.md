@@ -722,6 +722,7 @@ _Generated from `git ls-files` — do not edit by hand._
 │   │   │   └── FolderIconRule.cs
 │   │   ├── Browsing/
 │   │   │   ├── AddressResolver.cs
+│   │   │   ├── DeckleAtelierSource.FileRecycling.cs
 │   │   │   ├── FolderListing.cs
 │   │   │   ├── FolderPaths.cs
 │   │   │   ├── FolderPlace.cs
@@ -820,7 +821,9 @@ _Generated from `git ls-files` — do not edit by hand._
 │   │   │   │   ├── FilesView.Photo.cs
 │   │   │   │   ├── FilesView.Review.cs
 │   │   │   │   ├── FilesView.xaml
-│   │   │   │   └── FilesView.xaml.cs
+│   │   │   │   ├── FilesView.xaml.cs
+│   │   │   │   ├── SelectionDetails.cs
+│   │   │   │   └── TrimmedNameToolTip.cs
 │   │   │   ├── Map/
 │   │   │   │   ├── MapDetails.cs
 │   │   │   │   ├── MapKindText.cs

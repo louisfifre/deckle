@@ -77,7 +77,7 @@
         <ListView x:Name="Rows"
                   Grid.Row="2"
                   Margin="0,4,0,0"
-                  SelectionMode="Single"
+                  SelectionMode="Extended"
                   IsItemClickEnabled="False"
                   SelectionChanged="OnSelectionChanged"
                   DoubleTapped="OnItemsDoubleTapped"
@@ -98,7 +98,15 @@
                             <ColumnDefinition Width="{StaticResource SizeColumnWidth}" />
                             <ColumnDefinition Width="{StaticResource RowActionsColumnWidth}" />
                         </Grid.ColumnDefinitions>
-                        <StackPanel Orientation="Horizontal" Spacing="12">
+                        <!-- A grid, not a horizontal StackPanel: a StackPanel
+                             gives the name all the width it asks, so a long
+                             name was clipped by the column without its
+                             ellipsis. -->
+                        <Grid ColumnSpacing="12">
+                            <Grid.ColumnDefinitions>
+                                <ColumnDefinition Width="Auto" />
+                                <ColumnDefinition Width="*" />
+                            </Grid.ColumnDefinitions>
                             <Grid Width="16" Height="16" VerticalAlignment="Center">
                                 <FontIcon Glyph="{x:Bind Glyph}"
                                           FontSize="16"
@@ -106,10 +114,12 @@
                                           Visibility="{x:Bind GlyphVisibility, Mode=OneWay}" />
                                 <Image Source="{x:Bind Icon, Mode=OneWay}" Stretch="Uniform" />
                             </Grid>
-                            <TextBlock Text="{x:Bind Name}"
+                            <TextBlock Grid.Column="1"
+                                       Text="{x:Bind Name}"
                                        TextTrimming="CharacterEllipsis"
-                                       VerticalAlignment="Center" />
-                        </StackPanel>
+                                       VerticalAlignment="Center"
+                                       local:TrimmedNameToolTip.IsEnabled="True" />
+                        </Grid>
                         <TextBlock Grid.Column="1"
                                    Text="{x:Bind Modified}"
                                    Style="{StaticResource CaptionTextBlockStyle}"
@@ -136,7 +146,7 @@
         <ListView x:Name="LargeRows"
                   Grid.Row="2"
                   Margin="0,4,0,0"
-                  SelectionMode="Single"
+                  SelectionMode="Extended"
                   IsItemClickEnabled="False"
                   Visibility="Collapsed"
                   SelectionChanged="OnSelectionChanged"
@@ -165,7 +175,7 @@
                             <Image Source="{x:Bind LargeIcon, Mode=OneWay}" Stretch="Uniform" />
                         </Grid>
                         <StackPanel Grid.Column="1" VerticalAlignment="Center">
-                            <TextBlock Text="{x:Bind Name}" TextTrimming="CharacterEllipsis" />
+                            <TextBlock Text="{x:Bind Name}" TextTrimming="CharacterEllipsis" local:TrimmedNameToolTip.IsEnabled="True" />
                             <TextBlock Text="{x:Bind Summary}"
                                        Style="{StaticResource CaptionTextBlockStyle}"
                                        Foreground="{ThemeResource TextFillColorSecondaryBrush}"
@@ -189,7 +199,7 @@
                   Grid.Row="2"
                   Margin="0,4,0,0"
                   Padding="4,0,0,12"
-                  SelectionMode="Single"
+                  SelectionMode="Extended"
                   IsItemClickEnabled="False"
                   Visibility="Collapsed"
                   SelectionChanged="OnSelectionChanged"
@@ -244,7 +254,12 @@
                                    TextAlignment="Center"
                                    TextWrapping="Wrap"
                                    TextTrimming="CharacterEllipsis"
-                                   MaxLines="2" />
+                                   MaxLines="2"
+                                   MinHeight="40" />
+                        <!-- Two lines reserved on every tile: the grid sizes
+                             every tile on the first one, so a one-line first
+                             name cut the second line of the others. 40 is two
+                             lines of the body text's 20 px line height. -->
                     </StackPanel>
                 </DataTemplate>
             </GridView.ItemTemplate>
