@@ -106,18 +106,22 @@ public sealed class ActionStatesTests
     }
 
     [Fact]
-    public void TheMainActionsFailureStaysWhileAnotherActionRunsAndTheAccentButtonWaits()
+    public void WhileAnotherActionRunsTheHeaderSaysWhatTheAccentButtonWaitsFor()
     {
-        // P3: "Build & run failed 4 min ago · exit code 1" under a disabled button.
+        // P3: "Build & run waits for Self-check to end" under a disabled button; the
+        // failure comes back when nothing blocks it.
         var failed = Result(RunOutcome.Failed, 1, TimeSpan.FromMinutes(4));
         ActionRun other = RunOf(SelfCheck, TimeSpan.FromSeconds(72));
 
         HeaderActionState state = ActionStates.ForHeader(BuildRun, other, failed, canStart: true, Now);
 
-        Assert.Equal("Build & run failed 4 min ago · exit code 1", state.Line!.Text);
-        Assert.Equal(RunLineKind.Failure, state.Line.Kind);
+        Assert.Equal("Build & run waits for Self-check to end", state.Line!.Text);
+        Assert.Equal(RunLineKind.Neutral, state.Line.Kind);
         Assert.Equal(ActionButtonMode.Run, state.Button);
         Assert.False(state.ButtonEnabled);
+
+        HeaderActionState after = ActionStates.ForHeader(BuildRun, null, failed, canStart: true, Now);
+        Assert.Equal("Build & run failed 4 min ago · exit code 1", after.Line!.Text);
     }
 
     [Fact]

@@ -25,7 +25,8 @@ public sealed record HeaderActionState(string Label, ActionButtonMode Button, bo
 //   an action of the project runs   the card of that action shows its running
 //                                   line and "Show terminal"; every other card
 //                                   waits for it and cannot run; the header's
-//                                   accent button is disabled
+//                                   accent button is disabled and its line says
+//                                   what it waits for
 //   nothing runs                    each card shows its last result, and "Run"
 //                                   is available unless the menu no longer gives
 //                                   the action or the project cannot start one
@@ -62,10 +63,12 @@ public static class ActionStates
                 main.Label, ActionButtonMode.ShowTerminal, ButtonEnabled: true, RunStateLine.Main(main.Label, last, running, now));
         }
 
-        // Another action runs: the main action's own last result stays on its
-        // line (P3: the failure of "Build & run" stays while "Self-check" runs)
-        // and the accent button waits.
-        RunLine? line = RunStateLine.Main(main.Label, last, running: null, now);
-        return new HeaderActionState(main.Label, ActionButtonMode.Run, running is null && canStart, line);
+        // Another action runs: the accent button waits, and its line says for
+        // what, in the words of the pinned cards. The main action's own last
+        // result is kept by the board and comes back when nothing blocks it.
+        if (running is not null)
+            return new HeaderActionState(main.Label, ActionButtonMode.Run, ButtonEnabled: false, RunStateLine.MainWaiting(main.Label, running.Label));
+
+        return new HeaderActionState(main.Label, ActionButtonMode.Run, canStart, RunStateLine.Main(main.Label, last, running: null, now));
     }
 }

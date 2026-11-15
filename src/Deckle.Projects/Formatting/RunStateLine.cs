@@ -51,6 +51,11 @@ public static class RunStateLine
     // Another action of the project runs: "Waits for Self-check to end".
     public static RunLine Waiting(string runningLabel) => new($"Waits for {runningLabel} to end", RunLineKind.Neutral);
 
+    // The header's line while another action runs: "Build & run waits for
+    // Self-check to end", the same words as the card's, led by the main action.
+    public static RunLine MainWaiting(string label, string runningLabel) =>
+        new($"{label} waits for {runningLabel} to end", RunLineKind.Neutral);
+
     // A pinned entry the menu no longer gives keeps its card.
     public static RunLine Gone() => new(MenuNoLongerHasIt, RunLineKind.Neutral);
 
