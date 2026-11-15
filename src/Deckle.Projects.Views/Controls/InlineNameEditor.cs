@@ -108,7 +108,12 @@ internal sealed class InlineNameEditor : UserControl
             Margin = new Thickness(-(BoxPadding + 1), -1, 0, -1),
         };
         _box.KeyDown += OnBoxKeyDown;
-        _box.Loaded += (_, _) => HideClearButton();
+        _box.Loaded += (_, _) =>
+        {
+            _box.ApplyTemplate();
+            HideClearButton();
+            DispatcherQueue.TryEnqueue(HideClearButton);
+        };
         _box.LostFocus += (_, _) => Finish(commit: true, restoreFocus: false);
 
         _hint = Themed.Text("TextFillColorTertiaryBrush", "CaptionTextBlockStyle");
@@ -168,6 +173,7 @@ internal sealed class InlineNameEditor : UserControl
         if (FindPart(_box, "DeleteButton") is not Button clear) return;
         clear.MinWidth = 0;
         clear.Width = 0;
+        clear.Opacity = 0;
         clear.IsTabStop = false;
         clear.IsHitTestVisible = false;
     }
