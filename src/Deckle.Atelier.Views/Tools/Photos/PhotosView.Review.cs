@@ -14,4 +14,15 @@ internal sealed partial class PhotosView
     }
 
     internal void LeaveLargeForReview() => LeaveLarge(restoreFocus: true);
+
+    // The panel's "Décrire cette photo" and "Arrêter", on the photo selected.
+    internal PhotoFile? SelectedPhotoForReview => SelectedTiles() is [var one] ? one.Photo : null;
+
+    internal PhotoDescriptions? DescriptionsForReview => _descriptions;
+
+    // "Arrêter" beside the folder's progress bar.
+    internal void StopFolderForReview() => _run?.Stop();
+
+    // The folder's run as the view follows it: null once its end is shown.
+    internal PhotoDescriptionRun? CurrentRunForReview => _place is { } place ? _descriptions?.RunOf(place.Path) : null;
 }

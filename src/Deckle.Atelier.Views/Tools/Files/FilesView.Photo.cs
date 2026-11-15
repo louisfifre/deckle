@@ -16,6 +16,10 @@ internal sealed partial class FilesView
     private readonly string _moduleDirectory;
     private readonly PhotoMarkQueue _marks;
 
+    // The app's descriptions, the photo tool's own: the panel shows and asks
+    // for the same description in both tools. Null when the app has no model.
+    private readonly PhotoDescriptions? _descriptions;
+
     // One reading of each photo's capture data per folder visit, as in the
     // photo tool.
     private readonly Dictionary<string, CaptureReading> _readings = new(FolderPaths.Comparer);
@@ -55,7 +59,7 @@ internal sealed partial class FilesView
 
         var tile = new PhotoTile(photo, current);
         _photoTile = tile;
-        _photoDetails = PhotoDetails.For(tile, reading, MarkPhoto, large: false, rank: 0, total: 0);
+        _photoDetails = PhotoDetails.For(tile, reading, MarkPhoto, large: false, rank: 0, total: 0, _descriptions);
         _host.Select(photo.Path, _photoDetails.Element);
     }
 

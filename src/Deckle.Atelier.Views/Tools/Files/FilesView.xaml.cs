@@ -37,13 +37,14 @@ internal sealed partial class FilesView : UserControl, IAtelierToolView
     private bool _filling;
 
     public FilesView(IAtelierToolHost host, string moduleDirectory, PhotoMarkQueue marks,
-                     IRecycleBin bin, IFileLauncher launcher)
+                     IRecycleBin bin, IFileLauncher launcher, PhotoDescriptions? descriptions = null)
     {
         _host = host;
         _moduleDirectory = moduleDirectory;
         _marks = marks;
         _bin = bin;
         _launcher = launcher;
+        _descriptions = descriptions;
         InitializeComponent();
         Label(DisplayListButton, "Display_List");
         Label(DisplayLargeRowsButton, "Display_LargeRows");

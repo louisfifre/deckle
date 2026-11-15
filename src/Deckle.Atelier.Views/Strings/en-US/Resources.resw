@@ -150,6 +150,30 @@
   <data name="Photos_Destroyed_One" xml:space="preserve"><value>{0} photo a été supprimée définitivement au lieu d'aller à la Corbeille.</value></data>
   <data name="Photos_Destroyed_Other" xml:space="preserve"><value>{0} photos ont été supprimées définitivement au lieu d'aller à la Corbeille.</value></data>
   <data name="Photos_NamesMore_Format" xml:space="preserve"><value>{0} et {1} autres</value></data>
+  <data name="Photos_Describe_Folder" xml:space="preserve"><value>Décrire le dossier</value></data>
+  <data name="Photos_Describe_Progress_Format" xml:space="preserve"><value>{0} sur {1} décrites</value></data>
+  <data name="Photos_Describe_Stop" xml:space="preserve"><value>Arrêter la description du dossier</value></data>
+  <data name="Photos_Describe_Done_Format" xml:space="preserve"><value>Description du dossier terminée : {0} sur {1} photos décrites.</value></data>
+  <data name="Photos_Describe_Failed_One" xml:space="preserve"><value>{0} photo n'a pas pu être décrite.</value></data>
+  <data name="Photos_Describe_Failed_Other" xml:space="preserve"><value>{0} photos n'ont pas pu être décrites.</value></data>
+  <data name="Photos_Describe_Stopped_Format" xml:space="preserve"><value>Description du dossier arrêtée : {0} sur {1} photos décrites.</value></data>
+  <data name="Photos_Describe_NotDone" xml:space="preserve"><value>Le dossier n'a pas pu être décrit</value></data>
+  <data name="Photos_Section_Description" xml:space="preserve"><value>Description</value></data>
+  <data name="Photos_Description_None" xml:space="preserve"><value>Cette photo n'a pas encore de description.</value></data>
+  <data name="Photos_Description_DescribeOne" xml:space="preserve"><value>Décrire cette photo</value></data>
+  <data name="Photos_Description_InProgress" xml:space="preserve"><value>Description en cours…</value></data>
+  <data name="Photos_Description_Stop" xml:space="preserve"><value>Arrêter</value></data>
+  <data name="Photos_Description_WrittenBy" xml:space="preserve"><value>Écrite par un modèle sur cet ordinateur.</value></data>
+  <data name="Photos_Description_Again" xml:space="preserve"><value>Décrire à nouveau</value></data>
+  <data name="Photos_Description_Retry" xml:space="preserve"><value>Réessayer</value></data>
+  <data name="Photos_Description_Settings" xml:space="preserve"><value>Ouvrir les paramètres</value></data>
+  <data name="Photos_DescriptionFailure_NoModelChosen" xml:space="preserve"><value>Aucun modèle n'est choisi pour décrire les photos. Choisissez-en un dans les paramètres.</value></data>
+  <data name="Photos_DescriptionFailure_ServerUnreachable" xml:space="preserve"><value>Le serveur du modèle ne répond pas. Démarrez-le sur cet ordinateur, puis réessayez.</value></data>
+  <data name="Photos_DescriptionFailure_ImagesNotSupported" xml:space="preserve"><value>Le modèle choisi ne sait pas lire une image. Choisissez-en un autre dans les paramètres.</value></data>
+  <data name="Photos_DescriptionFailure_EndpointNotLocal" xml:space="preserve"><value>Le fournisseur choisi n'est pas sur cet ordinateur, et aucune photo n'en sort. Choisissez un fournisseur local dans les paramètres.</value></data>
+  <data name="Photos_DescriptionFailure_PhotoUnreadable" xml:space="preserve"><value>Cette photo ne peut pas être lue.</value></data>
+  <data name="Photos_DescriptionFailure_Stopped" xml:space="preserve"><value>La description a été arrêtée avant d'être écrite.</value></data>
+  <data name="Photos_DescriptionFailure_Other" xml:space="preserve"><value>Le modèle n'a pas décrit cette photo : il a refusé la demande ou n'a pas répondu à temps.</value></data>
   <!-- Sizes tool (boards 12.7, 12.21, 12.23) -->
   <data name="Sizes_HeaderName" xml:space="preserve"><value>Nom</value></data>
   <data name="Sizes_HeaderSize" xml:space="preserve"><value>Taille</value></data>

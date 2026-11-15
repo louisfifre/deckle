@@ -46,17 +46,42 @@
                 <TextBlock x:Name="ApplyingText" VerticalAlignment="Center" />
             </StackPanel>
 
+            <!-- "Décrire le dossier" first (12.4); while the folder is
+                 described it gives way to "126 sur 412 décrites", a progress
+                 bar and a way to stop, and the other two stay usable (12.19). -->
             <StackPanel x:Name="Commands" Grid.Column="1" Orientation="Horizontal" Spacing="8" VerticalAlignment="Center">
+                <Button x:Name="DescribeButton" Click="OnDescribeClick" Visibility="Collapsed" />
+                <StackPanel x:Name="Describing"
+                            Orientation="Horizontal"
+                            Spacing="8"
+                            VerticalAlignment="Center"
+                            Visibility="Collapsed">
+                    <TextBlock x:Name="DescribingText" VerticalAlignment="Center" />
+                    <ProgressBar x:Name="DescribingBar" Width="80" VerticalAlignment="Center" />
+                    <Button x:Name="StopDescribingButton"
+                            Width="32"
+                            Height="32"
+                            Padding="0"
+                            Style="{StaticResource SubtleButtonStyle}"
+                            Click="OnStopDescribingClick">
+                        <FontIcon Glyph="&#xE711;" FontSize="16" />
+                    </Button>
+                </StackPanel>
                 <Button x:Name="ApplyButton" Click="OnApplyClick" IsEnabled="False" />
                 <Button x:Name="DarktableButton" Click="OnDarktableClick" />
             </StackPanel>
         </Grid>
 
-        <!-- What applying the marks could not do, file by file. -->
-        <InfoBar x:Name="ApplyResult"
-                 Grid.Row="1"
-                 Margin="4,4,4,8"
-                 IsOpen="False" />
+        <!-- How describing the folder ended, then what applying the marks
+             could not do, file by file. -->
+        <StackPanel Grid.Row="1">
+            <InfoBar x:Name="DescribeResult"
+                     Margin="4,4,4,8"
+                     IsOpen="False" />
+            <InfoBar x:Name="ApplyResult"
+                     Margin="4,4,4,8"
+                     IsOpen="False" />
+        </StackPanel>
 
         <GridView x:Name="Gallery"
                   Grid.Row="2"

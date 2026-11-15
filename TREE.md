@@ -845,6 +845,8 @@ _Generated from `git ls-files` — do not edit by hand._
 │   │   │   │   └── MapView.xaml.cs
 │   │   │   ├── Photos/
 │   │   │   │   ├── ApplySummary.cs
+│   │   │   │   ├── PhotoDescriptions.cs
+│   │   │   │   ├── PhotoDescriptionSection.cs
 │   │   │   │   ├── PhotoDetails.cs
 │   │   │   │   ├── PhotoGlyphs.cs
 │   │   │   │   ├── PhotoMarkQueue.cs
@@ -852,6 +854,7 @@ _Generated from `git ls-files` — do not edit by hand._
 │   │   │   │   ├── PhotosTool.cs
 │   │   │   │   ├── PhotosView.Apply.cs
 │   │   │   │   ├── PhotosView.Darktable.cs
+│   │   │   │   ├── PhotosView.Describe.cs
 │   │   │   │   ├── PhotosView.Large.cs
 │   │   │   │   ├── PhotosView.Review.cs
 │   │   │   │   ├── PhotosView.xaml

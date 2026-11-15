@@ -13,8 +13,9 @@ namespace Deckle.Atelier.Views;
 // the two buttons then set on all of them (Open 33: Explorer's details pane
 // counts a multiple selection).
 //
-// Left out of this wave, so not drawn as dead controls: the people found and
-// the written description, which wait for the local model.
+// One photo ends with its description (PhotoDescriptionSection) when the app
+// has a model to ask (AtelierToolCatalog). Left out of this wave, so not drawn
+// as dead controls: the people found, which wait for the local model.
 //
 // The panel lives while its selection does: a mark set by key or by pointer
 // presses its button in place (ShowMark), so a click keeps its focus.
@@ -23,7 +24,8 @@ internal sealed class PhotoDetails
     private readonly ToggleButton _keep;
     private readonly ToggleButton _delete;
 
-    private PhotoDetails(string kind, string title, Action<PhotoMark> mark, bool large, CaptureReading? reading)
+    private PhotoDetails(string kind, string title, Action<PhotoMark> mark, bool large, CaptureReading? reading,
+                         PhotoDescriptionSection? description = null)
     {
         _keep = MarkButton(PhotoGlyphs.Keep, AtelierText.Get("Photos_Mark_Keep"), () => mark(PhotoMark.Keep));
         _delete = MarkButton(PhotoGlyphs.Delete, AtelierText.Get("Photos_Mark_Delete"), () => mark(PhotoMark.Delete));
@@ -47,20 +49,23 @@ internal sealed class PhotoDetails
 
         var sheet = new DetailsSheet(kind, title).Section(AtelierText.Get("Photos_Section_Mark"), markContent);
         if (reading is not null) AddCapture(sheet, reading);
+        if (description is not null) sheet.Section(AtelierText.Get("Photos_Section_Description"), description.Element);
         Element = sheet.Element;
     }
 
     public UIElement Element { get; }
 
     // One photo. rank and total are given while the photo is seen large
-    // (12.5: "13 sur 412").
+    // (12.5: "13 sur 412"). descriptions is null when the app has no model to
+    // ask: the section is then left out rather than drawn dead.
     public static PhotoDetails For(PhotoTile tile, CaptureReading reading, Action<PhotoMark> mark,
-                                   bool large, int rank, int total)
+                                   bool large, int rank, int total, PhotoDescriptions? descriptions)
     {
         string kind = AtelierText.Format("Photos_Kind_Format", KindOf(tile.Photo),
             EntryFormat.Size(tile.Photo.Size, AtelierText.Culture));
         if (large) kind = AtelierText.Format("Photos_KindRank_Format", kind, rank, total);
-        var details = new PhotoDetails(kind, tile.Name, mark, large, reading);
+        PhotoDescriptionSection? description = descriptions is null ? null : new PhotoDescriptionSection(descriptions, tile.Photo);
+        var details = new PhotoDetails(kind, tile.Name, mark, large, reading, description);
         details.ShowMark(tile.Mark);
         return details;
     }

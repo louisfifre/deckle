@@ -26,6 +26,8 @@ public sealed partial class DeckleAtelierSource
     public const int EvtPhotoDescriptionModelChoiceUnreadable = 121;
     public const int EvtPhotoDescriptionModelChoiceSaveFailed = 122;
     public const int EvtPhotoPictureSourceFailed        = 123;
+    public const int EvtPhotoDescriptionNotStarted      = 124;
+    public const int EvtPhotoDescriptionRunsOutliveWindow = 125;
 
     // A folder run, paired by run_id: started with the folder's photos and
     // how many had a description already; ended with its outcome
@@ -169,5 +171,32 @@ public sealed partial class DeckleAtelierSource
     public void PhotoPictureSourceFailed(string source, string extension, string ex_type)
     {
         if (IsEnabled()) WriteEvent(EvtPhotoPictureSourceFailed, source, extension, ex_type);
+    }
+
+    // The person asked for a description ("photo" alone or a "folder") and
+    // none started, because the model cannot be used as set up: no model
+    // chosen, or a provider that is not on this machine. The panel or the
+    // command says which and leads to the setting.
+    [Event(EvtPhotoDescriptionNotStarted,
+           Level = EventLevel.Informational,
+           Keywords = (EventKeywords)Keywords.Pipeline,
+           Tags = ObservationTags.Milestone,
+           Message = "A description was not started: the model is not set up")]
+    public void PhotoDescriptionNotStarted(string scope, string failure)
+    {
+        if (IsEnabled()) WriteEvent(EvtPhotoDescriptionNotStarted, scope, failure);
+    }
+
+    // The Atelier window closed while folders were being described: the runs
+    // go on (they belong to the app, not to the window), and the folder shows
+    // their progress again when it is opened.
+    [Event(EvtPhotoDescriptionRunsOutliveWindow,
+           Level = EventLevel.Informational,
+           Keywords = (EventKeywords)Keywords.Pipeline,
+           Tags = ObservationTags.Milestone,
+           Message = "The Atelier window closed; the folders being described go on")]
+    public void PhotoDescriptionRunsOutliveWindow(int runs)
+    {
+        if (IsEnabled()) WriteEvent(EvtPhotoDescriptionRunsOutliveWindow, runs);
     }
 }
