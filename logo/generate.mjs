@@ -1,18 +1,10 @@
 // Deckle logo generator. Run `node logo/generate.mjs` to rewrite the SVG files
 // and the sheet beside it, and the app's icons under src/Deckle.App/Assets/Icons.
 //
-// The mark is a stack of sheets fanned from one pivot, d in front, then b, a, and
-// e at the very back. A rear sheet shows only what the sheet in front leaves
-// visible, minus a gap: the gap is a parallel offset of the front sheet's edges,
-// so it is equal everywhere by construction, and an inner corner is the front
-// corner's radius plus the gap. Every outer corner of a form takes one radius, so
-// no corner reads as a different hand at 16 px.
-//
-// In the shipped forms e is a sheet like the others: it wraps the back sheet's
-// bottom-right corner and rises along its right edge. The first drawing, `five`,
-// keeps e as a flat blade under the back sheet. The shipped forms also take a
-// flatter top slope than the first drawing, so the sheets' top-right corners rise
-// and the mark fills its square (Windows 11 icons cover about 60 to 85 % of it).
+// The mark is a stack of sheets (d in front, a at the back) plus a flat blade (e).
+// A rear sheet shows only what the sheet in front leaves visible, minus a gap: the
+// gap is a parallel offset of the front sheet's edges, so it is equal everywhere by
+// construction, and an inner corner is the front corner's radius plus the gap.
 //
 // The mark has two forms, because a gap that reads at 64 px closes at 16 px:
 // `normal`, four blades, and `small`, three blades and a wider gap, for where the
@@ -87,7 +79,7 @@ function polygon(corners) {
 
 // --- The mark ---------------------------------------------------------------
 
-const TOP_ANGLE = 27;   // every top edge slopes down to the right by this much, unless the form says otherwise
+const TOP_ANGLE = 27;   // every top edge slopes down to the right by this much
 const INNER_RADIUS = 10;
 const PIVOT = [500, 960]; // where the blades converge; the tips sit around it
 
@@ -105,20 +97,18 @@ const FLAT = { tip: [515, 971], bottom: 22, rApex: 14, rEnd: 22 };
 // and rounder corners, so the mark stays open when it is a few pixels wide.
 const FORMS = {
   normal: {
-    gap: 44, tipRadius: 3, topAngle: 15,
-    front: { ...FRONT, left: vertical(318), top: [395, 545], right: 92, bottomLeft: 132, rTL: 34, rTR: 34, rBL: 30 },
+    gap: 34, tipRadius: 3,
+    front: { ...FRONT, top: [395, 620], right: 92, rTL: 22, rTR: 22, rBL: 10 },
     rear: [
-      { id: 'b', left: line([440, 470], 80), top: [570, 440], right: vertical(668), tip: [496, 955], bottom: 62, rTL: 34, rTR: 34, rBR: 30 },
-      { id: 'a', ...BACK, top: [728.5, 330], tip: [506, 964], rTL: 34, rTR: 34, rBR: 30 }],
-    flat: { tip: [515, 971], bottom: 18, top: [920, 560], right: vertical(1000), rTL: 34, rTR: 34, rBR: 30 },
-    innerRadius: 34,
+      { id: 'b', left: line([440, 470], 80), top: [570, 455], right: vertical(668), tip: [496, 955], bottom: 62, rTL: 30, rTR: 34, rBR: 30 },
+      { id: 'a', ...BACK, top: [728.5, 400], tip: [506, 964] }],
+    flat: { ...FLAT, rApex: 18, rEnd: 28 },
   },
   small: {
-    gap: 56, tipRadius: 4, topAngle: 15,
-    front: { ...FRONT, left: vertical(318), top: [400, 480], right: 80, bottomLeft: 132, rTL: 40, rTR: 40, rBL: 34 },
-    rear: [{ id: 'a', ...BACK, top: [728.5, 330], left: line([520, 360], 76), tip: [504, 962], bottom: 42, rTL: 40, rTR: 40, rBR: 34 }],
-    flat: { tip: [515, 971], bottom: 18, top: [932, 540], right: vertical(1010), rTL: 40, rTR: 40, rBR: 34 },
-    innerRadius: 40,
+    gap: 56, tipRadius: 4,
+    front: { ...FRONT, top: [400, 560], right: 80, rTL: 30, rTR: 30, rBL: 12 },
+    rear: [{ id: 'a', ...BACK, top: [728.5, 400], left: line([520, 360], 76), tip: [504, 962], bottom: 42 }],
+    flat: { ...FLAT, rApex: 22, rEnd: 32 },
   },
   five: {
     gap: 24, tipRadius: 1.5,
@@ -134,8 +124,8 @@ const FORMS = {
 // The blades of a form, in letter order: [{ id, corners }]. `a` is always the
 // back sheet, `d` the front one, `e` the flat blade.
 function buildBlades(form) {
-  const { gap, tipRadius } = form, topAngle = form.topAngle ?? TOP_ANGLE;
-  const top = s => line(s.top, -topAngle);
+  const { gap, tipRadius } = form;
+  const top = s => line(s.top, -TOP_ANGLE);
   const out = [];
 
   const d = form.front, dRight = line(d.tip, d.right), dTop = top(d);
@@ -153,28 +143,16 @@ function buildBlades(form) {
     // tip, so the gap narrows towards the pivot as in the first logo.
     if (front.bottom) pts.push([...cross(offset(front.bottom, gap, front.c), oRight), front.rBR + gap]);
     pts.push([...cross(oRight, oTop), front.rTR + gap]);
-    pts.push([...cross(oTop, s.left), form.innerRadius ?? INNER_RADIUS]);
+    pts.push([...cross(oTop, s.left), INNER_RADIUS]);
     out.push({ id: s.id, corners: rounded(pts) });
     front = { top: sTop, right: s.right, bottom, c: centre([TL, TR, BR, s.tip]), rTR: s.rTR, rBR: s.rBR };
     back = s;
   }
 
-  const F = form.flat;
-  if (F.right) {
-    // e as a sheet of its own, behind the back sheet: it wraps the back
-    // sheet's bottom-right corner one gap away, rises along its right edge,
-    // and takes the same top slope and vertical right edge as every sheet.
-    const eTop = top(F), bottom = line(F.tip, F.bottom);
-    const oRight = offset(front.right, gap, front.c), oBottom = offset(front.bottom, gap, front.c);
-    out.push({ id: 'e', corners: rounded([
-      [...cross(oRight, eTop), F.rTL], [...cross(eTop, F.right), F.rTR], [...cross(F.right, bottom), F.rBR],
-      [...F.tip, tipRadius], [...cross(oBottom, oRight), front.rBR + gap]]) });
-    return out.sort((p, q) => p.id.localeCompare(q.id));
-  }
-
   // e, the flat blade: its apex sits under the back sheet's right edge, one gap below it.
+  const F = form.flat;
   const apex = cross(offset(front.bottom, gap, front.c), back.right);
-  const end = cross(line(apex, -topAngle), line(F.tip, F.bottom));
+  const end = cross(line(apex, -TOP_ANGLE), line(F.tip, F.bottom));
   out.push({ id: 'e', corners: rounded([[...apex, F.rApex], [...end, F.rEnd], [...F.tip, tipRadius]]) });
   return out.sort((p, q) => p.id.localeCompare(q.id));
 }
