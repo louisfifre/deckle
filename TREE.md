@@ -796,6 +796,7 @@ _Generated from `git ls-files` — do not edit by hand._
 │   │   │   ├── HeaviestFiles.cs
 │   │   │   ├── HeavyFile.cs
 │   │   │   ├── ScanCounters.cs
+│   │   │   ├── SizeAnalysisMoment.cs
 │   │   │   ├── SizeNode.cs
 │   │   │   ├── SizeProgress.cs
 │   │   │   ├── SizeReport.cs
@@ -2484,6 +2485,7 @@ _Generated from `git ls-files` — do not edit by hand._
 │   │   ├── NavigationHistoryTests.cs
 │   │   ├── PathRulesTests.cs
 │   │   ├── ScratchFolder.cs
+│   │   ├── SizeAnalysisMomentTests.cs
 │   │   ├── SizeScanEventsTests.cs
 │   │   ├── SizeScanGateTests.cs
 │   │   ├── SizeScanTests.cs
