@@ -2045,6 +2045,7 @@ _Generated from `git ls-files` — do not edit by hand._
 │   │   │   ├── ProjectCard.xaml.cs
 │   │   │   ├── ProjectCardMenu.cs
 │   │   │   ├── ProjectGrid.cs
+│   │   │   ├── SectionHeaderLabel.cs
 │   │   │   └── WithoutCategoryFold.cs
 │   │   ├── Pages/
 │   │   │   ├── Category/

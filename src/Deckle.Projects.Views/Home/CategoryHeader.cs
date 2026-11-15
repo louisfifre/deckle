@@ -19,21 +19,13 @@ namespace Deckle.Projects.Views;
 internal sealed class CategoryHeader : UserControl
 {
     private readonly Button _open;
-    private readonly TextBlock _title;
-    private readonly TextBlock _count;
+    private readonly SectionHeaderLabel _label = new();
     private readonly InlineNameEditor _editor;
     private string _name;
 
     public CategoryHeader(ProjectCategory category, int count, Action open)
     {
         _name = category.Name;
-        _title = new TextBlock
-        {
-            Style = (Style)Application.Current.Resources["SubtitleTextBlockStyle"],
-            VerticalAlignment = VerticalAlignment.Center,
-        };
-        _count = Themed.Text("TextFillColorTertiaryBrush", "BodyTextBlockStyle");
-        _count.VerticalAlignment = VerticalAlignment.Center;
 
         var content = new StackPanel
         {
@@ -41,8 +33,7 @@ internal sealed class CategoryHeader : UserControl
             Spacing = 8,
             Children =
             {
-                _title,
-                _count,
+                _label,
                 new FontIcon { Glyph = ProjectsGlyphs.ChevronRight, FontSize = 12, VerticalAlignment = VerticalAlignment.Center },
             },
         };
@@ -87,8 +78,7 @@ internal sealed class CategoryHeader : UserControl
     public void Update(string name, int count)
     {
         _name = name;
-        _title.Text = name;
-        _count.Text = count.ToString(ProjectsText.Culture);
+        _label.Set(name, count);
         if (!_editor.IsEditing) _editor.Text = name;
 
         string label = ProjectsText.Format("Home_CategoryOpen_Format", name);
