@@ -21,7 +21,7 @@
     <!-- The last column of a category page's rows: the main action's button
          (up to about 128 for "Build & run"), 8 of gap and the 16 of the ring or
          the warning mark, with some slack. Fixed, so the buttons line up. -->
-    <x:Double x:Key="ProjectsRowActionColumnWidth">176</x:Double>
+    <GridLength x:Key="ProjectsRowActionColumnWidth">176</GridLength>
 
     <!-- The widest the project page header's right column may grow: the three
          buttons side by side with room for the run line under them. -->

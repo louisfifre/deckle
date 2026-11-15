@@ -10,8 +10,11 @@
          they scroll away with the rows as they did before, and the list can
          scroll itself when a row is dragged to its edge (a ListView scrolls
          its own ScrollViewer, never an ancestor's). The page margin is the
-         list's padding, which the Header and the Footer sit inside. -->
+         list's padding, which the Header and the Footer sit inside. The list
+         is top-aligned so it is as tall as its content, up to the window:
+         stretched, it would push the Footer to the window's bottom edge. -->
     <ListView x:Name="Rows"
+              VerticalAlignment="Top"
               Padding="{StaticResource ProjectsPageMargin}"
               SelectionMode="None"
               IsItemClickEnabled="True"
@@ -21,10 +24,20 @@
               DragItemsStarting="OnDragItemsStarting"
               DragItemsCompleted="OnDragItemsCompleted">
         <ListView.Resources>
+            <ResourceDictionary>
             <!-- The list's own hover and pressed fills (the container draws
                  them), in the control fills the Home cards use. -->
-            <StaticResource x:Key="ListViewItemBackgroundPointerOver" ResourceKey="ControlFillColorSecondaryBrush" />
-            <StaticResource x:Key="ListViewItemBackgroundPressed" ResourceKey="ControlFillColorTertiaryBrush" />
+            <ResourceDictionary.ThemeDictionaries>
+                <ResourceDictionary x:Key="Default">
+                    <StaticResource x:Key="ListViewItemBackgroundPointerOver" ResourceKey="ControlFillColorSecondaryBrush" />
+                    <StaticResource x:Key="ListViewItemBackgroundPressed" ResourceKey="ControlFillColorTertiaryBrush" />
+                </ResourceDictionary>
+                <ResourceDictionary x:Key="HighContrast">
+                    <StaticResource x:Key="ListViewItemBackgroundPointerOver" ResourceKey="SystemColorHighlightColorBrush" />
+                    <StaticResource x:Key="ListViewItemBackgroundPressed" ResourceKey="SystemColorHighlightColorBrush" />
+                </ResourceDictionary>
+            </ResourceDictionary.ThemeDictionaries>
+            </ResourceDictionary>
         </ListView.Resources>
 
         <ListView.Header>
