@@ -12,7 +12,7 @@ internal sealed partial class ProjectPage
     {
         Pinned.RunRequested += action =>
             _ = StartAsync(() => _context.Workspace.StartPinnedActionAsync(_projectId, action));
-        Pinned.ShowTerminalRequested += _ => ShowTerminal();
+        Pinned.ShowTerminalRequested += ShowTerminal;
         Pinned.PinRequested += ShowPinFlyout;
     }
 
@@ -59,7 +59,8 @@ internal sealed partial class ProjectPage
                 pin, running, board.LastResult(project.Id, pin.Action), menuGivesIt, canStart, now);
 
             string detail = pin.Action.Variant is { } variant ? $"{pin.Script} · {variant}" : pin.Script;
-            cards.Add(new PinnedCardModel(pin.Action, pin.Label, detail, state));
+            bool terminalOpen = running is null && _context.Workspace.Runner.TerminalIsOpen(project.Id, pin.Action);
+            cards.Add(new PinnedCardModel(pin.Action, pin.Label, detail, state, terminalOpen));
         }
 
         Pinned.Apply(new PinnedSectionModel(kind, (_listing as ScriptMenuListing.Unreadable)?.LastLines, cards));
@@ -93,9 +94,15 @@ internal sealed partial class ProjectPage
         }
     }
 
-    // Brings the terminal of the running action to the front. Nothing is said
-    // when no window is found: the action's own state line stays.
-    private void ShowTerminal() => _context.Workspace.Runner.TryShowTerminal(_projectId);
+    // Brings the terminal of the action to the front: the one it runs in, or the
+    // one a run that just ended left open. Nothing is said when no window is
+    // found: the action's own state line stays, and the line is drawn again so
+    // an offer of a window that is gone goes away.
+    private void ShowTerminal(ActionRef action)
+    {
+        _context.Workspace.Runner.TryShowTerminal(_projectId, action);
+        ApplyActions();
+    }
 
     // The list of the menu's entries, under "Pin an action...". Opens at once; when
     // the menu has not answered yet, the list shows a progress ring and fills.

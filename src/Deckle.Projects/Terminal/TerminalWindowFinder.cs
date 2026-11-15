@@ -38,6 +38,14 @@ public sealed class TerminalWindowFinder(IWindowSystem windows)
 {
     public TerminalWindowFinder() : this(new User32WindowSystem()) { }
 
+    // Whether a visible window carries the title: an ended run's terminal waits
+    // for a key, so the window is often still there.
+    public bool Exists(string title)
+    {
+        string wanted = WindowsTerminalLauncher.TitleText(title);
+        return windows.TopWindows().Any(w => string.Equals(w.Title, wanted, StringComparison.Ordinal));
+    }
+
     // False when no visible window carries the title: the caller says nothing,
     // the run's own state line stays.
     public bool Show(string title)

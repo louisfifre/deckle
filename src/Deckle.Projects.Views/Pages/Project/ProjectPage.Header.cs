@@ -4,9 +4,9 @@ using Microsoft.UI.Xaml.Input;
 
 namespace Deckle.Projects.Views;
 
-// The header: on the left the breadcrumb, the name and the path; on the right
-// "Open script menu" and the main action's accent button, with the main action's
-// last result under them (spec, Project page, Header).
+// The header: on the left the breadcrumb, the name and the path; on the right,
+// on the name's line, "Open script menu" and the main action's accent button, and
+// on the path's line the main action's last result (spec, Project page, Header).
 internal sealed partial class ProjectPage
 {
     // The breadcrumb is made again only when what it says changes (the project
@@ -26,6 +26,10 @@ internal sealed partial class ProjectPage
         MainIcon.Glyph = ProjectsGlyphs.Play;
         ShowTerminalIcon.Glyph = ProjectsGlyphs.OpenInNew;
         ShowTerminalLabel.Text = ProjectsText.Get("Pinned_ShowTerminal");
+        MainLine.ShowTerminalRequested += () =>
+        {
+            if (Project?.MainAction is { } main) ShowTerminal(main.Action);
+        };
     }
 
     private void ApplyHeader(ProjectEntry project, bool missing)
@@ -103,6 +107,9 @@ internal sealed partial class ProjectPage
             ScriptMenuButton.Focus(FocusState.Programmatic);
 
         MainLine.Apply(state.Line);
+        MainLine.SetShowTerminal(
+            !showTerminal && _context.Workspace.Board.ActiveRun(_projectId) is null
+            && _context.Workspace.Runner.TerminalIsOpen(_projectId, main.Action));
         MainLine.Visibility = state.Line is null ? Visibility.Collapsed : Visibility.Visible;
     }
 
@@ -117,5 +124,8 @@ internal sealed partial class ProjectPage
     private void OnMainClick(object sender, RoutedEventArgs e) =>
         _ = StartAsync(() => _context.Workspace.StartMainActionAsync(_projectId));
 
-    private void OnShowMainTerminalClick(object sender, RoutedEventArgs e) => ShowTerminal();
+    private void OnShowMainTerminalClick(object sender, RoutedEventArgs e)
+    {
+        if (Project?.MainAction is { } main) ShowTerminal(main.Action);
+    }
 }

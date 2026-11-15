@@ -6,7 +6,8 @@ namespace Deckle.Projects.Views;
 
 // What a pinned action's card draws: the menu's label, the script's file name
 // with its variant, and the state the engine worked out.
-internal sealed record PinnedCardModel(ActionRef Action, string Title, string Detail, PinnedCardState State);
+internal sealed record PinnedCardModel(
+    ActionRef Action, string Title, string Detail, PinnedCardState State, bool TerminalOpen = false);
 
 // A pinned action's card. It holds no logic: the section gives it a model each
 // time the board, the menu or the clock moves, and hears one of two requests
@@ -19,6 +20,7 @@ internal sealed partial class PinnedActionCard : UserControl
     {
         Action = action;
         InitializeComponent();
+        Line.ShowTerminalRequested += () => ShowTerminalRequested?.Invoke(Action);
     }
 
     public ActionRef Action { get; }
@@ -47,6 +49,7 @@ internal sealed partial class PinnedActionCard : UserControl
         TitleText.Text = model.Title;
         DetailText.Text = model.Detail;
         Line.Apply(model.State.Line);
+        Line.SetShowTerminal(model.TerminalOpen);
 
         _mode = model.State.Button;
         bool show = _mode == ActionButtonMode.ShowTerminal;

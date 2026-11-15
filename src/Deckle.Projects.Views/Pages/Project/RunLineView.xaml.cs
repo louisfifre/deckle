@@ -20,7 +20,22 @@ internal sealed partial class RunLineView : UserControl
         // The line is single-line and trimmed: its tooltip carries the whole
         // text when the ellipsis is drawn.
         TrimmedTextToolTip.Attach(LineText);
+
+        TerminalIcon.Glyph = ProjectsGlyphs.OpenInNew;
+        string show = ProjectsText.Get("Pinned_ShowTerminal");
+        ToolTipService.SetToolTip(TerminalButton, show);
+        AutomationProperties.SetName(TerminalButton, show);
     }
+
+    // The small "Show terminal" button after the words was pressed.
+    public event Action? ShowTerminalRequested;
+
+    // Offers "Show terminal" next to the words of an ended run whose terminal
+    // window is still open. The owner decides, since only it knows the run.
+    public void SetShowTerminal(bool visible) =>
+        TerminalButton.Visibility = visible ? Visibility.Visible : Visibility.Collapsed;
+
+    private void OnTerminalClick(object sender, RoutedEventArgs e) => ShowTerminalRequested?.Invoke();
 
     // What the line says, for the self-check and a screen reader.
     public string Text => LineText.Text;
