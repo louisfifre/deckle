@@ -26,6 +26,6 @@ internal static class ProjectsGlyphs
     public const string ChevronDown = "";
     public const string ChevronUp = "";
 
-    // The dotted handle of a row (Segoe Fluent "GripperBarVertical").
+    // The handle of a row: two horizontal bars (Segoe Fluent "GripperBarHorizontal").
     public const string Grip = "";
 }
