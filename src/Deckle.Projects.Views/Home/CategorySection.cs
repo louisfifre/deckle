@@ -46,13 +46,13 @@ internal sealed class CategorySection : UserControl
             Children = { Header, _hint, Cards },
         };
 
-        CategoryDropTarget.Attach(panel, () => _name, projectId =>
+        FrameworkElement dropTarget = CategoryDropTarget.Attach(panel, () => _name, projectId => context.Store.Find(projectId)?.CategoryId == category.Id, projectId =>
         {
             // Dropped on the category it is already in: nothing to do.
             if (context.Store.Find(projectId)?.CategoryId != category.Id) commands.Move(projectId, category.Id);
         });
 
-        Content = panel;
+        Content = dropTarget;
         HorizontalContentAlignment = HorizontalAlignment.Stretch;
 
         Update(category, projects);

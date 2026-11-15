@@ -69,12 +69,12 @@ internal sealed class WithoutCategoryFold : UserControl
             Background = new SolidColorBrush(Microsoft.UI.Colors.Transparent),
             Children = { _expander, _body },
         };
-        CategoryDropTarget.Attach(panel, () => ProjectsText.Get("Home_WithoutCategory"), projectId =>
+        FrameworkElement dropTarget = CategoryDropTarget.Attach(panel, () => ProjectsText.Get("Home_WithoutCategory"), projectId => context.Store.Find(projectId)?.CategoryId is null, projectId =>
         {
             if (context.Store.Find(projectId)?.CategoryId is not null) commands.Move(projectId, null);
         });
 
-        Content = panel;
+        Content = dropTarget;
         HorizontalContentAlignment = HorizontalAlignment.Stretch;
         Update(projects);
     }
