@@ -75,7 +75,30 @@ internal sealed class User32WindowSystem : IWindowSystem
 
     public void Restore(nint handle) => ShowWindow(handle, SwRestore);
 
-    public bool BringToFront(nint handle) => SetForegroundWindow(handle);
+    // Windows lets only the process the person is using (or the one that got the
+    // last input) take the foreground, and answers false to any other. A click in
+    // Deckle makes Deckle that process, so the plain call is the normal way. When
+    // it is refused (measured from a background process), the window is given the
+    // foreground by attaching this thread to the foreground window's input queue
+    // for the one call, the usual way a shell tool asks for it.
+    public bool BringToFront(nint handle)
+    {
+        if (SetForegroundWindow(handle)) return true;
+
+        nint foreground = GetForegroundWindow();
+        uint foregroundThread = foreground == 0 ? 0 : GetWindowThreadProcessId(foreground, out _);
+        uint thisThread = GetCurrentThreadId();
+        bool attached = foregroundThread != 0 && foregroundThread != thisThread && AttachThreadInput(thisThread, foregroundThread, true);
+        try
+        {
+            BringWindowToTop(handle);
+            return SetForegroundWindow(handle);
+        }
+        finally
+        {
+            if (attached) AttachThreadInput(thisThread, foregroundThread, false);
+        }
+    }
 
     private delegate bool EnumWindowsProc(nint hwnd, nint lParam);
 
@@ -101,6 +124,23 @@ internal sealed class User32WindowSystem : IWindowSystem
 
     [DllImport("user32.dll", ExactSpelling = true)]
     private static extern int GetWindowTextLengthW(nint hwnd);
+
+    [DllImport("user32.dll", ExactSpelling = true)]
+    private static extern nint GetForegroundWindow();
+
+    [DllImport("user32.dll", ExactSpelling = true)]
+    private static extern uint GetWindowThreadProcessId(nint hwnd, out uint processId);
+
+    [DllImport("user32.dll", ExactSpelling = true)]
+    [return: MarshalAs(UnmanagedType.Bool)]
+    private static extern bool AttachThreadInput(uint attachThread, uint toThread, [MarshalAs(UnmanagedType.Bool)] bool attach);
+
+    [DllImport("user32.dll", ExactSpelling = true)]
+    [return: MarshalAs(UnmanagedType.Bool)]
+    private static extern bool BringWindowToTop(nint hwnd);
+
+    [DllImport("kernel32.dll", ExactSpelling = true)]
+    private static extern uint GetCurrentThreadId();
 
     [DllImport("user32.dll", ExactSpelling = true, CharSet = CharSet.Unicode)]
     private static extern int GetWindowTextW(nint hwnd, StringBuilder text, int maxCount);
