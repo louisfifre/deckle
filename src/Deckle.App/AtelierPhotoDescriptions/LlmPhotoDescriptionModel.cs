@@ -64,21 +64,19 @@ internal sealed class LlmPhotoDescriptionModel : IPhotoDescriptionModel
         return new LlmPhotoDescriptionModel(choices.Read, providers, LlmProviderEngines.CreateDefault(providers));
     }
 
+    /// <summary>What stops every description as the model is set up, found
+    /// without asking a server: null when a request may leave. The Atelier's
+    /// panel and folder command read it first, so they say what is missing
+    /// before offering a button that can only fail.</summary>
+    public PhotoDescriptionFailure? Readiness() => Resolve(out _, out _, out _);
+
     public async Task<PhotoDescriptionResult> DescribeAsync(byte[] jpeg, string prompt, CancellationToken cancellationToken)
     {
-        PhotoDescriptionModelChoice? choice = _choice();
-        if (choice is not { IsComplete: true }) return Failed(PhotoDescriptionFailure.NoModelChosen);
-
-        LlmProvider? provider = _providers().FirstOrDefault(p => p.Id == choice.ProviderId);
-        if (provider is not { Enabled: true }) return Failed(PhotoDescriptionFailure.NoModelChosen);
-        if (provider.Kind == LlmProviderKind.Claude || !LocalEndpoint.IsLoopback(provider.Endpoint))
-            return Failed(PhotoDescriptionFailure.EndpointNotLocal);
-
-        IGenerationEngine? engine = _engines.Resolve(provider.Id);
-        if (engine is null) return Failed(PhotoDescriptionFailure.NoModelChosen);
+        if (Resolve(out PhotoDescriptionModelChoice? choice, out _, out IGenerationEngine? engine) is { } notReady)
+            return Failed(notReady);
 
         var request = new GenerationRequest(
-            Model: choice.Model,
+            Model: choice!.Model,
             SystemPrompt: "",
             UserText: prompt,
             Label: Label,
@@ -90,7 +88,7 @@ internal sealed class LlmPhotoDescriptionModel : IPhotoDescriptionModel
         try
         {
             // The engines block on their HTTP call: off the caller's thread.
-            GenerationResult result = await Task.Run(() => engine.Generate(request, deadline.Token), deadline.Token);
+            GenerationResult result = await Task.Run(() => engine!.Generate(request, deadline.Token), deadline.Token);
             if (string.IsNullOrWhiteSpace(result.Text)) return Failed(PhotoDescriptionFailure.Other);
             return PhotoDescriptionResult.Of(new PhotoDescription(result.Text, choice.Model, _clock.GetLocalNow()));
         }
@@ -98,6 +96,25 @@ internal sealed class LlmPhotoDescriptionModel : IPhotoDescriptionModel
         {
             return Failed(KindOf(ex, cancellationToken));
         }
+    }
+
+    // The stored choice, its provider and its engine, or why there is none.
+    private PhotoDescriptionFailure? Resolve(
+        out PhotoDescriptionModelChoice? choice, out LlmProvider? provider, out IGenerationEngine? engine)
+    {
+        provider = null;
+        engine = null;
+        choice = _choice();
+        if (choice is not { IsComplete: true }) return PhotoDescriptionFailure.NoModelChosen;
+
+        string providerId = choice.ProviderId;
+        provider = _providers().FirstOrDefault(p => p.Id == providerId);
+        if (provider is not { Enabled: true }) return PhotoDescriptionFailure.NoModelChosen;
+        if (provider.Kind == LlmProviderKind.Claude || !LocalEndpoint.IsLoopback(provider.Endpoint))
+            return PhotoDescriptionFailure.EndpointNotLocal;
+
+        engine = _engines.Resolve(provider.Id);
+        return engine is null ? PhotoDescriptionFailure.NoModelChosen : null;
     }
 
     internal static PhotoDescriptionFailure KindOf(Exception ex, CancellationToken caller) => ex switch

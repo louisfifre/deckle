@@ -40,6 +40,20 @@ public sealed class LlmPhotoDescriptionModelTests
         Assert.Equal("image/jpeg", sent.Image?.MediaType);
     }
 
+    // What the panel and the folder command read before offering a button:
+    // the same answer a request would get, without asking a server.
+    [Fact]
+    public void ReadinessSaysWhatIsMissingWithoutCallingTheEngine()
+    {
+        var engine = new FakeEngine(_ => throw new InvalidOperationException("never called"));
+        var remote = new LlmProvider { Id = "local", Kind = LlmProviderKind.OpenAiCompatible, Endpoint = "https://api.mistral.ai/v1" };
+
+        Assert.Null(Model(engine, Chosen).Readiness());
+        Assert.Equal(PhotoDescriptionFailure.NoModelChosen, Model(engine, null).Readiness());
+        Assert.Equal(PhotoDescriptionFailure.EndpointNotLocal, Model(engine, Chosen, remote).Readiness());
+        Assert.Empty(engine.Requests);
+    }
+
     [Fact]
     public async Task NothingChosenIsNoModelChosen()
     {
