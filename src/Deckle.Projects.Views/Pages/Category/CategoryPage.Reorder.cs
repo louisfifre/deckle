@@ -1,3 +1,6 @@
+using Microsoft.UI.Xaml;
+using Microsoft.UI.Xaml.Automation;
+using Microsoft.UI.Xaml.Automation.Peers;
 using Microsoft.UI.Xaml.Controls;
 using Windows.Foundation.Collections;
 
@@ -15,6 +18,8 @@ namespace Deckle.Projects.Views;
 //   the commit   the new order is written to the store once the row is let go
 //                (or, for the keyboard's Alt+Shift+Up/Down, when the list
 //                changes with no drag going on), never while it is still moving
+//   the voice    a keyboard move is announced to a screen reader with the row's
+//                new position; a drag is not, the person sees where it lands
 internal sealed partial class CategoryPage
 {
     private bool _dragging;
@@ -47,7 +52,26 @@ internal sealed partial class CategoryPage
     private void OnItemsChanged(IObservableVector<object> sender, IVectorChangedEventArgs args)
     {
         if (_building || _dragging) return;
+        if (args.CollectionChange == CollectionChange.ItemInserted
+            && args.Index < Rows.Items.Count
+            && Rows.Items[(int)args.Index] is CategoryRow moved)
+            AnnounceMove(moved, (int)args.Index);
         CommitOrder();
+    }
+
+    // The keyboard moves a row with no sound of its own, so the new place is said
+    // aloud: "Name, position 2 of 4". It is raised from the list's peer, which
+    // outlives the redraw the store's change causes right after (the row's own
+    // peer goes with the row).
+    private void AnnounceMove(CategoryRow row, int index)
+    {
+        string name = AutomationProperties.GetName(row);
+        string text = ProjectsText.Format("Category_Moved_Format", name, index + 1, Rows.Items.Count);
+        FrameworkElementAutomationPeer.FromElement(Rows)?.RaiseNotificationEvent(
+            AutomationNotificationKind.ActionCompleted,
+            AutomationNotificationProcessing.ImportantMostRecent,
+            text,
+            "ProjectsRowMoved");
     }
 
     // Writes the list's order to the store when it differs from the store's.
