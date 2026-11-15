@@ -78,7 +78,10 @@ public sealed partial class AtelierWindow : Window
             Math.Min((int)(800 * scale), work.Height)));
 
         var presenter = OverlappedPresenter.Create();
-        presenter.PreferredMinimumWidth = (int)(720 * scale);
+        // The narrowest the top row holds whole: the buttons, the active
+        // tool with its name, search, and an address bar of its icon and a
+        // few letters (AtelierWindow.xaml).
+        presenter.PreferredMinimumWidth = (int)(840 * scale);
         presenter.PreferredMinimumHeight = (int)(480 * scale);
         AppWindow.SetPresenter(presenter);
     }

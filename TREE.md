@@ -798,6 +798,7 @@ _Generated from `git ls-files` — do not edit by hand._
 │   ├── Deckle.Atelier.Views/
 │   │   ├── Address/
 │   │   │   ├── AddressBar.Icon.cs
+│   │   │   ├── AddressBar.SegmentWidth.cs
 │   │   │   ├── AddressBar.xaml
 │   │   │   ├── AddressBar.xaml.cs
 │   │   │   └── AddressCrumb.cs

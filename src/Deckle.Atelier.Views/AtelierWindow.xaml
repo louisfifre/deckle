@@ -69,7 +69,11 @@
                 <Grid Margin="4,0,0,0" ColumnSpacing="4">
                     <Grid.ColumnDefinitions>
                         <ColumnDefinition Width="Auto" />
-                        <ColumnDefinition Width="*" MinWidth="160" />
+                        <!-- The address bar's floor is its icon and a few
+                             letters: at the window's minimum width, with the
+                             active tool's name shown, a larger one pushed the
+                             tools and search out of the row. -->
+                        <ColumnDefinition Width="*" MinWidth="96" />
                         <ColumnDefinition Width="Auto" />
                         <ColumnDefinition Width="Auto" />
                     </Grid.ColumnDefinitions>
