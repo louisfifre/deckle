@@ -782,6 +782,7 @@ _Generated from `git ls-files` — do not edit by hand._
 │   │   ├── Sample/
 │   │   │   ├── MapSampleFolder.cs
 │   │   │   ├── SampleFolder.cs
+│   │   │   ├── SamplePdf.cs
 │   │   │   ├── SamplePhotos.cs
 │   │   │   └── SizesSample.cs
 │   │   ├── Sizes/
