@@ -47,6 +47,14 @@ public partial class App
             MapReview.SetBySections(window, true);
             return window.SelectForReviewAsync("LICENSE");
         });
+        // The same filters by sections: "always read" leaves only the context
+        // files' section, the others emptied and gone, and the total row.
+        await capture("map-sections-always-read", () =>
+        {
+            MapReview.SetAlwaysReadOnly(window, true);
+            return window.SelectForReviewAsync("CLAUDE.md");
+        });
+        MapReview.SetAlwaysReadOnly(window, false);
         MapReview.SetBySections(window, false);
 
         await capture("map-nothing", async () =>
