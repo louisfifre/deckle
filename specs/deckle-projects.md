@@ -77,7 +77,7 @@ Its neighbours are Deckle Folders, which shows files and draws the map of a fold
 ### Category page (C1)
 
 - From top to bottom: the breadcrumb "Projects ›", the category's title, the line "4 projects · drag a row to change the order", the list, and the "Delete this category" button (session, C1).
-- The list is plain: one row per project with a dotted gripper handle, the name over the full path, the same meta line as the card, and the main action's button when the project has one (session, C1; Louis, 2026-11-15, on v3: "a category page that is a plain list").
+- The list is plain: one row per project with a gripper handle, the name over the full path, the same meta line as the card, and the main action's button when the project has one (session, C1; Louis, 2026-11-15, on v3: "a category page that is a plain list").
 - Clicking a row outside its button opens the project page (session).
 - Dragging a row by its gripper changes the order of the projects in the category; Home shows them in that order (session, C1).
 - The title is renamed in place the same way as a project's name: a pencil shows on hover or focus (session, C1; see Renaming).
