@@ -440,7 +440,8 @@ _Generated from `git ls-files` — do not edit by hand._
 │   ├── deckle-dictation-rewriting.md
 │   ├── deckle-mail.md
 │   ├── deckle-projects.md
-│   └── deckle-transcribe-and-rewrite.md
+│   ├── deckle-transcribe-and-rewrite.md
+│   └── deckle.md
 ├── src/
 │   ├── Deckle.Anytype/
 │   │   ├── Api/
