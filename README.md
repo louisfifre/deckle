@@ -57,9 +57,9 @@ Smaller touches outside the module list: a **taskbar cover** that masks the task
 
 | First commit | Commits | Active days | Lines added | Lines touched | Current tracked lines |
 |---:|---:|---:|---:|---:|---:|
-| 2026-04-01 | 4,699 | 134 | 662,895 | 987,510 | 339,122 |
+| 2026-04-01 | 4,987 | 138 | 704,341 | 1,045,930 | 363,460 |
 
-<sub>Generated from Git history on 2026-11-13. Counts include tracked text files only for the current line total.</sub>
+<sub>Generated from Git history on 2026-11-17. Counts include tracked text files only for the current line total.</sub>
 <!-- deckle-stats:end -->
 
 ## Privacy and network use
