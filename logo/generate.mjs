@@ -8,10 +8,11 @@
 // facing it take the same radius, GROOVE_RADIUS: the gap widens a little there,
 // and both sides of it read as the same curve.
 //
-// The mark has two forms, because a gap that reads at 64 px closes at 16 px:
-// `normal`, four blades, and `small`, three blades and a wider gap, for where the
-// mark is shown small (the tray, a title bar). A third, `five`, is the first
-// drawing: it is kept as a reference SVG and no icon uses it.
+// Every icon uses the `normal` form, four blades, the tray and the title bars
+// included: the maintainer chose one mark everywhere over a gap that stays open
+// at 16 px. Two other forms are kept as reference SVGs that no icon uses:
+// `small`, three blades and a wider gap, drawn for the small sizes, and `five`,
+// the first drawing.
 //
 // The numbers come from the first logo, a generated image: they were measured on
 // its trace, then regularised (one top angle, vertical right edges, one gap, evenly
@@ -463,7 +464,7 @@ svg.recording{--a:url(#ember)}
 svg.rewriting{--a:url(#ember);--e:url(#ember)}
 path{fill:var(--rest)}path.a{fill:var(--a)}path.e{fill:var(--e)}path.sheen{fill:url(#sheen)}
 </style><body><h1>Deckle — logo sheet</h1>
-<p>The mark has two forms, both bare, as Windows 11 icons are. Normal has four blades and stands in the taskbar. Small has three, so its gaps stay open at 16 px, and stands in the tray and the title bars. A blade lights up while Deckle works: one while it records, two while it rewrites. The icon pixels carry the shadow from ${SHADOW_MIN_SIZE} px up.</p>
+<p>The mark has two forms, both bare, as Windows 11 icons are. Normal has four blades and stands everywhere: the taskbar, the tray and the title bars. Small has three, so its gaps stay open at 16 px; it is kept for reference and no icon uses it. A blade lights up while Deckle works: one while it records, two while it rewrites. The icon pixels carry the shadow from ${SHADOW_MIN_SIZE} px up.</p>
 <svg width="0" height="0" style="position:absolute"><defs>
 ${restGradient(0, 0)}
 ${emberGradient(0, 0)}
@@ -494,11 +495,11 @@ for (const [state, lit] of Object.entries(STATES)) {
   writeFileSync(beside(`deckle${suffix}.svg`), svg(normal, title, lit));
   writeFileSync(beside(`deckle-small${suffix}.svg`), svg(small, title, lit));
 
-  // The tray: the small form, bare, so the mark takes the whole height.
+  // The tray: the normal form, bare, so the mark takes the whole height.
   for (const incident of [false, true])
-    writeFileSync(iconFile(`deckle--state--${state}${incident ? '--incident--true' : ''}.ico`), ico(size => raster(small, lit, size, { incident })));
+    writeFileSync(iconFile(`deckle--state--${state}${incident ? '--incident--true' : ''}.ico`), ico(size => raster(normal, lit, size, { incident })));
   // A XAML title bar takes a bitmap, shown at 16 px: see IconAssets.
-  writeFileSync(iconFile(`deckle--state--${state}--32px.png`), png(raster(small, lit, 32), 32));
+  writeFileSync(iconFile(`deckle--state--${state}--32px.png`), png(raster(normal, lit, 32), 32));
 }
 // A window's icon (taskbar, Alt+Tab): the normal form. A window shows the
 // microphone, not the rewrite.

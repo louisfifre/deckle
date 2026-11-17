@@ -12,10 +12,9 @@ public enum MarkState { Rest, Recording, Rewriting }
 // Deckle.App.csproj copies them next to the exe, under Assets/Icons/. The
 // files are drawn by logo/generate.mjs, never by hand.
 //
-// The mark has two forms, both bare, as Windows 11 icons are: the shape is the
-// icon, with no tile behind it. Where it is shown small and alone, the tray and
-// a title bar, it is the small form. Where it stands among other apps, the
-// taskbar and Alt+Tab, it is the normal form.
+// The mark is bare, as Windows 11 icons are: the shape is the icon, with no
+// tile behind it. Every file here carries the same four-blade form, from the
+// tray to the taskbar.
 public static class IconAssets
 {
     // The tray's .ico of a state, with the dot it shows while a user incident
