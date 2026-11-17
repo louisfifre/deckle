@@ -1,0 +1,2 @@
+email-address | specs/deckle-mail.md | maison@exemple.fr | invented example address, already public in the earlier spec and used by the Mail sample data
+email-address | .push-guard-allow | maison@exemple.fr | the line above names the address it accepts

@@ -3430,6 +3430,7 @@ _Generated from `git ls-files` — do not edit by hand._
 ├── .editorconfig
 ├── .gitattributes
 ├── .gitignore
+├── .push-guard-allow
 ├── AGENTS.md  — Root agent-instructions for Deckle — identity, hard rules, posture, and where t…
 ├── CHANGELOG.md
 ├── CLAUDE.md
