@@ -69,6 +69,7 @@ public class SelfCheckTests
         report.Surfaces.Add(new SelfCheckSurface("settings", "general", "General", true, 300, @"captures\settings-general.png"));
         report.Surfaces.Add(new SelfCheckSurface("log", null, null, true, 400, @"captures\log.png"));
         report.Surfaces.Add(new SelfCheckSurface("transcribe-rewrite", null, null, true, 300, @"captures\transcribe-rewrite.png"));
+        report.Surfaces.Add(new SelfCheckSurface("paste-to-folder", null, null, true, 200, @"captures\paste-to-folder.png"));
         report.Surfaces.Add(new SelfCheckSurface("mail", "triage", "Triage", true, 300, @"captures\mail-triage.png"));
         report.Surfaces.Add(new SelfCheckSurface("atelier", "files", null, true, 400, @"captures\atelier-files.png"));
         report.Surfaces.Add(new SelfCheckSurface("projects", "h1", null, true, 400, @"captures\projects-h1.png"));
@@ -159,6 +160,7 @@ public class SelfCheckTests
     [InlineData("settings")]
     [InlineData("log")]
     [InlineData("transcribe-rewrite")]
+    [InlineData("paste-to-folder")]
     [InlineData("mail")]
     [InlineData("atelier")]
     [InlineData("projects")]
@@ -305,6 +307,8 @@ public class SelfCheckTests
     [InlineData("mail/activity", "mail", "activity")]
     [InlineData("atelier/photos-gallery", "atelier", "photos-gallery")]
     [InlineData("projects/p3", "projects", "p3")]
+    [InlineData("paste-to-folder", "paste-to-folder", null)]
+    [InlineData("paste-to-folder/failed", "paste-to-folder", "failed")]
     [Trait("Category", "unit")]
     public void Target_NamesAWindowOrOneOfItsViews(string text, string window, string? view)
     {
