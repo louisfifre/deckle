@@ -1951,6 +1951,17 @@ _Generated from `git ls-files` — do not edit by hand._
 │   │   ├── PasteSaveLog.cs
 │   │   ├── PasteSaver.cs
 │   │   └── PasteSaveResult.cs
+│   ├── Deckle.Paste.Views/
+│   │   ├── Strings/
+│   │   │   └── en-US/
+│   │   │       └── Resources.resw
+│   │   ├── Deckle.Paste.Views.csproj
+│   │   ├── PasteText.cs
+│   │   ├── PasteWindow.Clipboard.cs
+│   │   ├── PasteWindow.Drag.cs
+│   │   ├── PasteWindow.Folder.cs
+│   │   ├── PasteWindow.xaml
+│   │   └── PasteWindow.xaml.cs
 │   ├── Deckle.Presets/
 │   │   ├── Deckle.Presets.csproj
 │   │   ├── IPresetStore.cs

@@ -1,0 +1,26 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <RootNamespace>Deckle.Paste.Views</RootNamespace>
+    <UseWinUI>true</UseWinUI>
+    <DefaultLanguage>en-US</DefaultLanguage>
+    <!-- Generates the lib's own .pri so Loc.GetFrom resolves against the
+         Deckle.Paste.Views/Resources subtree (Strings/en-US/Resources.resw). -->
+    <EnableMsixTooling>true</EnableMsixTooling>
+  </PropertyGroup>
+
+  <!-- The Paste to folder window. Dependencies point one way: this project
+       reads Deckle.Paste, which holds no XAML and knows nothing of it. The
+       window reads the clipboard and hands the saver what it holds. -->
+  <ItemGroup>
+    <!-- One WinAppSDK runtime per process: never override the central version. -->
+    <PackageReference Include="Microsoft.WindowsAppSDK" />
+    <PackageReference Include="Microsoft.Windows.SDK.BuildTools" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\Deckle.Paste\Deckle.Paste.csproj" />
+    <ProjectReference Include="..\Deckle.Core\Deckle.Core.csproj" />
+    <ProjectReference Include="..\Deckle.Diagnostics\Deckle.Diagnostics.csproj" />
+    <ProjectReference Include="..\Deckle.Localization\Deckle.Localization.csproj" />
+  </ItemGroup>
+</Project>

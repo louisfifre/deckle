@@ -1,0 +1,120 @@
+<Window
+    x:Class="Deckle.Paste.Views.PasteWindow"
+    xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml">
+
+    <!-- One small surface and no header: a close button in the corner, the
+         zone that receives the paste, the line that says how it ended, and
+         the folder it goes to. The whole surface moves the window
+         (PasteWindow.Drag.cs); the strings are set in code (PasteText). -->
+    <Grid x:Name="RootGrid"
+          Background="{ThemeResource LayerOnAcrylicFillColorDefaultBrush}"
+          Padding="12,4,12,12"
+          RowSpacing="8"
+          PreviewKeyDown="OnRootPreviewKeyDown"
+          KeyDown="OnRootKeyDown">
+        <Grid.RowDefinitions>
+            <RowDefinition Height="Auto" />
+            <RowDefinition Height="*" />
+            <RowDefinition Height="Auto" />
+            <RowDefinition Height="Auto" />
+        </Grid.RowDefinitions>
+
+        <!-- The only chrome. Pulled into the corner so the zone keeps the
+             height: 4 dip from the top edge, 8 from the right. -->
+        <Button x:Name="CloseButton"
+                Grid.Row="0"
+                HorizontalAlignment="Right"
+                Margin="0,0,-4,-4"
+                Width="32"
+                Height="32"
+                Padding="0"
+                Style="{StaticResource SubtleButtonStyle}"
+                Click="OnCloseClick">
+            <FontIcon Glyph="&#xE711;" FontSize="12" />
+        </Button>
+
+        <!-- A text field that receives a paste and is never edited: the
+             TextBox gives the field's own border, fill, corner radius and
+             focus line in every theme, read-only keeps typing out. Ctrl+V
+             reaches the window before it (OnRootPreviewKeyDown). -->
+        <TextBox x:Name="PasteZone"
+                 Grid.Row="1"
+                 IsReadOnly="True"
+                 IsSpellCheckEnabled="False"
+                 TextWrapping="Wrap"
+                 VerticalAlignment="Stretch">
+            <TextBox.ContextFlyout>
+                <MenuFlyout>
+                    <MenuFlyoutItem x:Name="PasteMenuItem" Click="OnPasteMenuClick">
+                        <MenuFlyoutItem.Icon>
+                            <FontIcon Glyph="&#xE77F;" />
+                        </MenuFlyoutItem.Icon>
+                    </MenuFlyoutItem>
+                </MenuFlyout>
+            </TextBox.ContextFlyout>
+        </TextBox>
+
+        <!-- How the last paste ended: nothing before the first one. One slot
+             for the mark, a word, and the detail trimmed with its whole text
+             in a tooltip. -->
+        <Grid x:Name="StatusLine" Grid.Row="2" ColumnSpacing="8" MinHeight="20">
+            <Grid.ColumnDefinitions>
+                <ColumnDefinition Width="Auto" />
+                <ColumnDefinition Width="Auto" />
+                <ColumnDefinition Width="*" />
+            </Grid.ColumnDefinitions>
+            <Grid Grid.Column="0" Width="16" Height="16" VerticalAlignment="Center">
+                <ProgressRing x:Name="SavingRing" Width="16" Height="16" MinWidth="16" MinHeight="16"
+                              IsActive="False"
+                              AutomationProperties.AccessibilityView="Raw" />
+                <FontIcon x:Name="DoneMark" Glyph="&#xEC61;" FontSize="16"
+                          Foreground="{ThemeResource SystemFillColorSuccessBrush}"
+                          Visibility="Collapsed"
+                          AutomationProperties.AccessibilityView="Raw" />
+                <FontIcon x:Name="FailedMark" Glyph="&#xEB90;" FontSize="16"
+                          Foreground="{ThemeResource SystemFillColorCriticalBrush}"
+                          Visibility="Collapsed"
+                          AutomationProperties.AccessibilityView="Raw" />
+            </Grid>
+            <TextBlock x:Name="StatusText"
+                       Grid.Column="1"
+                       VerticalAlignment="Center"
+                       Style="{StaticResource BodyStrongTextBlockStyle}"
+                       AutomationProperties.LiveSetting="Polite" />
+            <TextBlock x:Name="StatusDetail"
+                       Grid.Column="2"
+                       VerticalAlignment="Center"
+                       Style="{StaticResource CaptionTextBlockStyle}"
+                       Foreground="{ThemeResource TextFillColorSecondaryBrush}"
+                       TextWrapping="NoWrap"
+                       TextTrimming="CharacterEllipsis"
+                       AutomationProperties.AccessibilityView="Raw" />
+        </Grid>
+
+        <!-- Where pastes go: the path trimmed, whole in its tooltip, and the
+             picker's button, as on the settings' folder lines. -->
+        <Grid Grid.Row="3" ColumnSpacing="8">
+            <Grid.ColumnDefinitions>
+                <ColumnDefinition Width="Auto" />
+                <ColumnDefinition Width="*" />
+                <ColumnDefinition Width="Auto" />
+            </Grid.ColumnDefinitions>
+            <FontIcon Grid.Column="0"
+                      Glyph="&#xE8B7;" FontSize="16"
+                      VerticalAlignment="Center"
+                      Foreground="{ThemeResource TextFillColorSecondaryBrush}"
+                      AutomationProperties.AccessibilityView="Raw" />
+            <TextBlock x:Name="FolderPath"
+                       Grid.Column="1"
+                       VerticalAlignment="Center"
+                       Style="{StaticResource CaptionTextBlockStyle}"
+                       Foreground="{ThemeResource TextFillColorSecondaryBrush}"
+                       TextWrapping="NoWrap"
+                       TextTrimming="CharacterEllipsis" />
+            <Button x:Name="ChooseFolderButton"
+                    Grid.Column="2"
+                    Click="OnChooseFolderClick" />
+        </Grid>
+    </Grid>
+</Window>
