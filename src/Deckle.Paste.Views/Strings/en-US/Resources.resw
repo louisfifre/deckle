@@ -46,5 +46,5 @@
   <!-- The folder line -->
   <data name="Paste_Folder_None" xml:space="preserve"><value>No folder chosen</value></data>
   <data name="Paste_Folder_Choose" xml:space="preserve"><value>Choose folder</value></data>
-  <data name="Paste_Folder_Name" xml:space="preserve"><value>Folder</value></data>
+  <data name="Paste_Folder_Announce_Format" xml:space="preserve"><value>Folder: {0}</value></data>
 </root>

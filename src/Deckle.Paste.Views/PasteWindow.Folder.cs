@@ -18,7 +18,7 @@ public sealed partial class PasteWindow
         string shown = string.IsNullOrEmpty(folder) ? PasteText.Get("Paste_Folder_None") : folder;
         FolderPath.Text = shown;
         ToolTipService.SetToolTip(FolderPath, string.IsNullOrEmpty(folder) ? null : folder);
-        AutomationProperties.SetName(FolderPath, $"{PasteText.Get("Paste_Folder_Name")}: {shown}");
+        AutomationProperties.SetName(FolderPath, PasteText.Format("Paste_Folder_Announce_Format", shown));
     }
 
     // The Windows App SDK picker (Microsoft.Windows.Storage.Pickers), as
