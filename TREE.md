@@ -3171,6 +3171,14 @@ _Generated from `git ls-files` — do not edit by hand._
 │   │   ├── ScanOnDiskTests.cs
 │   │   ├── SteamLibraryScanEdgeCaseTests.cs
 │   │   └── SteamLibraryTests.cs
+│   ├── Deckle.Paste.Tests/
+│   │   ├── Deckle.Paste.Tests.csproj
+│   │   ├── DecklePasteSourceTests.cs
+│   │   ├── MessageTemplateDoctrineTests.cs
+│   │   ├── PasteFolderStoreTests.cs
+│   │   ├── PasteNamesTests.cs
+│   │   ├── PasteSaverTests.cs
+│   │   └── ScratchFolder.cs
 │   ├── Deckle.Presets.Tests/
 │   │   ├── Deckle.Presets.Tests.csproj
 │   │   └── PresetFamilyTests.cs
