@@ -1,4 +1,3 @@
-using System.Runtime.InteropServices;
 using Microsoft.UI.Input;
 using Microsoft.UI.Xaml;
 using Microsoft.UI.Xaml.Input;
@@ -57,9 +56,13 @@ public sealed partial class PasteWindow
             {
                 content = await ReadClipboardAsync();
             }
-            catch (Exception ex) when (ex is COMException or UnauthorizedAccessException or IOException)
+            catch (Exception)
             {
-                // Another process holds the clipboard open, or its data is gone.
+                // Another process holds the clipboard open, its data is gone, or
+                // its bitmap does not decode (the codec throws a bare Exception
+                // carrying an HRESULT). Any of them must end the "Saving" line:
+                // this task is not awaited, so an escaped exception would leave
+                // the ring spinning and a later paste refused.
                 ShowStatus(PasteStatus.Failed, PasteText.Get("Paste_Error_ClipboardUnreadable"));
                 return;
             }
