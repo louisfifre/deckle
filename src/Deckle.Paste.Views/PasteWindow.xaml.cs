@@ -65,7 +65,7 @@ public sealed partial class PasteWindow : Window
 
     // A small surface the person keeps beside their work, the way the
     // paragraph offer window is built (RewriteOfferWindow): no title bar,
-    // DWM's rounded corners and stroke, Acrylic, above other windows, and no
+    // DWM's rounded corners without its stroke, Acrylic, above other windows, and no
     // taskbar button or Alt+Tab entry. The title is drawn nowhere; it still
     // names the window to Narrator and to the windowing APIs.
     private void ApplyChrome()
@@ -85,7 +85,9 @@ public sealed partial class PasteWindow : Window
         uint corners = NativeMethods.DWMWCP_ROUND;
         NativeMethods.DwmSetWindowAttribute(
             _hwnd, NativeMethods.DWMWA_WINDOW_CORNER_PREFERENCE, ref corners, sizeof(uint));
-        uint border = NativeMethods.DWMWA_COLOR_DEFAULT;
+        // No stroke: the system's one reads as a bright outline around so
+        // small a surface, and the Acrylic and the shadow already set it off.
+        uint border = NativeMethods.DWMWA_COLOR_NONE;
         NativeMethods.DwmSetWindowAttribute(
             _hwnd, NativeMethods.DWMWA_BORDER_COLOR, ref border, sizeof(uint));
 
