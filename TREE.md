@@ -661,6 +661,7 @@ _Generated from `git ls-files` — do not edit by hand._
 │   │   ├── app.manifest
 │   │   ├── App.Orchestration.cs
 │   │   ├── App.ParagraphRewrite.cs
+│   │   ├── App.Paste.cs
 │   │   ├── App.PrecisionScroll.cs
 │   │   ├── App.Projects.cs
 │   │   ├── App.Relocate.cs

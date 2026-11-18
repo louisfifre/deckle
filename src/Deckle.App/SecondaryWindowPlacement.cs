@@ -14,6 +14,7 @@ internal static class SecondaryWindowPlacement
     public const string Atelier = "atelier";
     public const string Projects = "projects";
     public const string TranscribeRewrite = "transcribe-rewrite";
+    public const string PasteToFolder = "paste-to-folder";
 
     private const int SW_SHOWNORMAL = 1;
     private const int SW_SHOWMINIMIZED = 2;

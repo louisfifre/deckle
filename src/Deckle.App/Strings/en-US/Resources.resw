@@ -542,6 +542,11 @@
   <data name="Tray_Tooltip_Format" xml:space="preserve">
     <value>Deckle - {0}</value>
   </data>
+  <!-- Opens the Paste to folder window (App.Paste.cs), the first of the
+       left-click menu's actions. -->
+  <data name="TrayMenu_PasteToFolder" xml:space="preserve">
+    <value>Paste to folder…</value>
+  </data>
   <data name="TrayMenu_TranscribeRewrite" xml:space="preserve">
     <value>Transcribe and rewrite…</value>
   </data>
