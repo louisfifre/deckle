@@ -20,12 +20,13 @@ namespace Deckle.App;
 // What it does: refuses to run unless DECKLE_DATA_ROOT names a root of its own;
 // composes a short, explicit list of pieces (below); probes the microphone once;
 // opens the Settings window and walks every page of the rail, then opens the Log
-// window, then the Mail window and its walk of drawn states;
+// window, the Transcribe and rewrite and Paste to folder windows in each of
+// their states, then the Mail window and its walk of drawn states;
 // photographs each; writes report.json (the contract
 // with scripts/self-check.ps1) and exits 0 when all is well, 1 otherwise.
 //
 // `--only <target>` after the folder keeps the run to one window, or to one
-// view of Settings, Mail, the Atelier or Projects (SelfCheckTarget): the check
+// view of a window that has several (SelfCheckTarget): the check
 // of a single change, in seconds.
 //
 // What it composes, in one place. Everything else of the boot is left out, and
@@ -49,7 +50,7 @@ public partial class App
         "module registry and presence flags (a fresh root has no choice, so every module is present)",
         "settings surface: host hooks and every module's pages and search entries, as the resident app registers them",
         "theme from the settings of the run's own root",
-        "windows: Settings, Log, Mail, Atelier, Projects, created by the same lazy paths the tray uses",
+        "windows: Settings, Log, Transcribe and rewrite, Paste to folder, Mail, Atelier, Projects, created by the same lazy paths the tray uses",
         "atelier: a sample folder generated under the run's own root, added as the picker adds one",
         "projects: sample projects (folders, git repositories, stub script menus) generated under the run's own root, with a terminal that opens nothing and a fixed clock",
         "microphone: one shared open and close through MicrophoneCapture.Probe",
@@ -375,6 +376,36 @@ public partial class App
                         loaded: true, ms: clock.ElapsedMilliseconds));
                 }
                 transcribe.ShowStateForCapture(TranscribeRewriteWindow.EmptyState);
+            }
+            report.Save(outputFolder);
+        }
+
+        if (Wants("paste-to-folder"))
+        {
+            // The window as it opens, then in each state of its inset's list
+            // (PasteWindow.CaptureStates: empty, a short list, a problem
+            // above a saved row, full enough to scroll), back to the first
+            // after. The window's folder store lives in this run's own data
+            // root; the states show an invented folder without storing it.
+            Step("paste-to-folder");
+            await OpenAndCaptureAsync(report, run, outputFolder, "paste-to-folder", EnsurePasteWindow);
+            Paste.Views.PasteWindow paste = EnsurePasteWindow();
+            string? onlyState = target?.View;
+            IReadOnlyList<string> states = Paste.Views.PasteWindow.CaptureStates;
+            if (onlyState is not null && !states.Contains(onlyState))
+                report.Views = [.. states];
+            else
+            {
+                foreach (string state in states)
+                {
+                    if (onlyState is not null && state != onlyState) continue;
+                    Step($"paste-to-folder/{state}");
+                    paste.ShowStateForCapture(state);
+                    await Task.Delay(600);
+                    report.Surfaces.Add(await CaptureWindowFrameAsync(
+                        run, paste, "paste-to-folder", state, null, loaded: true, ms: 0));
+                }
+                if (states.Count > 0) paste.ShowStateForCapture(states[0]);
             }
             report.Save(outputFolder);
         }

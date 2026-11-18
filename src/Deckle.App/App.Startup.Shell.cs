@@ -159,14 +159,16 @@ public partial class App
         // Left click, the menu of every day, three groups behind separators,
         // read from the top: the switches (the background ones, set once and
         // left on or off, then Ambient Light, a visual thing one actually
-        // launches, in the same group), then the actions (Record or Stop
-        // recording, Transcribe and rewrite…), then the app's own commands at
-        // the very bottom (Settings, Quit), where a tray menu keeps them. Logs
-        // and Restart live in the developer menu (TrayDeveloperMenu) (Louis,
-        // 2026-10-14, 2026-11-11 and 2026-11-14). A switch is a row with a pill
-        // (TraySwitchMenuItem); a click flips its module and closes the menu,
-        // like any menu item. Every module entry follows module presence: an
-        // absent module has no switch, no Record item, no file action.
+        // launches, in the same group), then the actions (Paste to folder…,
+        // then Record or Stop recording and Transcribe and rewrite…), then the
+        // app's own commands at the very bottom (Settings, Quit), where a tray
+        // menu keeps them. Logs and Restart live in the developer menu
+        // (TrayDeveloperMenu) (Louis, 2026-10-14, 2026-11-11, 2026-11-14 and
+        // 2026-11-18). A switch is a row with a pill (TraySwitchMenuItem); a
+        // click flips its module and closes the menu, like any menu item.
+        // Every module entry follows module presence: an absent module has no
+        // switch, no Record item, no file action. Paste to folder belongs to
+        // no module, so the actions group is always there.
         //
         // Module switches (App.TrayToggles.cs). Built once: the hotkey actions
         // below derive from the same lists, so a toggle's hotkey runs exactly
@@ -176,6 +178,15 @@ public partial class App
         var actions = new List<TrayMenuEntry>();
         actions.AddRange(trayToggles);
         actions.AddRange(trayFooterToggles);
+        // The actions. Paste to folder opens its small window, which saves
+        // what the clipboard holds as a file in a chosen folder; it belongs to
+        // no module, so it opens the group whatever is present (Louis,
+        // 2026-11-18; App.Paste.cs).
+        if (actions.Count > 0) actions.Add(new TrayMenuSeparator());
+        actions.Add(new TrayMenuCommand(
+            "paste-to-folder",
+            () => Loc.Get("TrayMenu_PasteToFolder"),
+            () => ShowPasteWindowLazy()));
         if (context.TranscriptionPresent)
         {
             // Record runs the exact path of the transcription hotkey; the menu
@@ -183,8 +194,8 @@ public partial class App
             // state at each open. Transcribe and rewrite opens its window, the
             // one way in for a text or audio files: one file goes into its
             // field, several into its file list, each .txt beside its audio
-            // (Louis, 2026-11-14; App.TranscribeRewrite.cs).
-            if (actions.Count > 0) actions.Add(new TrayMenuSeparator());
+            // (Louis, 2026-11-14; App.TranscribeRewrite.cs). Same group as
+            // Paste to folder, below it: no separator of their own.
             actions.Add(new TrayMenuCommand(
                 "record",
                 () => Loc.Get(_engine?.IsRecording == true ? "TrayPanel_StopRecording" : "TrayPanel_Record"),
@@ -195,7 +206,7 @@ public partial class App
                 () => ShowTranscribeRewriteWindowLazy()));
         }
         // The app's own commands, always present.
-        if (actions.Count > 0) actions.Add(new TrayMenuSeparator());
+        actions.Add(new TrayMenuSeparator());
         actions.Add(new TrayMenuCommand("settings", () => Loc.Get("TrayMenu_Settings"), () => ShowSettingsWindowLazy()));
         actions.Add(new TrayMenuCommand("quit", () => Loc.Get("TrayMenu_Quit"), () => QuitApp()));
         _trayActions = new TrayMenuHost(_messageHost.Hwnd, "tray-actions")

@@ -441,6 +441,7 @@ _Generated from `git ls-files` — do not edit by hand._
 │   ├── atelier.md
 │   ├── deckle-dictation-rewriting.md
 │   ├── deckle-mail.md
+│   ├── deckle-paste-to-folder.md
 │   ├── deckle-projects.md
 │   ├── deckle-transcribe-and-rewrite.md
 │   └── deckle.md
@@ -661,6 +662,7 @@ _Generated from `git ls-files` — do not edit by hand._
 │   │   ├── app.manifest
 │   │   ├── App.Orchestration.cs
 │   │   ├── App.ParagraphRewrite.cs
+│   │   ├── App.Paste.cs
 │   │   ├── App.PrecisionScroll.cs
 │   │   ├── App.Projects.cs
 │   │   ├── App.Relocate.cs
@@ -1940,6 +1942,36 @@ _Generated from `git ls-files` — do not edit by hand._
 │   │   ├── OrchestrationSettingsModule.cs
 │   │   ├── OrchestrationSettingsService.cs
 │   │   └── SettingsSearch.cs
+│   ├── Deckle.Paste/
+│   │   ├── Deckle.Paste.csproj
+│   │   ├── DecklePasteSource.cs
+│   │   ├── PasteContent.cs
+│   │   ├── PasteEntry.cs
+│   │   ├── PasteExcerpt.cs
+│   │   ├── PasteFileKinds.cs
+│   │   ├── PasteFolderStore.cs
+│   │   ├── PasteHistory.cs
+│   │   ├── PasteNames.cs
+│   │   ├── PasteSaveErrors.cs
+│   │   ├── PasteSaveLog.cs
+│   │   ├── PasteSaver.cs
+│   │   ├── PasteSaveResult.cs
+│   │   └── PasteWindowLog.cs
+│   ├── Deckle.Paste.Views/
+│   │   ├── Strings/
+│   │   │   └── en-US/
+│   │   │       └── Resources.resw
+│   │   ├── Deckle.Paste.Views.csproj
+│   │   ├── PasteRow.cs
+│   │   ├── PasteText.cs
+│   │   ├── PasteWindow.Capture.cs
+│   │   ├── PasteWindow.Clipboard.cs
+│   │   ├── PasteWindow.Drag.cs
+│   │   ├── PasteWindow.Folder.cs
+│   │   ├── PasteWindow.List.cs
+│   │   ├── PasteWindow.Thumbnail.cs
+│   │   ├── PasteWindow.xaml
+│   │   └── PasteWindow.xaml.cs
 │   ├── Deckle.Presets/
 │   │   ├── Deckle.Presets.csproj
 │   │   ├── IPresetStore.cs
@@ -3160,6 +3192,17 @@ _Generated from `git ls-files` — do not edit by hand._
 │   │   ├── ScanOnDiskTests.cs
 │   │   ├── SteamLibraryScanEdgeCaseTests.cs
 │   │   └── SteamLibraryTests.cs
+│   ├── Deckle.Paste.Tests/
+│   │   ├── Deckle.Paste.Tests.csproj
+│   │   ├── DecklePasteSourceTests.cs
+│   │   ├── MessageTemplateDoctrineTests.cs
+│   │   ├── PasteExcerptTests.cs
+│   │   ├── PasteFileKindsTests.cs
+│   │   ├── PasteFolderStoreTests.cs
+│   │   ├── PasteHistoryTests.cs
+│   │   ├── PasteNamesTests.cs
+│   │   ├── PasteSaverTests.cs
+│   │   └── ScratchFolder.cs
 │   ├── Deckle.Presets.Tests/
 │   │   ├── Deckle.Presets.Tests.csproj
 │   │   └── PresetFamilyTests.cs
