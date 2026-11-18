@@ -309,6 +309,7 @@ public class SelfCheckTests
     [InlineData("projects/p3", "projects", "p3")]
     [InlineData("paste-to-folder", "paste-to-folder", null)]
     [InlineData("paste-to-folder/failed", "paste-to-folder", "failed")]
+    [InlineData("paste-to-folder/full", "paste-to-folder", "full")]
     [Trait("Category", "unit")]
     public void Target_NamesAWindowOrOneOfItsViews(string text, string window, string? view)
     {

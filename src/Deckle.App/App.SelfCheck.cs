@@ -382,9 +382,11 @@ public partial class App
 
         if (Wants("paste-to-folder"))
         {
-            // The window as it opens, then in each state its status line can
-            // show (PasteWindow.CaptureStates), back to the first after. The
-            // window's folder store lives in this run's own data root.
+            // The window as it opens, then in each state of its inset's list
+            // (PasteWindow.CaptureStates: empty, a short list, a problem
+            // above a saved row, full enough to scroll), back to the first
+            // after. The window's folder store lives in this run's own data
+            // root; the states show an invented folder without storing it.
             Step("paste-to-folder");
             await OpenAndCaptureAsync(report, run, outputFolder, "paste-to-folder", EnsurePasteWindow);
             Paste.Views.PasteWindow paste = EnsurePasteWindow();

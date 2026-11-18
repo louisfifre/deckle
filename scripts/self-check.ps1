@@ -26,7 +26,8 @@
     transcribe-rewrite, paste-to-folder, mail, atelier, projects) or one view
     of Settings, Mail, the Atelier, Projects or a small window's states, named
     as its image is in a full run: settings/general, mail/activity,
-    atelier/photos-gallery, projects/p3, paste-to-folder/failed. A Mail, Atelier or
+    atelier/photos-gallery, projects/p3, paste-to-folder/full (its states:
+    empty, list, failed, full). A Mail, Atelier or
     Projects view is a state reached from the ones before it, so the walk is
     played up to it without pictures and stops there. The other windows and the microphone probe are left out, and
     "passed" then speaks of that target alone. A target that names nothing
