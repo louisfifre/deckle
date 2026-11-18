@@ -1946,7 +1946,11 @@ _Generated from `git ls-files` — do not edit by hand._
 │   │   ├── Deckle.Paste.csproj
 │   │   ├── DecklePasteSource.cs
 │   │   ├── PasteContent.cs
+│   │   ├── PasteEntry.cs
+│   │   ├── PasteExcerpt.cs
+│   │   ├── PasteFileKinds.cs
 │   │   ├── PasteFolderStore.cs
+│   │   ├── PasteHistory.cs
 │   │   ├── PasteNames.cs
 │   │   ├── PasteSaveErrors.cs
 │   │   ├── PasteSaveLog.cs
@@ -3188,7 +3192,10 @@ _Generated from `git ls-files` — do not edit by hand._
 │   │   ├── Deckle.Paste.Tests.csproj
 │   │   ├── DecklePasteSourceTests.cs
 │   │   ├── MessageTemplateDoctrineTests.cs
+│   │   ├── PasteExcerptTests.cs
+│   │   ├── PasteFileKindsTests.cs
 │   │   ├── PasteFolderStoreTests.cs
+│   │   ├── PasteHistoryTests.cs
 │   │   ├── PasteNamesTests.cs
 │   │   ├── PasteSaverTests.cs
 │   │   └── ScratchFolder.cs
