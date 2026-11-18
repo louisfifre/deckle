@@ -81,6 +81,31 @@ public sealed class PasteFolderStoreTests
         Assert.Equal(chosen, new PasteFolderStore(data).Folder);
     }
 
+    [Fact]
+    public void AChoiceSavedSaysSo()
+    {
+        using var scratch = new ScratchFolder();
+
+        Assert.True(new PasteFolderStore(scratch.Folder("data")).SetFolder(scratch.Folder("A")));
+    }
+
+    // The window caught an exception SetFolder never let out, so a choice
+    // that would not survive a restart looked saved.
+    [Fact]
+    [Trait("Category", "regression")]
+    public void AStoreThatCannotBeRememberedStillTellsTheCallerSo()
+    {
+        using var scratch = new ScratchFolder();
+        string notADirectory = scratch.File("occupied", "data");
+        string chosen = scratch.Folder("A");
+        var store = new PasteFolderStore(notADirectory);
+
+        bool persisted = store.SetFolder(chosen);
+
+        Assert.False(persisted);
+        Assert.Equal(chosen, store.Folder);
+    }
+
     [Theory]
     [InlineData("")]
     [InlineData("  ")]

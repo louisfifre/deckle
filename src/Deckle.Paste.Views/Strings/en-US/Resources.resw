@@ -40,7 +40,7 @@
   <data name="Paste_Error_SourceMissing" xml:space="preserve"><value>A copied file no longer exists.</value></data>
   <data name="Paste_Error_WriteFailed" xml:space="preserve"><value>The file could not be written in the folder.</value></data>
   <data name="Paste_Error_ClipboardUnreadable" xml:space="preserve"><value>The clipboard could not be read. Try again.</value></data>
-  <data name="Paste_Error_FolderNotSaved" xml:space="preserve"><value>The folder could not be remembered.</value></data>
+  <data name="Paste_Error_FolderNotSaved" xml:space="preserve"><value>The folder is used until Deckle quits, but could not be remembered.</value></data>
 
   <!-- The folder line -->
   <data name="Paste_Folder_None" xml:space="preserve"><value>No folder chosen</value></data>

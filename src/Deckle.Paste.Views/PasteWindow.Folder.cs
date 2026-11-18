@@ -43,17 +43,16 @@ public sealed partial class PasteWindow
         }
         if (string.IsNullOrEmpty(chosen)) return;
 
-        try
-        {
-            _folderStore.SetFolder(chosen);
-        }
-        catch (Exception ex) when (ex is IOException or UnauthorizedAccessException)
+        // A choice the store could not write still holds for this run: the
+        // folder is shown, and the line says it will not survive a restart.
+        bool persisted = _folderStore.SetFolder(chosen);
+        ShowFolder();
+        if (!persisted)
         {
             ShowStatus(PasteStatus.Failed, PasteText.Get("Paste_Error_FolderNotSaved"));
             return;
         }
 
-        ShowFolder();
         // A failure that asked for a folder is answered: the line clears.
         if (FailedMark.Visibility == Visibility.Visible) ShowStatus(PasteStatus.None, null);
         PasteZone.Focus(FocusState.Programmatic);

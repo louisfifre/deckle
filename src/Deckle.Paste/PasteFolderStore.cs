@@ -36,13 +36,16 @@ public sealed class PasteFolderStore
     public string? Folder { get; private set; }
 
     // Keeps the folder and writes it at once. A write that fails keeps the
-    // choice for this run and says so in the log.
-    public void SetFolder(string folder)
+    // choice for this run, says so in the log and returns false, so the
+    // window can tell the person the choice will not survive a restart (the
+    // exception stops here: a caller's catch would never see it).
+    public bool SetFolder(string folder)
     {
         ArgumentException.ThrowIfNullOrWhiteSpace(folder);
         Folder = folder;
-        Save();
+        bool persisted = Save();
         DecklePasteSource.Log.FolderChosen();
+        return persisted;
     }
 
     private void Load()
@@ -61,7 +64,7 @@ public sealed class PasteFolderStore
         }
     }
 
-    private void Save()
+    private bool Save()
     {
         try
         {
@@ -69,10 +72,12 @@ public sealed class PasteFolderStore
             string tmp = _path + ".tmp";
             File.WriteAllText(tmp, JsonSerializer.Serialize(new StoredFile { Folder = Folder }, Json));
             File.Move(tmp, _path, overwrite: true);
+            return true;
         }
         catch (Exception ex) when (ex is IOException or UnauthorizedAccessException)
         {
             DecklePasteSource.Log.FolderSaveFailed(ExceptionTypeName.Of(ex));
+            return false;
         }
     }
 
