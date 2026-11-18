@@ -146,22 +146,65 @@ public sealed class PasteSaver
 
     // A copied folder is copied whole, under its own name. A folder pasted
     // into itself (or into one of its own folders) is refused: the copy
-    // would never end.
+    // would never end. A drive root is refused too: it has no name of its
+    // own, and copying a whole drive is not what a paste is for.
+    //
+    // The copy is built in a hidden staging folder beside its target, then
+    // renamed: Directory.Move refuses a name taken since the check, where
+    // Directory.CreateDirectory would silently merge into it, and a copy that
+    // fails part way is removed whole instead of left half-copied.
     private static string CopyFolder(string source, string folder, string name)
     {
-        string fullSource = Path.TrimEndingDirectorySeparator(Path.GetFullPath(source));
-        string fullTarget = Path.GetFullPath(folder);
-        if (string.Equals(fullTarget, fullSource, StringComparison.OrdinalIgnoreCase)
-            || fullTarget.StartsWith(fullSource + Path.DirectorySeparatorChar, StringComparison.OrdinalIgnoreCase))
+        if (name.Length == 0)
+            throw new IOException("A drive root cannot be copied as a folder.");
+        if (IsSameOrInside(source, folder))
             throw new IOException("A folder cannot be copied into itself.");
 
-        string target = PasteNames.Candidates(folder, name).First(c => !PasteNames.IsTaken(c));
-        Directory.CreateDirectory(target);
-        foreach (string dir in Directory.EnumerateDirectories(fullSource, "*", SearchOption.AllDirectories))
-            Directory.CreateDirectory(Path.Combine(target, Path.GetRelativePath(fullSource, dir)));
-        foreach (string file in Directory.EnumerateFiles(fullSource, "*", SearchOption.AllDirectories))
-            File.Copy(file, Path.Combine(target, Path.GetRelativePath(fullSource, file)), overwrite: false);
-        return target;
+        string fullSource = Path.TrimEndingDirectorySeparator(Path.GetFullPath(source));
+        string staging = Path.Combine(folder, $".{name}.{Guid.NewGuid():N}.partial");
+        try
+        {
+            Directory.CreateDirectory(staging);
+            File.SetAttributes(staging, File.GetAttributes(staging) | FileAttributes.Hidden);
+            foreach (string dir in Directory.EnumerateDirectories(fullSource, "*", SearchOption.AllDirectories))
+                Directory.CreateDirectory(Path.Combine(staging, Path.GetRelativePath(fullSource, dir)));
+            foreach (string file in Directory.EnumerateFiles(fullSource, "*", SearchOption.AllDirectories))
+                File.Copy(file, Path.Combine(staging, Path.GetRelativePath(fullSource, file)), overwrite: false);
+
+            foreach (string candidate in PasteNames.Candidates(folder, name))
+            {
+                if (PasteNames.IsTaken(candidate)) continue;
+                try
+                {
+                    Directory.Move(staging, candidate);
+                }
+                catch (IOException) when (PasteNames.IsTaken(candidate))
+                {
+                    continue;
+                }
+                File.SetAttributes(candidate, File.GetAttributes(candidate) & ~FileAttributes.Hidden);
+                return candidate;
+            }
+            throw new UnreachableException();
+        }
+        catch when (Directory.Exists(staging))
+        {
+            try { Directory.Delete(staging, recursive: true); } catch (IOException) { } catch (UnauthorizedAccessException) { }
+            throw;
+        }
+    }
+
+    // Whether target is source itself or lies inside it, by full path. Both
+    // end with a separator before the comparison, so a drive root ("D:\")
+    // contains its folders and "C:\a" does not contain "C:\ab".
+    internal static bool IsSameOrInside(string source, string target)
+    {
+        static string WithSeparator(string path)
+        {
+            string full = Path.GetFullPath(path);
+            return Path.EndsInDirectorySeparator(full) ? full : full + Path.DirectorySeparatorChar;
+        }
+        return WithSeparator(target).StartsWith(WithSeparator(source), StringComparison.OrdinalIgnoreCase);
     }
 
     private static bool IsWriteFailure(Exception ex) =>

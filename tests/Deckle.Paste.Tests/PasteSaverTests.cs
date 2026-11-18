@@ -178,6 +178,60 @@ public sealed class PasteSaverTests
         Assert.Equal(["one.txt"], Directory.EnumerateFileSystemEntries(album).Select(Path.GetFileName));
     }
 
+    // A copy that failed part way left a half-copied folder in the target,
+    // and the retry put a full one beside it under "(2)".
+    [Fact]
+    [Trait("Category", "regression")]
+    public void AFolderCopyThatFailsPartWayLeavesNothingBehind()
+    {
+        using var scratch = new ScratchFolder();
+        scratch.File("a", "source", "Project", "a.txt");
+        string locked = scratch.File("b", "source", "Project", "Inner", "b.txt");
+        string folder = scratch.Folder("out");
+
+        PasteSaveResult result;
+        using (new FileStream(locked, FileMode.Open, FileAccess.Read, FileShare.None))
+            result = Saver().Save(new PastedFiles([Path.Combine(scratch.Path, "source", "Project")]), folder);
+
+        Assert.False(result.Succeeded);
+        Assert.Equal(PasteSaveErrors.WriteFailed, result.Error);
+        Assert.Empty(Directory.EnumerateFileSystemEntries(folder));
+    }
+
+    [Fact]
+    public void ACopiedFolderWhoseNameIsTakenGetsTheNextNumberAndShowsUnhidden()
+    {
+        using var scratch = new ScratchFolder();
+        scratch.File("x", "source", "Album", "one.txt");
+        string kept = scratch.File("old", "out", "Album", "kept.txt");
+        string folder = scratch.Folder("out");
+
+        PasteSaveResult result = Saver().Save(new PastedFiles([Path.Combine(scratch.Path, "source", "Album")]), folder);
+
+        Assert.True(result.Succeeded);
+        string saved = Assert.Single(result.SavedPaths);
+        Assert.Equal(Path.Combine(folder, "Album (2)"), saved);
+        Assert.False(File.GetAttributes(saved).HasFlag(FileAttributes.Hidden));
+        Assert.Equal(["kept.txt"], Directory.EnumerateFileSystemEntries(Path.GetDirectoryName(kept)!).Select(Path.GetFileName));
+        Assert.Equal(["Album", "Album (2)"], Directory.EnumerateDirectories(folder).Select(Path.GetFileName).Order());
+    }
+
+    // A drive root ("C:\") passed the self-containment check, which compared
+    // against "C:\\", so a pasted drive was copied into a folder on itself.
+    // Checked on the comparison alone: the failing case copies a whole drive.
+    [Theory]
+    [Trait("Category", "regression")]
+    [InlineData(@"C:\", @"C:\Pastes\Out", true)]
+    [InlineData(@"C:\", @"C:\", true)]
+    [InlineData(@"C:\Album", @"C:\Album", true)]
+    [InlineData(@"C:\Album\", @"C:\Album\Inner", true)]
+    [InlineData(@"C:\Album", @"C:\Albums", false)]
+    [InlineData(@"C:\Pastes", @"C:\Other", false)]
+    public void AFolderContainsItselfAndItsFoldersOnly(string source, string target, bool inside)
+    {
+        Assert.Equal(inside, PasteSaver.IsSameOrInside(source, target));
+    }
+
     [Fact]
     public void ADefaultSaverNamesThePasteFromTheLocalClock()
     {
