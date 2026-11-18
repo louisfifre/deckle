@@ -25,6 +25,8 @@ public sealed class DecklePasteSource : DeckleEventSource
     public const int EvtFolderChosen        = 4;
     public const int EvtFolderLoadFailed    = 5;
     public const int EvtFolderSaveFailed    = 6;
+    public const int EvtPasteReadFailed     = 7;
+    public const int EvtFolderPickerFailed  = 8;
 
     // A paste written to the folder: the outcome the person acted for, so the
     // always-on log keeps it.
@@ -88,5 +90,29 @@ public sealed class DecklePasteSource : DeckleEventSource
     public void FolderSaveFailed(string ex_type)
     {
         if (IsEnabled()) WriteEvent(EvtFolderSaveFailed, ex_type);
+    }
+
+    // The paste stopped in the window, before the saver: the clipboard could
+    // not be read (another process holds it open, an image does not decode)
+    // or held nothing a paste saves. ex_type and hresult are empty and 0 for
+    // a clipboard that held nothing.
+    [Event(EvtPasteReadFailed,
+           Level = EventLevel.Warning,
+           Keywords = (EventKeywords)Keywords.Push,
+           Message = "The clipboard gave nothing to save; the window shows the paste failed\nreason={0} | ex_type={1} | hresult={2}")]
+    public void PasteReadFailed(string reason, string ex_type, int hresult)
+    {
+        if (IsEnabled()) WriteEvent(EvtPasteReadFailed, reason, ex_type, hresult);
+    }
+
+    // The folder picker did not open: the folder stays as it was, and the
+    // window shows the choice failed.
+    [Event(EvtFolderPickerFailed,
+           Level = EventLevel.Warning,
+           Keywords = (EventKeywords)Keywords.Lifecycle,
+           Message = "The folder picker could not open; the folder stays as it was\nex_type={0} | hresult={1}")]
+    public void FolderPickerFailed(string ex_type, int hresult)
+    {
+        if (IsEnabled()) WriteEvent(EvtFolderPickerFailed, ex_type, hresult);
     }
 }

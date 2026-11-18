@@ -56,19 +56,21 @@ public sealed partial class PasteWindow
             {
                 content = await ReadClipboardAsync();
             }
-            catch (Exception)
+            catch (Exception ex)
             {
                 // Another process holds the clipboard open, its data is gone, or
                 // its bitmap does not decode (the codec throws a bare Exception
                 // carrying an HRESULT). Any of them must end the "Saving" line:
                 // this task is not awaited, so an escaped exception would leave
                 // the ring spinning and a later paste refused.
+                PasteWindowLog.ClipboardUnreadable(ex);
                 ShowStatus(PasteStatus.Failed, PasteText.Get("Paste_Error_ClipboardUnreadable"));
                 return;
             }
 
             if (content is null)
             {
+                PasteWindowLog.NothingToSave();
                 ShowStatus(PasteStatus.Failed, PasteText.Get("Paste_Error_NothingToSave"));
                 return;
             }

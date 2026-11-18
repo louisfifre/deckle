@@ -30,6 +30,8 @@ internal enum PasteFailureReason
     NothingToSave,
     SourceMissing,
     WriteFailed,
+    // The window's own: the clipboard could not be read (PasteWindowLog).
+    ClipboardUnreadable,
 }
 
 // What a paste held, as the log spells it.

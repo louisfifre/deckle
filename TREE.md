@@ -1951,7 +1951,8 @@ _Generated from `git ls-files` — do not edit by hand._
 │   │   ├── PasteSaveErrors.cs
 │   │   ├── PasteSaveLog.cs
 │   │   ├── PasteSaver.cs
-│   │   └── PasteSaveResult.cs
+│   │   ├── PasteSaveResult.cs
+│   │   └── PasteWindowLog.cs
 │   ├── Deckle.Paste.Views/
 │   │   ├── Strings/
 │   │   │   └── en-US/

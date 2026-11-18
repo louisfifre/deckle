@@ -96,6 +96,54 @@ public sealed class DecklePasteSourceTests
         Assert.Equal(EventLevel.Warning, ev.Level);
     }
 
+    // A paste that stopped in the window, before the saver, left no event.
+    [Fact]
+    [Trait("Category", "regression")]
+    public void AnUnreadableClipboardIsOneWarningWithTheErrorTypeAndCode()
+    {
+        using var listener = new TestEventListener("Deckle-Paste");
+
+        PasteWindowLog.ClipboardUnreadable(new System.Runtime.InteropServices.COMException(Secret, unchecked((int)0x800401D0)));
+
+        EventWrittenEventArgs ev = Assert.Single(listener.Events);
+        Assert.Equal(DecklePasteSource.EvtPasteReadFailed, ev.EventId);
+        Assert.Equal(EventLevel.Warning, ev.Level);
+        Assert.Equal("ClipboardUnreadable", ev.Payload?[0]);
+        Assert.Equal("COMException", ev.Payload?[1]);
+        Assert.Equal(unchecked((int)0x800401D0), ev.Payload?[2]);
+        AssertCarriesNothingOf(listener.Events, Secret);
+    }
+
+    [Fact]
+    [Trait("Category", "regression")]
+    public void AClipboardThatHeldNothingIsOneWarningWithItsReason()
+    {
+        using var listener = new TestEventListener("Deckle-Paste");
+
+        PasteWindowLog.NothingToSave();
+
+        EventWrittenEventArgs ev = Assert.Single(listener.Events);
+        Assert.Equal(DecklePasteSource.EvtPasteReadFailed, ev.EventId);
+        Assert.Equal("NothingToSave", ev.Payload?[0]);
+    }
+
+    // A folder picker that did not open left the click without effect and
+    // the log without a trace.
+    [Fact]
+    [Trait("Category", "regression")]
+    public void AFolderPickerThatDidNotOpenIsOneWarning()
+    {
+        using var listener = new TestEventListener("Deckle-Paste");
+
+        PasteWindowLog.FolderPickerFailed(new System.Runtime.InteropServices.COMException(Secret, unchecked((int)0x80004005)));
+
+        EventWrittenEventArgs ev = Assert.Single(listener.Events);
+        Assert.Equal(DecklePasteSource.EvtFolderPickerFailed, ev.EventId);
+        Assert.Equal(EventLevel.Warning, ev.Level);
+        Assert.Equal("COMException", ev.Payload?[0]);
+        AssertCarriesNothingOf(listener.Events, Secret);
+    }
+
     private static void AssertCarriesNothingOf(IEnumerable<EventWrittenEventArgs> events, params string[] secrets)
     {
         foreach (EventWrittenEventArgs e in events)

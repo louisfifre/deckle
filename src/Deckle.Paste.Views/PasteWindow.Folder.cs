@@ -36,9 +36,13 @@ public sealed partial class PasteWindow
             var result = await picker.PickSingleFolderAsync();
             chosen = result?.Path;
         }
-        catch (Exception)
+        catch (Exception ex)
         {
-            // The picker could not open: nothing chosen, nothing changed.
+            // The picker could not open (a COM failure, a policy that blocks
+            // it): nothing chosen, nothing changed, and the click says so
+            // rather than doing nothing.
+            PasteWindowLog.FolderPickerFailed(ex);
+            ShowStatus(PasteStatus.Failed, PasteText.Get("Paste_Error_PickerFailed"));
             return;
         }
         if (string.IsNullOrEmpty(chosen)) return;
