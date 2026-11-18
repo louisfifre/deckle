@@ -170,18 +170,23 @@ public sealed partial class PasteWindow : Window
     public static IReadOnlyList<string> CaptureStates { get; } = ["empty", "done", "failed"];
 
     // Puts the window in one named state without reading the clipboard or
-    // writing to disk. The file name shown is an example, not a saved file.
+    // writing to disk. The file name and the folder shown with "done" are
+    // examples, not a saved file nor a stored choice: a save cannot have
+    // succeeded with no folder, so the capture shows one.
     public void ShowStateForCapture(string state)
     {
         switch (state)
         {
             case "empty":
+                ShowFolder();
                 ShowStatus(PasteStatus.None, null);
                 break;
             case "done":
+                ShowFolder(@"C:\Users\Public\Pictures\Pastes");
                 ShowStatus(PasteStatus.Done, "paste-2026-11-18-143005.png");
                 break;
             case "failed":
+                ShowFolder();
                 ShowStatus(PasteStatus.Failed, PasteText.Get("Paste_Error_NoFolder"));
                 break;
             default:

@@ -11,9 +11,10 @@ public sealed partial class PasteWindow
 {
     private readonly PasteFolderStore _folderStore;
 
-    private void ShowFolder()
+    private void ShowFolder() => ShowFolder(_folderStore.Folder);
+
+    private void ShowFolder(string? folder)
     {
-        string? folder = _folderStore.Folder;
         string shown = string.IsNullOrEmpty(folder) ? PasteText.Get("Paste_Folder_None") : folder;
         FolderPath.Text = shown;
         ToolTipService.SetToolTip(FolderPath, string.IsNullOrEmpty(folder) ? null : folder);
