@@ -1956,7 +1956,8 @@ _Generated from `git ls-files` — do not edit by hand._
 │   │   ├── PasteSaveLog.cs
 │   │   ├── PasteSaver.cs
 │   │   ├── PasteSaveResult.cs
-│   │   └── PasteWindowLog.cs
+│   │   ├── PasteWindowLog.cs
+│   │   └── WindowDragGesture.cs
 │   ├── Deckle.Paste.Views/
 │   │   ├── Strings/
 │   │   │   └── en-US/
@@ -3202,7 +3203,8 @@ _Generated from `git ls-files` — do not edit by hand._
 │   │   ├── PasteHistoryTests.cs
 │   │   ├── PasteNamesTests.cs
 │   │   ├── PasteSaverTests.cs
-│   │   └── ScratchFolder.cs
+│   │   ├── ScratchFolder.cs
+│   │   └── WindowDragGestureTests.cs
 │   ├── Deckle.Presets.Tests/
 │   │   ├── Deckle.Presets.Tests.csproj
 │   │   └── PresetFamilyTests.cs

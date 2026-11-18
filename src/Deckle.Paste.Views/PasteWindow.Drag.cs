@@ -14,65 +14,86 @@ namespace Deckle.Paste.Views;
 // works at once.
 //
 // The route: a press is watched in XAML, and once the pointer has travelled
-// past the system drag threshold the window hands the gesture to Windows'
-// own move loop (WM_NCLBUTTONDOWN on HTCAPTION, after ReleaseCapture), as a
-// title bar would. Not InputNonClientPointerSource with a Caption region over
-// the client area: a Caption region is non-client, so the zone under it would
-// lose its pointer states, its focus on click and its context menu, and a
-// double click there would reach the caption's maximize. Here no move starts
-// without travel, so a double click is two clicks and never maximizes.
+// past the system drag threshold the window captures the pointer and moves
+// itself to follow the cursor until the button is released
+// (WindowDragGesture holds the arithmetic).
+//
+// Not Windows' own move loop (WM_NCLBUTTONDOWN on HTCAPTION after
+// ReleaseCapture): started from a XAML pointer handler, that loop runs inside
+// the handler and the button's release never reaches it, so the window stayed
+// stuck to the cursor until another click. Not InputNonClientPointerSource
+// with a Caption region over the client area either: a Caption region is
+// non-client, so the zone under it would lose its pointer states, its focus
+// on click and its context menu, and a double click there would reach the
+// caption's maximize. Here no move starts without travel, so a double click
+// is two clicks. The cost: no Aero Snap, which a small fixed-size window does
+// not use.
 public sealed partial class PasteWindow
 {
-    private const uint WM_NCLBUTTONDOWN = 0x00A1;
-    private const int HTCAPTION = 2;
     private const int SM_CXDRAG = 68;
     private const int SM_CYDRAG = 69;
 
-    private bool _pressWatched;
-    private POINT _pressOrigin;
+    private readonly WindowDragGesture _drag = new();
 
     private void AttachDrag()
     {
         // handledEventsToo: the TextBox marks its own presses handled.
         RootGrid.AddHandler(UIElement.PointerPressedEvent, new PointerEventHandler(OnSurfacePressed), true);
         RootGrid.AddHandler(UIElement.PointerMovedEvent, new PointerEventHandler(OnSurfaceMoved), true);
-        RootGrid.AddHandler(UIElement.PointerReleasedEvent, new PointerEventHandler(OnSurfaceEnded), true);
-        RootGrid.AddHandler(UIElement.PointerCaptureLostEvent, new PointerEventHandler(OnSurfaceEnded), true);
+        RootGrid.AddHandler(UIElement.PointerReleasedEvent, new PointerEventHandler(OnSurfaceReleased), true);
+        RootGrid.AddHandler(UIElement.PointerCanceledEvent, new PointerEventHandler(OnSurfaceReleased), true);
+        RootGrid.AddHandler(UIElement.PointerCaptureLostEvent, new PointerEventHandler(OnSurfaceCaptureLost), true);
     }
 
     private void OnSurfacePressed(object sender, PointerRoutedEventArgs e)
     {
-        _pressWatched = false;
+        _drag.End();
         if (KeepsItsOwnPress(e.OriginalSource as DependencyObject)) return;
 
-        // Mouse and pen: Windows' move loop follows the mouse button. A touch
-        // press keeps the zone's own behaviour.
+        // Mouse and pen. A touch press keeps the zone's own behaviour.
         if (e.Pointer.PointerDeviceType is not (PointerDeviceType.Mouse or PointerDeviceType.Pen)) return;
         if (!e.GetCurrentPoint(RootGrid).Properties.IsLeftButtonPressed) return;
 
-        if (!NativeMethods.GetCursorPos(out _pressOrigin)) return;
-        _pressWatched = true;
+        // The cursor's screen position, not the event's: the event's is
+        // relative to the window, which is about to move under it.
+        if (!NativeMethods.GetCursorPos(out POINT cursor)) return;
+        var place = AppWindow.Position;
+        _drag.Press(cursor.X, cursor.Y, place.X, place.Y);
         PasteZone.Focus(FocusState.Pointer);
     }
 
     private void OnSurfaceMoved(object sender, PointerRoutedEventArgs e)
     {
-        if (!_pressWatched) return;
-        if (!NativeMethods.GetCursorPos(out POINT now)) return;
+        if (!NativeMethods.GetCursorPos(out POINT cursor)) return;
 
         uint dpi = NativeMethods.GetDpiForWindow(_hwnd);
-        if (Math.Abs(now.X - _pressOrigin.X) < GetSystemMetricsForDpi(SM_CXDRAG, dpi)
-            && Math.Abs(now.Y - _pressOrigin.Y) < GetSystemMetricsForDpi(SM_CYDRAG, dpi)) return;
+        bool wasMoving = _drag.IsMoving;
+        if (!_drag.TryMove(
+                cursor.X, cursor.Y,
+                GetSystemMetricsForDpi(SM_CXDRAG, dpi), GetSystemMetricsForDpi(SM_CYDRAG, dpi),
+                out int x, out int y)) return;
 
-        _pressWatched = false;
-        // XAML holds the capture on its input window; Windows' move loop needs
-        // the button free. SendMessage returns when the button is released.
-        ReleaseCapture();
-        nint position = (nint)((_pressOrigin.Y << 16) | (_pressOrigin.X & 0xFFFF));
-        SendMessage(_hwnd, WM_NCLBUTTONDOWN, HTCAPTION, position);
+        // Captured once the move starts, so the moves keep coming when a fast
+        // pointer leaves the window before it has caught up.
+        if (!wasMoving) RootGrid.CapturePointer(e.Pointer);
+        AppWindow.Move(new Windows.Graphics.PointInt32(x, y));
     }
 
-    private void OnSurfaceEnded(object sender, PointerRoutedEventArgs e) => _pressWatched = false;
+    private void OnSurfaceReleased(object sender, PointerRoutedEventArgs e)
+    {
+        bool wasMoving = _drag.IsMoving;
+        _drag.End();
+        if (wasMoving) RootGrid.ReleasePointerCapture(e.Pointer);
+    }
+
+    // The window's own capture ending ends the move. A child that loses its
+    // capture because the window just took it (the event then comes from that
+    // child) must not end the move it started.
+    private void OnSurfaceCaptureLost(object sender, PointerRoutedEventArgs e)
+    {
+        if (_drag.IsMoving && !ReferenceEquals(e.OriginalSource, RootGrid)) return;
+        _drag.End();
+    }
 
     // A button, or the scrollbar: its thumb is no ButtonBase, and dragging it
     // must scroll the list, not move the window.
@@ -85,13 +106,6 @@ public sealed partial class PasteWindow
         }
         return false;
     }
-
-    [DllImport("user32.dll")]
-    [return: MarshalAs(UnmanagedType.Bool)]
-    private static extern bool ReleaseCapture();
-
-    [DllImport("user32.dll", EntryPoint = "SendMessageW")]
-    private static extern nint SendMessage(nint hWnd, uint msg, nint wParam, nint lParam);
 
     [DllImport("user32.dll")]
     private static extern int GetSystemMetricsForDpi(int nIndex, uint dpi);
