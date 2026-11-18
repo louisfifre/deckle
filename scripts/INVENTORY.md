@@ -32,13 +32,18 @@ Run one with `pwsh -NoProfile -File scripts/<path> [arguments]`. An action names
   - Parameters: -Trace, -Last <int>, -Level <string>, -SinceMinutes <int>, -Match <string>, -Payload, -DataRoot <string>
 - `self-check.ps1` — **Self-check the built app.** Runs the built Deckle once in its self-check mode and judges its report.
   - Actions: Self-check
-  - Parameters: -Configuration Debug|Release, -Target <string>, -TimeoutSeconds <int>, -OutputFolder <string>, -LinkRuntime, -KeepData
+  - Parameters: -Only <string>, -Configuration Debug|Release, -Target <string>, -TimeoutSeconds <int>, -OutputFolder <string>, -LinkRuntime, -KeepData
 - `stats.ps1` — **Repository statistics.** Walk every project under src\ and build one file inventory per Deckle module, with line counts.
   - Actions: Statistics / repository
   - Parameters: -Target <string>, -WatchThreshold <int>, -TooLargeThreshold <int>, -CSharpWatchThreshold <int>, -CSharpTooLargeThreshold <int>, -ResourceWatchThreshold <int>, -ResourceTooLargeThreshold <int>, -Json <string>, -PassThru
 - `update-readme-stats.ps1` — **Update the README pulse.** Regenerate the small "Development pulse" section in README.md from the local Git history.
   - Actions: README pulse / update `-Commit`
   - Parameters: -Target <string>, -ReadmePath <string>, -Commit
+- `verify-branch-server.ps1` — The half of verify-branch.ps1 that runs on the verification machine. (not in the menu)
+  - Parameters: -Sha <string> (required), -Branch <string>, -Root <string>, -KeepRuns <int>
+- `verify-branch.ps1` — **Verify a branch on win-serv.** Sends a committed branch to the verification machine, win-serv, which builds it, runs every automatic test and answers green or red for that exact commit.
+  - Actions: Verify branch
+  - Parameters: -Branch <string>, -Target <string>, -Server <string>
 
 ## `scripts/git/`
 
@@ -54,6 +59,9 @@ Run one with `pwsh -NoProfile -File scripts/<path> [arguments]`. An action names
 
 ## `scripts/maintenance/`
 
+- `maintenance/apply-anytype-schema.ps1` — **Apply a schema manifest or a space plan to an Anytype space, or read a space into a plan.** With -Plan, builds a whole space from one plan file, in creation order: properties and options, types with their panel and default template, collections, queries, templates with their in-body views, type views, pages and, when asked for, objects and the sidebar.
+  - Actions: Apply a schema manifest or a space plan to an Anytype space, or read a space into a plan
+  - Parameters: -Space <string> (required), -Manifest <string>, -Plan <string>, -Stages <string[]>, -Check, -RecheckAfterMinutes <int>, -ReadTo <string>, -Pages <string[]>, -InviteLink <string>, -Pilot, -AcceptTimeoutMinutes <int>, -DataRoot <string>
 - `maintenance/clean-native.ps1` — **Clean the native folder.** Brings the whisper.cpp native folder under the user data root back to the current catalog, the RequiredDllNames of NativeRuntime.cs: deletes every DLL the catalog does not name (an older bundle's libwhisper.dll and MinGW runtime, a stray build artifact) and the .partial leftovers of an interrupted extraction, then reports the catalog DLLs that are missing.
   - Actions: Preview / native folder `-WhatIf` · Clean / native folder (danger)
   - Parameters: -DataRoot <string>
