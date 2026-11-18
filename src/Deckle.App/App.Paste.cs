@@ -39,7 +39,8 @@ public partial class App
             var sw = Stopwatch.StartNew();
             var window = CreateWindowOrLog("paste-to-folder",
                 () => new PasteWindow(AppPaths.GetModuleDirectory(PasteToFolderDataFolder)));
-            SecondaryWindowPlacement.Restore(window, SecondaryWindowPlacement.PasteToFolder);
+            // Its place only: its size is fixed in DIPs by the window itself.
+            SecondaryWindowPlacement.Restore(window, SecondaryWindowPlacement.PasteToFolder, keepSize: true);
             window.AppWindow.Closing += (_, _) =>
                 SecondaryWindowPlacement.Save(window, SecondaryWindowPlacement.PasteToFolder);
             window.Closed += (_, _) =>

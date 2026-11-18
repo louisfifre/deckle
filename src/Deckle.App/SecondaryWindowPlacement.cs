@@ -31,12 +31,21 @@ internal static class SecondaryWindowPlacement
 
     private static string PlacementPath => Path.Combine(AppPaths.UserDataRoot, "window-placement.json");
 
-    public static void Restore(Window window, string key)
+    // keepSize: a window of fixed size (computed in DIPs and scaled, not
+    // resizable by the person) gets back its place only. Its saved pixel size
+    // belongs to the scale it was saved at, and reapplied after a scale or
+    // size change it would stick, since the person cannot resize it.
+    public static void Restore(Window window, string key, bool keepSize = false)
     {
         try
         {
             if (!TryRead(key, out var dto)) return;
             if (dto.NormalRight <= dto.NormalLeft || dto.NormalBottom <= dto.NormalTop) return;
+            if (keepSize)
+            {
+                var size = window.AppWindow.Size;
+                dto = dto.WithSize(size.Width, size.Height);
+            }
 
             var placement = new WINDOWPLACEMENT
             {
@@ -181,6 +190,21 @@ internal static class SecondaryWindowPlacement
         public int NormalTop { get; set; }
         public int NormalRight { get; set; }
         public int NormalBottom { get; set; }
+
+        // The same place, the top-left corner kept, at another size in pixels.
+        public PlacementDto WithSize(int width, int height) => new()
+        {
+            Flags = Flags,
+            ShowCmd = SW_SHOWNORMAL,
+            MinX = MinX,
+            MinY = MinY,
+            MaxX = MaxX,
+            MaxY = MaxY,
+            NormalLeft = NormalLeft,
+            NormalTop = NormalTop,
+            NormalRight = NormalLeft + width,
+            NormalBottom = NormalTop + height,
+        };
 
         public static PlacementDto From(WINDOWPLACEMENT placement) => new()
         {
