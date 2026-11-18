@@ -1,0 +1,21 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <RootNamespace>Deckle.Paste</RootNamespace>
+    <!-- EventSource [Event] parameters use snake_case so the ETW payload
+         keys land as-is in the JSONL output; IDE1006 would flag them. -->
+    <NoWarn>$(NoWarn);IDE1006</NoWarn>
+  </PropertyGroup>
+
+  <!-- Paste to folder's logic: what a paste holds, how it becomes files in
+       the chosen folder, and where that folder is remembered. No XAML and no
+       WindowsAppSDK, so every rule here is tested without a window and
+       without the clipboard; Deckle.Paste.Views reads the clipboard and
+       presents it. Deckle.Diagnostics is referenced only for the EventSource. -->
+  <ItemGroup>
+    <ProjectReference Include="..\Deckle.Diagnostics\Deckle.Diagnostics.csproj" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <InternalsVisibleTo Include="Deckle.Paste.Tests" />
+  </ItemGroup>
+</Project>

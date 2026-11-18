@@ -1940,6 +1940,16 @@ _Generated from `git ls-files` — do not edit by hand._
 │   │   ├── OrchestrationSettingsModule.cs
 │   │   ├── OrchestrationSettingsService.cs
 │   │   └── SettingsSearch.cs
+│   ├── Deckle.Paste/
+│   │   ├── Deckle.Paste.csproj
+│   │   ├── DecklePasteSource.cs
+│   │   ├── PasteContent.cs
+│   │   ├── PasteFolderStore.cs
+│   │   ├── PasteNames.cs
+│   │   ├── PasteSaveErrors.cs
+│   │   ├── PasteSaveLog.cs
+│   │   ├── PasteSaver.cs
+│   │   └── PasteSaveResult.cs
 │   ├── Deckle.Presets/
 │   │   ├── Deckle.Presets.csproj
 │   │   ├── IPresetStore.cs
