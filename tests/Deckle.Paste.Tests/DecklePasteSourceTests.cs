@@ -144,6 +144,20 @@ public sealed class DecklePasteSourceTests
         AssertCarriesNothingOf(listener.Events, Secret);
     }
 
+    [Fact]
+    public void AThumbnailThatCouldNotBeDrawnIsOneWarningWithTheErrorType()
+    {
+        using var listener = new TestEventListener("Deckle-Paste");
+
+        PasteWindowLog.ThumbnailFailed(new System.Runtime.InteropServices.COMException(Secret, unchecked((int)0x88982F50)));
+
+        EventWrittenEventArgs ev = Assert.Single(listener.Events);
+        Assert.Equal(DecklePasteSource.EvtThumbnailFailed, ev.EventId);
+        Assert.Equal(EventLevel.Warning, ev.Level);
+        Assert.Equal("COMException", ev.Payload?[0]);
+        AssertCarriesNothingOf(listener.Events, Secret);
+    }
+
     private static void AssertCarriesNothingOf(IEnumerable<EventWrittenEventArgs> events, params string[] secrets)
     {
         foreach (EventWrittenEventArgs e in events)

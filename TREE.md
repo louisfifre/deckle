@@ -1962,10 +1962,14 @@ _Generated from `git ls-files` — do not edit by hand._
 │   │   │   └── en-US/
 │   │   │       └── Resources.resw
 │   │   ├── Deckle.Paste.Views.csproj
+│   │   ├── PasteRow.cs
 │   │   ├── PasteText.cs
+│   │   ├── PasteWindow.Capture.cs
 │   │   ├── PasteWindow.Clipboard.cs
 │   │   ├── PasteWindow.Drag.cs
 │   │   ├── PasteWindow.Folder.cs
+│   │   ├── PasteWindow.List.cs
+│   │   ├── PasteWindow.Thumbnail.cs
 │   │   ├── PasteWindow.xaml
 │   │   └── PasteWindow.xaml.cs
 │   ├── Deckle.Presets/

@@ -8,9 +8,10 @@ using Microsoft.UI.Xaml.Media;
 
 namespace Deckle.Paste.Views;
 
-// The whole surface moves the window, the paste zone included; only the two
-// buttons keep their press. A press that does not travel stays a click and
-// puts the focus in the zone, so Ctrl+V works at once.
+// The whole surface moves the window, the inset and its rows included; only
+// the two buttons and the list's scrollbar keep their press. A press that
+// does not travel stays a click and puts the focus in the zone, so Ctrl+V
+// works at once.
 //
 // The route: a press is watched in XAML, and once the pointer has travelled
 // past the system drag threshold the window hands the gesture to Windows'
@@ -42,7 +43,7 @@ public sealed partial class PasteWindow
     private void OnSurfacePressed(object sender, PointerRoutedEventArgs e)
     {
         _pressWatched = false;
-        if (IsOnButton(e.OriginalSource as DependencyObject)) return;
+        if (KeepsItsOwnPress(e.OriginalSource as DependencyObject)) return;
 
         // Mouse and pen: Windows' move loop follows the mouse button. A touch
         // press keeps the zone's own behaviour.
@@ -73,12 +74,14 @@ public sealed partial class PasteWindow
 
     private void OnSurfaceEnded(object sender, PointerRoutedEventArgs e) => _pressWatched = false;
 
-    private bool IsOnButton(DependencyObject? element)
+    // A button, or the scrollbar: its thumb is no ButtonBase, and dragging it
+    // must scroll the list, not move the window.
+    private bool KeepsItsOwnPress(DependencyObject? element)
     {
         for (DependencyObject? node = element; node is not null && !ReferenceEquals(node, RootGrid);
              node = VisualTreeHelper.GetParent(node))
         {
-            if (node is ButtonBase) return true;
+            if (node is ButtonBase or ScrollBar) return true;
         }
         return false;
     }

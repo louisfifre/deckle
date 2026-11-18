@@ -27,6 +27,7 @@ public sealed class DecklePasteSource : DeckleEventSource
     public const int EvtFolderSaveFailed    = 6;
     public const int EvtPasteReadFailed     = 7;
     public const int EvtFolderPickerFailed  = 8;
+    public const int EvtThumbnailFailed     = 9;
 
     // A paste written to the folder: the outcome the person acted for, so the
     // always-on log keeps it.
@@ -114,5 +115,16 @@ public sealed class DecklePasteSource : DeckleEventSource
     public void FolderPickerFailed(string ex_type, int hresult)
     {
         if (IsEnabled()) WriteEvent(EvtFolderPickerFailed, ex_type, hresult);
+    }
+
+    // A pasted image whose small preview for the window's list could not be
+    // drawn: the paste itself goes on, and its row shows an image icon.
+    [Event(EvtThumbnailFailed,
+           Level = EventLevel.Warning,
+           Keywords = (EventKeywords)Keywords.Push,
+           Message = "A pasted image's thumbnail could not be drawn; its row shows an image icon\nex_type={0} | hresult={1}")]
+    public void ThumbnailFailed(string ex_type, int hresult)
+    {
+        if (IsEnabled()) WriteEvent(EvtThumbnailFailed, ex_type, hresult);
     }
 }

@@ -39,26 +39,20 @@ public sealed partial class PasteWindow
         catch (Exception ex)
         {
             // The picker could not open (a COM failure, a policy that blocks
-            // it): nothing chosen, nothing changed, and the click says so
-            // rather than doing nothing.
+            // it): nothing chosen, nothing changed, and the list says so
+            // rather than the click doing nothing.
             PasteWindowLog.FolderPickerFailed(ex);
-            ShowStatus(PasteStatus.Failed, PasteText.Get("Paste_Error_PickerFailed"));
+            AddPaste([PasteEntry.Problem(PasteEntryKind.FolderNotChanged, PasteText.Get("Paste_Error_PickerFailed"))]);
             return;
         }
         if (string.IsNullOrEmpty(chosen)) return;
 
         // A choice the store could not write still holds for this run: the
-        // folder is shown, and the line says it will not survive a restart.
+        // folder is shown, and the list says it will not survive a restart.
         bool persisted = _folderStore.SetFolder(chosen);
         ShowFolder();
         if (!persisted)
-        {
-            ShowStatus(PasteStatus.Failed, PasteText.Get("Paste_Error_FolderNotSaved"));
-            return;
-        }
-
-        // A failure that asked for a folder is answered: the line clears.
-        if (FailedMark.Visibility == Visibility.Visible) ShowStatus(PasteStatus.None, null);
+            AddPaste([PasteEntry.Problem(PasteEntryKind.FolderNotRemembered, PasteText.Get("Paste_Error_FolderNotSaved"))]);
         PasteZone.Focus(FocusState.Programmatic);
     }
 }

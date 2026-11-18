@@ -3,7 +3,6 @@ using Deckle.Diagnostics;
 using Microsoft.UI.Windowing;
 using Microsoft.UI.Xaml;
 using Microsoft.UI.Xaml.Automation;
-using Microsoft.UI.Xaml.Automation.Peers;
 using Microsoft.UI.Xaml.Controls;
 using Microsoft.UI.Xaml.Input;
 using Microsoft.UI.Xaml.Media;
@@ -14,18 +13,20 @@ namespace Deckle.Paste.Views;
 // ── The Paste to folder window ────────────────────────────────────────────────
 //
 // A tiny window that saves what the clipboard holds as a file in one chosen
-// folder: the person clicks it, presses Ctrl+V, and the status line says
-// whether it worked. This file holds the chrome, the lifetime and the status
-// line; the paste itself, the folder and the drag that moves the window each
-// have their partial file beside it.
+// folder: the person clicks it, presses Ctrl+V, and the inset lists what was
+// saved, or why not. This file holds the chrome and the lifetime; the paste,
+// the list, the thumbnails, the folder, the drag that moves the window and
+// the self-check's states each have their partial file beside it.
 //
 // Closing closes: the window holds no work that outlives it (a save runs for
 // milliseconds), so the host drops it on Closed and builds a fresh one on the
-// next open, as it does for the Atelier.
+// next open, as it does for the Atelier. The list goes with it.
 public sealed partial class PasteWindow : Window
 {
+    // Three or four rows show before the list scrolls, at any scale: sizes
+    // are DIPs, made pixels in ApplyChrome.
     private const int WidthDip = 320;
-    private const int HeightDip = 220;
+    private const int HeightDip = 260;
 
     private readonly nint _hwnd;
 
@@ -38,8 +39,8 @@ public sealed partial class PasteWindow : Window
         ApplyChrome();
         ApplyLabels();
         AttachDrag();
+        AttachList();
         ShowFolder();
-        ShowStatus(PasteStatus.None, null);
 
         // Ctrl+V works the moment the window is active: something inside it
         // must hold the keyboard focus, and the zone is what a paste is for.
@@ -65,7 +66,8 @@ public sealed partial class PasteWindow : Window
     // A small surface the person keeps beside their work, the way the
     // paragraph offer window is built (RewriteOfferWindow): no title bar,
     // DWM's rounded corners and stroke, Acrylic, above other windows, and no
-    // taskbar button or Alt+Tab entry.
+    // taskbar button or Alt+Tab entry. The title is drawn nowhere; it still
+    // names the window to Narrator and to the windowing APIs.
     private void ApplyChrome()
     {
         Title = PasteText.Get("Paste_WindowTitle");
@@ -119,6 +121,9 @@ public sealed partial class PasteWindow : Window
         PasteMenuItem.Text = PasteText.Get("Paste_Zone_PasteItem");
         PasteMenuItem.KeyboardAcceleratorTextOverride = PasteText.Get("Paste_Zone_PasteShortcut");
 
+        AutomationProperties.SetName(PasteList, PasteText.Get("Paste_List_Name"));
+        SavingText.Text = PasteText.Get("Paste_List_Saving");
+
         ChooseFolderButton.Content = PasteText.Get("Paste_Folder_Choose");
     }
 
@@ -131,66 +136,5 @@ public sealed partial class PasteWindow : Window
         if (e.Key != Windows.System.VirtualKey.Escape) return;
         e.Handled = true;
         Close();
-    }
-
-    // ── The status line ───────────────────────────────────────────────────────
-
-    private enum PasteStatus { None, Saving, Done, Failed }
-
-    // The mark, the word and the detail of one state, and the sentence
-    // Narrator reads when it changes.
-    private void ShowStatus(PasteStatus status, string? detail)
-    {
-        SavingRing.IsActive = status == PasteStatus.Saving;
-        DoneMark.Visibility = status == PasteStatus.Done ? Visibility.Visible : Visibility.Collapsed;
-        FailedMark.Visibility = status == PasteStatus.Failed ? Visibility.Visible : Visibility.Collapsed;
-
-        string word = status switch
-        {
-            PasteStatus.Saving => PasteText.Get("Paste_Status_Saving"),
-            PasteStatus.Done => PasteText.Get("Paste_Status_Done"),
-            PasteStatus.Failed => PasteText.Get("Paste_Status_Failed"),
-            _ => string.Empty,
-        };
-        StatusText.Text = word;
-        StatusDetail.Text = detail ?? string.Empty;
-        ToolTipService.SetToolTip(StatusLine, string.IsNullOrEmpty(detail) ? null : detail);
-
-        string spoken = string.IsNullOrEmpty(detail)
-            ? word
-            : PasteText.Format("Paste_Status_Announce_Format", word, detail);
-        AutomationProperties.SetName(StatusText, spoken);
-        if (status != PasteStatus.None)
-            FrameworkElementAutomationPeer.FromElement(StatusText)?
-                .RaiseAutomationEvent(AutomationEvents.LiveRegionChanged);
-    }
-
-    // ── What the self-check captures ──────────────────────────────────────────
-
-    public static IReadOnlyList<string> CaptureStates { get; } = ["empty", "done", "failed"];
-
-    // Puts the window in one named state without reading the clipboard or
-    // writing to disk. The file name and the folder shown with "done" are
-    // examples, not a saved file nor a stored choice: a save cannot have
-    // succeeded with no folder, so the capture shows one.
-    public void ShowStateForCapture(string state)
-    {
-        switch (state)
-        {
-            case "empty":
-                ShowFolder();
-                ShowStatus(PasteStatus.None, null);
-                break;
-            case "done":
-                ShowFolder(@"C:\Users\Public\Pictures\Pastes");
-                ShowStatus(PasteStatus.Done, "paste-2026-11-18-143005.png");
-                break;
-            case "failed":
-                ShowFolder();
-                ShowStatus(PasteStatus.Failed, PasteText.Get("Paste_Error_NoFolder"));
-                break;
-            default:
-                throw new ArgumentOutOfRangeException(nameof(state), state, "Unknown capture state.");
-        }
     }
 }

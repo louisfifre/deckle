@@ -1,6 +1,7 @@
 using Microsoft.UI.Input;
 using Microsoft.UI.Xaml;
 using Microsoft.UI.Xaml.Input;
+using Microsoft.UI.Xaml.Media;
 using Windows.ApplicationModel.DataTransfer;
 using Windows.Graphics.Imaging;
 using Windows.Storage;
@@ -11,7 +12,7 @@ using Windows.UI.Core;
 namespace Deckle.Paste.Views;
 
 // The paste: what the clipboard holds, read once, handed to the saver off the
-// UI thread, and the status line set from how it ended.
+// UI thread, and the list given the rows of how it ended.
 public sealed partial class PasteWindow
 {
     private readonly PasteSaver _saver = new();
@@ -41,6 +42,10 @@ public sealed partial class PasteWindow
 
     private void OnPasteMenuClick(object sender, RoutedEventArgs e) => _ = PasteAsync();
 
+    // What the clipboard gave: the content to save and, for an image, its
+    // row's preview, already scaled down.
+    private sealed record ClipboardRead(PasteContent Content, SoftwareBitmap? Thumbnail);
+
     private async Task PasteAsync()
     {
         // One paste at a time: a second Ctrl+V during a copy of large files
@@ -49,47 +54,67 @@ public sealed partial class PasteWindow
         _pasting = true;
         try
         {
-            ShowStatus(PasteStatus.Saving, null);
+            ShowSaving(true);
 
-            PasteContent? content;
+            ClipboardRead? read;
             try
             {
-                content = await ReadClipboardAsync();
+                read = await ReadClipboardAsync(Content.XamlRoot?.RasterizationScale ?? 1.0);
             }
             catch (Exception ex)
             {
                 // Another process holds the clipboard open, its data is gone, or
                 // its bitmap does not decode (the codec throws a bare Exception
-                // carrying an HRESULT). Any of them must end the "Saving" line:
+                // carrying an HRESULT). Any of them must end the saving sign:
                 // this task is not awaited, so an escaped exception would leave
                 // the ring spinning and a later paste refused.
                 PasteWindowLog.ClipboardUnreadable(ex);
-                ShowStatus(PasteStatus.Failed, PasteText.Get("Paste_Error_ClipboardUnreadable"));
+                ShowSaving(false);
+                AddPaste([PasteEntry.Problem(PasteEntryKind.NotSaved, PasteText.Get("Paste_Error_ClipboardUnreadable"))]);
                 return;
             }
 
-            if (content is null)
+            if (read is null)
             {
                 PasteWindowLog.NothingToSave();
-                ShowStatus(PasteStatus.Failed, PasteText.Get("Paste_Error_NothingToSave"));
+                ShowSaving(false);
+                AddPaste([PasteEntry.Problem(PasteEntryKind.NotSaved, PasteText.Get("Paste_Error_NothingToSave"))]);
                 return;
             }
 
             string? folder = _folderStore.Folder;
-            PasteSaveResult result = await Task.Run(() => _saver.Save(content, folder));
-            if (result.Succeeded) ShowStatus(PasteStatus.Done, DescribeSaved(result.SavedPaths));
-            else ShowStatus(PasteStatus.Failed, PasteText.ForSaveError(result.Error));
+            PasteContent content = read.Content;
+            // The rows are built off the UI thread too: telling a copied
+            // folder from a file asks the disk.
+            (PasteSaveResult result, IReadOnlyList<PasteEntry> rows) = await Task.Run(() =>
+            {
+                PasteSaveResult saved = _saver.Save(content, folder);
+                return (saved, PasteHistory.RowsFor(content, saved));
+            });
+
+            ImageSource? thumbnail = result.Succeeded
+                ? await ToImageSourceAsync(read.Thumbnail)
+                : DisposeThumbnail(read.Thumbnail);
+            ShowSaving(false);
+            AddPaste(rows, thumbnail);
         }
         finally
         {
             _pasting = false;
+            ShowSaving(false);
         }
+    }
+
+    private static ImageSource? DisposeThumbnail(SoftwareBitmap? thumbnail)
+    {
+        thumbnail?.Dispose();
+        return null;
     }
 
     // What the clipboard holds, by priority: copied files, then an image, then
     // text. Null when it holds none of them. Read on the UI thread: the
     // clipboard belongs to the thread that owns the window.
-    private static async Task<PasteContent?> ReadClipboardAsync()
+    private static async Task<ClipboardRead?> ReadClipboardAsync(double rasterizationScale)
     {
         DataPackageView view = Clipboard.GetContent();
 
@@ -97,28 +122,29 @@ public sealed partial class PasteWindow
         {
             IReadOnlyList<IStorageItem> items = await view.GetStorageItemsAsync();
             string[] paths = items.Select(i => i.Path).Where(p => !string.IsNullOrEmpty(p)).ToArray();
-            if (paths.Length > 0) return new PastedFiles(paths);
+            if (paths.Length > 0) return new ClipboardRead(new PastedFiles(paths), null);
         }
 
         if (view.Contains(StandardDataFormats.Bitmap))
         {
             RandomAccessStreamReference reference = await view.GetBitmapAsync();
-            return new PastedImage(await EncodePngAsync(reference));
+            return await EncodePngAsync(reference, rasterizationScale);
         }
 
         if (view.Contains(StandardDataFormats.Text))
         {
             string text = await view.GetTextAsync();
-            if (!string.IsNullOrEmpty(text)) return new PastedText(text);
+            if (!string.IsNullOrEmpty(text)) return new ClipboardRead(new PastedText(text), null);
         }
 
         return null;
     }
 
-    // The clipboard's bitmap, decoded and written again as PNG, in memory.
-    // Straight alpha keeps a transparent image transparent; a 32-bit DIB
-    // without alpha decodes as opaque BGR, so a screenshot stays opaque.
-    private static async Task<byte[]> EncodePngAsync(RandomAccessStreamReference reference)
+    // The clipboard's bitmap, decoded and written again as PNG, in memory,
+    // with its row's preview drawn from the same decoder. Straight alpha keeps
+    // a transparent image transparent; a 32-bit DIB without alpha decodes as
+    // opaque BGR, so a screenshot stays opaque.
+    private static async Task<ClipboardRead> EncodePngAsync(RandomAccessStreamReference reference, double rasterizationScale)
     {
         using IRandomAccessStreamWithContentType source = await reference.OpenReadAsync();
         BitmapDecoder decoder = await BitmapDecoder.CreateAsync(source);
@@ -134,14 +160,8 @@ public sealed partial class PasteWindow
         using var reader = new DataReader(target.GetInputStreamAt(0));
         await reader.LoadAsync((uint)target.Size);
         reader.ReadBytes(bytes);
-        return bytes;
-    }
 
-    // One file by its name, several by their count.
-    private static string? DescribeSaved(IReadOnlyList<string> paths) => paths.Count switch
-    {
-        0 => null,
-        1 => Path.GetFileName(paths[0]),
-        _ => PasteText.Format("Paste_Saved_Files_Format", paths.Count),
-    };
+        SoftwareBitmap? thumbnail = await DecodeThumbnailAsync(decoder, rasterizationScale);
+        return new ClipboardRead(new PastedImage(bytes), thumbnail);
+    }
 }
