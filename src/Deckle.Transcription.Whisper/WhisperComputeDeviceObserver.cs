@@ -111,14 +111,31 @@ internal sealed class WhisperComputeDeviceObserver
     // IAsrBackend.DetectedAccelerator vocabulary ("CPU", "Vulkan", ...), or
     // "unknown" when the GPU was asked for and no native line said whether
     // whisper kept it: reporting the CPU there would state a guess as a fact.
-    public string ReportLoad(bool gpuRequested, bool logHookInstalled, long loadMs)
+    //
+    // memoryShortage is set when the preflight sent a requested GPU load to
+    // the CPU: whisper then saw use_gpu = 0, but the settings asked for the
+    // GPU, so the load reads as a fallback, not as the CPU the settings ask.
+    public string ReportLoad(
+        bool gpuRequested, bool logHookInstalled, long loadMs, GpuMemoryShortage? memoryShortage = null)
     {
         string device;
         string deviceName;
         string accelerator;
         string fallbackReason = "";
 
-        if (_gpuDevice is not null)
+        if (gpuRequested && memoryShortage is { } shortage)
+        {
+            device = deviceName = accelerator = Cpu;
+            fallbackReason = "gpu_memory_short";
+            _deviceUnknownOpen = false;
+            if (!_gpuFallbackOpen)
+            {
+                _gpuFallbackOpen = true;
+                DeckleWhisperSource.Log.ModelGpuMemoryShort(
+                    shortage.Adapter, ToMb(shortage.AvailableBytes), ToMb(shortage.RequiredBytes));
+            }
+        }
+        else if (_gpuDevice is not null)
         {
             device = _gpuDevice;
             deviceName = NameOf(_gpuDevice);
@@ -162,6 +179,8 @@ internal sealed class WhisperComputeDeviceObserver
 
         return accelerator;
     }
+
+    internal static long ToMb(long bytes) => bytes / (1024 * 1024);
 
     private string NameOf(string device)
     {

@@ -34,6 +34,7 @@ public sealed class WhisperComputeDeviceObserverTests : IDisposable
         DeckleWhisperSource.EvtModelGpuUnavailable,
         DeckleWhisperSource.EvtModelDeviceUnknown,
         DeckleWhisperSource.EvtModelLoadComplete,
+        DeckleWhisperSource.EvtModelGpuMemoryShort,
     ];
 
     public WhisperComputeDeviceObserverTests()
@@ -151,6 +152,43 @@ public sealed class WhisperComputeDeviceObserverTests : IDisposable
             e => Assert.Equal(DeckleWhisperSource.EvtModelLoadComplete, e.EventId));
     }
 
+    // The preflight hands whisper use_gpu = 0, but the settings asked for the
+    // GPU: the load must read as a fallback with its cause, never as the CPU
+    // the settings ask for, and warn once until the GPU answers again.
+    [Fact]
+    public void GpuMemoryShortageWarnsOncePerIncidentAsAFallbackNotAsTheAskedCpu()
+    {
+        var observer = new WhisperComputeDeviceObserver();
+        var shortage = new GpuMemoryShortage(DeviceName, AvailableBytes: 512L << 20, RequiredBytes: 4_118L << 20);
+        string[] cpuOnly = [.. s_vulkanTable, "whisper_backend_init_gpu: no GPU found"];
+        using var listener = new TestEventListener(Provider);
+
+        string accelerator = Load(observer, gpuRequested: true, cpuOnly, memoryShortage: shortage);
+        Load(observer, gpuRequested: true, cpuOnly, memoryShortage: shortage);
+        Load(observer, gpuRequested: true, s_gpuSelected);
+
+        Assert.Equal("CPU", accelerator);
+        Assert.Collection(
+            LoadEvents(listener),
+            e =>
+            {
+                Assert.Equal(DeckleWhisperSource.EvtModelGpuMemoryShort, e.EventId);
+                Assert.Equal(EventLevel.Warning, e.Level);
+                Assert.Equal(DeviceName, Payload(e, "adapter"));
+                Assert.Equal(512L, Payload(e, "available_mb"));
+                Assert.Equal(4_118L, Payload(e, "required_mb"));
+            },
+            e =>
+            {
+                Assert.Equal(DeckleWhisperSource.EvtModelLoadComplete, e.EventId);
+                Assert.Equal("CPU", Payload(e, "backend"));
+                Assert.Equal("gpu_memory_short", Payload(e, "fallback_reason"));
+            },
+            e => Assert.Equal(DeckleWhisperSource.EvtModelLoadComplete, e.EventId),
+            e => Assert.Equal(DeckleWhisperSource.EvtModelOnGpu, e.EventId),
+            e => Assert.Equal(DeckleWhisperSource.EvtModelLoadComplete, e.EventId));
+    }
+
     [Fact]
     public void RequestedGpuWithNoDeviceReportsNoGpuFound()
     {
@@ -228,11 +266,12 @@ public sealed class WhisperComputeDeviceObserverTests : IDisposable
         WhisperComputeDeviceObserver observer,
         bool gpuRequested,
         string[] nativeLines,
-        bool logHookInstalled = true)
+        bool logHookInstalled = true,
+        GpuMemoryShortage? memoryShortage = null)
     {
         observer.BeginLoad();
         foreach (string line in nativeLines) observer.Observe(line);
-        return observer.ReportLoad(gpuRequested, logHookInstalled, loadMs: 1200);
+        return observer.ReportLoad(gpuRequested, logHookInstalled, loadMs: 1200, memoryShortage);
     }
 
     private static IReadOnlyList<EventWrittenEventArgs> LoadEvents(TestEventListener listener)
