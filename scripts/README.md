@@ -12,7 +12,7 @@ The launcher's vocabulary (levels, actions, variants, executions, journals, resu
 
 ## Entry point — `menu.ps1`
 
-`menu.ps1` is what F5 runs in VSCodium (see [`.vscode/launch.json`](../.vscode/launch.json)) and what you call from a terminal for daily work. It is the only file Windows PowerShell 5.1 ever reads: it relaunches `lib/launcher/launcher.ps1` under `pwsh`, or says that PowerShell 7 must be installed. Interactive by default, it opens an arrow-key menu built at every launch from the scripts folder: the root holds the actions of the scripts at the root of `scripts/`, and each subfolder is a level with its own actions. A script whose Header carries a confirmation sentence opens that sentence as a step before running; the Danger treatment marks the actions that delete or replace something.
+`menu.ps1` is what you call from a terminal for daily work. It is the only file Windows PowerShell 5.1 ever reads: it relaunches `lib/launcher/launcher.ps1` under `pwsh`, or says that PowerShell 7 must be installed. Interactive by default, it opens an arrow-key menu built at every launch from the scripts folder: the root holds the actions of the scripts at the root of `scripts/`, and each subfolder is a level with its own actions. A script whose Header carries a confirmation sentence opens that sentence as a step before running; the Danger treatment marks the actions that delete or replace something.
 
 ```powershell
 pwsh -NoProfile -File scripts/menu.ps1

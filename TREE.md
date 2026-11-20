@@ -57,9 +57,6 @@ _Generated from `git ls-files` — do not edit by hand._
 ├── .github/
 │   └── workflows/
 │       └── update-readme-stats.yml
-├── .vscode/
-│   ├── launch.json
-│   └── tasks.json
 ├── benchmark/
 │   ├── rewrite/
 │   │   ├── model-compare/
