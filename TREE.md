@@ -2680,6 +2680,8 @@ _Generated from `git ls-files` — do not edit by hand._
 │   ├── Deckle.App.Tests/
 │   │   ├── Deckle.App.Tests.csproj
 │   │   ├── DictationRecoveryBugNotes.md
+│   │   ├── ExeIconBugNotes.md
+│   │   ├── ExeIconTests.cs
 │   │   ├── FileTranscriptionBugNotes.md
 │   │   ├── FileTranscriptionRunTests.cs
 │   │   ├── HudFeedbackSinkTests.cs
