@@ -22,7 +22,8 @@ namespace Deckle.App;
 // opens the Settings window and walks every page of the rail, then opens the Log
 // window, the Transcribe and rewrite and Paste to folder windows in each of
 // their states, then the Mail window and its walk of drawn states;
-// photographs each; writes report.json (the contract
+// photographs each, then the icon each window and Deckle.exe give the taskbar;
+// writes report.json (the contract
 // with scripts/self-check.ps1) and exits 0 when all is well, 1 otherwise.
 //
 // `--only <target>` after the folder keeps the run to one window, or to one
@@ -488,6 +489,14 @@ public partial class App
             try { await WalkProjectsAsync(report, run, outputFolder, Step, gate); }
             catch (OperationCanceledException) when (gate.Done) { }
             if (target?.View is not null && !gate.Reached) report.Views = gate.Offered;
+        }
+
+        // What the taskbar is handed, once every window has been opened
+        // (App.SelfCheck.Icons.cs). A targeted run has opened one window only.
+        if (target is null)
+        {
+            Step("icons");
+            await CaptureTaskbarIconsAsync(report, captures, outputFolder);
         }
 
         run.Complete();

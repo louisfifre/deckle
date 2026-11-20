@@ -218,12 +218,8 @@ _Generated from `git ls-files` — do not edit by hand._
 │   ├── inventaire-exposables.md
 │   └── transcription-audio-chain.md  — How a dictation travels from the hotkey to the clipboard — vocabulary, three di…
 ├── logo/
-│   ├── deckle-five.svg
 │   ├── deckle-recording.svg
 │   ├── deckle-rewriting.svg
-│   ├── deckle-small-recording.svg
-│   ├── deckle-small-rewriting.svg
-│   ├── deckle-small.svg
 │   ├── deckle.svg
 │   ├── generate.mjs
 │   ├── palettes.md
@@ -589,11 +585,9 @@ _Generated from `git ls-files` — do not edit by hand._
 │   │   │   │   └── BitcountSingle.ttf
 │   │   │   ├── Icons/
 │   │   │   │   ├── deckle--state--recording--32px.png
-│   │   │   │   ├── deckle--state--recording--form--normal.ico
 │   │   │   │   ├── deckle--state--recording--incident--true.ico
 │   │   │   │   ├── deckle--state--recording.ico
 │   │   │   │   ├── deckle--state--rest--32px.png
-│   │   │   │   ├── deckle--state--rest--form--normal.ico
 │   │   │   │   ├── deckle--state--rest--incident--true.ico
 │   │   │   │   ├── deckle--state--rest.ico
 │   │   │   │   ├── deckle--state--rewriting--32px.png
@@ -638,6 +632,7 @@ _Generated from `git ls-files` — do not edit by hand._
 │   │   │   └── apply-update.ps1
 │   │   ├── SelfCheck/
 │   │   │   ├── ElementImage.cs
+│   │   │   ├── IconImage.cs
 │   │   │   ├── OffscreenWindow.cs
 │   │   │   ├── SelfCheckDataRootGate.cs
 │   │   │   ├── SelfCheckReport.cs
@@ -678,6 +673,7 @@ _Generated from `git ls-files` — do not edit by hand._
 │   │   ├── App.SelfCheck.Atelier.Sizes.cs
 │   │   ├── App.SelfCheck.cs
 │   │   ├── App.SelfCheck.Diagnostics.cs
+│   │   ├── App.SelfCheck.Icons.cs
 │   │   ├── App.SelfCheck.Projects.Category.cs
 │   │   ├── App.SelfCheck.Projects.cs
 │   │   ├── App.SelfCheck.Projects.Home.cs
@@ -2867,6 +2863,7 @@ _Generated from `git ls-files` — do not edit by hand._
 │   │   ├── DialogDefaultButtonTests.cs
 │   │   ├── GestureHoldTests.cs
 │   │   ├── HotkeyChordTextTests.cs
+│   │   ├── MagnitudeFieldFormatterTests.cs
 │   │   ├── MagnitudeGrainBugNotes.md
 │   │   ├── MagnitudeGrainIntegerTests.cs
 │   │   ├── MagnitudeGrainTests.cs

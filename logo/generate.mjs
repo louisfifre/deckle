@@ -8,11 +8,10 @@
 // facing it take the same radius, GROOVE_RADIUS: the gap widens a little there,
 // and both sides of it read as the same curve.
 //
-// Every icon uses the `normal` form, four blades, the tray and the title bars
-// included: the maintainer chose one mark everywhere over a gap that stays open
-// at 16 px. Two other forms are kept as reference SVGs that no icon uses:
-// `small`, three blades and a wider gap, drawn for the small sizes, and `five`,
-// the first drawing.
+// The mark has one form, four blades, from the tray to the taskbar: the
+// maintainer chose one mark everywhere over a three-blade form whose gap stayed
+// open at 16 px. That form and the five-blade first drawing are in the history
+// of this file, not drawn any more.
 //
 // The numbers come from the first logo, a generated image: they were measured on
 // its trace, then regularised (one top angle, vertical right edges, one gap, evenly
@@ -95,38 +94,20 @@ const FRONT = { left: vertical(348), top: [395, 639], tip: [485, 945], right: 98
 const BACK = { left: line([555, 337], 72), top: [728.5, 320], right: vertical(876), tip: [507.5, 964.5], bottom: 40, rTL: 34, rTR: 40, rBR: 36 };
 const FLAT = { tip: [515, 971], bottom: 22, rApex: 14, rEnd: 22 };
 
-// A form: the gap between a sheet and the one behind it, the tip radius, the
-// front sheet, the sheets behind it from front to back (each with the letter
-// its blade keeps across forms), the flat blade. Fewer blades take a wider gap
-// and rounder corners, so the mark stays open when it is a few pixels wide.
-const FORMS = {
-  normal: {
-    gap: 44, tipRadius: 3,
-    front: { ...FRONT, top: [395, 620], right: 92, rTL: 22, rTR: GROOVE_RADIUS, rBL: 10 },
-    rear: [
-      { id: 'b', left: line([440, 470], 80), top: [570, 455], right: vertical(668), tip: [496, 955], bottom: 62, rTL: 30, rTR: GROOVE_RADIUS, rBR: GROOVE_RADIUS },
-      { id: 'a', ...BACK, tip: [506, 964] }],
-    flat: { ...FLAT, rApex: 18, rEnd: 28 },
-  },
-  small: {
-    gap: 56, tipRadius: 4,
-    front: { ...FRONT, top: [400, 560], right: 80, rTL: 30, rTR: GROOVE_RADIUS, rBL: 12 },
-    rear: [{ id: 'a', ...BACK, left: line([520, 360], 76), tip: [504, 962], bottom: 42 }],
-    flat: { ...FLAT, rApex: 22, rEnd: 32 },
-  },
-  five: {
-    gap: 24, tipRadius: 1.5, evenCorners: true,
-    front: FRONT,
-    rear: [
-      { id: 'c', left: vertical(396), top: [470, 545], right: vertical(548), tip: [492.5, 951.5], bottom: 78, rTL: 20, rTR: 22, rBR: 20 },
-      { id: 'b', left: line([464, 462], 78), top: [590, 444], right: vertical(700), tip: [500, 958], bottom: 58, rTL: 26, rTR: 30, rBR: 28 },
-      { id: 'a', ...BACK }],
-    flat: FLAT,
-  },
+// The form: the gap between a sheet and the one behind it, the tip radius, the
+// front sheet, the sheets behind it from front to back (each with the letter of
+// its blade), the flat blade.
+const FORM = {
+  gap: 44, tipRadius: 3,
+  front: { ...FRONT, top: [395, 620], right: 92, rTL: 22, rTR: GROOVE_RADIUS, rBL: 10 },
+  rear: [
+    { id: 'b', left: line([440, 470], 80), top: [570, 455], right: vertical(668), tip: [496, 955], bottom: 62, rTL: 30, rTR: GROOVE_RADIUS, rBR: GROOVE_RADIUS },
+    { id: 'a', ...BACK, tip: [506, 964] }],
+  flat: { ...FLAT, rApex: 18, rEnd: 28 },
 };
 
-// The blades of a form, in letter order: [{ id, corners }]. `a` is always the
-// back sheet, `d` the front one, `e` the flat blade.
+// The blades of the form, in letter order: [{ id, corners }]. `a` is the back
+// sheet, `d` the front one, `e` the flat blade.
 function buildBlades(form) {
   const { gap, tipRadius } = form;
   const top = s => line(s.top, -TOP_ANGLE);
@@ -145,11 +126,8 @@ function buildBlades(form) {
     const pts = [[...TL, s.rTL], [...TR, s.rTR], [...BR, s.rBR], [...s.tip, tipRadius]];
     // The gap is not offset below the bend: the edge runs from this sheet's own
     // tip, so the gap narrows towards the pivot as in the first logo.
-    // The first drawing kept the gap even around corners too: its rear corner
-    // is the front one plus the gap.
-    const facing = r => form.evenCorners ? r + gap : r;
-    if (front.bottom) pts.push([...cross(offset(front.bottom, gap, front.c), oRight), facing(front.rBR)]);
-    pts.push([...cross(oRight, oTop), facing(front.rTR)]);
+    if (front.bottom) pts.push([...cross(offset(front.bottom, gap, front.c), oRight), front.rBR]);
+    pts.push([...cross(oRight, oTop), front.rTR]);
     pts.push([...cross(oTop, s.left), INNER_RADIUS]);
     out.push({ id: s.id, corners: rounded(pts) });
     front = { top: sTop, right: s.right, bottom, c: centre([TL, TR, BR, s.tip]), rTR: s.rTR, rBR: s.rBR };
@@ -405,7 +383,7 @@ function ico(draw) {
 
 // --- The sheet --------------------------------------------------------------
 
-// One file, one fixed grid that shows what the app ships: the two forms in the
+// One file, one fixed grid that shows what the app ships: the mark in the
 // three states from 16 to 128 px. Two switches change only how it is shown: the
 // Windows mode (page colour) and the rendering (the vector drawing, or the
 // exact pixels an .ico holds, at the same size). No script: the switches are
@@ -424,11 +402,10 @@ function sheet(forms) {
     const img = `<img ${size} alt="" src="data:image/png;base64,${png(raster(blades, STATES[state], s), s).toString('base64')}">`;
     return `<td><svg class="${state}" ${size}><use href="#${name}" width="100%" height="100%"/></svg>${img}</td>`;
   };
-  // Inside a state, the normal form sits right above the small one.
   const names = Object.keys(forms);
   let rows = '';
   for (const state of Object.keys(STATES)) names.forEach((name, i) => {
-    rows += `<tr${i ? '' : ' class="first"'}>${i ? '' : `<th rowspan="${names.length}">${state}</th>`}<th>${name}</th>${sizes.map(s => cell(name, state, s)).join('')}</tr>\n`;
+    rows += `<tr${i ? '' : ' class="first"'}>${i ? '' : `<th rowspan="${names.length}">${state}</th>`}${sizes.map(s => cell(name, state, s)).join('')}</tr>\n`;
   });
   const group = (name, label, options) => `<div class="param"><span>${label}</span>` + options.map(([id, text], i) =>
     `<input type="radio" name="${name}" id="${name}-${id}"${i ? '' : ' checked'}><label for="${name}-${id}">${text}</label>`).join('') + `</div>`;
@@ -450,7 +427,7 @@ label:hover{opacity:1}
 input:checked+label{opacity:1;border-bottom-color:var(--fg)}
 input:focus-visible+label{outline:1px solid var(--fg);outline-offset:3px}
 table{border-collapse:collapse;table-layout:fixed}
-col.state{width:104px}col.form{width:72px}
+col.state{width:104px}
 th,td{height:80px;padding:0;font-weight:400;text-align:center;vertical-align:middle}
 thead th{height:32px}
 th{opacity:.5;text-align:left;white-space:nowrap}
@@ -464,7 +441,7 @@ svg.recording{--a:url(#ember)}
 svg.rewriting{--a:url(#ember);--e:url(#ember)}
 path{fill:var(--rest)}path.a{fill:var(--a)}path.e{fill:var(--e)}path.sheen{fill:url(#sheen)}
 </style><body><h1>Deckle — logo sheet</h1>
-<p>The mark has two forms, both bare, as Windows 11 icons are. Normal has four blades and stands everywhere: the taskbar, the tray and the title bars. Small has three, so its gaps stay open at 16 px; it is kept for reference and no icon uses it. A blade lights up while Deckle works: one while it records, two while it rewrites. The icon pixels carry the shadow from ${SHADOW_MIN_SIZE} px up.</p>
+<p>The mark has one form, four blades, bare as Windows 11 icons are, and stands everywhere: the taskbar, the tray and the title bars. A blade lights up while Deckle works: one while it records, two while it rewrites. The icon pixels carry the shadow from ${SHADOW_MIN_SIZE} px up.</p>
 <svg width="0" height="0" style="position:absolute"><defs>
 ${restGradient(0, 0)}
 ${emberGradient(0, 0)}
@@ -477,8 +454,8 @@ ${group('mode', 'Windows mode', [['dark', 'dark'], ['light', 'light']])}
 ${group('rendering', 'Show', [['drawing', 'the drawing'], ['pixels', 'the icon pixels']])}
 </form>
 <table>
-<colgroup><col class="state"><col class="form">${sizes.map(s => `<col style="width:${s + 32}px">`).join('')}</colgroup>
-<thead><tr><th>state</th><th>form</th>${sizes.map(s => `<th>${s} px</th>`).join('')}</tr></thead>
+<colgroup><col class="state">${sizes.map(s => `<col style="width:${s + 32}px">`).join('')}</colgroup>
+<thead><tr><th>state</th>${sizes.map(s => `<th>${s} px</th>`).join('')}</tr></thead>
 ${rows}</table>
 </body></html>
 `;
@@ -486,25 +463,20 @@ ${rows}</table>
 
 // --- Files ------------------------------------------------------------------
 
-const normal = buildBlades(FORMS.normal), small = buildBlades(FORMS.small), five = buildBlades(FORMS.five);
+const blades = buildBlades(FORM);
 const beside = name => fileURLToPath(new URL(name, import.meta.url));
 const iconFile = name => fileURLToPath(new URL(`../src/Deckle.App/Assets/Icons/${name}`, import.meta.url));
 
 for (const [state, lit] of Object.entries(STATES)) {
   const suffix = state === 'rest' ? '' : `-${state}`, title = state === 'rest' ? 'Deckle' : `Deckle, ${state}`;
-  writeFileSync(beside(`deckle${suffix}.svg`), svg(normal, title, lit));
-  writeFileSync(beside(`deckle-small${suffix}.svg`), svg(small, title, lit));
+  writeFileSync(beside(`deckle${suffix}.svg`), svg(blades, title, lit));
 
-  // The tray: the normal form, bare, so the mark takes the whole height.
+  // The tray, and without the incident dot a window (taskbar, Alt+Tab) and
+  // Deckle.exe itself: the bare mark, so it takes the whole height.
   for (const incident of [false, true])
-    writeFileSync(iconFile(`deckle--state--${state}${incident ? '--incident--true' : ''}.ico`), ico(size => raster(normal, lit, size, { incident })));
+    writeFileSync(iconFile(`deckle--state--${state}${incident ? '--incident--true' : ''}.ico`), ico(size => raster(blades, lit, size, { incident })));
   // A XAML title bar takes a bitmap, shown at 16 px: see IconAssets.
-  writeFileSync(iconFile(`deckle--state--${state}--32px.png`), png(raster(normal, lit, 32), 32));
+  writeFileSync(iconFile(`deckle--state--${state}--32px.png`), png(raster(blades, lit, 32), 32));
 }
-// A window's icon (taskbar, Alt+Tab): the normal form. A window shows the
-// microphone, not the rewrite.
-for (const state of ['rest', 'recording'])
-  writeFileSync(iconFile(`deckle--state--${state}--form--normal.ico`), ico(size => raster(normal, STATES[state], size)));
 
-writeFileSync(beside('deckle-five.svg'), svg(five, 'Deckle, first drawing', []));
-writeFileSync(beside('sheet.html'), sheet({ normal, small }));
+writeFileSync(beside('sheet.html'), sheet({ normal: blades }));

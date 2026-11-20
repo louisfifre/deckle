@@ -105,6 +105,22 @@ public class SelfCheckTests
         Assert.Contains(report.Failures, f => f.Contains("settings/diagnostics"));
     }
 
+    // The taskbar showed the generic icon on every window (ExeIconBugNotes.md):
+    // an icon the run could not find is a failure, never an empty image.
+    [Fact]
+    [Trait("Category", "regression")]
+    public void Verdict_FailsAndNamesTheSourceWhenATaskbarIconIsMissing()
+    {
+        SelfCheckReport report = PassingReport();
+        report.Surfaces.Add(new SelfCheckSurface("icons", "exe", "The icon embedded in Deckle.exe", true, 0, null,
+            Technique: "icon", Error: "no icon"));
+
+        report.Judge();
+
+        Assert.Equal("failed", report.Outcome);
+        Assert.Contains(report.Failures, f => f.StartsWith("icons/exe") && f.Contains("no icon"));
+    }
+
     [Fact]
     [Trait("Category", "unit")]
     public void Verdict_FailsWhenAPageDidNotComplete()
