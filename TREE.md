@@ -2471,6 +2471,9 @@ _Generated from `git ls-files` — do not edit by hand._
 │   │   ├── ITranscriptionEngineHost.cs
 │   │   ├── TranscriptionSettings.cs
 │   │   └── TranscriptionSettingsService.cs
+│   ├── Deckle.Transcription.Parakeet/
+│   │   ├── Deckle.Transcription.Parakeet.csproj
+│   │   └── ParakeetModelFiles.cs
 │   ├── Deckle.Transcription.Views/
 │   │   ├── Strings/
 │   │   │   └── en-US/
@@ -3393,6 +3396,9 @@ _Generated from `git ls-files` — do not edit by hand._
 │   │   ├── TestEventListener.cs
 │   │   ├── WindowsAppSdkBootstrap.cs
 │   │   └── WindowsAppSdkModuleInitializer.cs
+│   ├── Deckle.Transcription.Parakeet.Tests/
+│   │   ├── Deckle.Transcription.Parakeet.Tests.csproj
+│   │   └── ParakeetModelFilesTests.cs
 │   ├── Deckle.Transcription.Tests/
 │   │   ├── CorpusRecordSkippedTests.cs
 │   │   ├── Deckle.Transcription.Tests.csproj
