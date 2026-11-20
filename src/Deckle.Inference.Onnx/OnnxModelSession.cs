@@ -100,6 +100,16 @@ public sealed class OnnxModelSession : IDisposable
                 Tensor<long> t = result.AsTensor<long>();
                 return new OnnxTensorOutput(result.Name, ShapeOf(t), null, t.ToArray());
             }
+            case TensorElementType.Int32:
+            {
+                // Widened to long so the output type stays one integer shape for callers.
+                Tensor<int> t = result.AsTensor<int>();
+                var longs = new long[t.Length];
+                int i = 0;
+                foreach (int v in t)
+                    longs[i++] = v;
+                return new OnnxTensorOutput(result.Name, ShapeOf(t), null, longs);
+            }
             case TensorElementType.Float16:
             {
                 Tensor<Float16> t = result.AsTensor<Float16>();

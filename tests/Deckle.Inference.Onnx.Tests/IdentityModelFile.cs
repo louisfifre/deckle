@@ -11,6 +11,7 @@ namespace Deckle.Inference.Onnx.Tests;
 internal static class IdentityModelFile
 {
     public const int Float = 1;
+    public const int Int32 = 6;
     public const int Int64 = 7;
     public const int Float16 = 10;
 

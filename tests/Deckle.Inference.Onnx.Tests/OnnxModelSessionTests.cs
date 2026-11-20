@@ -60,6 +60,17 @@ public class OnnxModelSessionTests : IDisposable
     }
 
     [Fact]
+    public void Int32TensorRoundTripsAsLong()
+    {
+        using var session = new OnnxModelSession(Model(IdentityModelFile.Int32, 3));
+
+        var outputs = session.RunNamed([OnnxTensorInput.Int32("x", [8192, 0, -1], [3])], ["y"]);
+
+        Assert.Equal([8192L, 0L, -1L], outputs[0].Longs!);
+        Assert.Null(outputs[0].Floats);
+    }
+
+    [Fact]
     public void GraphMetadataNamesTypesAndShapes()
     {
         using var session = new OnnxModelSession(Model(IdentityModelFile.Float16, -1, 4));
