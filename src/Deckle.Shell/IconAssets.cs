@@ -22,10 +22,10 @@ public static class IconAssets
     private static string TrayIconFile(MarkState state, bool incident)
         => $"deckle--state--{Name(state)}{(incident ? "--incident--true" : "")}.ico";
 
-    // A window's .ico: the normal form. A window shows the microphone, not
-    // the rewrite.
+    // A window's .ico: the tray's, without the incident dot. A window shows
+    // the microphone, not the rewrite.
     internal static string WindowIconFile(bool recording)
-        => $"deckle--state--{Name(recording ? MarkState.Recording : MarkState.Rest)}--form--normal.ico";
+        => TrayIconFile(recording ? MarkState.Recording : MarkState.Rest, incident: false);
 
     // The bare mark as a single 32 px bitmap, for a XAML image. A BitmapImage
     // of an .ico decodes only its first frame, the 16 px one, which a scaled

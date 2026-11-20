@@ -12,7 +12,7 @@ namespace Deckle.App.Tests;
 [Trait("Category", "integration")]
 public sealed class ExeIconTests
 {
-    private const string WindowIconAtRest = "deckle--state--rest--form--normal.ico";
+    private const string WindowIconAtRest = "deckle--state--rest.ico";
 
     [Fact]
     public void TheExeEmbedsTheWindowIconAtRest()
