@@ -9,11 +9,11 @@ namespace Deckle.Atelier.Views;
 public sealed partial class AtelierWindow
 {
     // Shows a folder in the file tool. A folder this window does not hold yet is
-    // added first, a folder it holds is opened (AddAndOpen does both); the pane
-    // is closed so the folder is seen, as after the picker.
+    // added first, a folder it holds is opened (AddAndOpen does both); a pane
+    // over the page is closed so the folder is seen, as after the picker.
     public Task OpenFolderAsync(string path)
     {
-        Nav.IsPaneOpen = false;
+        _pane.CloseIfOverPage();
         return AddAndOpen(FolderPaths.Normalize(path));
     }
 }

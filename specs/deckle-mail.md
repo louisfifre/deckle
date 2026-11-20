@@ -226,12 +226,12 @@ The frames are on canvas pages 15, 18 and 19; sizes, colours and wording are kep
 
 ### A narrow window
 
-1. The navigation folds to its rail of icons, and the numbers of the mailboxes stay visible on it. A click on a mailbox that has aliases opens its pages as a menu, which names the mailbox: the rail shows its mark only.
+1. The navigation stays as the user left it, open or as its rail of icons, until the window is too narrow for the rail (`deckle-navigation-pane.md`). On the rail, the numbers of the mailboxes stay visible. A click on a mailbox that has aliases opens its pages as a menu, which names the mailbox: the rail shows its mark only.
 2. A mailbox that cannot connect keeps its caution dot on the rail, away from the number, so both can show.
 3. The search field becomes a button in the title bar.
 4. Each row holds on one level: its sentence, then its controls on the same line. Add task keeps its full label.
 5. On an opened subject, the list of its mails goes under the text.
-6. A window made narrower never brings back a layout it had already left. Example: the list of mails, once under the text, stays there when the navigation folds to its rail and the page gains width.
+6. A window made narrower never brings back a layout it had already left. Example: the list of mails, once under the text, stays there when the user closes the navigation to its rail and the page gains width.
 
 ### Rules
 

@@ -18,9 +18,9 @@ namespace Deckle.Settings;
 
 // ─── Settings Window ──────────────────────────────────────────────────────────
 //
-// NavigationView in PaneDisplayMode=Auto manages the Left / LeftCompact /
-// LeftMinimal switch; its own pane toggle is off — the TitleBar carries the
-// hamburger and relays through PaneToggleRequested.
+// The navigation follows specs/deckle-navigation-pane.md through NavigationPane
+// (Deckle.Shell.WindowChrome); its own pane toggle is off — the TitleBar carries
+// the hamburger and relays through PaneToggleRequested.
 //
 // Navigation: Tag on each item = full Page type name, resolved via
 // Type.GetType in OnNavSelectionChanged.
@@ -31,6 +31,7 @@ namespace Deckle.Settings;
 public sealed partial class SettingsWindow : Window
 {
     private readonly IntPtr _hwnd;
+    private readonly NavigationPane _pane;
 
     public Action? OnShowLogsRequested { get; set; }
 
@@ -59,8 +60,7 @@ public sealed partial class SettingsWindow : Window
 
         InitializeSearch();
 
-        Nav.DisplayModeChanged += OnNavDisplayModeChanged;
-        Nav.Loaded += (_, _) => SyncNavigationPane(Nav);
+        _pane = NavigationPane.Attach(Nav, windowKey: "settings");
 
         // Before the initial selection, so the module items are present and
         // selectable.
@@ -496,27 +496,13 @@ public sealed partial class SettingsWindow : Window
     }
 
     // ── TitleBar pane toggle ─────────────────────────────────────────────
-    //
-    // SyncNavigationPane is deliberately NOT called here — it forces IsPaneOpen
-    // from the display mode, which would immediately re-close a pane the user
-    // just opened in a compact mode.
 
-    private void OnTitleBarPaneToggleRequested(TitleBar sender, object args)
-    {
-        Nav.IsPaneOpen = !Nav.IsPaneOpen;
-    }
+    private void OnTitleBarPaneToggleRequested(TitleBar sender, object args) => _pane.Toggle();
 
     private void OnLogsButtonClick(object sender, RoutedEventArgs e)
     {
         DeckleSettingsSource.Log.OpenLogsFromFooter();
         OnShowLogsRequested?.Invoke();
-    }
-
-    // ── NavigationView: pane sync by DisplayMode ─────────────────────────
-
-    private void OnNavDisplayModeChanged(NavigationView sender, NavigationViewDisplayModeChangedEventArgs args)
-    {
-        SyncNavigationPane(sender);
     }
 
     // ── NavigationView: page swap ────────────────────────────────────────────
@@ -601,10 +587,5 @@ public sealed partial class SettingsWindow : Window
         }
 
         page.Loaded += OnLoaded;
-    }
-
-    private static void SyncNavigationPane(NavigationView nav)
-    {
-        nav.IsPaneOpen = nav.DisplayMode == NavigationViewDisplayMode.Expanded;
     }
 }

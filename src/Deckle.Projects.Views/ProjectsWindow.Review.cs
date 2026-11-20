@@ -20,10 +20,10 @@ public sealed partial class ProjectsWindow
 
     public bool PaneToggleShownForReview => AppTitleBar.IsPaneToggleButtonVisible;
 
-    public bool IsPaneOpenForReview => _paneOpen;
+    public bool IsPaneOpenForReview => _pane.IsOpen;
 
     // The pane as the hamburger opens or closes it.
-    public void SetPaneOpenForReview(bool open) => SetPaneOpen(open);
+    public void SetPaneOpenForReview(bool open) => _pane.SetOpen(open);
 
     // The labels of the pane's items in order, the projects of a node after it
     // and indented by one space per level, for a check that the pane lists what

@@ -57,6 +57,7 @@ public sealed partial class ProjectsWindow : Window, IProjectsHost
         Activated += OnActivated;
         Closed += OnClosed;
 
+        AttachPane();
         RebuildPane();
         // The window opens on Home each time (spec, Window).
         NavigateTo(new ProjectsTarget.Home());

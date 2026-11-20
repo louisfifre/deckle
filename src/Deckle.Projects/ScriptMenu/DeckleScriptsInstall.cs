@@ -7,7 +7,7 @@ namespace Deckle.Projects;
 //
 // It is the first line of the Install block of the deckle-scripts repository's
 // README; the block's second line (install-hooks.ps1) is the maintainer's to
-// run. The repository's name is the spec's Open 5 (a possible rename), and
+// run. The repository's name is the spec's Open 4 (a possible rename), and
 // this constant is the one place that would change.
 public static class DeckleScriptsInstall
 {

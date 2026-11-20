@@ -441,6 +441,7 @@ _Generated from `git ls-files` — do not edit by hand._
 │   ├── atelier.md
 │   ├── deckle-dictation-rewriting.md
 │   ├── deckle-mail.md
+│   ├── deckle-navigation-pane.md
 │   ├── deckle-paste-to-folder.md
 │   ├── deckle-projects.md
 │   ├── deckle-transcribe-and-rewrite.md
