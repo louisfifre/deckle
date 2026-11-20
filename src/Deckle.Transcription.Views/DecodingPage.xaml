@@ -7,8 +7,11 @@
     <!-- The Decoding page of the Transcription module: the Whisper parameters
          that apply in both pipelines, in four flat sections — Decoding and
          Confidence first, the two that matter most, then Output filters and
-         Context. No fold anywhere: every card is always shown, so a fold would
-         only hide what the page is for (2026-10-14). Every card is composed from
+         Context — with one collapsed fold between Confidence and Output
+         filters, the guards against text from silence and noise, which apply
+         to every recording too (2026-11-20). The sections show every card
+         always, since a fold would only hide what the page is for
+         (2026-10-14); the one fold holds five values almost nobody moves. Every card is composed from
          WhisperViewModel's manifests into a host; the page only hosts. -->
     <ScrollViewer Padding="32,24,32,24"
                   VerticalScrollBarVisibility="Auto"
@@ -36,6 +39,16 @@
                     <StackPanel x:Name="ConfidenceHost"
                                 Spacing="{StaticResource SettingsCardSpacing}" />
                 </catalog:SettingsSection>
+
+                <!-- ── Silence and noise filtering ─────────────────────────
+                     One fold with no master, collapsed: the Silero trim (its
+                     switch, then its three parameters while it is on) and
+                     Whisper's no-speech cut-off, which sits beside Confidence
+                     in what it does. Here because it applies to every
+                     recording, whatever the pipeline (WhisperViewModel
+                     .SilenceGuardSettings). -->
+                <StackPanel x:Name="SilenceGuardsHost"
+                            Spacing="{StaticResource SettingsCardSpacing}" />
 
                 <!-- ── Output filters ──────────────────────────────────────── -->
                 <catalog:SettingsSection x:Uid="WhisperPageOutputFiltersSection">

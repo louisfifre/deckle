@@ -7,13 +7,12 @@
     <!-- The Streaming page of the Transcription module, graph first
          (2026-11-07): the pipeline switch alone at the top, then segmentation,
          which is the cut curve (its corners drag the ramp and the waits, its
-         pause strip the cut margin and the minimum speech), then, under it, the
-         one fold of the guards against text from silence and noise: the Silero
-         trim with its three parameters and Whisper's no-speech cut-off,
-         collapsed (2026-11-07 review, changes 6 and 7). Everything shows
+         pause strip the cut margin and the minimum speech). Everything shows
          whatever the switch says: it picks only the dictation pipeline, while
-         files and recovered takes are always cut and trimmed with these
-         settings. Every card is composed from WhisperViewModel's manifests. -->
+         files and recovered takes are always cut with these settings. The
+         guards against text from silence and noise are not here: they apply to
+         every recording, so they sit on the Decoding page. Every card is
+         composed from WhisperViewModel's manifests. -->
     <ScrollViewer Padding="32,24,32,24"
                   VerticalScrollBarVisibility="Auto"
                   HorizontalScrollBarVisibility="Disabled">
@@ -43,17 +42,6 @@
                              the pause view in a frame of its own with its two
                              durations (WhisperViewModel.SegmentationSettings). -->
                         <StackPanel x:Name="SegmentationHost"
-                                    Spacing="{StaticResource SettingsCardSpacing}" />
-
-                        <!-- The guards against text from silence and noise, one
-                             fold with no master, collapsed: the Silero trim (its
-                             switch, then its three parameters while it is on) and
-                             the no-speech cut-off, which left the Decoding page
-                             (WhisperViewModel.SilenceGuardSettings). In this
-                             section, under the curve, as the review's target
-                             page draws it: they act on the utterances the cut
-                             produces. -->
-                        <StackPanel x:Name="SilenceGuardsHost"
                                     Spacing="{StaticResource SettingsCardSpacing}" />
                     </StackPanel>
                 </catalog:SettingsSection>

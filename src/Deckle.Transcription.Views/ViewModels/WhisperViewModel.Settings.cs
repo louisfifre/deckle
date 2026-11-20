@@ -100,7 +100,26 @@ public partial class WhisperViewModel
     ];
 
     // The guards against text from silence and noise — one fold with no master
-    // on the Streaming page, collapsed (2026-11-07 review, change 6). Two of the
+    // on the Decoding page, collapsed (2026-11-07 review, change 6; moved there
+    // from the Streaming page on 2026-11-20).
+    //
+    // Why the Decoding page. These five values apply to EVERY recording, the
+    // streaming dictation, the monolithic take, a file, a recovered take, so a
+    // page named Streaming, whose switch can be off, told the person they were
+    // a streaming detail. Seen from the person who looks for them ("it wrote
+    // words over my silence"), the candidates were: Streaming (misleading, the
+    // reason for the move); General (its header is the overlay, the model and
+    // the engine, nothing about the text); the Recording page of the Audio
+    // module (the Silero trim does act on the captured signal, but Whisper's
+    // no-speech cut-off acts on the model's output, and a setting is found under
+    // the module that acts on it, here Transcription); a page of their own
+    // (five values, and a page is earned only once a surface no longer fits one,
+    // deckle-settings-ux). The Decoding page is the module's page for what
+    // applies in both pipelines, its Output filters section already answers
+    // "what Whisper may never write" and its Confidence section already holds
+    // the neighbour of the no-speech cut-off, Minimum confidence. It is not
+    // decoding in the strict sense, and the fold's own name says what it is for.
+    // The fold stays collapsed: almost nobody moves these values. Two of the
     // five guards the pipeline runs are settings: the Silero trim before the
     // model, and Whisper's no-speech cut-off after it; for a person both answer
     // "there was no voice there", so they share one fold named for that. The
@@ -338,8 +357,8 @@ public partial class WhisperViewModel
     ];
 
     // Confidence — two flat cards under the page's "Confidence" section, the
-    // two triggers of a retry. The no-speech cut-off moved to the Streaming
-    // page's silence guards (SilenceGuardSettings, 2026-11-07). The Min/Max
+    // two triggers of a retry. The no-speech cut-off moved to the silence
+    // guards' fold (SilenceGuardSettings, 2026-11-07), on this same page. The Min/Max
     // live in MagnitudeArgs, where a code-built control sets them without the
     // WinUI XAML parser ever seeing a Minimum above a default. Bounds verbatim:
     // Entropy 1.5..3.5; Logprob -1.5..-0.4. Defaults read the

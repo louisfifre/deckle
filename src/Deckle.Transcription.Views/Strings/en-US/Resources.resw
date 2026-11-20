@@ -562,7 +562,7 @@
     <value>Decoding</value>
   </data>
   <data name="DecodingPageHeader.Description" xml:space="preserve">
-    <value>How Whisper searches for the text.</value>
+    <value>How Whisper searches for the text, and what it does with silence and noise.</value>
   </data>
   <data name="DecodingPageDecodingSection.Title" xml:space="preserve">
     <value>Decoding</value>
@@ -592,7 +592,7 @@
     <value>Streaming</value>
   </data>
   <data name="StreamingPageHeader.Description" xml:space="preserve">
-    <value>How Deckle cuts each recording into utterances and cleans them.</value>
+    <value>How Deckle cuts each recording into utterances.</value>
   </data>
   <data name="StreamingPageSegmentationSection.Title" xml:space="preserve">
     <value>Segmentation</value>
@@ -601,7 +601,7 @@
     <value>Model and engine</value>
   </data>
   <!-- The one fold of the guards against text from silence and noise, on the
-       Streaming page (WhisperViewModel.SilenceGuardSettings, 2026-11-07 review,
+       Decoding page (WhisperViewModel.SilenceGuardSettings, 2026-11-07 review,
        change 6): named for what it spares the person, not for its detectors. -->
   <data name="WhisperSilenceGuardsFold.Header" xml:space="preserve">
     <value>Silence and noise filtering</value>

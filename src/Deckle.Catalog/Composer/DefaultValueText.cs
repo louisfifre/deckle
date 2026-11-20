@@ -4,7 +4,7 @@ using System.Globalization;
 namespace Deckle.Catalog;
 
 // The default of a setting as the words its reset tooltip shows ("Reset to
-// 0.50", "Reset to 250 ms", "Reset to No limit"). The description of a card no
+// 0.5", "Reset to 250 ms", "Reset to No limit"). The description of a card no
 // longer states the default, so the tooltip is the one place the user reads
 // it, and it must read exactly like the control beside it: the magnitude on its
 // display grain with its unit, the choice by its option label, the chord as
@@ -15,14 +15,14 @@ namespace Deckle.Catalog;
 public static class DefaultValueText
 {
     // The magnitude written as its field shows it: snapped to the display grain,
-    // with the fixed number of decimals the grain needs and the unit after a
-    // space. The provider defaults to the current culture so the decimal
+    // with only the decimals the value needs (0.1, not 0.10, as a person writes
+    // it; 0.25 on a 0.05 grain keeps both) and the unit after a space. The provider defaults to the current culture so the decimal
     // separator matches the field; tests pass the invariant culture.
     public static string Magnitude(double value, int decimals, string? unit, IFormatProvider? provider = null)
     {
         int digits = Math.Clamp(decimals, 0, 6);
         string number = MagnitudeGrain.Snap(value, digits)
-            .ToString("F" + digits, provider ?? CultureInfo.CurrentCulture);
+            .ToString(digits == 0 ? "0" : "0." + new string('#', digits), provider ?? CultureInfo.CurrentCulture);
         return string.IsNullOrEmpty(unit) ? number : number + " " + unit;
     }
 

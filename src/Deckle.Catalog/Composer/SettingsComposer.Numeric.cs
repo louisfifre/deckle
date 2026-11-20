@@ -39,21 +39,7 @@ public sealed partial class SettingsComposer
             VerticalAlignment = VerticalAlignment.Center,
         };
 
-        // No grouping, so a four-digit figure reads "1200", not "1,200".
-        // FractionDigits is only a minimum, so the rounder is what caps the
-        // readout at the grain: a value stored with binary dust
-        // (0.15000000000000002) still shows "0.15".
-        var decimalFormatter = new Windows.Globalization.NumberFormatting.DecimalFormatter
-        {
-            IntegerDigits = 1,
-            FractionDigits = decimals,
-            IsGrouped = false,
-            NumberRounder = new Windows.Globalization.NumberFormatting.IncrementNumberRounder
-            {
-                Increment = Math.Pow(10, -decimals),
-                RoundingAlgorithm = Windows.Globalization.NumberFormatting.RoundingAlgorithm.RoundHalfUp,
-            },
-        };
+        var decimalFormatter = MagnitudeGrain.FieldFormatter(decimals);
         // A sentinel reads as the word Auto, in the field as in the reset tooltip.
         string autoWord = Loc.Get("SettingsComposer_ValueAuto");
         box.NumberFormatter = args.Auto is double auto

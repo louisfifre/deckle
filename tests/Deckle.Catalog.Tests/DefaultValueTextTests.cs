@@ -13,7 +13,11 @@ namespace Deckle.Catalog.Tests;
 public class DefaultValueTextTests
 {
     [Theory]
-    [InlineData(0.5, 2, null, "0.50")]
+    [InlineData(0.5, 2, null, "0.5")]
+    [InlineData(0.1, 2, null, "0.1")]
+    [InlineData(0.25, 2, null, "0.25")]
+    [InlineData(0.05, 2, "s", "0.05 s")]
+    [InlineData(1, 1, "s", "1 s")]
     [InlineData(250, 0, "ms", "250 ms")]
     [InlineData(-45, 0, "dBFS", "-45 dBFS")]
     [InlineData(0.15000000000000002, 2, null, "0.15")]
