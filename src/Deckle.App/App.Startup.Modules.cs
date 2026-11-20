@@ -43,6 +43,7 @@ public partial class App
         ParakeetModelFiles.Resolve(
             TranscriptionSettingsService.Instance.Current.Engine.ParakeetModelDirectory,
             TranscriptionSettingsService.Instance.ResolveModelsDirectory()).IsComplete;
+
     private void InitializeStartupModules(StartupContext context)
     {
         // Without the native runtime and a speech model the engine is not
