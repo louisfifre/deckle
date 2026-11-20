@@ -58,4 +58,24 @@ public static class MagnitudeGrain
         double rounded = Math.Round(value, Math.Clamp(decimals, 0, 6), MidpointRounding.AwayFromZero);
         return rounded == 0 ? 0 : rounded;
     }
+
+    // The formatter of a magnitude's number field, on a grain of that many
+    // decimals. No grouping, so a four-digit figure reads "1200", not "1,200".
+    // FractionDigits is a MINIMUM (Microsoft Learn, DecimalFormatter
+    // .FractionDigits): set to the grain's decimals it padded "0.1" into "0.10"
+    // on a 0.05 grain. So it is 0, and the rounder alone caps the readout at the
+    // grain: "0.1" stays "0.1", "0.15" stays "0.15", and a value stored with
+    // binary dust (0.15000000000000002) shows "0.15".
+    public static Windows.Globalization.NumberFormatting.DecimalFormatter FieldFormatter(int decimals)
+        => new()
+        {
+            IntegerDigits = 1,
+            FractionDigits = 0,
+            IsGrouped = false,
+            NumberRounder = new Windows.Globalization.NumberFormatting.IncrementNumberRounder
+            {
+                Increment = Math.Pow(10, -decimals),
+                RoundingAlgorithm = Windows.Globalization.NumberFormatting.RoundingAlgorithm.RoundHalfUp,
+            },
+        };
 }
