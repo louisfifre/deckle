@@ -2458,6 +2458,7 @@ _Generated from `git ls-files` — do not edit by hand._
 │   │   │   ├── TranscriptSnapshot.cs
 │   │   │   ├── Utterance.cs
 │   │   │   └── UtteranceProgress.cs
+│   │   ├── AsrBackendKind.cs
 │   │   ├── Deckle.Transcription.csproj
 │   │   ├── DeckleWhispSource.cs
 │   │   ├── DeckleWhispSource.Decode.cs
