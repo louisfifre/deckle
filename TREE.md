@@ -3002,6 +3002,11 @@ _Generated from `git ls-files` — do not edit by hand._
 │   │   ├── UtteranceCountdownCourseTests.cs
 │   │   ├── UtteranceCountdownGeometryTests.cs
 │   │   └── UtteranceCountdownStateTests.cs
+│   ├── Deckle.Inference.Onnx.Tests/
+│   │   ├── Deckle.Inference.Onnx.Tests.csproj
+│   │   ├── HalfConversionTests.cs
+│   │   ├── IdentityModelFile.cs
+│   │   └── OnnxModelSessionTests.cs
 │   ├── Deckle.Input.PrecisionScroll.Tests/
 │   │   ├── Fixtures/
 │   │   │   └── precision-scroll-baseline.json

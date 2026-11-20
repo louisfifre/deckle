@@ -221,6 +221,8 @@ Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Deckle.Paste.Views", "src\D
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Deckle.Shell.WindowChrome.Tests", "tests\Deckle.Shell.WindowChrome.Tests\Deckle.Shell.WindowChrome.Tests.csproj", "{725471AB-D8EB-440F-8C96-D0176E9347D3}"
 EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Deckle.Inference.Onnx.Tests", "tests\Deckle.Inference.Onnx.Tests\Deckle.Inference.Onnx.Tests.csproj", "{33D099FA-ABB3-4C9E-9231-B4E1AD27EA9F}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
@@ -1515,6 +1517,18 @@ Global
 		{725471AB-D8EB-440F-8C96-D0176E9347D3}.Release|x64.Build.0 = Release|x64
 		{725471AB-D8EB-440F-8C96-D0176E9347D3}.Release|x86.ActiveCfg = Release|x64
 		{725471AB-D8EB-440F-8C96-D0176E9347D3}.Release|x86.Build.0 = Release|x64
+		{33D099FA-ABB3-4C9E-9231-B4E1AD27EA9F}.Debug|Any CPU.ActiveCfg = Debug|x64
+		{33D099FA-ABB3-4C9E-9231-B4E1AD27EA9F}.Debug|Any CPU.Build.0 = Debug|x64
+		{33D099FA-ABB3-4C9E-9231-B4E1AD27EA9F}.Debug|x64.ActiveCfg = Debug|x64
+		{33D099FA-ABB3-4C9E-9231-B4E1AD27EA9F}.Debug|x64.Build.0 = Debug|x64
+		{33D099FA-ABB3-4C9E-9231-B4E1AD27EA9F}.Debug|x86.ActiveCfg = Debug|x64
+		{33D099FA-ABB3-4C9E-9231-B4E1AD27EA9F}.Debug|x86.Build.0 = Debug|x64
+		{33D099FA-ABB3-4C9E-9231-B4E1AD27EA9F}.Release|Any CPU.ActiveCfg = Release|x64
+		{33D099FA-ABB3-4C9E-9231-B4E1AD27EA9F}.Release|Any CPU.Build.0 = Release|x64
+		{33D099FA-ABB3-4C9E-9231-B4E1AD27EA9F}.Release|x64.ActiveCfg = Release|x64
+		{33D099FA-ABB3-4C9E-9231-B4E1AD27EA9F}.Release|x64.Build.0 = Release|x64
+		{33D099FA-ABB3-4C9E-9231-B4E1AD27EA9F}.Release|x86.ActiveCfg = Release|x64
+		{33D099FA-ABB3-4C9E-9231-B4E1AD27EA9F}.Release|x86.Build.0 = Release|x64
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
@@ -1627,5 +1641,6 @@ Global
 		{8E919CF6-5EC9-45A5-B7DB-3CCD15954E4B} = {0AB3BF05-4346-4AA6-1389-037BE0695223}
 		{386FA367-38F4-4A63-9143-D242E4513BA6} = {827E0CD3-B72D-47B6-A68D-7590B98EB39B}
 		{725471AB-D8EB-440F-8C96-D0176E9347D3} = {0AB3BF05-4346-4AA6-1389-037BE0695223}
+		{33D099FA-ABB3-4C9E-9231-B4E1AD27EA9F} = {0AB3BF05-4346-4AA6-1389-037BE0695223}
 	EndGlobalSection
 EndGlobal

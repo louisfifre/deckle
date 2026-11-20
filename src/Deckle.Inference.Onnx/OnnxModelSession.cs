@@ -106,7 +106,7 @@ public sealed class OnnxModelSession : IDisposable
                 var floats = new float[t.Length];
                 int i = 0;
                 foreach (Float16 h in t)
-                    floats[i++] = HalfConversion.ToFloat((ushort)h);
+                    floats[i++] = (float)h;
                 return new OnnxTensorOutput(result.Name, ShapeOf(t), floats, null);
             }
             default:
@@ -165,4 +165,5 @@ public sealed class OnnxModelSession : IDisposable
         _options.Dispose();
     }
 }
+
 

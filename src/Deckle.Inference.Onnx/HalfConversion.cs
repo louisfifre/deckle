@@ -2,9 +2,8 @@ using System;
 
 namespace Deckle.Inference.Onnx;
 
-// Float to IEEE half conversion the Float16 inputs and outputs go through. Kept as
-// pure code on System.Half so it is testable without a model and so the runtime's
-// own Float16 type only appears at the call to the runtime.
+// Float to IEEE half narrowing the Float16 inputs go through (outputs are widened by the runtime's own Float16). Kept as
+// pure code on System.Half so it is testable without a model.
 internal static class HalfConversion
 {
     public static ushort[] ToBits(float[] values)
@@ -15,5 +14,6 @@ internal static class HalfConversion
         return bits;
     }
 
-    public static float ToFloat(ushort bits) => (float)BitConverter.UInt16BitsToHalf(bits);
 }
+
+
