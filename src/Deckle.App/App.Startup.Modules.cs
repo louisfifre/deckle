@@ -12,6 +12,7 @@ using Deckle.Shell.TaskbarCover;
 using Deckle.Shell.TrayMenu;
 using Deckle.Speech;
 using Deckle.Transcription;
+using Deckle.Transcription.Parakeet;
 using Deckle.Transcription.Whisper;
 
 namespace Deckle.App;
@@ -36,6 +37,13 @@ public partial class App
     // could not be set; same spelling as the watcher's own reason.
     private const string RefuseForegroundHookFailed = "foreground_hook_failed";
 
+    // Whether the configured (or default) Parakeet model folder holds every file the default
+    // configuration needs.
+    private static bool ParakeetModelPresent() =>
+        ParakeetModelFiles.Resolve(
+            TranscriptionSettingsService.Instance.Current.Engine.ParakeetModelDirectory,
+            TranscriptionSettingsService.Instance.ResolveModelsDirectory()).IsComplete;
+
     private void InitializeStartupModules(StartupContext context)
     {
         // Without the native runtime and a speech model the engine is not
@@ -50,8 +58,14 @@ public partial class App
         // first hotkey press. The check frees what it loads, and loading a
         // backend DLL does not register it: ggml enumerates the GPU only when
         // the first model load asks it to (NativeRuntimeLoader).
+        //
+        // The hidden engine choice picks which of the two gates applies. Parakeet needs no
+        // native runtime of ours (ONNX Runtime ships inside the app), only its model folder.
+        bool useParakeet = context.TranscriptionPresent
+            && TranscriptionSettingsService.Instance.Current.Engine.Backend == AsrBackendKind.Parakeet;
         string? engineSkip =
             !context.TranscriptionPresent         ? SkipNotPresent
+            : useParakeet                         ? (ParakeetModelPresent() ? null : SkipSpeechModelMissing)
             : !NativeRuntime.IsInstalled()        ? SkipNativeRuntimeMissing
             : !NativeRuntime.CheckLoad().Loads    ? SkipNativeRuntimeUnloadable
             : !SpeechModels.IsAnyModelInstalled() ? SkipSpeechModelMissing
@@ -61,7 +75,7 @@ public partial class App
             context.Compose(ModuleIds.Transcription, () =>
             {
                 var host = new AppTranscriptionEngineHost();
-                var backend = new WhisperBackend(host);
+                IAsrBackend backend = useParakeet ? new ParakeetBackend(host) : new WhisperBackend(host);
                 _engine = new TranscriptionEngine(
                     host,
                     backend,

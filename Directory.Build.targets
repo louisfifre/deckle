@@ -7,28 +7,15 @@
     <IsRidAgnostic>true</IsRidAgnostic>
   </PropertyGroup>
 
-  <!-- One ONNX Runtime in every Deckle process: the pinned NuGet build (1.23.0,
-       see Directory.Packages.props).
-       Since Windows App SDK 2.0, Windows ML ships as the NuGet package
-       Microsoft.Windows.AI.MachineLearning (pulled in by Microsoft.WindowsAppSDK.ML),
-       and in self-contained mode (Deckle.App) its natives are plain NuGet
-       copy-local files: a second onnxruntime.dll (1.24), DirectML.dll and the
-       Windows ML DLL. The SDK then keeps the higher onnxruntime.dll file version
-       for the root output and the deps.json, so the VAD would run on a
-       runtime it was not built for. Deckle does not use Windows ML, so drop the
-       package's native assets before the copy-local step; its managed projection
-       stays.
+  <!-- One ONNX Runtime in every Deckle process, and it is Windows ML's: Windows
+       App SDK 2.x ships it as the NuGet package Microsoft.Windows.AI.MachineLearning
+       (through Microsoft.WindowsAppSDK.ML). In self-contained mode (Deckle.App) its
+       natives are plain NuGet copy-local files, so Deckle.App ships exactly one
+       onnxruntime.dll per architecture and one DirectML.dll, and its managed
+       Microsoft.ML.OnnxRuntime assembly is what Deckle.Inference.Onnx compiles
+       against. Nothing strips them here any more: a pinned onnxruntime package
+       beside them is what used to make two builds compete (commit 80475a1c). -->
 
-       Same shape as the _SuppressWindowsMLNativeCopyLocal target that
-       Microsoft.WindowsAppSDK.ML ships for framework-dependent apps (the test
-       projects), which is skipped in self-contained mode and leaves the
-       RuntimeTargets items, hence the deps.json entries, in place. The only
-       Microsoft switch left that reaches it, WindowsAppSDKMLPassthroughOnnxRuntime,
-       is documented as incompatible with WindowsAppSDKSelfContained, so it is
-       not used. A no-op in projects that do not resolve the package.
-
-       Replaces the Windows App SDK 1.8 exclusion of the MSIX DirectML.dll, whose
-       hook (AddMicrosoftWindowsAppSDKPayloadFilesFromMsix) no longer exists. -->
   <!-- Shut the .NET build servers down five minutes after the last build.
        Directory.Build.rsp stops MSBuild worker nodes from outliving a build, but
        VBCSCompiler (the Roslyn compiler server) stays ten minutes by SDK default
@@ -69,16 +56,6 @@
           EchoOff="true"
           StandardOutputImportance="low"
           ContinueOnError="WarnAndContinue" />
-  </Target>
-
-  <Target Name="ExcludeWindowsMLNativeAssets"
-          AfterTargets="ResolveLockFileCopyLocalFiles"
-          BeforeTargets="_CopyFilesMarkedCopyLocal">
-    <ItemGroup>
-      <NativeCopyLocalItems Remove="@(NativeCopyLocalItems)" Condition="'%(NativeCopyLocalItems.NuGetPackageId)' == 'Microsoft.Windows.AI.MachineLearning'" />
-      <RuntimeTargetsCopyLocalItems Remove="@(RuntimeTargetsCopyLocalItems)" Condition="'%(RuntimeTargetsCopyLocalItems.NuGetPackageId)' == 'Microsoft.Windows.AI.MachineLearning' and '%(RuntimeTargetsCopyLocalItems.AssetType)' == 'native'" />
-      <ReferenceCopyLocalPaths Remove="@(ReferenceCopyLocalPaths)" Condition="'%(ReferenceCopyLocalPaths.NuGetPackageId)' == 'Microsoft.Windows.AI.MachineLearning' and '%(ReferenceCopyLocalPaths.AssetType)' == 'native'" />
-    </ItemGroup>
   </Target>
 
 </Project>

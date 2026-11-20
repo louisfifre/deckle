@@ -20,10 +20,6 @@
     <UseWinUI>true</UseWinUI>
     <WindowsPackageType>None</WindowsPackageType>
     <WindowsAppSDKSelfContained>true</WindowsAppSDKSelfContained>
-    <!-- Deckle owns ONNX Runtime and DirectML through Deckle.Inference.Onnx (the Silero VAD).
-         Windows App SDK ML is not used, so its automatic ONNX Runtime
-         initialization must not compete with the host's runtime. -->
-    <DisableWindowsAppSDKMLAutoInitialize>true</DisableWindowsAppSDKMLAutoInitialize>
     <!-- No <Version> here: the ReadVersionFromGit target below reads it from
          the version tag of the repository, so the tag, the changelog, the
          update check and the assembly can never disagree. -->
@@ -174,6 +170,7 @@
     <ProjectReference Include="..\Deckle.Speech\Deckle.Speech.csproj" />
     <ProjectReference Include="..\Deckle.Transcription\Deckle.Transcription.csproj" />
     <ProjectReference Include="..\Deckle.Transcription.Views\Deckle.Transcription.Views.csproj" />
+    <ProjectReference Include="..\Deckle.Transcription.Parakeet\Deckle.Transcription.Parakeet.csproj" />
     <ProjectReference Include="..\Deckle.Transcription.Whisper\Deckle.Transcription.Whisper.csproj" />
     <ProjectReference Include="..\Deckle.Vision\Deckle.Vision.csproj" />
   </ItemGroup>

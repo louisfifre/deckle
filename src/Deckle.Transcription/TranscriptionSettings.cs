@@ -78,6 +78,18 @@ public sealed class SpeechTrimSettings
 // prompt apply on every call.
 public sealed class EngineSettings
 {
+    // Which inference engine runs the dictation. Hidden for now (no Settings page
+    // offers it): Whisper stays the default until Parakeet has earned the place.
+    public AsrBackendKind Backend { get; set; } = AsrBackendKind.Whisper;
+
+    // Parakeet only: folder holding the model (vocab.txt, nemo128.onnx, fp32/, fp16/).
+    // Empty = "parakeet-tdt-0.6b-v3-ultra" inside the speech model directory.
+    public string ParakeetModelDirectory { get; set; } = "";
+
+    // Parakeet only: FP32 is the default because FP16 can cost fidelity on French
+    // speech; FP16 halves the memory the encoder takes.
+    public ParakeetEncoderPrecision ParakeetEncoder { get; set; } = ParakeetEncoderPrecision.Fp32;
+
     public string Model { get; set; } = "ggml-base.bin";
     public bool UseGpu { get; set; } = true;
     public string Language { get; set; } = "fr";
