@@ -1,0 +1,5 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <ItemGroup>
+    <ProjectReference Include="..\..\src\Deckle.Shell.WindowChrome\Deckle.Shell.WindowChrome.csproj" />
+  </ItemGroup>
+</Project>
