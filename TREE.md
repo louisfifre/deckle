@@ -632,6 +632,7 @@ _Generated from `git ls-files` — do not edit by hand._
 │   │   │   └── apply-update.ps1
 │   │   ├── SelfCheck/
 │   │   │   ├── ElementImage.cs
+│   │   │   ├── IconImage.cs
 │   │   │   ├── OffscreenWindow.cs
 │   │   │   ├── SelfCheckDataRootGate.cs
 │   │   │   ├── SelfCheckReport.cs
@@ -672,6 +673,7 @@ _Generated from `git ls-files` — do not edit by hand._
 │   │   ├── App.SelfCheck.Atelier.Sizes.cs
 │   │   ├── App.SelfCheck.cs
 │   │   ├── App.SelfCheck.Diagnostics.cs
+│   │   ├── App.SelfCheck.Icons.cs
 │   │   ├── App.SelfCheck.Projects.Category.cs
 │   │   ├── App.SelfCheck.Projects.cs
 │   │   ├── App.SelfCheck.Projects.Home.cs

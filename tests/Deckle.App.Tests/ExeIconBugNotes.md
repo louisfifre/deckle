@@ -8,4 +8,4 @@
 - Violated invariant: Deckle.exe carries the window icon at rest as its own resource; see the comment on `<ApplicationIcon>` in `src/Deckle.App/Deckle.App.csproj`.
 - Fix: `<ApplicationIcon>` on the window icon at rest, today `Assets\Icons\deckle--state--rest.ico` (first `deckle--state--rest--form--normal.ico`, before the mark kept one form). A shortcut or pin made before the fix may keep the generic icon from Windows' icon cache until it is re-pinned or the cache is refreshed.
 - Recurrence cue: Deckle.exe shows the generic icon in Explorer; the taskbar mark differs from the title bar mark.
-- Guard: `ExeIconTests.TheExeEmbedsTheWindowIconAtRest` checks the project declares the icon and the file exists. It does not read the built exe's resource.
+- Guard: `ExeIconTests.TheExeEmbedsTheWindowIconAtRest` checks the project declares the icon and the file exists. It does not read the built exe's resource: the self-check does, and each window's icon too, as `icons/<name>` images that fail the run when missing (`App.SelfCheck.Icons.cs`, `SelfCheckTests.Verdict_FailsAndNamesTheSourceWhenATaskbarIconIsMissing`). It sees what the taskbar is handed, not the button itself.
