@@ -3433,6 +3433,11 @@ _Generated from `git ls-files` — do not edit by hand._
 │   │   ├── WindowsAppSdkBootstrap.cs
 │   │   └── WindowsAppSdkModuleInitializer.cs
 │   ├── Deckle.Transcription.Parakeet.Tests/
+│   │   ├── Backend/
+│   │   │   ├── ParakeetBackendFakes.cs
+│   │   │   ├── ParakeetBackendObservabilityTests.cs
+│   │   │   ├── ParakeetBackendSystemTests.cs
+│   │   │   └── ParakeetBackendTests.cs
 │   │   ├── Chunking/
 │   │   │   └── LongAudioChunkerTests.cs
 │   │   ├── Decoding/
