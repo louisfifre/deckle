@@ -1393,7 +1393,14 @@ _Generated from `git ls-files` — do not edit by hand._
 │   │   └── ProximityRollupAggregator.cs
 │   ├── Deckle.Inference.Onnx/
 │   │   ├── Deckle.Inference.Onnx.csproj
-│   │   └── OnnxModelSession.cs
+│   │   ├── HalfConversion.cs
+│   │   ├── OnnxDeviceUnavailableException.cs
+│   │   ├── OnnxExecutionTarget.cs
+│   │   ├── OnnxModelSession.cs
+│   │   ├── OnnxSessionOptions.cs
+│   │   ├── OnnxTensorInfo.cs
+│   │   ├── OnnxTensorInput.cs
+│   │   └── OnnxTensorOutput.cs
 │   ├── Deckle.Input/
 │   │   ├── Injection/
 │   │   │   ├── MouseInjector.cs
@@ -2451,6 +2458,7 @@ _Generated from `git ls-files` — do not edit by hand._
 │   │   │   ├── TranscriptSnapshot.cs
 │   │   │   ├── Utterance.cs
 │   │   │   └── UtteranceProgress.cs
+│   │   ├── AsrBackendKind.cs
 │   │   ├── Deckle.Transcription.csproj
 │   │   ├── DeckleWhispSource.cs
 │   │   ├── DeckleWhispSource.Decode.cs
@@ -2471,6 +2479,32 @@ _Generated from `git ls-files` — do not edit by hand._
 │   │   ├── ITranscriptionEngineHost.cs
 │   │   ├── TranscriptionSettings.cs
 │   │   └── TranscriptionSettingsService.cs
+│   ├── Deckle.Transcription.Parakeet/
+│   │   ├── Chunking/
+│   │   │   ├── AudioChunk.cs
+│   │   │   └── LongAudioChunker.cs
+│   │   ├── Decoding/
+│   │   │   ├── ITdtJoint.cs
+│   │   │   ├── TdtGreedyDecoder.cs
+│   │   │   └── TdtToken.cs
+│   │   ├── Inference/
+│   │   │   ├── IParakeetEncoder.cs
+│   │   │   ├── OnnxParakeetEncoder.cs
+│   │   │   ├── OnnxParakeetModelLoader.cs
+│   │   │   ├── OnnxTdtJoint.cs
+│   │   │   └── ParakeetLoadedModel.cs
+│   │   ├── Segments/
+│   │   │   ├── DecodedToken.cs
+│   │   │   └── SegmentBuilder.cs
+│   │   ├── Tokenization/
+│   │   │   ├── ParakeetDetokenizer.cs
+│   │   │   └── ParakeetVocabulary.cs
+│   │   ├── Deckle.Transcription.Parakeet.csproj
+│   │   ├── DeckleParakeetSource.cs
+│   │   ├── ParakeetBackend.cs
+│   │   ├── ParakeetBackend.Model.cs
+│   │   ├── ParakeetBackend.Transcribe.cs
+│   │   └── ParakeetModelFiles.cs
 │   ├── Deckle.Transcription.Views/
 │   │   ├── Strings/
 │   │   │   └── en-US/
@@ -2995,6 +3029,11 @@ _Generated from `git ls-files` — do not edit by hand._
 │   │   ├── UtteranceCountdownCourseTests.cs
 │   │   ├── UtteranceCountdownGeometryTests.cs
 │   │   └── UtteranceCountdownStateTests.cs
+│   ├── Deckle.Inference.Onnx.Tests/
+│   │   ├── Deckle.Inference.Onnx.Tests.csproj
+│   │   ├── HalfConversionTests.cs
+│   │   ├── IdentityModelFile.cs
+│   │   └── OnnxModelSessionTests.cs
 │   ├── Deckle.Input.PrecisionScroll.Tests/
 │   │   ├── Fixtures/
 │   │   │   └── precision-scroll-baseline.json
@@ -3393,6 +3432,23 @@ _Generated from `git ls-files` — do not edit by hand._
 │   │   ├── TestEventListener.cs
 │   │   ├── WindowsAppSdkBootstrap.cs
 │   │   └── WindowsAppSdkModuleInitializer.cs
+│   ├── Deckle.Transcription.Parakeet.Tests/
+│   │   ├── Backend/
+│   │   │   ├── ParakeetBackendFakes.cs
+│   │   │   ├── ParakeetBackendObservabilityTests.cs
+│   │   │   ├── ParakeetBackendSystemTests.cs
+│   │   │   └── ParakeetBackendTests.cs
+│   │   ├── Chunking/
+│   │   │   └── LongAudioChunkerTests.cs
+│   │   ├── Decoding/
+│   │   │   └── TdtGreedyDecoderTests.cs
+│   │   ├── Segments/
+│   │   │   └── SegmentBuilderTests.cs
+│   │   ├── Tokenization/
+│   │   │   ├── ParakeetDetokenizerTests.cs
+│   │   │   └── ParakeetVocabularySystemTests.cs
+│   │   ├── Deckle.Transcription.Parakeet.Tests.csproj
+│   │   └── ParakeetModelFilesTests.cs
 │   ├── Deckle.Transcription.Tests/
 │   │   ├── CorpusRecordSkippedTests.cs
 │   │   ├── Deckle.Transcription.Tests.csproj

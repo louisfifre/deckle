@@ -1,0 +1,11 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <ItemGroup>
+    <!-- The xunit.v3 / MTP harness comes from tests\Directory.Build.props. -->
+    <ProjectReference Include="..\..\src\Deckle.Transcription.Parakeet\Deckle.Transcription.Parakeet.csproj" />
+  </ItemGroup>
+  <ItemGroup>
+    <Content Include="..\..\src\Deckle.App\Assets\Sounds\speech.wav"
+             Link="Assets\Sounds\speech.wav"
+             CopyToOutputDirectory="PreserveNewest" />
+  </ItemGroup>
+</Project>

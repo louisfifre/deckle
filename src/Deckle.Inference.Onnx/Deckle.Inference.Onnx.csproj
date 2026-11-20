@@ -13,4 +13,9 @@
     <PackageReference Include="Microsoft.WindowsAppSDK" />
     <PackageReference Include="Microsoft.Windows.SDK.BuildTools" />
   </ItemGroup>
+
+  <ItemGroup>
+    <InternalsVisibleTo Include="Deckle.Inference.Onnx.Tests" />
+  </ItemGroup>
 </Project>
+
