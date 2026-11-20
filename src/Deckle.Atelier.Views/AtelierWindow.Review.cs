@@ -43,7 +43,7 @@ public sealed partial class AtelierWindow
         await NavigateTo(Place.Enter(System.IO.Path.Combine(Place.Path, name)));
     }
 
-    public void SetPaneOpenForReview(bool open) => Nav.IsPaneOpen = open;
+    public void SetPaneOpenForReview(bool open) => _pane.SetOpen(open);
 
     // The address bar's text mode (12.12b), as Ctrl+L opens it.
     public void EditAddressForReview() => Address.EditAddress();

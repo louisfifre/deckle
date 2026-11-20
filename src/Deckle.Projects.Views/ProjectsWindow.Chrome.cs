@@ -59,7 +59,7 @@ public sealed partial class ProjectsWindow
         bool empty = _workspace.Store.HoldsNothing();
         AppTitleBar.IsPaneToggleButtonVisible = !empty;
         AppTitleBar.IsBackButtonVisible = _history.CanGoBack && _history.Current is not ProjectsTarget.Home;
-        // The pane has nothing to show on the empty screen.
-        if (empty && _paneOpen) SetPaneOpen(false);
+        // The pane has nothing to show on the empty screen: no rail either.
+        Nav.IsPaneVisible = !empty;
     }
 }

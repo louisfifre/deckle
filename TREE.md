@@ -441,6 +441,7 @@ _Generated from `git ls-files` — do not edit by hand._
 │   ├── atelier.md
 │   ├── deckle-dictation-rewriting.md
 │   ├── deckle-mail.md
+│   ├── deckle-navigation-pane.md
 │   ├── deckle-paste-to-folder.md
 │   ├── deckle-projects.md
 │   ├── deckle-transcribe-and-rewrite.md
@@ -2392,7 +2393,9 @@ _Generated from `git ls-files` — do not edit by hand._
 │   │   └── TrayWindowOwnership.cs
 │   ├── Deckle.Shell.WindowChrome/
 │   │   ├── CaptionInsetCorrection.cs
-│   │   └── Deckle.Shell.WindowChrome.csproj
+│   │   ├── Deckle.Shell.WindowChrome.csproj
+│   │   ├── NavigationPane.cs
+│   │   └── NavigationPaneState.cs
 │   ├── Deckle.Speech/
 │   │   ├── ChatterboxSpeechBackend.cs
 │   │   ├── Deckle.Speech.csproj
@@ -3372,6 +3375,9 @@ _Generated from `git ls-files` — do not edit by hand._
 │   │   ├── TrayMenuBugNotes.md
 │   │   ├── TrayMenuPlacementTests.cs
 │   │   └── TrayWindowOwnershipTests.cs
+│   ├── Deckle.Shell.WindowChrome.Tests/
+│   │   ├── Deckle.Shell.WindowChrome.Tests.csproj
+│   │   └── NavigationPaneStateTests.cs
 │   ├── Deckle.Speech.Tests/
 │   │   ├── Deckle.Speech.Tests.csproj
 │   │   ├── IsolatedDataRoot.cs

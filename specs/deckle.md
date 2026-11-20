@@ -28,3 +28,7 @@ Draft, not confirmed
 - Dictate from any application with one shortcut and get the text on the clipboard: no spec yet.
 - Ambient lighting, in progress: its goal is not written yet, and it has no spec.
 - The inventory of a home, kept in Anytype: its goal is not written yet, and it has no spec.
+
+What every window rests on:
+
+- Move between the places of any Deckle window through a navigation you keep open or closed as you choose: `deckle-navigation-pane.md`.

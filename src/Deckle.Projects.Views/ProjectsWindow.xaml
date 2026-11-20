@@ -8,7 +8,7 @@
          first one, opened when keyboard focus lands anywhere inside it. On the
          root that is a stray "F5" under the window whenever focus arrives by
          keyboard; the title bar's buttons carry their own tooltips. -->
-    <Grid x:Name="RootGrid" KeyboardAcceleratorPlacementMode="Hidden" SizeChanged="OnRootSizeChanged">
+    <Grid x:Name="RootGrid" KeyboardAcceleratorPlacementMode="Hidden">
         <Grid.RowDefinitions>
             <RowDefinition Height="Auto" />
             <RowDefinition Height="*" />
@@ -38,15 +38,13 @@
         </TitleBar>
 
         <!-- The pane: "All projects", each category as a node holding its
-             projects, then "Without a category" as a node (board H2). It is
-             closed when the window opens and opened by the hamburger only. Its
+             projects, then "Without a category" as a node (board H2). Its
              own toggle is hidden because the title bar's opens it. The
-             display mode is set in code (ProjectsWindow.Pane.cs): hidden when
-             closed, docked beside the page when open and the window is wide,
-             over the page when it is narrow. -->
+             display mode is set in code (NavigationPane, through
+             ProjectsWindow.Pane.cs): the rail or open beside the page, over
+             the page in a narrow window. -->
         <NavigationView x:Name="Nav"
                         Grid.Row="1"
-                        PaneDisplayMode="LeftMinimal"
                         IsPaneToggleButtonVisible="False"
                         IsBackButtonVisible="Collapsed"
                         IsSettingsVisible="False"
@@ -56,8 +54,7 @@
                         SelectionFollowsFocus="Disabled"
                         ItemInvoked="OnNavItemInvoked"
                         Expanding="OnNavExpanding"
-                        Collapsed="OnNavCollapsed"
-                        PaneClosed="OnPaneClosed">
+                        Collapsed="OnNavCollapsed">
             <!-- One ground for the whole window, as Windows 11 Settings and
                  PowerToys draw it: the page sits on the window's Mica beside
                  the pane, without the content layer NavigationView paints by

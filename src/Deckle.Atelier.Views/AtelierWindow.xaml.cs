@@ -24,6 +24,7 @@ namespace Deckle.Atelier.Views;
 public sealed partial class AtelierWindow : Window
 {
     private readonly nint _hwnd;
+    private readonly NavigationPane _pane;
 
     public AtelierWindow(string moduleDirectory)
     {
@@ -38,6 +39,10 @@ public sealed partial class AtelierWindow : Window
         Address.IconChosen += OnFolderIconChosen;
 
         BuildToolButtons();
+        // The rail the first time (spec, Window: the pane reduced to icons),
+        // then as the user left it (specs/deckle-navigation-pane.md). Attached
+        // before the items, which read whether the pane is open.
+        _pane = NavigationPane.Attach(Nav, windowKey: "atelier", openAtFirst: false);
         SyncFolderItems();
         // The icon provider's shell threads end with the window.
         Closed += (_, _) => _icons.Dispose();
@@ -110,5 +115,5 @@ public sealed partial class AtelierWindow : Window
         AutomationProperties.SetName(element, text);
     }
 
-    private void OnPaneToggleRequested(TitleBar sender, object args) => Nav.IsPaneOpen = !Nav.IsPaneOpen;
+    private void OnPaneToggleRequested(TitleBar sender, object args) => _pane.Toggle();
 }

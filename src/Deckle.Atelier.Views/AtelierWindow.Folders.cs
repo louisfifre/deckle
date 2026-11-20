@@ -242,7 +242,7 @@ public sealed partial class AtelierWindow
         if (args.InvokedItemContainer is NavigationViewItem { Tag: AddedFolder folder }
             && _folders.Find(folder.Path) is not null)
         {
-            Nav.IsPaneOpen = false;
+            _pane.CloseIfOverPage();
             _ = NavigateTo(FolderPlace.AtRoot(folder));
         }
     }
@@ -254,7 +254,7 @@ public sealed partial class AtelierWindow
         var picker = new Microsoft.Windows.Storage.Pickers.FolderPicker(AppWindow.Id);
         var picked = await picker.PickSingleFolderAsync();
         if (picked is null || string.IsNullOrEmpty(picked.Path)) return;
-        Nav.IsPaneOpen = false;
+        _pane.CloseIfOverPage();
         await AddAndOpen(picked.Path);
     }
 

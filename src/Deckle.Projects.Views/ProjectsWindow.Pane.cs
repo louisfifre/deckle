@@ -1,3 +1,4 @@
+using Deckle.Shell.WindowChrome;
 using Microsoft.UI.Xaml;
 using Microsoft.UI.Xaml.Controls;
 
@@ -7,24 +8,14 @@ namespace Deckle.Projects.Views;
 // its projects, then "Without a category" as a node. "All projects" shows Home,
 // a category shows its page, a project shows its page (spec, Window).
 //
-// Its shape. The spec draws two states and answers Open 4 with "never open by
-// itself": closed, nothing is visible (H1), and open, the pane is docked beside
-// the page in a wide window (H2). NavigationView's Left mode keeps a 48 DIP rail
-// when closed, which H1 does not have, and LeftMinimal shows nothing when closed
-// but opens over the page. So the display mode follows the state: LeftMinimal
-// while closed, Left (docked) when the person opens it in a window wide enough
-// to give the page its room, and LeftMinimal (over the page) when the window is
-// narrow. Only the hamburger opens it. The mode is chosen when the pane opens and
-// chosen again whenever the window is resized while it is open.
+// Its shape follows specs/deckle-navigation-pane.md through NavigationPane: the
+// rail or open beside the page as the user chose, over the page in a narrow
+// window. The window opens with the rail the first time (spec, Window); only the
+// hamburger opens it.
 public sealed partial class ProjectsWindow
 {
-    // The window width, in DIPs, from which an open pane is docked: below it the
-    // pane would leave the cards a single column, so it covers the page instead.
-    private const double DockedFromWidth = 1000;
-
-    private bool _paneOpen;
+    private NavigationPane _pane = null!;
     private bool _rebuildingPane;
-    private bool _switchingMode;
 
     // Nodes the person opened or closed, by key. A node absent from it is in its
     // default state: a category open, "Without a category" closed (board H2).
@@ -32,61 +23,9 @@ public sealed partial class ProjectsWindow
 
     private const string WithoutCategoryKey = "without-a-category";
 
-    private void OnPaneToggleRequested(TitleBar sender, object args) => SetPaneOpen(!_paneOpen);
+    private void AttachPane() => _pane = NavigationPane.Attach(Nav, windowKey: "projects", openAtFirst: false);
 
-    private void SetPaneOpen(bool open)
-    {
-        if (open == _paneOpen) return;
-        _paneOpen = open;
-
-        if (open)
-        {
-            Nav.PaneDisplayMode = OpenPaneMode();
-            Nav.IsPaneOpen = true;
-        }
-        else
-        {
-            Nav.IsPaneOpen = false;
-            Nav.PaneDisplayMode = NavigationViewPaneDisplayMode.LeftMinimal;
-        }
-    }
-
-    private NavigationViewPaneDisplayMode OpenPaneMode() =>
-        RootGrid.ActualWidth >= DockedFromWidth ? NavigationViewPaneDisplayMode.Left : NavigationViewPaneDisplayMode.LeftMinimal;
-
-    // The window was resized: an open pane follows the width, docked once the
-    // window is wide enough and over the page once it is not, instead of keeping
-    // the mode it opened in. A closed pane has no mode to follow.
-    private void OnRootSizeChanged(object sender, SizeChangedEventArgs args)
-    {
-        if (!_paneOpen) return;
-        NavigationViewPaneDisplayMode mode = OpenPaneMode();
-        if (Nav.PaneDisplayMode == mode) return;
-
-        // NavigationView may close its pane while it changes mode (a guard, not
-        // an observed fault: its documentation does not say). A change made here is not
-        // the person closing it, so PaneClosed is ignored during it and the pane
-        // is kept open afterwards.
-        _switchingMode = true;
-        try
-        {
-            Nav.PaneDisplayMode = mode;
-            if (!Nav.IsPaneOpen) Nav.IsPaneOpen = true;
-        }
-        finally
-        {
-            _switchingMode = false;
-        }
-    }
-
-    // A pane that covers the page closes when the person clicks elsewhere: the
-    // state follows, so the next press of the hamburger opens it again.
-    private void OnPaneClosed(NavigationView sender, object args)
-    {
-        if (_switchingMode) return;
-        _paneOpen = false;
-        Nav.PaneDisplayMode = NavigationViewPaneDisplayMode.LeftMinimal;
-    }
+    private void OnPaneToggleRequested(TitleBar sender, object args) => _pane.Toggle();
 
     // Draws the pane from the store. Items carry their place in Tag and the pane
     // hears one ItemInvoked for all of them: a handler on each item made the
@@ -183,7 +122,7 @@ public sealed partial class ProjectsWindow
         NavigateTo(target);
         // A pane that covers the page gets out of the way once a place is chosen;
         // a docked one stays, as Windows Settings' does.
-        if (Nav.PaneDisplayMode == NavigationViewPaneDisplayMode.LeftMinimal) SetPaneOpen(false);
+        _pane.CloseIfOverPage();
     }
 
     // Remembers which nodes the person opened or closed, so a redraw of the pane
