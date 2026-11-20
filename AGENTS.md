@@ -30,7 +30,7 @@ A context element that will come back into every later session (an `AGENTS.md`, 
 
 Personal data read from an Anytype space (Home) is runtime data. It is never compiled into code, never copied into a fixture, a documentation example or a log, and never sent to a remote model or service: only local inference and the Anytype backend's own sync process it.
 
-Speech models, ASR and TTS alike, run in BF16 or FP16. A 4-bit quantization serves a smoke test only, never a shipping candidate: on French speech it loses a fidelity the automatic metrics barely register.
+Speech models, ASR and TTS alike, run in BF16, FP16 or FP32. A 4-bit quantization serves a smoke test only, never a shipping candidate: on French speech it loses a fidelity the automatic metrics barely register.
 
 ## Bug notes and regression tests
 
