@@ -50,10 +50,8 @@ internal static class ForegroundNativeMethods
     // DWM extended frame bounds are the visual rect, without the invisible
     // shadow margins.
 
-    public const int QUNS_BUSY                    = 2;
-    public const int QUNS_RUNNING_D3D_FULL_SCREEN = 3;
-    public const int QUNS_PRESENTATION_MODE       = 4;
-
+    // The QUNS_* answers live in FullscreenNotificationState, with the rule
+    // that reads them.
     [DllImport("shell32.dll")]
     public static extern int SHQueryUserNotificationState(out int pquns);
 

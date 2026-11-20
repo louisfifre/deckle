@@ -2244,6 +2244,8 @@ _Generated from `git ls-files` — do not edit by hand._
 │   │   ├── UpdateDownloadPage.xaml.cs
 │   │   └── UpdatePredecessor.cs
 │   ├── Deckle.Shell/
+│   │   ├── Interop/
+│   │   │   └── ScreenSaverNativeMethods.cs
 │   │   ├── AutostartService.cs
 │   │   ├── CursorMovementSignal.cs
 │   │   ├── Deckle.Shell.csproj
@@ -2251,11 +2253,13 @@ _Generated from `git ls-files` — do not edit by hand._
 │   │   ├── DispatcherQueueExtensions.cs
 │   │   ├── ElevatedStartupService.cs
 │   │   ├── GlobalHotkeyBindings.cs
+│   │   ├── HotkeyDesktopPolicy.cs
 │   │   ├── HotkeyManager.cs
 │   │   ├── IconAssets.cs
 │   │   ├── MessageOnlyHost.cs
 │   │   ├── ResizeCoalescer.cs
 │   │   ├── ResizeGesture.cs
+│   │   ├── ScreenSaverHotkeyRelay.cs
 │   │   ├── SessionEndSignal.cs
 │   │   ├── SessionEndWatcher.cs
 │   │   ├── StartupService.cs
@@ -2269,7 +2273,8 @@ _Generated from `git ls-files` — do not edit by hand._
 │   │   ├── ForegroundState.cs
 │   │   ├── ForegroundWatcher.cs
 │   │   ├── ForegroundWatcher.Probe.cs
-│   │   └── FullscreenGeometry.cs
+│   │   ├── FullscreenGeometry.cs
+│   │   └── FullscreenNotificationState.cs
 │   ├── Deckle.Shell.Taskbar/
 │   │   ├── Interop/
 │   │   │   ├── DbgHelpNativeMethods.cs
@@ -3290,6 +3295,7 @@ _Generated from `git ls-files` — do not edit by hand._
 │   │   ├── Deckle.Shell.Foreground.Tests.csproj
 │   │   ├── ForegroundBugNotes.md
 │   │   ├── FullscreenGeometryTests.cs
+│   │   ├── FullscreenNotificationStateTests.cs
 │   │   ├── MessageTemplateDoctrineTests.cs
 │   │   └── MilestoneClosersTests.cs
 │   ├── Deckle.Shell.Taskbar.Tests/
@@ -3348,6 +3354,8 @@ _Generated from `git ls-files` — do not edit by hand._
 │   │   ├── Deckle.Shell.Tests.csproj
 │   │   ├── DispatcherQueueExtensionsTests.cs
 │   │   ├── GlobalHotkeyBindingsTests.cs
+│   │   ├── HotkeyBugNotes.md
+│   │   ├── HotkeyDesktopPolicyTests.cs
 │   │   ├── MessageTemplateDoctrineTests.cs
 │   │   ├── MilestoneClosersTests.cs
 │   │   ├── ResizeGestureTests.cs

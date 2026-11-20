@@ -45,14 +45,15 @@ public sealed partial class ForegroundWatcher
         };
     }
 
-    // Two stages: the shell's own notion of "busy fullscreen" first (cheap,
-    // catches D3D exclusive and presentation mode), then the geometric test —
-    // the window drawn, and its DWM visual bounds covering its whole monitor
-    // (catches borderless fullscreen and F11).
+    // Two stages: the shell's notification state first (cheap, catches D3D
+    // exclusive and presentation mode; FullscreenNotificationState says why
+    // QUNS_BUSY is not one of them), then the geometric test — the window
+    // drawn, and its DWM visual bounds covering its whole monitor (catches
+    // borderless fullscreen and F11).
     private static FullscreenStage FullscreenStageOf(IntPtr hwnd, IntPtr monitor, NativeMethods.RECT monitorRect)
     {
         if (SHQueryUserNotificationState(out int quns) == 0
-            && quns is QUNS_BUSY or QUNS_RUNNING_D3D_FULL_SCREEN or QUNS_PRESENTATION_MODE)
+            && FullscreenNotificationState.ReadsAsFullscreen(quns))
         {
             return FullscreenStage.NotificationState;
         }
