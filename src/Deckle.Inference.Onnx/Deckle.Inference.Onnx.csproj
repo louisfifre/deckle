@@ -9,4 +9,9 @@
          .Gpu package. -->
     <PackageReference Include="Microsoft.ML.OnnxRuntime.DirectML" />
   </ItemGroup>
+
+  <ItemGroup>
+    <InternalsVisibleTo Include="Deckle.Inference.Onnx.Tests" />
+  </ItemGroup>
 </Project>
+

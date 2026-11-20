@@ -1,4 +1,4 @@
-﻿
+
 Microsoft Visual Studio Solution File, Format Version 12.00
 # Visual Studio Version 17
 VisualStudioVersion = 17.0.31903.59
@@ -224,6 +224,8 @@ EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Deckle.Transcription.Parakeet", "src\Deckle.Transcription.Parakeet\Deckle.Transcription.Parakeet.csproj", "{C2781091-1716-4541-BDCB-78C3A6C86448}"
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Deckle.Transcription.Parakeet.Tests", "tests\Deckle.Transcription.Parakeet.Tests\Deckle.Transcription.Parakeet.Tests.csproj", "{DB0A1AD6-E84A-4641-96EB-1638F653AC89}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Deckle.Inference.Onnx.Tests", "tests\Deckle.Inference.Onnx.Tests\Deckle.Inference.Onnx.Tests.csproj", "{33D099FA-ABB3-4C9E-9231-B4E1AD27EA9F}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
@@ -1543,6 +1545,18 @@ Global
 		{DB0A1AD6-E84A-4641-96EB-1638F653AC89}.Release|x64.Build.0 = Release|x64
 		{DB0A1AD6-E84A-4641-96EB-1638F653AC89}.Release|x86.ActiveCfg = Release|x64
 		{DB0A1AD6-E84A-4641-96EB-1638F653AC89}.Release|x86.Build.0 = Release|x64
+		{33D099FA-ABB3-4C9E-9231-B4E1AD27EA9F}.Debug|Any CPU.ActiveCfg = Debug|x64
+		{33D099FA-ABB3-4C9E-9231-B4E1AD27EA9F}.Debug|Any CPU.Build.0 = Debug|x64
+		{33D099FA-ABB3-4C9E-9231-B4E1AD27EA9F}.Debug|x64.ActiveCfg = Debug|x64
+		{33D099FA-ABB3-4C9E-9231-B4E1AD27EA9F}.Debug|x64.Build.0 = Debug|x64
+		{33D099FA-ABB3-4C9E-9231-B4E1AD27EA9F}.Debug|x86.ActiveCfg = Debug|x64
+		{33D099FA-ABB3-4C9E-9231-B4E1AD27EA9F}.Debug|x86.Build.0 = Debug|x64
+		{33D099FA-ABB3-4C9E-9231-B4E1AD27EA9F}.Release|Any CPU.ActiveCfg = Release|x64
+		{33D099FA-ABB3-4C9E-9231-B4E1AD27EA9F}.Release|Any CPU.Build.0 = Release|x64
+		{33D099FA-ABB3-4C9E-9231-B4E1AD27EA9F}.Release|x64.ActiveCfg = Release|x64
+		{33D099FA-ABB3-4C9E-9231-B4E1AD27EA9F}.Release|x64.Build.0 = Release|x64
+		{33D099FA-ABB3-4C9E-9231-B4E1AD27EA9F}.Release|x86.ActiveCfg = Release|x64
+		{33D099FA-ABB3-4C9E-9231-B4E1AD27EA9F}.Release|x86.Build.0 = Release|x64
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
@@ -1657,5 +1671,6 @@ Global
 		{725471AB-D8EB-440F-8C96-D0176E9347D3} = {0AB3BF05-4346-4AA6-1389-037BE0695223}
 		{C2781091-1716-4541-BDCB-78C3A6C86448} = {827E0CD3-B72D-47B6-A68D-7590B98EB39B}
 		{DB0A1AD6-E84A-4641-96EB-1638F653AC89} = {0AB3BF05-4346-4AA6-1389-037BE0695223}
+		{33D099FA-ABB3-4C9E-9231-B4E1AD27EA9F} = {0AB3BF05-4346-4AA6-1389-037BE0695223}
 	EndGlobalSection
 EndGlobal
