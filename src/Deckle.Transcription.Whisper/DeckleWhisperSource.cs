@@ -60,6 +60,8 @@ public sealed class DeckleWhisperSource : DeckleEventSource
     public const int EvtNativeBackendsNone                  = 37;
     public const int EvtNativeRuntimeStaleRemoved           = 38;
     public const int EvtNativeRuntimeStaleRemoveFailed      = 39;
+    public const int EvtModelGpuMemoryShort                 = 40;
+    public const int EvtModelGpuMemoryChecked               = 41;
 
     // ── Native runtime identity ─────────────────────────────────────────
 
@@ -363,6 +365,34 @@ public sealed class DeckleWhisperSource : DeckleEventSource
     public void ModelDeviceUnknown(string reason)
     {
         if (IsEnabled()) WriteEvent(EvtModelDeviceUnknown, reason);
+    }
+
+    // The GPU was asked for, but the video memory DXGI grants this process
+    // cannot hold the model: Deckle loads it on the CPU rather than let
+    // whisper.cpp abort the process on a failed Vulkan allocation. Once per
+    // incident, closed by the next ModelOnGpu or ModelOnCpu.
+    [Event(EvtModelGpuMemoryShort,
+           Level = EventLevel.Warning,
+           Keywords = (EventKeywords)Keywords.Lifecycle,
+           Tags = ObservationTags.Milestone,
+           Message = "Not enough free video memory for the Whisper model, it runs on the CPU\nadapter={0} | available_mb={1} | required_mb={2}")]
+    public void ModelGpuMemoryShort(string adapter, long available_mb, long required_mb)
+    {
+        if (IsEnabled()) WriteEvent(EvtModelGpuMemoryShort, adapter, available_mb, required_mb);
+    }
+
+    // Every GPU load's preflight. outcome (closed vocabulary): fits | short |
+    // probe_unavailable; error says why the probe could not read, empty
+    // otherwise.
+    [Event(EvtModelGpuMemoryChecked,
+           Level = EventLevel.Verbose,
+           Keywords = (EventKeywords)Keywords.Lifecycle,
+           Message = "outcome={0} | adapter={1} | budget_mb={2} | usage_mb={3} | required_mb={4} | error={5}")]
+    public void ModelGpuMemoryChecked(
+        string outcome, string adapter, long budget_mb, long usage_mb, long required_mb, string error)
+    {
+        if (IsEnabled())
+            WriteEvent(EvtModelGpuMemoryChecked, outcome, adapter, budget_mb, usage_mb, required_mb, error);
     }
 
     // Every successful load, including those inside an open incident:

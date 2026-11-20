@@ -26,3 +26,12 @@
 - **Violated invariant:** A degradation a person must act on, here a GPU requested and not used, reaches the log without the Transcription detail switched on.
 - **Recurrence cue:** A fallback decided by whisper.cpp that only shows in a compacted Verbose line.
 - **Regression coverage:** `WhisperComputeDeviceObserverTests.GpuInitFailureWarnsOncePerIncidentUntilTheGpuAnswers` and `DeviceMilestoneReachesTheLogWhenTranscriptionDetailIsOff`.
+
+## A full GPU memory killed the whole process at model load
+
+- **Trigger:** A dictation that loads large-v3 on the GPU, after the idle unload, while another process holds most of the GPU's memory.
+- **Observed symptom:** On 2026-11-20 Deckle ended with `0xC0000409` in `ucrtbase.dll` 13 ms after `alloc_tensor_range: failed to allocate Vulkan0 buffer of size 1072015360`, and the supervisor relaunched it. The log has no `ModelInitFromFile` line: the process died inside the init call.
+- **Cause:** whisper.cpp 1.9.1 calls `abort()` when a Vulkan allocation fails during `whisper_init_from_file_with_params`, instead of returning a null context. Windows reports `abort()` as `0xC0000409` with fast-fail code 7 (the WER P9 field read `7`). Established from the WER record and the log. Which process held the GPU's memory is not established: an hour later the card had 18 GB free.
+- **Violated invariant:** A GPU load starts only when the video memory the OS grants the process can hold it. The `_ctx == IntPtr.Zero` branch of `WhisperBackend.Model.cs` is not a safety net for allocation failures; the trap is told at `GpuMemoryPreflight`.
+- **Recurrence cue:** A native init or allocation that can fail on GPU memory, called without a preflight; or a `0xC0000409` crash right after a whisper.cpp `failed to allocate` line.
+- **Regression coverage:** `GpuMemoryPreflightTests.LoadThatCannotFitInTheFreeVideoMemoryIsSentToTheCpu` pins the decision, and `WhisperComputeDeviceObserverTests.GpuMemoryShortageWarnsOncePerIncidentAsAFallbackNotAsTheAskedCpu` pins its Warning. Not covered: whether the DXGI budget shrinks under another process's pressure on this AMD driver, and an allocation that fails after a preflight that passed, since another app can take the memory in between. Only a separate process would hold against that.

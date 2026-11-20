@@ -81,6 +81,13 @@ public sealed partial class WhisperBackend
             // ggml enumerates the GPU, which has no place at app startup.
             NativeRuntimeLoader.EnsureBackendsLoaded(AppPaths.NativeDirectory);
 
+            // whisper.cpp aborts the process when a GPU allocation fails during
+            // init, so a GPU load that cannot fit goes to the CPU before it
+            // starts. Read at each load: what other apps hold changes between
+            // two loads.
+            GpuMemoryShortage? memoryShortage = gpuRequested ? CheckGpuMemory(modelPath) : null;
+            if (memoryShortage is not null) ctxParams.use_gpu = 0;
+
             _ctx = WhisperPInvoke.whisper_init_from_file_with_params(modelPath, ctxParams);
             sw.Stop();
             // The last init phase has no following line to flush it until the
@@ -102,7 +109,8 @@ public sealed partial class WhisperBackend
             }
 
             _loadFailureOpen = false;
-            _detectedBackend = s_computeDevice.ReportLoad(gpuRequested, logHookInstalled, sw.ElapsedMilliseconds);
+            _detectedBackend = s_computeDevice.ReportLoad(
+                gpuRequested, logHookInstalled, sw.ElapsedMilliseconds, memoryShortage);
             LogNativeSystemInfoOnce();
 
             return new ModelLoadResult(true, sw.ElapsedMilliseconds, _detectedBackend, null);
@@ -128,6 +136,37 @@ public sealed partial class WhisperBackend
             DeckleWhisperSource.Log.ModelLoadFailed(reason, modelName, device);
         }
         DeckleWhisperSource.Log.ModelLoadFailedDetail(reason, modelPath, elapsedMs, gpuRequested, failedDevice);
+    }
+
+    // Null when the GPU load may go ahead, including when the budget cannot be
+    // read: the check never blocks a GPU it cannot see.
+    private static GpuMemoryShortage? CheckGpuMemory(string modelPath)
+    {
+        long modelBytes;
+        try { modelBytes = new FileInfo(modelPath).Length; }
+        catch (Exception ex) when (ex is IOException or UnauthorizedAccessException)
+        {
+            DeckleWhisperSource.Log.ModelFileProbeFailed(modelPath, ex.GetType().Name, ex.Message);
+            return null;
+        }
+
+        long requiredMb = WhisperComputeDeviceObserver.ToMb(GpuMemoryPreflight.RequiredBytes(modelBytes));
+        VideoMemoryReading? reading = VideoMemoryProbe.TryRead(out string error);
+        if (reading is not { } r)
+        {
+            DeckleWhisperSource.Log.ModelGpuMemoryChecked("probe_unavailable", "", -1, -1, requiredMb, error);
+            return null;
+        }
+
+        GpuMemoryShortage? shortage = GpuMemoryPreflight.FindShortage(modelBytes, r);
+        DeckleWhisperSource.Log.ModelGpuMemoryChecked(
+            shortage is null ? "fits" : "short",
+            r.Adapter,
+            WhisperComputeDeviceObserver.ToMb(r.BudgetBytes),
+            WhisperComputeDeviceObserver.ToMb(r.UsageBytes),
+            requiredMb,
+            "");
+        return shortage;
     }
 
     // -1 when the size cannot be read: a log field must never fail the load

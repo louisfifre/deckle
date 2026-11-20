@@ -2492,6 +2492,7 @@ _Generated from `git ls-files` — do not edit by hand._
 │   │   └── WhisperSettingsModule.cs
 │   ├── Deckle.Transcription.Whisper/
 │   │   ├── Engine/
+│   │   │   ├── GpuMemoryPreflight.cs
 │   │   │   ├── WhisperContextParamsMapper.cs
 │   │   │   └── WhisperParamsMapper.cs
 │   │   ├── Pinvoke/
@@ -2504,7 +2505,8 @@ _Generated from `git ls-files` — do not edit by hand._
 │   │   │   ├── OnceOnSuccess.cs
 │   │   │   ├── PeImports.cs
 │   │   │   ├── SpeechModelResolver.cs
-│   │   │   └── SpeechModels.cs
+│   │   │   ├── SpeechModels.cs
+│   │   │   └── VideoMemoryProbe.cs
 │   │   ├── Deckle.Transcription.Whisper.csproj
 │   │   ├── DeckleWhisperSource.cs
 │   │   ├── KnownHallucinations.cs
@@ -3431,6 +3433,7 @@ _Generated from `git ls-files` — do not edit by hand._
 │   │   └── WhispModelLifecycleTests.cs
 │   ├── Deckle.Transcription.Whisper.Tests/
 │   │   ├── Deckle.Transcription.Whisper.Tests.csproj
+│   │   ├── GpuMemoryPreflightTests.cs
 │   │   ├── HallucinationBugNotes.md
 │   │   ├── KnownHallucinationsTests.cs
 │   │   ├── MessageTemplateDoctrineTests.cs
