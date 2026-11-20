@@ -2273,7 +2273,8 @@ _Generated from `git ls-files` — do not edit by hand._
 │   │   ├── ForegroundState.cs
 │   │   ├── ForegroundWatcher.cs
 │   │   ├── ForegroundWatcher.Probe.cs
-│   │   └── FullscreenGeometry.cs
+│   │   ├── FullscreenGeometry.cs
+│   │   └── FullscreenNotificationState.cs
 │   ├── Deckle.Shell.Taskbar/
 │   │   ├── Interop/
 │   │   │   ├── DbgHelpNativeMethods.cs
@@ -3294,6 +3295,7 @@ _Generated from `git ls-files` — do not edit by hand._
 │   │   ├── Deckle.Shell.Foreground.Tests.csproj
 │   │   ├── ForegroundBugNotes.md
 │   │   ├── FullscreenGeometryTests.cs
+│   │   ├── FullscreenNotificationStateTests.cs
 │   │   ├── MessageTemplateDoctrineTests.cs
 │   │   └── MilestoneClosersTests.cs
 │   ├── Deckle.Shell.Taskbar.Tests/
