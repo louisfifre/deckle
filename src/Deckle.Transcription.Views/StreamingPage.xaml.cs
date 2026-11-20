@@ -37,7 +37,6 @@ public sealed partial class StreamingPage : Page
         _switchComposer = new SettingsComposer(SwitchHost, ViewModel);
         _switchComposer.Compose(ViewModel.StreamingSwitch);
         Compose(SegmentationHost, ViewModel.SegmentationSettings);
-        Compose(SilenceGuardsHost, ViewModel.SilenceGuardSettings);
     }
 
     private void Compose(Panel host, IReadOnlyList<SettingDescriptor> settings)
@@ -53,11 +52,6 @@ public sealed partial class StreamingPage : Page
         base.OnNavigatedTo(e);
         ViewModel.Load();
 
-        // The guards' fold stays as the person left it: collapsed at first, the
-        // Toolkit's default, since its five values are the ones almost nobody
-        // moves and the cut curve is the page's first subject (2026-11-07
-        // review, changes 6 and 7). It used to be forced open on every visit,
-        // when Silero was the page's first subject.
         // Load() may raise no PropertyChanged on a clean profile, so no composer
         // DirtyChanged would fire — settle the gate off the freshly-loaded values.
         GateResetAll();
