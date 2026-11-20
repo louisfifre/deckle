@@ -2472,6 +2472,9 @@ _Generated from `git ls-files` — do not edit by hand._
 │   │   ├── TranscriptionSettings.cs
 │   │   └── TranscriptionSettingsService.cs
 │   ├── Deckle.Transcription.Parakeet/
+│   │   ├── Segments/
+│   │   │   ├── DecodedToken.cs
+│   │   │   └── SegmentBuilder.cs
 │   │   ├── Deckle.Transcription.Parakeet.csproj
 │   │   └── ParakeetModelFiles.cs
 │   ├── Deckle.Transcription.Views/
@@ -3397,6 +3400,8 @@ _Generated from `git ls-files` — do not edit by hand._
 │   │   ├── WindowsAppSdkBootstrap.cs
 │   │   └── WindowsAppSdkModuleInitializer.cs
 │   ├── Deckle.Transcription.Parakeet.Tests/
+│   │   ├── Segments/
+│   │   │   └── SegmentBuilderTests.cs
 │   │   ├── Deckle.Transcription.Parakeet.Tests.csproj
 │   │   └── ParakeetModelFilesTests.cs
 │   ├── Deckle.Transcription.Tests/
