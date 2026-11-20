@@ -3354,6 +3354,7 @@ _Generated from `git ls-files` — do not edit by hand._
 │   │   ├── Deckle.Shell.Tests.csproj
 │   │   ├── DispatcherQueueExtensionsTests.cs
 │   │   ├── GlobalHotkeyBindingsTests.cs
+│   │   ├── HotkeyBugNotes.md
 │   │   ├── HotkeyDesktopPolicyTests.cs
 │   │   ├── MessageTemplateDoctrineTests.cs
 │   │   ├── MilestoneClosersTests.cs
