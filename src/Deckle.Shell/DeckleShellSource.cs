@@ -73,6 +73,68 @@ public sealed class DeckleShellSource : DeckleEventSource
     public const int EvtSessionEndCancelled                = 60;
     public const int EvtSessionEndFlushFailed              = 61;
     public const int EvtTrayIconAddRefused                 = 62;
+    public const int EvtScreenSaverHotkeysFollowed         = 63;
+    public const int EvtScreenSaverHotkeysReturned         = 64;
+    public const int EvtScreenSaverHotkeysFailed           = 65;
+    public const int EvtScreenSaverDismissFailed           = 66;
+    public const int EvtInputDesktopSwitched               = 67;
+
+    // Every switch of the input desktop, as read when its event arrives;
+    // desktop is "" when it could not be read.
+    [Event(EvtInputDesktopSwitched,
+           Level = EventLevel.Verbose,
+           Keywords = (EventKeywords)Keywords.Capture,
+           Message = "desktop={0} | secure={1} | follow={2}")]
+    public void InputDesktopSwitched(string desktop, bool secure, bool follow)
+    {
+        if (IsEnabled()) WriteEvent(EvtInputDesktopSwitched, desktop, secure, follow);
+    }
+
+    // ── Hotkeys over the screen saver ───────────────────────────────────
+
+    // thread_id pairs it with ScreenSaverHotkeysReturned.
+    [Event(EvtScreenSaverHotkeysFollowed,
+           Level = EventLevel.Informational,
+           Keywords = (EventKeywords)Keywords.Capture,
+           Tags = ObservationTags.Milestone,
+           Message = "The screen saver started, so the hotkeys moved to its desktop")]
+    public void ScreenSaverHotkeysFollowed(int thread_id, int held, int failed)
+    {
+        if (IsEnabled()) WriteEvent(EvtScreenSaverHotkeysFollowed, thread_id, held, failed);
+    }
+
+    // reason (closed vocabulary): screen_saver_ended | rebind | dispose.
+    [Event(EvtScreenSaverHotkeysReturned,
+           Level = EventLevel.Informational,
+           Keywords = (EventKeywords)Keywords.Capture,
+           Tags = ObservationTags.Milestone,
+           Message = "The hotkeys came back to the main desktop")]
+    public void ScreenSaverHotkeysReturned(int thread_id, string reason)
+    {
+        if (IsEnabled()) WriteEvent(EvtScreenSaverHotkeysReturned, thread_id, reason);
+    }
+
+    // step (closed vocabulary): desktop_switch_hook | open_desktop |
+    // set_thread_desktop | create_window. The hotkeys stay on the main
+    // desktop and work everywhere but over the screen saver.
+    [Event(EvtScreenSaverHotkeysFailed,
+           Level = EventLevel.Warning,
+           Keywords = (EventKeywords)Keywords.Capture,
+           Message = "The hotkeys could not follow the screen saver, so they do nothing while it shows\nstep={0} | win32_error={1}")]
+    public void ScreenSaverHotkeysFailed(string step, int win32_error)
+    {
+        if (IsEnabled()) WriteEvent(EvtScreenSaverHotkeysFailed, step, win32_error);
+    }
+
+    // The hotkey still ran; the screen saver stays until the mouse moves.
+    [Event(EvtScreenSaverDismissFailed,
+           Level = EventLevel.Warning,
+           Keywords = (EventKeywords)Keywords.Capture,
+           Message = "A hotkey pressed over the screen saver ran but could not close it\nwin32_error={0}")]
+    public void ScreenSaverDismissFailed(int win32_error)
+    {
+        if (IsEnabled()) WriteEvent(EvtScreenSaverDismissFailed, win32_error);
+    }
 
     // ── Windows session end ─────────────────────────────────────────────
 
