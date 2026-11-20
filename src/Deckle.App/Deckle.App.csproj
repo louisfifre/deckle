@@ -6,6 +6,13 @@
          tooltip, the taskbar label and shell filters target that name. -->
     <AssemblyName>Deckle</AssemblyName>
     <ApplicationManifest>app.manifest</ApplicationManifest>
+    <!-- The mark embedded in Deckle.exe. AppWindow.SetIcon only dresses a
+         window once it exists; the taskbar group, a pinned button, the Start
+         shortcut (Deckle.Install points it at the exe's first icon) and
+         Explorer read the exe's own resource, and without one they show the
+         generic application icon. Same file as IconAssets.WindowIconFile at
+         rest. -->
+    <ApplicationIcon>Assets\Icons\deckle--state--rest--form--normal.ico</ApplicationIcon>
     <!-- Neutral language for the MRT/PRI resource resolver. Without it no
          fallback language is declared, which can leave x:Uid lookups empty when
          the system display language is not en-US. -->
