@@ -56,8 +56,8 @@ The screens are drawn in mockup v4; the wording is in the module's strings.
 
 ### The window
 
-1. The title bar reads "Deckle Projects" and carries a button that opens and closes a side pane.
-2. The window opens on Home each time, with the pane closed.
+1. The title bar reads "Deckle Projects" and carries a button that opens and closes a side pane. The pane follows `deckle-navigation-pane.md`: it never opens by itself.
+2. The window opens on Home each time. The first time, the pane is its rail; after that, it is as the user left it.
 3. Opened, the pane lists "All projects", then each category as a node holding its projects, then "Without a category" as a node. "All projects" shows Home, a category shows its page, a project shows its page.
 4. On a category page and on a project page, the title bar also carries a back button, which returns to the screen the user came from.
 5. There are no tabs, no presets and no charts.
@@ -66,7 +66,7 @@ The screens are drawn in mockup v4; the wording is in the module's strings.
 ### Home before any project
 
 1. The title "Projects", then, centred: "No projects yet", one sentence saying that a project is a folder the user adds and that Deckle reads its version, its scripts and what an agent reads there, and the main button "Add a project…".
-2. There is no pane button and no "New category".
+2. There is no pane, no pane button and no "New category".
 
 ### Home with projects
 
@@ -198,6 +198,5 @@ The screens are drawn in mockup v4; the wording is in the module's strings.
 1. **At which total does the context overflow?** "An agent always reads" shows a plain number. Options: A, no mark, the user judges the number; B, a figure the user gives, the same for every project, above which the readout says by how much. Built today: A. Depends on it: nothing else.
 2. **What happens to an action that closes Deckle itself?** Only for Deckle's own repository. Options: A, no special treatment, the terminal goes on and the result is not shown when Deckle opens again; B, Deckle remembers the run and shows its result when it opens again. Built today: A. Depends on it: whether a run must outlive Deckle, which weighs on how the process is started.
 3. **Is a project the same thing as an added folder of Deckle Folders?** The user said the two are linked without saying how. Options: A, two lists; B, one list, every project being an added folder. Built today: A. Depends on it: where "Add a project…" writes, and what "Remove from Deckle" does in Deckle Folders.
-4. **Does the pane open by itself in a wide window?** The user said: closed most of the time, visible when the window is large. Options: A, never by itself, only its button opens it; B, open by itself above a width and closed under it, as Windows Settings does. Built today: A. Depends on it: the width at which it opens; Home's grid then holds fewer cards across.
-5. **What does "Deckle Scripts … c'est Deckle Project" mean?** Read as: Deckle Projects drives the script menu the same way the terminal does. Options: A, that reading only, the deckle-scripts repository keeps its name; B, the repository and its menu are renamed too. Built today: A. Depends on it: the install line the "Copy the install command" link copies, and the words "script menu" on the page.
-6. **Where is the window opened from, and is "Deckle Projects" its name?** The name is a working name. Until answered: the window is opened the way Deckle Folders' window is. Depends on it: the window's place among Deckle's entries.
+4. **What does "Deckle Scripts … c'est Deckle Project" mean?** Read as: Deckle Projects drives the script menu the same way the terminal does. Options: A, that reading only, the deckle-scripts repository keeps its name; B, the repository and its menu are renamed too. Built today: A. Depends on it: the install line the "Copy the install command" link copies, and the words "script menu" on the page.
+5. **Where is the window opened from, and is "Deckle Projects" its name?** The name is a working name. Until answered: the window is opened the way Deckle Folders' window is. Depends on it: the window's place among Deckle's entries.

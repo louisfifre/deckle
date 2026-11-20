@@ -70,8 +70,8 @@ public sealed partial class MailWindow : Window, IMailShell
         presenter.PreferredMinimumHeight = (int)(400 * dpiScale);
         AppWindow.SetPresenter(presenter);
 
-        Nav.DisplayModeChanged += (_, _) => SyncNavigationPane();
-        Nav.Loaded += (_, _) => SyncNavigationPane();
+        // Open the first time (spec, Open 9: today open on Triage).
+        _pane = NavigationPane.Attach(Nav, windowKey: "mail");
         ComponentMotion.Still(ProblemsFlyout);
         ComponentMotion.Still(Nav);
 
@@ -179,7 +179,9 @@ public sealed partial class MailWindow : Window, IMailShell
 
     // ── Pane ─────────────────────────────────────────────────────────────────
 
-    private void OnTitleBarPaneToggleRequested(TitleBar sender, object args) => Nav.IsPaneOpen = !Nav.IsPaneOpen;
+    // Rail or open beside the page, as the user chose, or over the page in a
+    // narrow window (specs/deckle-navigation-pane.md).
+    private readonly NavigationPane _pane;
 
-    private void SyncNavigationPane() => Nav.IsPaneOpen = Nav.DisplayMode == NavigationViewDisplayMode.Expanded;
+    private void OnTitleBarPaneToggleRequested(TitleBar sender, object args) => _pane.Toggle();
 }
