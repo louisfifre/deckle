@@ -11,6 +11,15 @@ namespace Deckle.Transcription.Parakeet;
 /// <param name="Directory">Root of the model folder, the one that holds vocab.txt.</param>
 public sealed record ParakeetModelFiles(string Directory)
 {
+    /// <summary>Folder name the model takes inside the speech model directory when no folder is configured.</summary>
+    public const string DefaultFolderName = "parakeet-tdt-0.6b-v3-ultra";
+
+    /// <summary>The configured model folder, or the default one inside the speech model directory.</summary>
+    public static ParakeetModelFiles Resolve(string configuredDirectory, string modelsDirectory) =>
+        new(string.IsNullOrWhiteSpace(configuredDirectory)
+            ? Path.Combine(modelsDirectory, DefaultFolderName)
+            : configuredDirectory);
+
     /// <summary>Mel-spectrogram front end shared by every precision.</summary>
     public string Preprocessor => Path.Combine(Directory, "nemo128.onnx");
 

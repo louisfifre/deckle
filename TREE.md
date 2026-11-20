@@ -2487,6 +2487,12 @@ _Generated from `git ls-files` — do not edit by hand._
 │   │   │   ├── ITdtJoint.cs
 │   │   │   ├── TdtGreedyDecoder.cs
 │   │   │   └── TdtToken.cs
+│   │   ├── Inference/
+│   │   │   ├── IParakeetEncoder.cs
+│   │   │   ├── OnnxParakeetEncoder.cs
+│   │   │   ├── OnnxParakeetModelLoader.cs
+│   │   │   ├── OnnxTdtJoint.cs
+│   │   │   └── ParakeetLoadedModel.cs
 │   │   ├── Segments/
 │   │   │   ├── DecodedToken.cs
 │   │   │   └── SegmentBuilder.cs
@@ -2494,6 +2500,10 @@ _Generated from `git ls-files` — do not edit by hand._
 │   │   │   ├── ParakeetDetokenizer.cs
 │   │   │   └── ParakeetVocabulary.cs
 │   │   ├── Deckle.Transcription.Parakeet.csproj
+│   │   ├── DeckleParakeetSource.cs
+│   │   ├── ParakeetBackend.cs
+│   │   ├── ParakeetBackend.Model.cs
+│   │   ├── ParakeetBackend.Transcribe.cs
 │   │   └── ParakeetModelFiles.cs
 │   ├── Deckle.Transcription.Views/
 │   │   ├── Strings/

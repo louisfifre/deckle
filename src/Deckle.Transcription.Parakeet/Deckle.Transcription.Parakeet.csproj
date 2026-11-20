@@ -9,6 +9,7 @@
 
   <ItemGroup>
     <ProjectReference Include="..\Deckle.Transcription\Deckle.Transcription.csproj" />
+    <ProjectReference Include="..\Deckle.Diagnostics\Deckle.Diagnostics.csproj" />
     <ProjectReference Include="..\Deckle.Inference.Onnx\Deckle.Inference.Onnx.csproj" />
   </ItemGroup>
 </Project>
