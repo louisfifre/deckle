@@ -37,12 +37,13 @@
     <!-- Direct2D-backed drawing on a CompositionDrawingSurface (HUD rewriting stroke). -->
     <PackageVersion Include="Microsoft.Graphics.Win2D" Version="1.4.0" />
 
-    <!-- One process-wide ONNX Runtime binary for every Deckle consumer (today the
-         Silero VAD, through Deckle.Inference.Onnx). The DirectML build also
-         exposes the CPU EP, which the sessions use by default. Keeping a single
-         version here prevents two ABI-incompatible onnxruntime.dll files from
-         competing in the App output. -->
-    <PackageVersion Include="Microsoft.ML.OnnxRuntime.DirectML" Version="1.23.0" />
+    <!-- No ONNX Runtime package is pinned here. The process-wide ONNX Runtime is
+         Windows ML's, delivered by Microsoft.WindowsAppSDK above
+         (Microsoft.WindowsAppSDK.ML, then Microsoft.Windows.AI.MachineLearning):
+         one onnxruntime.dll, with the CPU and DirectML execution providers built
+         in. It follows the Windows App SDK version, so a runtime bump is the
+         WindowsAppSDK edit and nothing else. A second ONNX Runtime package would
+         put two ABI-incompatible onnxruntime.dll files in the App output. -->
 
     <!-- DPAPI (CurrentUser) seals data at rest: the secret vault (Deckle.Security),
          the dictation and take-audio recovery stores (Deckle.Transcription) and the

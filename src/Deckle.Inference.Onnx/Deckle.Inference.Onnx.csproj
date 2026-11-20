@@ -4,9 +4,13 @@
   </PropertyGroup>
 
   <ItemGroup>
-    <!-- The DirectML build although sessions here run on the CPU: ONNX Runtime
-         is one native DLL per process, and Deckle pins this one build. Never the
-         .Gpu package. -->
-    <PackageReference Include="Microsoft.ML.OnnxRuntime.DirectML" />
+    <!-- The ONNX Runtime is Windows ML's: Microsoft.WindowsAppSDK brings
+         Microsoft.Windows.AI.MachineLearning, whose managed Microsoft.ML.OnnxRuntime
+         assembly this module compiles against, and whose natives (onnxruntime.dll,
+         DirectML.dll) Deckle.App ships once. Referenced through the SDK metapackage,
+         not a pinned runtime package, so the runtime moves with the Windows App SDK
+         version in Directory.Packages.props. Not a WinUI library: UseWinUI stays off. -->
+    <PackageReference Include="Microsoft.WindowsAppSDK" />
+    <PackageReference Include="Microsoft.Windows.SDK.BuildTools" />
   </ItemGroup>
 </Project>
