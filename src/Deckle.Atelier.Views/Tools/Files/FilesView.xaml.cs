@@ -317,7 +317,7 @@ internal sealed partial class FilesView : UserControl, IAtelierToolView
                 _ = RecycleAsync(selected);
                 e.Handled = true;
                 break;
-            case VirtualKey.G when !modified && _photoTile is not null:
+            case VirtualKey.K when !modified && _photoTile is not null:
                 MarkPhoto(PhotoMark.Keep);
                 e.Handled = true;
                 break;
