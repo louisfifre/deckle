@@ -245,7 +245,7 @@ internal sealed partial class PhotosView : UserControl, IAtelierToolView
 
         switch (e.Key)
         {
-            case VirtualKey.G:
+            case VirtualKey.K:
                 MarkSelection(PhotoMark.Keep);
                 e.Handled = true;
                 break;

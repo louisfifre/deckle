@@ -9,8 +9,9 @@ internal static class AtelierText
 {
     private const string Library = "Deckle.Atelier.Views";
 
-    // The interface is French; sizes and dates follow it.
-    public static CultureInfo Culture { get; } = CultureInfo.GetCultureInfo("fr-FR");
+    // Sizes and dates follow the user's regional format, as Loc.Format does
+    // for the rest of Deckle and as File Explorer does.
+    public static CultureInfo Culture => CultureInfo.CurrentCulture;
 
     public static string Get(string key) => Loc.GetFrom(Library, key);
 
