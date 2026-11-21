@@ -633,12 +633,7 @@ _Generated from `git ls-files` — do not edit by hand._
 │   │   ├── Prod/
 │   │   │   └── apply-update.ps1
 │   │   ├── SelfCheck/
-│   │   │   ├── ElementImage.cs
-│   │   │   ├── IconImage.cs
-│   │   │   ├── OffscreenWindow.cs
-│   │   │   ├── SelfCheckDataRootGate.cs
-│   │   │   ├── SelfCheckReport.cs
-│   │   │   └── SelfCheckTarget.cs
+│   │   │   └── IconImage.cs
 │   │   ├── Strings/
 │   │   │   └── en-US/
 │   │   │       └── Resources.resw
@@ -717,7 +712,6 @@ _Generated from `git ls-files` — do not edit by hand._
 │   │   ├── LogWindow.xaml.cs
 │   │   ├── ProdUpdate.cs
 │   │   ├── Program.cs
-│   │   ├── SecondaryWindowPlacement.cs
 │   │   ├── TranscribeRewriteHistory.cs
 │   │   ├── TranscribeRewriteWindow.AutoSave.cs
 │   │   ├── TranscribeRewriteWindow.Capture.cs
@@ -1237,7 +1231,9 @@ _Generated from `git ls-files` — do not edit by hand._
 │   │   ├── Navigation/
 │   │   │   └── NavigationHistory.cs
 │   │   ├── Paths/
+│   │   │   ├── AppIdentity.cs
 │   │   │   ├── AppPaths.cs
+│   │   │   ├── AppRoots.cs
 │   │   │   ├── DefaultDataRoot.cs
 │   │   │   └── ModuleDirectoryName.cs
 │   │   ├── CorpusPaths.cs
@@ -1375,6 +1371,14 @@ _Generated from `git ls-files` — do not edit by hand._
 │   │   ├── HomeToolCatalog.cs
 │   │   ├── HomeTypedToolCatalog.cs
 │   │   └── OPERATIONS.md
+│   ├── Deckle.Hosting/
+│   │   ├── SelfCheck/
+│   │   │   ├── ElementImage.cs
+│   │   │   ├── OffscreenWindow.cs
+│   │   │   ├── SelfCheckDataRootGate.cs
+│   │   │   ├── SelfCheckReport.cs
+│   │   │   └── SelfCheckTarget.cs
+│   │   └── WindowPlacement.cs
 │   ├── Deckle.Hud/
 │   │   ├── Chrono/
 │   │   │   ├── GLOSSARY.md  — glossary-deckle-hud-chrono Chrono HUD element vocabulary. It names the face's eight elements and the accen…
@@ -2945,6 +2949,7 @@ _Generated from `git ls-files` — do not edit by hand._
 │   │   ├── DeckleContributionsSourceEventIdTests.cs
 │   │   └── MessageTemplateDoctrineTests.cs
 │   ├── Deckle.Core.Tests/
+│   │   ├── AppIdentityTests.cs
 │   │   ├── Deckle.Core.Tests.csproj
 │   │   ├── DpiTests.cs
 │   │   ├── FolderNameOrderTests.cs

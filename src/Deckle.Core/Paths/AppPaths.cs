@@ -21,6 +21,10 @@ namespace Deckle.Core;
 //   • native/       — whisper.dll, ggml*.dll and the C++ runtime (NativeRuntime)
 //   • modules/      — one folder per module (GetModuleDirectory)
 //
+// Another executable of the suite (AppIdentity) keeps all of this under
+// <suite root>\apps\<id> and its logs in <suite root>\diagnostics\<id>; the
+// published Deckle is the suite root itself, as ever.
+//
 // Default <UserDataRoot> = %LOCALAPPDATA%\<AppFolderName>\, the canonical
 // per-user data root on Windows (Settings Win11, PowerToys, every
 // first-party Microsoft desktop app). The DECKLE_DATA_ROOT env var
@@ -45,6 +49,10 @@ public static class AppPaths
     // folder's reset moves back to. DefaultDataRoot computes it, and the
     // installer reads that same source through InstallPaths.
     public static string DefaultUserDataRoot          { get; }
+    // The folder DECKLE_DATA_ROOT or the default names, shared by every app of
+    // the suite. For the published Deckle it is also UserDataRoot; another app
+    // (AppIdentity) has its own UserDataRoot below it.
+    public static string SuiteDataRoot                { get; }
     public static string UserDataRoot                 { get; }
     public static string SettingsFilePath             { get; }
     public static string SecretsFilePath              { get; }
@@ -88,7 +96,9 @@ public static class AppPaths
     static AppPaths()
     {
         DefaultUserDataRoot          = DefaultDataRoot.Resolve();
-        UserDataRoot                 = ResolveUserDataRoot();
+        SuiteDataRoot                = ResolveSuiteDataRoot();
+        AppRoots roots               = AppRoots.For(AppIdentity.Current, SuiteDataRoot);
+        UserDataRoot                 = roots.UserDataRoot;
         SettingsFilePath             = Path.Combine(UserDataRoot, "settings.json");
         SecretsFilePath              = Path.Combine(UserDataRoot, "secrets.dat");
         SettingsBackupDirectory      = Path.Combine(UserDataRoot, "backups");
@@ -96,7 +106,7 @@ public static class AppPaths
         DictationRecoveryFilePath    = Path.Combine(RecoveryDirectory, "dictation.dat");
         TakeAudioRecoveryFilePath    = Path.Combine(RecoveryDirectory, "take-audio.dat");
         TelemetryDirectory           = Path.Combine(UserDataRoot, "telemetry");
-        DiagnosticsDirectory         = Path.Combine(UserDataRoot, "diagnostics");
+        DiagnosticsDirectory         = roots.DiagnosticsDirectory;
         CrashDumpsDirectory          = Path.Combine(DiagnosticsDirectory, "dumps");
         ModelsDirectory            = Path.Combine(UserDataRoot, "models");
         NativeDirectory              = Path.Combine(UserDataRoot, "native");
@@ -116,7 +126,7 @@ public static class AppPaths
         Directory.CreateDirectory(DiagnosticsDirectory);
     }
 
-    private static string ResolveUserDataRoot()
+    private static string ResolveSuiteDataRoot()
     {
         string? overrideRoot = Environment.GetEnvironmentVariable(DataRootEnvVar);
         if (!string.IsNullOrWhiteSpace(overrideRoot))
