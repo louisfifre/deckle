@@ -82,6 +82,22 @@ try {
     $missingRequired = Invoke-ResourceInventory -RepoRoot $fixture -AllowlistPath $allowlist
     Assert-Equal 1 @($missingRequired.Missing).Count 'missing required key'
     Assert-Equal 'required allowlist' $missingRequired.Missing[0].Reference 'required key source'
+
+    # A separate app resolves its root keys against its own map, not the
+    # published Deckle's: a key only Deckle.App holds is missing for the app.
+    $mail = Join-Path $fixture 'src/Deckle.Mail.App'
+    New-Item -ItemType Directory -Force (Join-Path $mail 'Strings/en-US') | Out-Null
+    Set-Content (Join-Path $mail 'Deckle.Mail.App.csproj') '<Project />'
+    Set-Content (Join-Path $mail 'Window.cs') 'var title = Loc.Get("Mail_Title"); var other = Loc.Get("Shared_Title");'
+    Set-Content (Join-Path $mail 'Strings/en-US/Resources.resw') @'
+<root><data name="Mail_Title"><value>Mail</value></data></root>
+'@
+    $withApp = Invoke-ResourceInventory -RepoRoot $fixture -AllowlistPath $allowlist
+    $appMissing = @($withApp.Missing | Where-Object { $_.Reference -eq 'Loc root map' })
+    Assert-Equal 1 $appMissing.Count 'a separate app misses a key of the published map'
+    Assert-Equal 'Deckle.Mail.App' $appMissing[0].Assembly 'the app is named'
+    Assert-Equal 'Shared_Title' $appMissing[0].Key 'the key the app lacks'
+    Assert-Equal 0 @($withApp.PotentiallyUnused | Where-Object { $_.Key -eq 'Mail_Title' }).Count 'the app uses its own key'
 } finally {
     if (Test-Path -LiteralPath $fixture) { Remove-Item -LiteralPath $fixture -Recurse -Force }
 }

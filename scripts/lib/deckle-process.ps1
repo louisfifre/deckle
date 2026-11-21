@@ -8,11 +8,13 @@
 function Get-DeckleProcessInDirectory {
     [CmdletBinding()]
     param(
-        [Parameter(Mandatory = $true)][string]$Directory
+        [Parameter(Mandatory = $true)][string]$Directory,
+        # The executable's process name: Deckle, or DeckleMail / DeckleAtelier.
+        [string]$ProcessName = 'Deckle'
     )
 
     $root = [System.IO.Path]::GetFullPath($Directory).TrimEnd('\', '/') + [System.IO.Path]::DirectorySeparatorChar
-    return @(Get-Process -Name Deckle -ErrorAction SilentlyContinue | Where-Object {
+    return @(Get-Process -Name $ProcessName -ErrorAction SilentlyContinue | Where-Object {
         $path = try { $_.Path } catch { $null }
         $path -and $path.StartsWith($root, [System.StringComparison]::OrdinalIgnoreCase)
     })
@@ -22,17 +24,19 @@ function Stop-DeckleProcess {
     [CmdletBinding()]
     param(
         [scriptblock]$WriteEvent = { param([string]$Role, [string]$Message) Write-Host $Message },
+        # Stops the processes of this executable only: the apps of the suite run side by side.
+        [string]$ProcessName = 'Deckle',
         [int]$TimeoutSeconds = 10
     )
 
-    $runningDeckle = @(Get-Process -Name Deckle -ErrorAction SilentlyContinue)
+    $runningDeckle = @(Get-Process -Name $ProcessName -ErrorAction SilentlyContinue)
     if ($runningDeckle.Count -eq 0) {
-        & $WriteEvent 'Muted' 'No running Deckle.exe found'
+        & $WriteEvent 'Muted' "No running $ProcessName.exe found"
         return
     }
 
     foreach ($proc in $runningDeckle) {
-        & $WriteEvent 'Action' "Killing Deckle PID $($proc.Id)"
+        & $WriteEvent 'Action' "Killing $ProcessName PID $($proc.Id)"
         try {
             $proc | Stop-Process -Force -ErrorAction Stop
         } catch {
@@ -43,17 +47,17 @@ function Stop-DeckleProcess {
 
     $deadline = (Get-Date).AddSeconds($TimeoutSeconds)
     do {
-        $stillRunning = @(Get-Process -Name Deckle -ErrorAction SilentlyContinue)
+        $stillRunning = @(Get-Process -Name $ProcessName -ErrorAction SilentlyContinue)
         if ($stillRunning.Count -eq 0) { break }
         Start-Sleep -Milliseconds 100
     } while ((Get-Date) -lt $deadline)
 
     if ($stillRunning.Count -gt 0) {
         $pids = ($stillRunning | ForEach-Object { $_.Id }) -join ', '
-        throw "Deckle.exe did not exit within $TimeoutSeconds second(s): PID $pids"
+        throw "$ProcessName.exe did not exit within $TimeoutSeconds second(s): PID $pids"
     }
 
     $ids = @($runningDeckle | ForEach-Object { $_.Id })
     $stoppedPids = ($ids | ForEach-Object { $_ }) -join ', '
-    & $WriteEvent 'Success' "Stopped Deckle.exe (PID $stoppedPids)"
+    & $WriteEvent 'Success' "Stopped $ProcessName.exe (PID $stoppedPids)"
 }
