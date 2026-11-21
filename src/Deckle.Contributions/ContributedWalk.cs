@@ -34,6 +34,6 @@ public interface IContributionWalkContext
     // The view a targeted run asks for, or null for a full run.
     string? TargetView { get; }
 
-    // Announces the state the walk is about to reach ("atelier/files").
+    // Announces the state the walk is about to reach ("folders/files").
     void Step(string state);
 }

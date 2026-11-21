@@ -9,7 +9,7 @@ function Get-DeckleProcessInDirectory {
     [CmdletBinding()]
     param(
         [Parameter(Mandatory = $true)][string]$Directory,
-        # The executable's process name: Deckle, or DeckleMail / DeckleAtelier.
+        # The executable's process name: Deckle, or DeckleMail / DeckleFolders.
         [string]$ProcessName = 'Deckle'
     )
 

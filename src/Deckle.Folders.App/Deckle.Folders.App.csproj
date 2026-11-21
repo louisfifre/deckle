@@ -1,0 +1,95 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <OutputType>WinExe</OutputType>
+    <RootNamespace>Deckle.Folders.App</RootNamespace>
+    <!-- DeckleFolders.exe: Deckle.Folders is the engine library's assembly, and
+         Deckle.exe is the published Deckle. The name decides nothing else:
+         the identity (AppIdentity "folders") decides the data root, the log
+         folder and the resident mutex, so this app and the published Deckle
+         never share a file nor a lock. -->
+    <AssemblyName>DeckleFolders</AssemblyName>
+    <ApplicationManifest>app.manifest</ApplicationManifest>
+    <!-- The same mark as the published Deckle until the app has one of its own. -->
+    <ApplicationIcon>..\Deckle.App\Assets\Icons\deckle--state--rest.ico</ApplicationIcon>
+    <DefaultLanguage>en-US</DefaultLanguage>
+    <UseWinUI>true</UseWinUI>
+    <WindowsPackageType>None</WindowsPackageType>
+    <WindowsAppSDKSelfContained>true</WindowsAppSDKSelfContained>
+    <!-- Generates this app's .pri, as in Deckle.App: Loc and the compiled XAML
+         of the referenced views libraries resolve through it. -->
+    <EnableMsixTooling>true</EnableMsixTooling>
+    <!-- Program.cs owns Main: the app's identity is declared before AppPaths
+         or XAML touches anything. -->
+    <DefineConstants>$(DefineConstants);DISABLE_XAML_GENERATED_MAIN</DefineConstants>
+    <IncludeSourceRevisionInInformationalVersion>true</IncludeSourceRevisionInInformationalVersion>
+    <EnableSourceLink>true</EnableSourceLink>
+    <NoWarn>$(NoWarn);IDE1006</NoWarn>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <InternalsVisibleTo Include="Deckle.Folders.App.Tests" />
+  </ItemGroup>
+
+  <!-- The version of a build is the highest vX.Y.Z tag reachable from HEAD
+       (see ReadVersionFromGit in Deckle.App.csproj, which this target repeats:
+       the app shows the same number as the published Deckle). -->
+  <Target Name="ReadVersionFromGit" BeforeTargets="GetAssemblyVersion">
+    <Exec Command="git -C &quot;$(MSBuildProjectDirectory)&quot; tag --merged HEAD --list &quot;v[0-9]*&quot; --sort=-v:refname"
+          ConsoleToMSBuild="true"
+          EchoOff="true"
+          StandardOutputImportance="low"
+          IgnoreExitCode="true">
+      <Output TaskParameter="ConsoleOutput" ItemName="_DeckleVersionTag" />
+      <Output TaskParameter="ExitCode" PropertyName="_DeckleVersionGitExitCode" />
+    </Exec>
+    <Error Condition="'$(_DeckleVersionGitExitCode)' != '0'"
+           Text="git could not list the version tags of the repository (exit code $(_DeckleVersionGitExitCode)): Deckle reads its version from the vX.Y.Z tags, so it builds from a git checkout only." />
+    <PropertyGroup>
+      <_DeckleVersionTags>@(_DeckleVersionTag)</_DeckleVersionTags>
+      <Version Condition="'$(_DeckleVersionTags)' != ''">$(_DeckleVersionTags.Split(';')[0].Substring(1))</Version>
+    </PropertyGroup>
+    <Error Condition="'$(_DeckleVersionTags)' == ''"
+           Text="No version tag vX.Y.Z is reachable from HEAD. Record one with scripts/git/record-version.ps1 -Apply (or fetch the tags: git fetch --tags)." />
+  </Target>
+
+  <PropertyGroup Condition="'$(_IsPublishing)' == 'true'">
+    <SelfContained>true</SelfContained>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <PackageReference Include="Microsoft.WindowsAppSDK" />
+    <PackageReference Include="Microsoft.Windows.SDK.BuildTools" />
+    <PackageReference Include="CommunityToolkit.WinUI.Controls.SettingsControls" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\Deckle.Folders\Deckle.Folders.csproj" />
+    <ProjectReference Include="..\Deckle.Folders.Views\Deckle.Folders.Views.csproj" />
+    <ProjectReference Include="..\Deckle.Catalog\Deckle.Catalog.csproj" />
+    <!-- Catalog's compiled XAML dictionaries (icons, page header brushes): the
+         app references them, the views name them by URI. -->
+    <ProjectReference Include="..\Deckle.Catalog.Themes\Deckle.Catalog.Themes.csproj" />
+    <ProjectReference Include="..\Deckle.Contributions\Deckle.Contributions.csproj" />
+    <ProjectReference Include="..\Deckle.Core\Deckle.Core.csproj" />
+    <ProjectReference Include="..\Deckle.Diagnostics\Deckle.Diagnostics.csproj" />
+    <ProjectReference Include="..\Deckle.FolderMap\Deckle.FolderMap.csproj" />
+    <ProjectReference Include="..\Deckle.Hosting\Deckle.Hosting.csproj" />
+    <ProjectReference Include="..\Deckle.Llm\Deckle.Llm.csproj" />
+    <ProjectReference Include="..\Deckle.Llm.Rewrite\Deckle.Llm.Rewrite.csproj" />
+    <ProjectReference Include="..\Deckle.Localization\Deckle.Localization.csproj" />
+    <ProjectReference Include="..\Deckle.Modules\Deckle.Modules.csproj" />
+    <ProjectReference Include="..\Deckle.Vision\Deckle.Vision.csproj" />
+  </ItemGroup>
+
+  <!-- The mark the window and its title bar show (IconAssets reads
+       Assets\Icons beside the exe); the files stay in Deckle.App. -->
+  <ItemGroup>
+    <Content Include="..\Deckle.App\Assets\Icons\**\*" Link="Assets\Icons\%(RecursiveDir)%(Filename)%(Extension)">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </Content>
+  </ItemGroup>
+
+  <!-- AppNotificationManager is not used here, so the Insights resource DLL
+       that Deckle.App restores (ResolveWindowsAppRuntimeInsightsResource) is
+       not needed. -->
+</Project>

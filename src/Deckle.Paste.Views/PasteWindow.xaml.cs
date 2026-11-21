@@ -20,7 +20,7 @@ namespace Deckle.Paste.Views;
 //
 // Closing closes: the window holds no work that outlives it (a save runs for
 // milliseconds), so the host drops it on Closed and builds a fresh one on the
-// next open, as it does for the Atelier. The list goes with it.
+// next open, as it does for Deckle Folders. The list goes with it.
 public sealed partial class PasteWindow : Window
 {
     // Three or four rows show before the list scrolls, at any scale: sizes

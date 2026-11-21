@@ -1,0 +1,10 @@
+# Sizes bug notes
+
+## Refresh after a stopped analysis shows an older report instead of measuring
+
+- **Trigger:** In the sizes tool, an analysis of a place runs to the end, the person presses Refresh (F5), stops the new analysis with "Arrêter", then presses Refresh again. Found by reading `SizesView.Reusable` on 2026-11-15, in the branch `feat/folders-window`; not seen on screen, since no self-check state stopped an analysis before.
+- **Observed symptom:** Inferred from the code, not observed: the second Refresh measures nothing. The list jumps back to the report of the first analysis, with its rows and its time, as if it were the analysis just asked for. The same happens one folder down, where the report served is the parent's older one re-rooted.
+- **Cause:** Established by reading. `Reusable` told a Refresh from a return to the tool only through its first test, which looked at the report on screen and asked for a new scan when that report was complete. A stopped report is not complete, so the test fell through to the last complete report, `_measured.ForFolder(place)`, which answers for the place itself (`relative == "."`) and for its sub-folders.
+- **Violated invariant:** Refresh always measures (spec, Open 17: it re-runs the current tool). The rule now lives in `src/Deckle.Folders/Sizes/SizeReportReuse.cs`, which takes whether the show is a Refresh as an input and returns no report for one, whatever is on screen.
+- **Recurrence cue:** a Refresh that is instant on a large folder; a status line whose time does not move after Refresh; a reuse test that looks at the state of the report on screen to decide whether the person asked for the disk again.
+- **Regression coverage:** `SizeRefreshRegressionTests.RefreshOnAStoppedAnalysisMeasuresAgain` pins the rule. The view's own choice of `refresh` (same place, the view not unloaded since) is not unit-tested, since a XAML view cannot be built in the suite; the self-check's `sizes-refreshed` state stops an analysis, refreshes and fails unless the report shown is complete.

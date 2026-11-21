@@ -66,6 +66,6 @@ public partial class App
 
     // What Deckle Projects reaches in its neighbours. A hook left null makes its
     // button absent from the page: "Open in Deckle Folders" is absent here,
-    // since Deckle Folders is the separate app Deckle.Atelier.App.
+    // since Deckle Folders is the separate app Deckle.Folders.App.
     private static ProjectsHooks BuildProjectsHooks() => new();
 }

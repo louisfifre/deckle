@@ -191,7 +191,7 @@ public sealed class SelfCheckReport
 }
 
 // One window or one page of a paged window, as the run saw it.
-//   Window   the stable name: settings, log, mail, atelier, projects.
+//   Window   the stable name: settings, log, mail, folders, projects.
 //   Page     the page slug for a paged window, null otherwise.
 //   Loaded   the surface was on screen and loaded before the timeout.
 //   Ms       how long that took.

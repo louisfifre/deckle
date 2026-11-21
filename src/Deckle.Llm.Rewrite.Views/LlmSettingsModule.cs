@@ -16,8 +16,8 @@ public static class LlmSettingsModule
     // sets it; unset, the section takes streaming as on.
     public static Func<bool>? TranscriptionStreams { get; set; }
 
-    // The model that describes the Atelier's photos, read and written through
-    // the host (PhotoDescriptionModelSetting's header); unset when the Atelier
+    // The model that describes Deckle Folders' photos, read and written through
+    // the host (PhotoDescriptionModelSetting's header); unset when Deckle Folders
     // is not installed, and the page then has no photo section.
     public static PhotoDescriptionModelSetting? PhotoDescriptionModel { get; set; }
 

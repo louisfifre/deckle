@@ -118,7 +118,7 @@ function Invoke-ResourceInventory {
     $csFiles = @(Get-ChildItem -LiteralPath $src -Recurse -File -Filter '*.cs' | Where-Object { $_.FullName -notmatch '[\\/](bin|obj)[\\/]' } | Select-Object -Expand FullName)
     # Each executable resolves Loc.Get against its own map: the published Deckle
     # (Deckle.App, whatever is not listed here) and the separate apps beside it.
-    $appExecutables = @('Deckle.Mail.App', 'Deckle.Atelier.App')
+    $appExecutables = @('Deckle.Mail.App', 'Deckle.Folders.App')
     $sep = [System.IO.Path]::DirectorySeparatorChar
     $rootReferencesOf = @{ 'Deckle.App' = [System.Collections.Generic.HashSet[string]]::new([StringComparer]::Ordinal) }
     foreach ($name in $appExecutables) { $rootReferencesOf[$name] = [System.Collections.Generic.HashSet[string]]::new([StringComparer]::Ordinal) }

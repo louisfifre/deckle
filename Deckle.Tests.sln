@@ -179,15 +179,15 @@ Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Deckle.Mail.Hub", "src\Deck
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Deckle.Mail.Hub.Tests", "tests\Deckle.Mail.Hub.Tests\Deckle.Mail.Hub.Tests.csproj", "{26FEA3B7-B3D9-4848-8755-E4E281086CBA}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Deckle.Atelier", "src\Deckle.Atelier\Deckle.Atelier.csproj", "{A979CF07-7848-4E7B-AFC0-B9B4C1B41A6C}"
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Deckle.Folders", "src\Deckle.Folders\Deckle.Folders.csproj", "{A979CF07-7848-4E7B-AFC0-B9B4C1B41A6C}"
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Deckle.FolderMap", "src\Deckle.FolderMap\Deckle.FolderMap.csproj", "{652C32EE-0C28-44EB-BEE8-48A193791DF3}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Deckle.Atelier.Tests", "tests\Deckle.Atelier.Tests\Deckle.Atelier.Tests.csproj", "{ADCAC407-9037-4DAC-9CD5-576470F1C598}"
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Deckle.Folders.Tests", "tests\Deckle.Folders.Tests\Deckle.Folders.Tests.csproj", "{ADCAC407-9037-4DAC-9CD5-576470F1C598}"
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Deckle.FolderMap.Tests", "tests\Deckle.FolderMap.Tests\Deckle.FolderMap.Tests.csproj", "{422EF1D6-1F43-42F3-A873-0363323D1DF5}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Deckle.Atelier.Views", "src\Deckle.Atelier.Views\Deckle.Atelier.Views.csproj", "{73AF38B3-55D2-4A05-8415-6C7CE425CF0F}"
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Deckle.Folders.Views", "src\Deckle.Folders.Views\Deckle.Folders.Views.csproj", "{73AF38B3-55D2-4A05-8415-6C7CE425CF0F}"
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Deckle.Localization", "src\Deckle.Localization\Deckle.Localization.csproj", "{C5121BB3-B77F-4693-9D3B-EEA63C7C891B}"
 EndProject
@@ -239,9 +239,9 @@ Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Deckle.Mail.App", "src\Deck
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Deckle.Mail.App.Tests", "tests\Deckle.Mail.App.Tests\Deckle.Mail.App.Tests.csproj", "{742B02AE-5B90-46C3-9D3A-F83A869C4611}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Deckle.Atelier.App", "src\Deckle.Atelier.App\Deckle.Atelier.App.csproj", "{7C36270E-2429-4900-906F-FDBF1B8D0617}"
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Deckle.Folders.App", "src\Deckle.Folders.App\Deckle.Folders.App.csproj", "{7C36270E-2429-4900-906F-FDBF1B8D0617}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Deckle.Atelier.App.Tests", "tests\Deckle.Atelier.App.Tests\Deckle.Atelier.App.Tests.csproj", "{01A8C49B-511A-4D07-896C-9D4F0597CADD}"
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Deckle.Folders.App.Tests", "tests\Deckle.Folders.App.Tests\Deckle.Folders.App.Tests.csproj", "{01A8C49B-511A-4D07-896C-9D4F0597CADD}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution

@@ -6,7 +6,7 @@
     launch the fresh build. The build-only variant never stops the running
     instance: when it runs from this build's output directory the build is
     refused before compiling.
-    -App mail or atelier builds and starts DeckleMail.exe or DeckleAtelier.exe
+    -App mail or folders builds and starts DeckleMail.exe or DeckleFolders.exe
     instead: separate apps with their own resident mutex and data root, so the
     running Deckle is never stopped nor touched (only a previous instance of
     the same small app is replaced).
@@ -16,14 +16,14 @@
     action: Build & run |
     action: Build (no run) | -NoRun
     action: Build & run Mail | -App mail
-    action: Build & run Folders | -App atelier
+    action: Build & run Folders | -App folders
 #>
 
 [CmdletBinding()]
 param(
     # Which app of the suite: deckle (the published Deckle), mail (DeckleMail.exe)
-    # or atelier (DeckleAtelier.exe).
-    # deckle, mail or atelier; checked below, not a [ValidateSet]: the script's one
+    # or folders (DeckleFolders.exe).
+    # deckle, mail or folders; checked below, not a [ValidateSet]: the script's one
     # enumerated parameter is Configuration, which the launcher reads as its variant.
     [string]$App = 'deckle',
     # Build only. The running Deckle instance is never stopped; when it runs
@@ -48,7 +48,7 @@ param(
 )
 
 $ErrorActionPreference = 'Stop'
-if ($App -notin 'deckle', 'mail', 'atelier') { [Console]::Error.WriteLine("-App is deckle, mail or atelier, not '$App'."); exit 1 }
+if ($App -notin 'deckle', 'mail', 'folders') { [Console]::Error.WriteLine("-App is deckle, mail or folders, not '$App'."); exit 1 }
 $ScriptDir  = $PSScriptRoot                                  # scripts/
 $LibDir = Join-Path $ScriptDir 'lib'
 . (Join-Path $LibDir 'action-summary.ps1')
@@ -89,8 +89,8 @@ if ($Target) {
 
 Write-OutputText -Text "Repo: $RepoRoot" -Role Muted
 
-$AppProject  = @{ deckle = 'Deckle.App'; mail = 'Deckle.Mail.App'; atelier = 'Deckle.Atelier.App' }[$App]
-$ExeName     = @{ deckle = 'Deckle.exe'; mail = 'DeckleMail.exe'; atelier = 'DeckleAtelier.exe' }[$App]
+$AppProject  = @{ deckle = 'Deckle.App'; mail = 'Deckle.Mail.App'; folders = 'Deckle.Folders.App' }[$App]
+$ExeName     = @{ deckle = 'Deckle.exe'; mail = 'DeckleMail.exe'; folders = 'DeckleFolders.exe' }[$App]
 $ProcessName = [System.IO.Path]::GetFileNameWithoutExtension($ExeName)
 $ProjectDir = Join-Path $RepoRoot "src\$AppProject"
 $Csproj     = Join-Path $ProjectDir "$AppProject.csproj"

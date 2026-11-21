@@ -65,9 +65,9 @@
                 <llm:LlmModelsSection x:Name="ModelsSection"
                                       Visibility="Collapsed" />
 
-                <!-- The model that describes the Atelier's photos: not
+                <!-- The model that describes Deckle Folders' photos: not
                      rewriting, so not behind the switch; shown by code only
-                     when the Atelier is installed. -->
+                     when Deckle Folders is installed. -->
                 <llm:LlmPhotoDescriptionSection x:Name="PhotoDescriptionSection"
                                                 Visibility="Collapsed" />
 

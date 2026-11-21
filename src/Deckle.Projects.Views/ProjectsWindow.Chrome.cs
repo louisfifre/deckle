@@ -28,7 +28,7 @@ public sealed partial class ProjectsWindow
         SetTitleBar(AppTitleBar);
         // The standard height: the bar carries only the icon and the title, so
         // the caption buttons stay inside it and the page starts right under
-        // it. (The Atelier's bar is tall because it holds an address bar.)
+        // it. (Deckle Folders' bar is tall because it holds an address bar.)
         AppWindow.TitleBar.PreferredHeightOption = TitleBarHeightOption.Standard;
         CaptionInsetCorrection.Attach(AppTitleBar, AppWindow);
         // A window the person works in for a long time wears Mica.

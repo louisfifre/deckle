@@ -18,7 +18,7 @@ public sealed class DecklePasteSource : DeckleEventSource
     // IDs are public in the ETW manifest: never reuse one after deleting an
     // event, a consumer may still need it to decode a dump. Two [Event]
     // methods sharing an id silence the whole provider
-    // (tests/Deckle.Atelier.Tests/AtelierEventIdBugNotes.md).
+    // (tests/Deckle.Folders.Tests/FoldersEventIdBugNotes.md).
     public const int EvtPasteSaved          = 1;
     public const int EvtPasteSavedDetail    = 2;
     public const int EvtPasteSaveFailed     = 3;

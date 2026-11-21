@@ -142,7 +142,7 @@ _Generated from `git ls-files` — do not edit by hand._
 │   ├── proposals/
 │   │   └── diagnostics-rework.md
 │   ├── research/
-│   │   ├── atelier-boards/
+│   │   ├── folders-boards/
 │   │   │   ├── P12-01-fichiers.dc.html
 │   │   │   ├── P12-02-volet.dc.html
 │   │   │   ├── P12-03-personnaliser.dc.html
@@ -450,14 +450,14 @@ _Generated from `git ls-files` — do not edit by hand._
 │   ├── verify-branch-server.ps1
 │   └── verify-branch.ps1  — Verify a branch on win-serv Sends a committed branch to the verification machine, win-serv, which builds it…
 ├── specs/
-│   ├── atelier.md
 │   ├── deckle-dictation-rewriting.md
 │   ├── deckle-mail.md
 │   ├── deckle-navigation-pane.md
 │   ├── deckle-paste-to-folder.md
 │   ├── deckle-projects.md
 │   ├── deckle-transcribe-and-rewrite.md
-│   └── deckle.md
+│   ├── deckle.md
+│   └── folders.md
 ├── src/
 │   ├── Deckle.Anytype/
 │   │   ├── Api/
@@ -733,204 +733,6 @@ _Generated from `git ls-files` — do not edit by hand._
 │   │   ├── TranscribeRewriteWindow.xaml.cs
 │   │   ├── TrayDeveloperMenu.cs
 │   │   └── TrayIncidentLines.cs
-│   ├── Deckle.Atelier/
-│   │   ├── AddedFolders/
-│   │   │   ├── AddedFolder.cs
-│   │   │   ├── AddedFolderReach.cs
-│   │   │   ├── AddedFolderStore.cs
-│   │   │   ├── DeckleAtelierSource.AddedFolders.cs
-│   │   │   └── FolderIconRule.cs
-│   │   ├── Browsing/
-│   │   │   ├── AddressResolver.cs
-│   │   │   ├── DeckleAtelierSource.FileRecycling.cs
-│   │   │   ├── FolderListing.cs
-│   │   │   └── FolderPlace.cs
-│   │   ├── Formatting/
-│   │   │   ├── EntryFormat.cs
-│   │   │   └── SelectionSummary.cs
-│   │   ├── Icons/
-│   │   │   ├── DeckleAtelierSource.Previews.cs
-│   │   │   ├── FileContentPresence.cs
-│   │   │   ├── FileIconKey.cs
-│   │   │   ├── FileThumbnailProbe.cs
-│   │   │   ├── MemoryBoundedCache.cs
-│   │   │   ├── PdfFirstPageReader.cs
-│   │   │   ├── ShellImage.cs
-│   │   │   ├── ShellImageNativeMethods.cs
-│   │   │   ├── ShellImagePixels.cs
-│   │   │   ├── ShellImageReader.cs
-│   │   │   ├── ShellWorkQueue.cs
-│   │   │   └── TextPreviewReader.cs
-│   │   ├── Launching/
-│   │   │   ├── DeckleAtelierSource.Launching.cs
-│   │   │   ├── FileLauncher.cs
-│   │   │   └── ShellFileLauncher.cs
-│   │   ├── MapGraph/
-│   │   │   └── DeckleAtelierSource.MapGraph.cs
-│   │   ├── Photos/
-│   │   │   ├── CaptureData.cs
-│   │   │   ├── CaptureDataFormat.cs
-│   │   │   ├── CaptureDataReader.cs
-│   │   │   ├── Darktable.cs
-│   │   │   ├── DeckleAtelierSource.PhotoDescriptions.cs
-│   │   │   ├── DeckleAtelierSource.Photos.cs
-│   │   │   ├── FolderDataKey.cs
-│   │   │   ├── IPhotoDescriber.cs
-│   │   │   ├── MarksApplier.cs
-│   │   │   ├── PhotoDescriber.cs
-│   │   │   ├── PhotoDescription.cs
-│   │   │   ├── PhotoDescriptionModelChoice.cs
-│   │   │   ├── PhotoDescriptionPrompt.cs
-│   │   │   ├── PhotoDescriptionQueue.cs
-│   │   │   ├── PhotoDescriptionRun.cs
-│   │   │   ├── PhotoDescriptionStore.cs
-│   │   │   ├── PhotoFolder.cs
-│   │   │   ├── PhotoFormats.cs
-│   │   │   ├── PhotoMarkStore.cs
-│   │   │   ├── PhotoPictureReducer.cs
-│   │   │   ├── PhotoRenamer.cs
-│   │   │   ├── PhotoRenameRule.cs
-│   │   │   └── PhotoSidecars.cs
-│   │   ├── Recycling/
-│   │   │   ├── DeckleAtelierSource.Recycling.cs
-│   │   │   ├── RecycleBin.cs
-│   │   │   ├── ShellFileOperationInterop.cs
-│   │   │   └── ShellRecycleBin.cs
-│   │   ├── Sample/
-│   │   │   ├── MapSampleFolder.cs
-│   │   │   ├── SampleFolder.cs
-│   │   │   ├── SamplePdf.cs
-│   │   │   ├── SamplePhotos.cs
-│   │   │   └── SizesSample.cs
-│   │   ├── Search/
-│   │   │   ├── DeckleAtelierSource.Search.cs
-│   │   │   ├── ICommandPaletteProbe.cs
-│   │   │   ├── PackagedCommandPaletteProbe.cs
-│   │   │   ├── PowerToysInstallPage.cs
-│   │   │   └── SearchRouting.cs
-│   │   ├── Sizes/
-│   │   │   ├── FolderReader.cs
-│   │   │   ├── HeaviestFiles.cs
-│   │   │   ├── HeavyFile.cs
-│   │   │   ├── ScanCounters.cs
-│   │   │   ├── SizeAnalysisMoment.cs
-│   │   │   ├── SizeNode.cs
-│   │   │   ├── SizeProgress.cs
-│   │   │   ├── SizeReport.cs
-│   │   │   ├── SizeReportReuse.cs
-│   │   │   ├── SizeScan.cs
-│   │   │   ├── SizeScanGate.cs
-│   │   │   └── SizeScanOptions.cs
-│   │   ├── Deckle.Atelier.csproj
-│   │   └── DeckleAtelierSource.cs
-│   ├── Deckle.Atelier.App/
-│   │   ├── app.manifest
-│   │   ├── App.SelfCheck.cs
-│   │   ├── App.xaml
-│   │   ├── App.xaml.cs
-│   │   ├── AtelierContribution.cs
-│   │   ├── AtelierSelfCheck.AddedFolders.cs
-│   │   ├── AtelierSelfCheck.cs
-│   │   ├── AtelierSelfCheck.FileSelection.cs
-│   │   ├── AtelierSelfCheck.FolderIcons.cs
-│   │   ├── AtelierSelfCheck.Map.cs
-│   │   ├── AtelierSelfCheck.Photos.cs
-│   │   ├── AtelierSelfCheck.Previews.cs
-│   │   ├── AtelierSelfCheck.Search.cs
-│   │   ├── AtelierSelfCheck.Sizes.cs
-│   │   ├── AtelierWalkContext.cs
-│   │   ├── Composition.cs
-│   │   ├── Deckle.Atelier.App.csproj
-│   │   ├── DeckleAtelierAppSource.cs
-│   │   ├── LlmPhotoDescriptionModel.cs
-│   │   └── Program.cs
-│   ├── Deckle.Atelier.Views/
-│   │   ├── Address/
-│   │   │   ├── AddressBar.Icon.cs
-│   │   │   ├── AddressBar.SegmentWidth.cs
-│   │   │   ├── AddressBar.xaml
-│   │   │   ├── AddressBar.xaml.cs
-│   │   │   └── AddressCrumb.cs
-│   │   ├── Details/
-│   │   │   └── DetailsSheet.cs
-│   │   ├── Icons/
-│   │   │   ├── IFileIconProvider.cs
-│   │   │   └── ShellFileIconProvider.cs
-│   │   ├── Search/
-│   │   │   └── AtelierWindow.Search.cs
-│   │   ├── Strings/
-│   │   │   └── en-US/
-│   │   │       └── Resources.resw
-│   │   ├── Tools/
-│   │   │   ├── Files/
-│   │   │   │   ├── FileDetails.cs
-│   │   │   │   ├── FileRow.cs
-│   │   │   │   ├── FileRowActions.xaml
-│   │   │   │   ├── FileRowActions.xaml.cs
-│   │   │   │   ├── FilesReview.cs
-│   │   │   │   ├── FilesTool.cs
-│   │   │   │   ├── FilesView.Actions.cs
-│   │   │   │   ├── FilesView.Photo.cs
-│   │   │   │   ├── FilesView.Review.cs
-│   │   │   │   ├── FilesView.xaml
-│   │   │   │   ├── FilesView.xaml.cs
-│   │   │   │   ├── SelectionDetails.cs
-│   │   │   │   └── TrimmedNameToolTip.cs
-│   │   │   ├── Map/
-│   │   │   │   ├── IMapGraphDrawing.cs
-│   │   │   │   ├── MapColumnGraphDrawing.cs
-│   │   │   │   ├── MapDetails.cs
-│   │   │   │   ├── MapFilterPanel.cs
-│   │   │   │   ├── MapKindText.cs
-│   │   │   │   ├── MapLinkGraph.cs
-│   │   │   │   ├── MapPanelSection.cs
-│   │   │   │   ├── MapReview.cs
-│   │   │   │   ├── MapRow.cs
-│   │   │   │   ├── MapRowGroup.cs
-│   │   │   │   ├── MapTool.cs
-│   │   │   │   ├── MapView.LargeGraph.cs
-│   │   │   │   ├── MapView.xaml
-│   │   │   │   └── MapView.xaml.cs
-│   │   │   ├── Photos/
-│   │   │   │   ├── ApplySummary.cs
-│   │   │   │   ├── PhotoDescriptions.cs
-│   │   │   │   ├── PhotoDescriptionSection.cs
-│   │   │   │   ├── PhotoDetails.cs
-│   │   │   │   ├── PhotoGlyphs.cs
-│   │   │   │   ├── PhotoMarkQueue.cs
-│   │   │   │   ├── PhotosReview.cs
-│   │   │   │   ├── PhotosTool.cs
-│   │   │   │   ├── PhotosView.Apply.cs
-│   │   │   │   ├── PhotosView.Darktable.cs
-│   │   │   │   ├── PhotosView.Describe.cs
-│   │   │   │   ├── PhotosView.Large.cs
-│   │   │   │   ├── PhotosView.Review.cs
-│   │   │   │   ├── PhotosView.xaml
-│   │   │   │   ├── PhotosView.xaml.cs
-│   │   │   │   ├── PhotoText.cs
-│   │   │   │   └── PhotoTile.cs
-│   │   │   ├── Sizes/
-│   │   │   │   ├── SizeRow.cs
-│   │   │   │   ├── SizesPanel.xaml
-│   │   │   │   ├── SizesPanel.xaml.cs
-│   │   │   │   ├── SizesReview.cs
-│   │   │   │   ├── SizesTool.cs
-│   │   │   │   ├── SizesView.xaml
-│   │   │   │   └── SizesView.xaml.cs
-│   │   │   ├── AtelierToolCatalog.cs
-│   │   │   ├── IAtelierTool.cs
-│   │   │   └── ToolPlaceholderView.cs
-│   │   ├── AtelierGlyphs.cs
-│   │   ├── AtelierText.cs
-│   │   ├── AtelierWindow.External.cs
-│   │   ├── AtelierWindow.FolderIcon.cs
-│   │   ├── AtelierWindow.Folders.cs
-│   │   ├── AtelierWindow.Navigation.cs
-│   │   ├── AtelierWindow.Review.cs
-│   │   ├── AtelierWindow.Tools.cs
-│   │   ├── AtelierWindow.xaml
-│   │   ├── AtelierWindow.xaml.cs
-│   │   └── Deckle.Atelier.Views.csproj
 │   ├── Deckle.Audio/
 │   │   ├── Internal/
 │   │   │   ├── CaptureAnomalyEpisode.cs
@@ -1368,6 +1170,205 @@ _Generated from `git ls-files` — do not edit by hand._
 │   │   ├── MapSkip.cs
 │   │   ├── McpDeclarations.cs
 │   │   └── TokenEstimate.cs
+│   ├── Deckle.Folders/
+│   │   ├── AddedFolders/
+│   │   │   ├── AddedFolder.cs
+│   │   │   ├── AddedFolderReach.cs
+│   │   │   ├── AddedFolderStore.cs
+│   │   │   ├── DeckleFoldersSource.AddedFolders.cs
+│   │   │   └── FolderIconRule.cs
+│   │   ├── Browsing/
+│   │   │   ├── AddressResolver.cs
+│   │   │   ├── DeckleFoldersSource.FileRecycling.cs
+│   │   │   ├── FolderListing.cs
+│   │   │   └── FolderPlace.cs
+│   │   ├── Formatting/
+│   │   │   ├── EntryFormat.cs
+│   │   │   └── SelectionSummary.cs
+│   │   ├── Icons/
+│   │   │   ├── DeckleFoldersSource.Previews.cs
+│   │   │   ├── FileContentPresence.cs
+│   │   │   ├── FileIconKey.cs
+│   │   │   ├── FileThumbnailProbe.cs
+│   │   │   ├── MemoryBoundedCache.cs
+│   │   │   ├── PdfFirstPageReader.cs
+│   │   │   ├── ShellImage.cs
+│   │   │   ├── ShellImageNativeMethods.cs
+│   │   │   ├── ShellImagePixels.cs
+│   │   │   ├── ShellImageReader.cs
+│   │   │   ├── ShellWorkQueue.cs
+│   │   │   └── TextPreviewReader.cs
+│   │   ├── Launching/
+│   │   │   ├── DeckleFoldersSource.Launching.cs
+│   │   │   ├── FileLauncher.cs
+│   │   │   └── ShellFileLauncher.cs
+│   │   ├── MapGraph/
+│   │   │   └── DeckleFoldersSource.MapGraph.cs
+│   │   ├── Photos/
+│   │   │   ├── CaptureData.cs
+│   │   │   ├── CaptureDataFormat.cs
+│   │   │   ├── CaptureDataReader.cs
+│   │   │   ├── Darktable.cs
+│   │   │   ├── DeckleFoldersSource.PhotoDescriptions.cs
+│   │   │   ├── DeckleFoldersSource.Photos.cs
+│   │   │   ├── FolderDataKey.cs
+│   │   │   ├── IPhotoDescriber.cs
+│   │   │   ├── MarksApplier.cs
+│   │   │   ├── PhotoDescriber.cs
+│   │   │   ├── PhotoDescription.cs
+│   │   │   ├── PhotoDescriptionModelChoice.cs
+│   │   │   ├── PhotoDescriptionPrompt.cs
+│   │   │   ├── PhotoDescriptionQueue.cs
+│   │   │   ├── PhotoDescriptionRun.cs
+│   │   │   ├── PhotoDescriptionStore.cs
+│   │   │   ├── PhotoFolder.cs
+│   │   │   ├── PhotoFormats.cs
+│   │   │   ├── PhotoMarkStore.cs
+│   │   │   ├── PhotoPictureReducer.cs
+│   │   │   ├── PhotoRenamer.cs
+│   │   │   ├── PhotoRenameRule.cs
+│   │   │   └── PhotoSidecars.cs
+│   │   ├── Recycling/
+│   │   │   ├── DeckleFoldersSource.Recycling.cs
+│   │   │   ├── RecycleBin.cs
+│   │   │   ├── ShellFileOperationInterop.cs
+│   │   │   └── ShellRecycleBin.cs
+│   │   ├── Sample/
+│   │   │   ├── MapSampleFolder.cs
+│   │   │   ├── SampleFolder.cs
+│   │   │   ├── SamplePdf.cs
+│   │   │   ├── SamplePhotos.cs
+│   │   │   └── SizesSample.cs
+│   │   ├── Search/
+│   │   │   ├── DeckleFoldersSource.Search.cs
+│   │   │   ├── ICommandPaletteProbe.cs
+│   │   │   ├── PackagedCommandPaletteProbe.cs
+│   │   │   ├── PowerToysInstallPage.cs
+│   │   │   └── SearchRouting.cs
+│   │   ├── Sizes/
+│   │   │   ├── FolderReader.cs
+│   │   │   ├── HeaviestFiles.cs
+│   │   │   ├── HeavyFile.cs
+│   │   │   ├── ScanCounters.cs
+│   │   │   ├── SizeAnalysisMoment.cs
+│   │   │   ├── SizeNode.cs
+│   │   │   ├── SizeProgress.cs
+│   │   │   ├── SizeReport.cs
+│   │   │   ├── SizeReportReuse.cs
+│   │   │   ├── SizeScan.cs
+│   │   │   ├── SizeScanGate.cs
+│   │   │   └── SizeScanOptions.cs
+│   │   ├── Deckle.Folders.csproj
+│   │   └── DeckleFoldersSource.cs
+│   ├── Deckle.Folders.App/
+│   │   ├── app.manifest
+│   │   ├── App.SelfCheck.cs
+│   │   ├── App.xaml
+│   │   ├── App.xaml.cs
+│   │   ├── Composition.cs
+│   │   ├── Deckle.Folders.App.csproj
+│   │   ├── DeckleFoldersAppSource.cs
+│   │   ├── FoldersContribution.cs
+│   │   ├── FoldersDataMigration.cs
+│   │   ├── FoldersSelfCheck.AddedFolders.cs
+│   │   ├── FoldersSelfCheck.cs
+│   │   ├── FoldersSelfCheck.FileSelection.cs
+│   │   ├── FoldersSelfCheck.FolderIcons.cs
+│   │   ├── FoldersSelfCheck.Map.cs
+│   │   ├── FoldersSelfCheck.Photos.cs
+│   │   ├── FoldersSelfCheck.Previews.cs
+│   │   ├── FoldersSelfCheck.Search.cs
+│   │   ├── FoldersSelfCheck.Sizes.cs
+│   │   ├── FoldersWalkContext.cs
+│   │   ├── LlmPhotoDescriptionModel.cs
+│   │   └── Program.cs
+│   ├── Deckle.Folders.Views/
+│   │   ├── Address/
+│   │   │   ├── AddressBar.Icon.cs
+│   │   │   ├── AddressBar.SegmentWidth.cs
+│   │   │   ├── AddressBar.xaml
+│   │   │   ├── AddressBar.xaml.cs
+│   │   │   └── AddressCrumb.cs
+│   │   ├── Details/
+│   │   │   └── DetailsSheet.cs
+│   │   ├── Icons/
+│   │   │   ├── IFileIconProvider.cs
+│   │   │   └── ShellFileIconProvider.cs
+│   │   ├── Search/
+│   │   │   └── FoldersWindow.Search.cs
+│   │   ├── Strings/
+│   │   │   └── en-US/
+│   │   │       └── Resources.resw
+│   │   ├── Tools/
+│   │   │   ├── Files/
+│   │   │   │   ├── FileDetails.cs
+│   │   │   │   ├── FileRow.cs
+│   │   │   │   ├── FileRowActions.xaml
+│   │   │   │   ├── FileRowActions.xaml.cs
+│   │   │   │   ├── FilesReview.cs
+│   │   │   │   ├── FilesTool.cs
+│   │   │   │   ├── FilesView.Actions.cs
+│   │   │   │   ├── FilesView.Photo.cs
+│   │   │   │   ├── FilesView.Review.cs
+│   │   │   │   ├── FilesView.xaml
+│   │   │   │   ├── FilesView.xaml.cs
+│   │   │   │   ├── SelectionDetails.cs
+│   │   │   │   └── TrimmedNameToolTip.cs
+│   │   │   ├── Map/
+│   │   │   │   ├── IMapGraphDrawing.cs
+│   │   │   │   ├── MapColumnGraphDrawing.cs
+│   │   │   │   ├── MapDetails.cs
+│   │   │   │   ├── MapFilterPanel.cs
+│   │   │   │   ├── MapKindText.cs
+│   │   │   │   ├── MapLinkGraph.cs
+│   │   │   │   ├── MapPanelSection.cs
+│   │   │   │   ├── MapReview.cs
+│   │   │   │   ├── MapRow.cs
+│   │   │   │   ├── MapRowGroup.cs
+│   │   │   │   ├── MapTool.cs
+│   │   │   │   ├── MapView.LargeGraph.cs
+│   │   │   │   ├── MapView.xaml
+│   │   │   │   └── MapView.xaml.cs
+│   │   │   ├── Photos/
+│   │   │   │   ├── ApplySummary.cs
+│   │   │   │   ├── PhotoDescriptions.cs
+│   │   │   │   ├── PhotoDescriptionSection.cs
+│   │   │   │   ├── PhotoDetails.cs
+│   │   │   │   ├── PhotoGlyphs.cs
+│   │   │   │   ├── PhotoMarkQueue.cs
+│   │   │   │   ├── PhotosReview.cs
+│   │   │   │   ├── PhotosTool.cs
+│   │   │   │   ├── PhotosView.Apply.cs
+│   │   │   │   ├── PhotosView.Darktable.cs
+│   │   │   │   ├── PhotosView.Describe.cs
+│   │   │   │   ├── PhotosView.Large.cs
+│   │   │   │   ├── PhotosView.Review.cs
+│   │   │   │   ├── PhotosView.xaml
+│   │   │   │   ├── PhotosView.xaml.cs
+│   │   │   │   ├── PhotoText.cs
+│   │   │   │   └── PhotoTile.cs
+│   │   │   ├── Sizes/
+│   │   │   │   ├── SizeRow.cs
+│   │   │   │   ├── SizesPanel.xaml
+│   │   │   │   ├── SizesPanel.xaml.cs
+│   │   │   │   ├── SizesReview.cs
+│   │   │   │   ├── SizesTool.cs
+│   │   │   │   ├── SizesView.xaml
+│   │   │   │   └── SizesView.xaml.cs
+│   │   │   ├── FoldersToolCatalog.cs
+│   │   │   ├── IFoldersTool.cs
+│   │   │   └── ToolPlaceholderView.cs
+│   │   ├── Deckle.Folders.Views.csproj
+│   │   ├── FoldersGlyphs.cs
+│   │   ├── FoldersText.cs
+│   │   ├── FoldersWindow.External.cs
+│   │   ├── FoldersWindow.FolderIcon.cs
+│   │   ├── FoldersWindow.Folders.cs
+│   │   ├── FoldersWindow.Navigation.cs
+│   │   ├── FoldersWindow.Review.cs
+│   │   ├── FoldersWindow.Tools.cs
+│   │   ├── FoldersWindow.xaml
+│   │   └── FoldersWindow.xaml.cs
 │   ├── Deckle.Home/
 │   │   ├── Schema/
 │   │   │   ├── README.md
@@ -2795,71 +2796,6 @@ _Generated from `git ls-files` — do not edit by hand._
 │   │   ├── TrayDeveloperMenuTests.cs
 │   │   ├── TrayIncidentLinesTests.cs
 │   │   └── WindowOpenedEventTests.cs
-│   ├── Deckle.Atelier.App.Tests/
-│   │   ├── AtelierAppIdentityTests.cs
-│   │   ├── Deckle.Atelier.App.Tests.csproj
-│   │   ├── DeckleAtelierAppSourceTests.cs
-│   │   └── LlmPhotoDescriptionModelTests.cs
-│   ├── Deckle.Atelier.Tests/
-│   │   ├── Icons/
-│   │   │   ├── FileIconKeyTests.cs
-│   │   │   ├── MemoryBoundedCacheTests.cs
-│   │   │   ├── PdfFirstPageReaderTests.cs
-│   │   │   ├── ShellImageReaderSystemTests.cs
-│   │   │   ├── ShellPixelRulesTests.cs
-│   │   │   ├── ShellWorkQueueTests.cs
-│   │   │   └── TextPreviewReaderTests.cs
-│   │   ├── Launching/
-│   │   │   └── ShellFileLauncherTests.cs
-│   │   ├── Photos/
-│   │   │   ├── CaptureDataTests.cs
-│   │   │   ├── DarktableTests.cs
-│   │   │   ├── ExifSample.cs
-│   │   │   ├── MarksApplierTests.cs
-│   │   │   ├── PhotoDescriberTests.cs
-│   │   │   ├── PhotoDescriptionEventsTests.cs
-│   │   │   ├── PhotoDescriptionQueueTests.cs
-│   │   │   ├── PhotoDescriptionStoreTests.cs
-│   │   │   ├── PhotoFolderTests.cs
-│   │   │   ├── PhotoMarkStoreTests.cs
-│   │   │   ├── PhotoPictureReducerTests.cs
-│   │   │   ├── PhotoRenamerTests.cs
-│   │   │   ├── PhotosEventsTests.cs
-│   │   │   ├── RawReadingMaintenanceTests.cs
-│   │   │   └── SamplePhotosTests.cs
-│   │   ├── Recycling/
-│   │   │   ├── RecycleOutcomeTests.cs
-│   │   │   └── ShellRecycleBinTests.cs
-│   │   ├── Search/
-│   │   │   ├── PackagedCommandPaletteProbeTests.cs
-│   │   │   └── SearchRoutingTests.cs
-│   │   ├── AddedFolderStoreTests.cs
-│   │   ├── AddressResolverTests.cs
-│   │   ├── AtelierEventIdBugNotes.md
-│   │   ├── Deckle.Atelier.Tests.csproj
-│   │   ├── DeckleAtelierSourceEventIdTests.cs
-│   │   ├── DeckleAtelierSourceTests.cs
-│   │   ├── DenyListing.cs
-│   │   ├── EntryFormatTests.cs
-│   │   ├── FolderIconRuleTests.cs
-│   │   ├── FolderListingBugNotes.md
-│   │   ├── FolderListingTests.cs
-│   │   ├── FolderPaneBugNotes.md
-│   │   ├── HeaviestFilesTests.cs
-│   │   ├── MapSampleFolderTests.cs
-│   │   ├── MessageTemplateDoctrineTests.cs
-│   │   ├── PathRulesTests.cs
-│   │   ├── ScratchFolder.cs
-│   │   ├── SelectionSummaryTests.cs
-│   │   ├── SizeAnalysisMomentTests.cs
-│   │   ├── SizeReportReuseTests.cs
-│   │   ├── SizesBugNotes.md
-│   │   ├── SizeScanEventsTests.cs
-│   │   ├── SizeScanGateTests.cs
-│   │   ├── SizeScanTests.cs
-│   │   ├── SizesSampleTests.cs
-│   │   ├── WindowShortcutBugNotes.md
-│   │   └── WindowShortcutTooltipTests.cs
 │   ├── Deckle.Audio.Tests/
 │   │   ├── AudioPathRedactionTests.cs
 │   │   ├── AudioRecordingHostDefaultsTests.cs
@@ -3074,6 +3010,72 @@ _Generated from `git ls-files` — do not edit by hand._
 │   │   ├── MapTextTests.cs
 │   │   ├── MessageTemplateDoctrineTests.cs
 │   │   └── ScratchFolder.cs
+│   ├── Deckle.Folders.App.Tests/
+│   │   ├── Deckle.Folders.App.Tests.csproj
+│   │   ├── DeckleFoldersAppSourceTests.cs
+│   │   ├── FoldersAppIdentityTests.cs
+│   │   ├── FoldersDataMigrationTests.cs
+│   │   └── LlmPhotoDescriptionModelTests.cs
+│   ├── Deckle.Folders.Tests/
+│   │   ├── Icons/
+│   │   │   ├── FileIconKeyTests.cs
+│   │   │   ├── MemoryBoundedCacheTests.cs
+│   │   │   ├── PdfFirstPageReaderTests.cs
+│   │   │   ├── ShellImageReaderSystemTests.cs
+│   │   │   ├── ShellPixelRulesTests.cs
+│   │   │   ├── ShellWorkQueueTests.cs
+│   │   │   └── TextPreviewReaderTests.cs
+│   │   ├── Launching/
+│   │   │   └── ShellFileLauncherTests.cs
+│   │   ├── Photos/
+│   │   │   ├── CaptureDataTests.cs
+│   │   │   ├── DarktableTests.cs
+│   │   │   ├── ExifSample.cs
+│   │   │   ├── MarksApplierTests.cs
+│   │   │   ├── PhotoDescriberTests.cs
+│   │   │   ├── PhotoDescriptionEventsTests.cs
+│   │   │   ├── PhotoDescriptionQueueTests.cs
+│   │   │   ├── PhotoDescriptionStoreTests.cs
+│   │   │   ├── PhotoFolderTests.cs
+│   │   │   ├── PhotoMarkStoreTests.cs
+│   │   │   ├── PhotoPictureReducerTests.cs
+│   │   │   ├── PhotoRenamerTests.cs
+│   │   │   ├── PhotosEventsTests.cs
+│   │   │   ├── RawReadingMaintenanceTests.cs
+│   │   │   └── SamplePhotosTests.cs
+│   │   ├── Recycling/
+│   │   │   ├── RecycleOutcomeTests.cs
+│   │   │   └── ShellRecycleBinTests.cs
+│   │   ├── Search/
+│   │   │   ├── PackagedCommandPaletteProbeTests.cs
+│   │   │   └── SearchRoutingTests.cs
+│   │   ├── AddedFolderStoreTests.cs
+│   │   ├── AddressResolverTests.cs
+│   │   ├── Deckle.Folders.Tests.csproj
+│   │   ├── DeckleFoldersSourceEventIdTests.cs
+│   │   ├── DeckleFoldersSourceTests.cs
+│   │   ├── DenyListing.cs
+│   │   ├── EntryFormatTests.cs
+│   │   ├── FolderIconRuleTests.cs
+│   │   ├── FolderListingBugNotes.md
+│   │   ├── FolderListingTests.cs
+│   │   ├── FolderPaneBugNotes.md
+│   │   ├── FoldersEventIdBugNotes.md
+│   │   ├── HeaviestFilesTests.cs
+│   │   ├── MapSampleFolderTests.cs
+│   │   ├── MessageTemplateDoctrineTests.cs
+│   │   ├── PathRulesTests.cs
+│   │   ├── ScratchFolder.cs
+│   │   ├── SelectionSummaryTests.cs
+│   │   ├── SizeAnalysisMomentTests.cs
+│   │   ├── SizeReportReuseTests.cs
+│   │   ├── SizesBugNotes.md
+│   │   ├── SizeScanEventsTests.cs
+│   │   ├── SizeScanGateTests.cs
+│   │   ├── SizeScanTests.cs
+│   │   ├── SizesSampleTests.cs
+│   │   ├── WindowShortcutBugNotes.md
+│   │   └── WindowShortcutTooltipTests.cs
 │   ├── Deckle.Home.Tests/
 │   │   ├── AssemblyInfo.cs
 │   │   ├── Deckle.Home.Tests.csproj

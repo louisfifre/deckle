@@ -7,7 +7,7 @@ namespace Deckle.App;
 // The host reads it for the module catalogue, the windows, the developer tray,
 // the interface capture and the self-check, and names none of them.
 //
-// Mail and the Atelier have left (Deckle.Mail.App, Deckle.Atelier.App): the
+// Mail and Deckle Folders have left (Deckle.Mail.App, Deckle.Folders.App): the
 // published Deckle carries no contributed module today, and the list stays as
 // the place a module joins it. The order is the order of the walks in the
 // self-check.

@@ -35,11 +35,11 @@ public class AppIdentityTests
     public void TwoApps_NeverShareARootOrALogFolder()
     {
         AppRoots mail = AppRoots.For(AppIdentity.Create("mail"), SuiteRoot);
-        AppRoots atelier = AppRoots.For(AppIdentity.Create("atelier"), SuiteRoot);
+        AppRoots folders = AppRoots.For(AppIdentity.Create("folders"), SuiteRoot);
         AppRoots suite = AppRoots.For(AppIdentity.Suite, SuiteRoot);
 
-        string[] data = [mail.UserDataRoot, atelier.UserDataRoot, suite.UserDataRoot];
-        string[] logs = [mail.DiagnosticsDirectory, atelier.DiagnosticsDirectory, suite.DiagnosticsDirectory];
+        string[] data = [mail.UserDataRoot, folders.UserDataRoot, suite.UserDataRoot];
+        string[] logs = [mail.DiagnosticsDirectory, folders.DiagnosticsDirectory, suite.DiagnosticsDirectory];
         Assert.Equal(3, data.Distinct(StringComparer.OrdinalIgnoreCase).Count());
         Assert.Equal(3, logs.Distinct(StringComparer.OrdinalIgnoreCase).Count());
     }
@@ -55,7 +55,7 @@ public class AppIdentityTests
 
     [Theory]
     [InlineData("mail", @"Local\Deckle.Mail.Resident")]
-    [InlineData("atelier", @"Local\Deckle.Atelier.Resident")]
+    [InlineData("folders", @"Local\Deckle.Folders.Resident")]
     [InlineData("folder-map", @"Local\Deckle.FolderMap.Resident")]
     [Trait("Category", "unit")]
     public void OtherApp_HasAResidentMutexOfItsOwn(string id, string expected)

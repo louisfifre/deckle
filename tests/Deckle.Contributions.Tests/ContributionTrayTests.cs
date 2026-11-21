@@ -16,9 +16,9 @@ public sealed class ContributionTrayTests
         [
             new FakeContribution
             {
-                Id = "atelier",
-                Descriptor = Module("atelier", 50),
-                Windows = [_probe.Window("atelier", "TrayMenu_Atelier")],
+                Id = "folders",
+                Descriptor = Module("folders", 50),
+                Windows = [_probe.Window("folders", "TrayMenu_Folders")],
             },
             new FakeContribution
             {
@@ -35,8 +35,8 @@ public sealed class ContributionTrayTests
 
         IReadOnlyList<ContributionTrayEntry> entries = Host().TrayEntries();
 
-        Assert.Equal(["atelier", "mail"], entries.Select(e => e.Id));
-        Assert.Equal(["TrayMenu_Atelier", "TrayMenu_Mail"], entries.Select(e => e.LabelKey));
+        Assert.Equal(["folders", "mail"], entries.Select(e => e.Id));
+        Assert.Equal(["TrayMenu_Folders", "TrayMenu_Mail"], entries.Select(e => e.LabelKey));
     }
 
     [Fact]
@@ -44,7 +44,7 @@ public sealed class ContributionTrayTests
     {
         _services.DeveloperModeEnabled = false;
 
-        Assert.Equal(["atelier"], Host().TrayEntries().Select(e => e.Id));
+        Assert.Equal(["folders"], Host().TrayEntries().Select(e => e.Id));
     }
 
     [Fact]
@@ -55,7 +55,7 @@ public sealed class ContributionTrayTests
 
         IReadOnlyList<ContributionTrayEntry> entries = host.TrayEntries(forDeveloperMenu: true);
 
-        Assert.Equal(["atelier", "mail"], entries.Select(e => e.Id));
+        Assert.Equal(["folders", "mail"], entries.Select(e => e.Id));
         entries.Single(e => e.Id == "mail").Open();
         Assert.False(host.IsOpen("mail"));
     }
@@ -63,7 +63,7 @@ public sealed class ContributionTrayTests
     [Fact]
     public void TheDeveloperMenuStillSkipsAnAbsentModule()
     {
-        _services.AbsentModules.Add("atelier");
+        _services.AbsentModules.Add("folders");
 
         Assert.Equal(["mail"], Host().TrayEntries(forDeveloperMenu: true).Select(e => e.Id));
     }
@@ -72,7 +72,7 @@ public sealed class ContributionTrayTests
     public void AnEntryOfAnAbsentModuleIsHidden()
     {
         _services.DeveloperModeEnabled = true;
-        _services.AbsentModules.Add("atelier");
+        _services.AbsentModules.Add("folders");
 
         Assert.Equal(["mail"], Host().TrayEntries().Select(e => e.Id));
     }

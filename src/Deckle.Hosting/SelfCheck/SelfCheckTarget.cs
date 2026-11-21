@@ -8,7 +8,7 @@ public sealed record SelfCheckWindows(IReadOnlyList<string> Windows, IReadOnlyLi
 // What a run was asked to look at when it must not walk everything:
 // `--self-check <folder> --only <target>`. A target is a window ("mail") or one
 // view of a window that has several ("settings/general", "mail/activity",
-// "atelier/photos-gallery", "projects/p3"): the name its image carries in a
+// "folders/photos-gallery", "projects/p3"): the name its image carries in a
 // full run. It exists so a session that changed one view checks that view in
 // seconds instead of paying for the whole walk.
 //
@@ -16,7 +16,7 @@ public sealed record SelfCheckWindows(IReadOnlyList<string> Windows, IReadOnlyLi
 // (SelfCheckWindows): the published Deckle and each separate app give theirs.
 //
 // How a view is reached depends on its window. A Settings page stands alone and
-// is opened directly. A Mail, Atelier or Projects view is a state reached from
+// is opened directly. A Mail, Folders or Projects view is a state reached from
 // the ones before it, so the walk is replayed up to it without a picture, the
 // view is photographed, and the walk stops there (SelfCheckWalkGate): the image
 // is the one the full run takes, by the same code.

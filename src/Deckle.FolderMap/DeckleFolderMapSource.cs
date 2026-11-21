@@ -5,9 +5,9 @@ namespace Deckle.FolderMap;
 
 // The map's provider. What it writes describes the machine: counts, durations,
 // reasons and error types. A mapped folder's path is the person's own disk, so
-// no event carries a path or a name. The five events were Deckle-Atelier's
+// no event carries a path or a name. The five events were Deckle-Folders's
 // before the map became support code shared with Deckle Projects: a log filter
-// saved on Deckle-Atelier no longer sees them.
+// saved on Deckle-Folders no longer sees them.
 [EventSource(Name = "Deckle-FolderMap")]
 public sealed class DeckleFolderMapSource : DeckleEventSource
 {
