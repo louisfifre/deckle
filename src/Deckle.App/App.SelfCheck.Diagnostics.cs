@@ -30,7 +30,6 @@ public partial class App
         TelemetrySettings telemetry = TelemetrySettingsService.Instance.Current;
         telemetry.CorpusEnabled = true;
         telemetry.RecordAudioCorpus = true;
-        telemetry.AutocorrectText = true;
         TelemetrySettingsService.Instance.Save();
     }
 

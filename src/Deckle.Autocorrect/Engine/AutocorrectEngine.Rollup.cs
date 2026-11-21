@@ -1,94 +1,11 @@
 using Deckle.Autocorrect;
 using Deckle.Diagnostics;
-using Deckle.Input;
 using System.Diagnostics.Tracing;
 
 namespace Deckle.Autocorrect;
 
 public sealed partial class AutocorrectEngine
 {
-    private void FeedCorpus(WordCommit commit, string onScreen)
-    {
-        if (CanCollectText())
-            _corpus?.Word(
-                commit.Word,
-                onScreen,
-                commit.Boundary,
-                (long)commit.TimestampMs,
-                commit.PrecedingSeparators);
-    }
-
-    // Runs on the input thread (the accumulator is synchronous), so _surface is
-    // still the surface that produced the sentence.
-    private void EmitText(SentenceCorpus.SentenceRecord rec)
-    {
-        // Consent is live, not captured when the sentence starts. A reset can
-        // close an accumulated run after the user has switched collection off;
-        // do not expose that verbatim text to any EventSource listener.
-        if (!CanCollectText())
-            return;
-
-        DeckleAutocorrectSource.Log.AutocorrectTextRecorded(
-            _surface.ProcessName, rec.Typed, rec.Final, rec.History, rec.Closure, rec.Timing);
-    }
-
-    // Checked per stroke so a settings flip takes effect immediately; resets
-    // (pointer, focus) bypass this gate so a span can never straddle surfaces.
-    private bool ShouldFeedStream()
-    {
-        return _stream is not null && CanCollectText();
-    }
-
-    // Consent is re-checked at emission, as in EmitText: a reset can close a
-    // span after the user switched collection off.
-    private void EmitStreamRun(TypingStream.RunRecord rec)
-    {
-        if (!CanCollectText())
-            return;
-
-        DeckleAutocorrectSource.Log.AutocorrectStreamRecorded(
-            _surface.ProcessName, rec.Text, rec.Erased, rec.Closure, rec.Timing);
-    }
-
-    private static void EmitDecision(long id, string word, IReadOnlyList<string> leftContext, CorrectionTrace trace)
-    {
-        DeckleAutocorrectSource.Log.AutocorrectDecisionRecorded(
-            id,
-            word,
-            string.Join(' ', leftContext),
-            trace.Outcome,
-            trace.PrimaryStage,
-            trace.PrimaryReason,
-            trace.RenderCandidates(),
-            trace.RenderGauges(),
-            trace.RenderTrail());
-    }
-
-    private static bool IsEnabledFor(AutocorrectSettings settings, string processName)
-        => processName.Length > 0
-        && settings.Apps.TryGetValue(processName, out bool on) && on;
-
-    private bool CanCollectText()
-    {
-        FocusedSurface surface = _surface;
-        if (!surface.IsTextEditable || surface.IsPassword) return false;
-        AutocorrectSettings settings = _settings();
-        return settings.Enabled
-            && IsEnabledFor(settings, surface.ProcessName)
-            && _textTelemetry?.Invoke() == true;
-    }
-
-    // The user has answered for this app (on or off) — absent means never met.
-    private static bool IsDecided(AutocorrectSettings settings, string processName)
-        => processName.Length > 0 && settings.Apps.ContainsKey(processName);
-
-    private void MaybeSuggestEnrollment(string processName)
-    {
-        if (processName.Length == 0 || !_suggested.Add(processName)) return;
-        DeckleAutocorrectSource.Log.EnrollmentSuggested(processName);
-        EnrollmentSuggested?.Invoke(processName);
-    }
-
     private static bool IsActivityRollupEnabled()
         => DeckleAutocorrectSource.IsActivitySummaryEnabled(
             EventLevel.Verbose,

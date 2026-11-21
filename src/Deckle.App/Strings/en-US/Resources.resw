@@ -284,30 +284,6 @@
   <!-- Autocorrect consent dialogs use Loc.Get from code-behind. Their source
        wording lives in Deckle.Settings, but code-style keys must also exist in
        the app root resource map. -->
-  <data name="AutocorrectDecisionsConsent_Title" xml:space="preserve">
-    <value>Enable autocorrect decision log</value>
-  </data>
-  <data name="AutocorrectDecisionsConsent_Body_Intro" xml:space="preserve">
-    <value>Deckle will write one line for every word the autocorrect engine weighs on an enrolled app, corrected or left as you typed it, to a local JSONL file (autocorrect.decisions.jsonl), so you can see exactly why it did or did not act.</value>
-  </data>
-  <data name="AutocorrectDecisionsConsent_Body_What" xml:space="preserve">
-    <value>Each word you type on an enrolled surface, its preceding context words, the candidate forms with their frequencies and scores, the safety margins, and the rule that made the call. Nothing is sent over the network. Password fields are never seen.</value>
-  </data>
-  <data name="AutocorrectDecisionsConsent_Body_Remind" xml:space="preserve">
-    <value>This records the words you type on enrolled apps in clear text. Keep it on only while diagnosing the corrector, turn it off when you are done, and purge the file, because it is not rotated.</value>
-  </data>
-  <data name="AutocorrectTextConsent_Title" xml:space="preserve">
-    <value>Keep a record of text typed in enrolled apps</value>
-  </data>
-  <data name="AutocorrectTextConsent_Body_Intro" xml:space="preserve">
-    <value>Deckle will save each sentence you physically type on an enrolled editable surface to a local JSONL file (autocorrect.text.jsonl): the text exactly as you typed it, paired with the corrected version. It also keeps the typing stream (autocorrect.stream.jsonl): the raw flow of your typing, including what you erased and retyped. Together they build a corpus of your writing, and your mistakes, to make the corrector better at the way you type.</value>
-  </data>
-  <data name="AutocorrectTextConsent_Body_What" xml:space="preserve">
-    <value>The full text you physically type on enrolled editable surfaces, verbatim, including errors the corrector did not catch. The typing stream additionally records what you erased with Backspace and what you retyped over it. Password fields are never seen, and text you paste or dictate is not recorded. Nothing is sent over the network.</value>
-  </data>
-  <data name="AutocorrectTextConsent_Body_Remind" xml:space="preserve">
-    <value>This is the most complete text capture in Deckle, a verbatim record of what you type in enrolled apps. It stays on this device. Turn it off when you have gathered enough, and delete the files when you no longer need them, because they are not rotated.</value>
-  </data>
 
   <!-- Audio corpus consent — raw WAV next to the text JSONL, per profile. -->
   <data name="AudioCorpusConsent_Title" xml:space="preserve">

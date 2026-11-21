@@ -12,7 +12,5 @@ public static class TelemetryConsentWiring
         Catalog.TelemetryConsent.ApplicationLog       = ApplicationLogConsentDialog.ShowAsync;
         Catalog.TelemetryConsent.Corpus               = CorpusConsentDialog.ShowAsync;
         Catalog.TelemetryConsent.AudioCorpus          = AudioCorpusConsentDialog.ShowAsync;
-        Catalog.TelemetryConsent.AutocorrectDecisions = AutocorrectDecisionsConsentDialog.ShowAsync;
-        Catalog.TelemetryConsent.AutocorrectText      = AutocorrectTextConsentDialog.ShowAsync;
     }
 }

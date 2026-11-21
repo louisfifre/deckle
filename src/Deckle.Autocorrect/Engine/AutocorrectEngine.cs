@@ -8,8 +8,7 @@ namespace Deckle.Autocorrect;
 
 // The conductor: raw key events → decode → track → decide → inject, with the
 // learning signals around it. Every handler runs on the KeyboardInputHost
-// input thread; Start, Stop, Dispose and ReconcileTextTelemetry are the only
-// cross-thread entries.
+// input thread; Start, Stop and Dispose are the only cross-thread entries.
 //
 // Backspace is always a plain Backspace, never a correction undo: reading it
 // as an undo misfires (a deleted comma read as an undo) and writes false
@@ -45,31 +44,11 @@ public sealed partial class AutocorrectEngine : IDisposable
     // Mistouch kinds are code; the family records are the user's own data.
     private readonly MistouchFamilyCorrector? _mistouch;
 
-    // Opt-in per-word decision telemetry to the autocorrect.decisions dataset.
-    // Null or false allocates no trace.
-    private readonly Func<bool>? _decisionTelemetry;
-
-    // Opt-in typed-sentence corpus, the heaviest text capture: a verbatim record
-    // of typed input, behind its own consent toggle. It uses the same surface
-    // gate as correction, so collection stays inside the scope the user approved.
-    private readonly Func<bool>? _textTelemetry;
-    private readonly SentenceCorpus? _corpus;
-    private int _discardCorpusRequested;
-
-    // The typing stream rides the same consent and enrolled-surface gate as the
-    // corpus. It is fed the decoded keystrokes the tracker consumes: a parallel
-    // verbatim capture, not a word model.
-    private readonly TypingStream? _stream;
-
     private volatile FocusedSurface _surface = FocusedSurface.Unknown;
 
     // Apps already offered for enrollment this run — a would-be correction on an
     // undecided surface prompts once, then stays silent until the user answers.
     private readonly HashSet<string> _suggested = new(StringComparer.OrdinalIgnoreCase);
-
-    // Monotonic per-word id, input thread only. Stamps each evaluated word so its
-    // decision line carries an id.
-    private long _wordId;
 
     // One coalesced foreign SendInput burst. Only Backspace + VK_PACKET text is
     // eligible for reconciliation; every other shape falls back to a hard reset.
@@ -126,8 +105,6 @@ public sealed partial class AutocorrectEngine : IDisposable
         PersonalDictionary? dictionary = null,
         IFrequencyLexicon? french = null,
         IFrequencyLexicon? english = null,
-        Func<bool>? decisionTelemetry = null,
-        Func<bool>? textTelemetry = null,
         IReadOnlyList<MistouchFamilyRecord>? mistouchFamilies = null)
     {
         _host = host;
@@ -140,10 +117,6 @@ public sealed partial class AutocorrectEngine : IDisposable
         _dictionary = dictionary;
         _french = french;
         _english = english;
-        _decisionTelemetry = decisionTelemetry;
-        _textTelemetry = textTelemetry;
-        _corpus = textTelemetry is null ? null : new SentenceCorpus { Completed = EmitText };
-        _stream = textTelemetry is null ? null : new TypingStream { Completed = EmitStreamRun };
         _mistouch = mistouchFamilies is { Count: > 0 }
             ? new MistouchFamilyCorrector(mistouchFamilies, IsProtectedWord)
             : null;

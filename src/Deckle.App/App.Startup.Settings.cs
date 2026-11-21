@@ -184,10 +184,6 @@ public partial class App
             RegisterSettingsModule(
                 Autocorrect.Views.AutocorrectSettingsModule.DescribeAppsEnrolled(order: 320),
                 Autocorrect.Views.SettingsSearch.AppsEnrolledEntries);
-            ContributeDiagnostics(
-                Autocorrect.Views.AutocorrectTelemetryViewModel.Contribution(order: 300),
-                "Deckle.Autocorrect.Views",
-                Autocorrect.Views.SettingsSearch.TelemetryEntries);
         }
         if (context.AmbientPresent)
             RegisterSettingsModule(Lighting.Ambient.Views.AmbientSettingsModule.Describe(order: 400), Lighting.Ambient.Views.SettingsSearch.Entries);

@@ -216,6 +216,8 @@ public sealed class TelemetryListenerBootstrapTests
 
             string rewritten = File.ReadAllText(path);
             Assert.DoesNotContain("microphoneTelemetry", rewritten);
+            Assert.DoesNotContain("autocorrectDecisions", rewritten);
+            Assert.DoesNotContain("autocorrectText", rewritten);
             Assert.Contains("corpusEnabled", rewritten);
         }
         finally

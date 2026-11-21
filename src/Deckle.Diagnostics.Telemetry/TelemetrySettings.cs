@@ -23,18 +23,6 @@ public sealed class TelemetrySettings
     // Optional override for the purpose-specific dataset root. The application
     // log is not telemetry and is fixed under the diagnostics directory.
     public string StorageDirectory { get; set; } = "";
-
-    // Gates the per-word autocorrect decision dataset (autocorrect.decisions.jsonl):
-    // for every corrected or left-literal word on an enrolled surface, its
-    // candidates, scores, margins and the guard that decided it. Carries typed
-    // words by design, so it is consent-gated like every text capture.
-    public bool AutocorrectDecisions { get; set; } = false;
-
-    // Gates the typed-sentence corpus (autocorrect.text.jsonl) and the typing
-    // stream (autocorrect.stream.jsonl): verbatim typed input, the heaviest text
-    // capture, so it has its own consent toggle. Paste and dictation never
-    // enter the typed-sentence corpus.
-    public bool AutocorrectText { get; set; } = false;
 }
 
 // Selects which audio a recording contributes to the corpus WAV. Values

@@ -37,20 +37,6 @@ public static class SettingsSearch
         },
     ];
 
-    // The typed-text corpus, composed in the Corpus section of Settings >
-    // Diagnostics (AutocorrectTelemetryViewModel); registered under that page
-    // with this module's assembly, where its words live. The decisions ride
-    // under it as a composed child, so the fold is the one entry, and their
-    // words are its keywords.
-    public static IReadOnlyList<SettingSearchEntry> TelemetryEntries { get; } =
-    [
-        new SettingSearchEntry
-        {
-            LabelKey = "AutocorrectTextCard",
-            Keywords = ["corpus", "telemetry", "diagnostics", "keystrokes", "autocorrect", "decisions"],
-        },
-    ];
-
     // ── LexicalDomainsPage ───────────────────────────────────────────────────
     public static IReadOnlyList<SettingSearchEntry> LexicalDomainsEntries { get; } =
     [
