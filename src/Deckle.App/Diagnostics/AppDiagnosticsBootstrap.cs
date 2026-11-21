@@ -54,7 +54,10 @@ internal static class AppDiagnosticsBootstrap
 
         var dispatch = Dispatch;
 
-        // setup.jsonl keeps every Deckle-Setup event, Verbose mirrors included.
+        // setup.jsonl keeps every Deckle-Setup event, Verbose mirrors included:
+        // the listener enables each Deckle-* provider at every level
+        // (DispatchEventListener.OnEventSourceCreated) and the Setup events gate
+        // only on their own level, so no level filter is needed here.
         // Those can embed local paths and the Windows account name verbatim:
         // intended, the path is the diagnostic signal and the file stays local.
         dispatch.AddSink(new JsonlSink(
