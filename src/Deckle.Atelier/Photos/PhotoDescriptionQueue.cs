@@ -1,8 +1,8 @@
 namespace Deckle.Atelier;
 
-// The one line every description waits in: a photo asked alone ("Décrire
-// cette photo", "Décrire à nouveau") and the photos of a folder run
-// ("Décrire le dossier") go through the same model one at a time, so both can
+// The one line every description waits in: a photo asked alone ("Describe
+// this photo", "Describe again") and the photos of a folder run
+// ("Describe the folder") go through the same model one at a time, so both can
 // be asked at once (spec, Open question 27, drawn: the folder command stays
 // usable while one photo is being described) without two pictures loading a
 // local model's memory side by side.
@@ -40,7 +40,7 @@ public sealed class PhotoDescriptionQueue : IDisposable
     }
 
     /// <summary>Describes one photo of <paramref name="store"/>'s folder,
-    /// even one that has a description already ("Décrire à nouveau").
+    /// even one that has a description already ("Describe again").
     /// Cancelling <paramref name="cancellationToken"/> stops it, waiting or
     /// under way, and answers Stopped.</summary>
     public Task<PhotoDescriptionResult> DescribeOneAsync(PhotoDescriptionStore store, string fileName, CancellationToken cancellationToken)

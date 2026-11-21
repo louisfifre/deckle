@@ -4,7 +4,7 @@ namespace Deckle.Atelier;
 
 // What the details panel says of several items selected at once (spec, Open
 // 33: Windows' conventions). File Explorer's details pane titles them "3
-// éléments sélectionnés" and gives the size of the files among them; a folder
+// items selected" and gives the size of the files among them; a folder
 // is counted, never measured, since measuring one means reading all it holds,
 // which is the sizes tool's work.
 public sealed record SelectionSummary(int Folders, int Files, long FileBytes)
@@ -30,11 +30,11 @@ public sealed record SelectionSummary(int Folders, int Files, long FileBytes)
 
     // The panel's three texts, written from the templates the interface
     // hands in, as it keeps every sentence in its resources:
-    // - the title, the number of items ("3 éléments sélectionnés");
-    // - the line above it, what they are ("1 dossier · 2 fichiers"), a kind
+    // - the title, the number of items ("3 items selected");
+    // - the line above it, what they are ("1 folder · 2 files"), a kind
     //   the selection does not hold left out;
     // - the size of the files, said to leave the folders out when there are
-    //   some ("3,2 Mo, sans les dossiers"), and null when no file is selected,
+    //   some ("3.2 MB, not counting folders"), and null when no file is selected,
     //   as File Explorer gives no size for folders alone.
     public SelectionWording Describe(SelectionTexts texts, CultureInfo culture)
     {

@@ -129,7 +129,7 @@ internal sealed class PhotoDetails
             (AtelierText.Get("Photos_Capture_Place"), CaptureDataFormat.Place(data, AtelierText.Culture)));
     }
 
-    // A pressed toggle takes the accent fill, as 12.4 draws "À garder" (Open
+    // A pressed toggle takes the accent fill, as 12.4 draws "Keep" (Open
     // 21, drawn: one fill). The click sets the mark; the view then presses
     // the right button through ShowMark, so the toggle never decides alone.
     private static ToggleButton MarkButton(string glyph, string text, Action click)

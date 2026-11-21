@@ -52,7 +52,7 @@ internal sealed class SizeRow : INotifyPropertyChanged
 
     public string Name { get => _name; set => Set(ref _name, value, nameof(Name)); }
 
-    // "2,4 Go", or "…" while the folder is not measured yet (12.23).
+    // "2.4 GB", or "…" while the folder is not measured yet (12.23).
     public string Size { get => _size; set => Set(ref _size, value, nameof(Size)); }
 
     // The bar's length, the part of the place's total, between 0 and 1.

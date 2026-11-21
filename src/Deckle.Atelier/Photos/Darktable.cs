@@ -25,7 +25,7 @@ public enum DarktableOpenResult
     Failed,
 }
 
-// Finds darktable and opens it on a folder, for "Ouvrir dans darktable" (12.4).
+// Finds darktable and opens it on a folder, for "Open in darktable" (12.4).
 //
 // Where it is looked for, in order:
 // 1. The App Paths key, per user then per machine. darktable's Windows

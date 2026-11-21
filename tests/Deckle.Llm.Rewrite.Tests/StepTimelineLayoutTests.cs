@@ -123,7 +123,7 @@ public sealed class RemoveProfileFromStepsTests
     [Fact]
     public void ALaterStepGoesWithItsProfileAndTheFirstStepTakesTheFirstProfileLeft()
     {
-        var settings = new LlmSettings();
+        LlmSettings settings = LlmSettingsFixtures.WithTwoProfiles();
         LlmSettingsNormalizer.Apply(settings);
         string first = settings.Profiles[0].Id, second = settings.Profiles[1].Id;
         settings.Dictation.Steps =

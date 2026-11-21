@@ -86,7 +86,7 @@ public sealed class SizeReport
     // the sizes leave them out, and the view says how many.
     public long UnreadableFolders { get; }
 
-    // When the scan that measured this ended, for "Analyser à nouveau (F5)"'s
+    // When the scan that measured this ended, for "Analyze again (F5)"'s
     // tooltip (12.21); null while it runs.
     public DateTimeOffset? FinishedAt { get; }
     public TimeSpan Elapsed { get; }

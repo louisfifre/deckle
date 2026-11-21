@@ -11,7 +11,7 @@ internal static class MapKindText
 {
     public static string Name(MapItemKind kind) => AtelierText.Get($"Map_Kind_{kind}");
 
-    // The filter box's label (12.8b: "Fichiers de contexte", "Skills", ...).
+    // The filter box's label (12.8b: "Context files", "Skills", ...).
     public static string Plural(MapItemKind kind) => AtelierText.Get($"Map_Kinds_{kind}");
 
     // The empty state's list of what was looked for (12.14).

@@ -3147,6 +3147,7 @@ _Generated from `git ls-files` — do not edit by hand._
 │   │   ├── LlmResetDefaultsTests.cs
 │   │   ├── LlmSettingsBugNotes.md
 │   │   ├── LlmSettingsFileTests.cs
+│   │   ├── LlmSettingsFixtures.cs
 │   │   ├── LlmSettingsNormalizerTests.cs
 │   │   ├── MessageTemplateDoctrineTests.cs
 │   │   ├── ParagraphDraftTests.cs

@@ -44,16 +44,39 @@ public sealed class LlmResetDefaultsTests
             new RewriteStep { ProfileId = "y", FromChars = 4000 },
         ];
         current.Providers.Clear();
-        current.Profiles.Clear();
+        current.Profiles = [new RewriteProfile { Id = "x", Name = "Mine" }];
 
         LlmSettings fresh = LlmResetDefaults.From(current);
 
         var defaults = new LlmSettings();
         RewriteStep first = Assert.Single(fresh.Dictation.Steps);
         Assert.Equal(DictationRewriteSettings.DefaultBlockChars, first.BlockChars);
-        Assert.Equal(fresh.Profiles[0].Id, first.ProfileId);
+        Assert.Equal("x", first.ProfileId);
         Assert.Equal(defaults.Providers.Count, fresh.Providers.Count);
-        Assert.Equal(defaults.Profiles.Count, fresh.Profiles.Count);
+    }
+
+    // The profiles are the person's own prompts and Deckle ships none, so a
+    // reset that replaced them would wipe them (2026-11-21).
+    [Fact]
+    public void ResetKeepsThePersonsProfiles()
+    {
+        var current = new LlmSettings();
+        current.Profiles =
+        [
+            new RewriteProfile { Id = "a", Name = "Mine", SystemPrompt = "My prompt." },
+            new RewriteProfile { Id = "b", Name = "Other", SystemPrompt = "Another." },
+        ];
+
+        LlmSettings fresh = LlmResetDefaults.From(current);
+
+        Assert.Equal(["Mine", "Other"], fresh.Profiles.Select(p => p.Name));
+        Assert.Equal("My prompt.", fresh.Profiles[0].SystemPrompt);
+    }
+
+    [Fact]
+    public void AFreshRootShipsNoProfile()
+    {
+        Assert.Empty(new LlmSettings().Profiles);
     }
 
     [Fact]

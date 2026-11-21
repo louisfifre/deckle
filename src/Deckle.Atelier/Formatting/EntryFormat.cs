@@ -3,9 +3,10 @@ using System.Globalization;
 namespace Deckle.Atelier;
 
 // How a size and a date read in the Atelier, as the boards write them:
-// "6 Ko", "412 Ko", "2,4 Mo", "1,3 Go", "31/12/2023". Kilobytes are whole and
-// rounded up, as File Explorer rounds them (a 10-byte file is "1 Ko", never
-// "0 Ko"); larger units carry one decimal. The unit and the number are joined
+// "6 KB", "412 KB", "2.4 MB", "1.3 GB", "12/31/2023" (in French: "6 Ko",
+// "2,4 Mo", "31/12/2023"; the culture follows the user's region). Kilobytes are
+// whole and rounded up, as File Explorer rounds them (a 10-byte file is "1 KB",
+// never "0 KB"); larger units carry one decimal. The unit and the number are joined
 // by a no-break space so a narrow column never splits them.
 public static class EntryFormat
 {
@@ -28,8 +29,8 @@ public static class EntryFormat
         local.ToString(culture.DateTimeFormat.ShortDatePattern, culture);
 
     // The extension a type is named by when nothing more is known of it, as
-    // File Explorer writes it in "Fichier PDF": upper case, without the dot.
-    // Null for a name that has none, which File Explorer calls "Fichier".
+    // File Explorer writes it in "PDF File": upper case, without the dot.
+    // Null for a name that has none, which File Explorer calls "File".
     public static string? TypeExtension(string name)
     {
         string extension = Path.GetExtension(name).TrimStart('.');
@@ -48,7 +49,7 @@ public static class EntryFormat
             : string.Join(separator, type, date);
     }
 
-    // A count in its sentence: "1 fichier", "2 fichiers", "1 234 fichiers".
+    // A count in its sentence: "1 file", "2 files", "1,234 files" (French: "1 fichier", "1 234 fichiers").
     // French puts 0 and 1 in the singular and English 1 alone, so the rule
     // follows the culture; the number takes its group separator.
     public static string Count(int count, string oneFormat, string manyFormat, CultureInfo culture)

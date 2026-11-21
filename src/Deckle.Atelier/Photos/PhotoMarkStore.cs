@@ -3,8 +3,8 @@ using System.Text.Json.Serialization;
 
 namespace Deckle.Atelier;
 
-// The marks the boards draw (12.4): "À garder" (G) and "À supprimer" (X), and
-// a photo with neither is "sans marque". Two marks only: spec, Open question 3,
+// The marks the boards draw (12.4): "Keep" (K) and "Delete" (X), and
+// a photo with neither is "unmarked". Two marks only: spec, Open question 3,
 // drawn A.
 public enum PhotoMark
 {
@@ -13,8 +13,8 @@ public enum PhotoMark
     Delete,
 }
 
-// The three counters above the gallery (12.4): "215 sans marque · 160 à
-// garder · 37 à supprimer".
+// The three counters above the gallery (12.4): "215 unmarked · 160 to
+// keep · 37 to delete".
 public readonly record struct MarkCounts(int Unmarked, int Keep, int Delete);
 
 // The marks of one folder, kept in the app's own store and never next to the

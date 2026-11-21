@@ -60,7 +60,7 @@ internal sealed partial class FilesView
         }
     }
 
-    // "Mettre à la Corbeille" on one row, and the Delete key on every row
+    // "Move to Recycle Bin" on one row, and the Delete key on every row
     // selected, in one call to the bin, which recycles them one by one so a
     // refusal stops only its own item. A row leaves the list once its item
     // has left its folder, and leaves the selection and its panel with it; an

@@ -3,7 +3,7 @@ using Microsoft.UI.Xaml.Controls;
 
 namespace Deckle.Atelier.Views;
 
-// "Ouvrir dans darktable" (spec, Photos: once the sorting is done, darktable
+// "Open in darktable" (spec, Photos: once the sorting is done, darktable
 // opens on the folder from here; board 12.4). darktable is looked for each
 // time the folder is shown, off the UI thread, and again on the click, so an
 // install made meanwhile is found without restarting.

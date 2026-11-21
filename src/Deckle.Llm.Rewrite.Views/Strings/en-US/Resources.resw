@@ -608,12 +608,6 @@
   <data name="Settings_RemoveProfileDialog_Content_Format" xml:space="preserve">
     <value>"{0}" and its shortcut will be removed. If it is the rewrite profile, dictations go back to plain transcription. Any length step that used it is removed too.</value>
   </data>
-  <data name="Settings_ResetProfilesDialog_Title" xml:space="preserve">
-    <value>Reset profiles to defaults?</value>
-  </data>
-  <data name="Settings_ResetProfilesDialog_Content" xml:space="preserve">
-    <value>Every profile will be replaced with the two defaults (Lissage, Réécriture), each with its pre-written prompt, sent to Claude. Your custom profiles and any prompts you've written will be lost.</value>
-  </data>
 
   <!-- LlmModelsSection Remove dialog + ErrorBar -->
   <data name="Settings_RemoveModelDialog_Title" xml:space="preserve">

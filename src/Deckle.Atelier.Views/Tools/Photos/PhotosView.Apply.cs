@@ -3,7 +3,7 @@ using Microsoft.UI.Xaml.Controls;
 
 namespace Deckle.Atelier.Views;
 
-// "Appliquer les marques…" (spec, Behaviours: the marks are applied in one
+// "Apply marks…" (spec, Behaviours: the marks are applied in one
 // step, after a summary; boards 12.6 and 12.22). The plan is made off the UI
 // thread, the summary says what will happen, and only its main button runs
 // it: the photos to delete go to the Windows Recycle Bin with their sidecars,
