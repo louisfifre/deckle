@@ -295,7 +295,7 @@ public sealed class DictationStepsNormalizerTests
 {
     private static LlmSettings WithSteps(params (int From, int BlockChars)[] steps)
     {
-        var settings = new LlmSettings();
+        LlmSettings settings = LlmSettingsFixtures.WithTwoProfiles();
         LlmSettingsNormalizer.Apply(settings);
         settings.Dictation.Steps = steps
             .Select(step => new RewriteStep
@@ -309,13 +309,15 @@ public sealed class DictationStepsNormalizerTests
     }
 
     [Fact]
-    public void FreshSettingsHaveOneFirstStepWithAProfileAndRewritingDictationsOff()
+    public void FreshSettingsHaveOneFirstStepWithoutAProfileAndRewritingDictationsOff()
     {
         var settings = new LlmSettings();
         LlmSettingsNormalizer.Apply(settings);
 
+        Assert.Empty(settings.Profiles);
         RewriteStep first = Assert.Single(settings.Dictation.Steps);
-        Assert.Equal(settings.Profiles[0].Id, first.ProfileId);
+        Assert.Equal("", first.ProfileId);
+        Assert.Equal(0, first.FromChars);
         Assert.False(settings.Dictation.Enabled);
         Assert.False(LlmSettingsNormalizer.Apply(settings));
     }

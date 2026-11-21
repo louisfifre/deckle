@@ -23,7 +23,7 @@ public sealed class RewriteProfileTriggerTests
     [Fact]
     public void StepsAndShortcutRoundTripThroughTheSettingsFile()
     {
-        var settings = new LlmSettings();
+        LlmSettings settings = LlmSettingsFixtures.WithTwoProfiles();
         LlmSettingsNormalizer.Apply(settings);
         settings.Dictation.Enabled = true;
         settings.Dictation.RewriteWhileSpeaking = true;

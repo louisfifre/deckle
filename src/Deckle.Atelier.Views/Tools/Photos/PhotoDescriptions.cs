@@ -72,7 +72,7 @@ internal sealed class PhotoDescriptions
         }
     }
 
-    // "Décrire cette photo", "Décrire à nouveau", "Réessayer". A photo
+    // "Describe this photo", "Describe again", "Try again". A photo
     // already under way is left as it is.
     public async Task DescribeAsync(PhotoFile photo)
     {
@@ -106,7 +106,7 @@ internal sealed class PhotoDescriptions
         PhotoChanged?.Invoke(photo.Path);
     }
 
-    // "Arrêter" on a photo asked alone: the queue answers Stopped.
+    // "Stop" on a photo asked alone: the queue answers Stopped.
     public void Stop(PhotoFile photo)
     {
         lock (_lock)
@@ -120,7 +120,7 @@ internal sealed class PhotoDescriptions
 
     public PhotoDescriptionRun? RunOf(string folder) => _queue.RunOf(folder);
 
-    /// <summary>"Décrire le dossier". Null, with the reason, when the model
+    /// <summary>"Describe the folder". Null, with the reason, when the model
     /// cannot be used as set up; a folder that has a run going gets it back.</summary>
     public async Task<(PhotoDescriptionRun? Run, PhotoDescriptionFailure? NotReady)> StartFolderAsync(
         string folder, IReadOnlyList<PhotoFile> photos)

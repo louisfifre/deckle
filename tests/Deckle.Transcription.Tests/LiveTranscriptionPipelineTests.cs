@@ -708,7 +708,7 @@ public sealed class LiveTranscriptionPipelineTests
     }
 
     // Rewriting dictations on, with one step from the beginning on the first
-    // default profile, rewriting while speaking or not, and its block size at the minimum.
+    // host profile, rewriting while speaking or not, and its block size at the minimum.
     internal static StreamingHost RewritingHost(bool batchRewriting)
     {
         var host = new StreamingHost();
@@ -784,7 +784,15 @@ public sealed class LiveTranscriptionPipelineTests
         public TranscriptionSettings Transcription { get; } = new();
         public CaptureSettings Audio { get; } = new();
         public TelemetrySettings Telemetry { get; } = new();
-        public LlmSettings Llm { get; } = new();
+        // Deckle ships no rewrite profile: the tests that rewrite use these two.
+        public LlmSettings Llm { get; } = new()
+        {
+            Profiles =
+            [
+                new RewriteProfile { Id = "light", Name = "Light" },
+                new RewriteProfile { Id = "structured", Name = "Structured" },
+            ],
+        };
         public string ResolveModelsDirectory() => Path.GetTempPath();
     }
 

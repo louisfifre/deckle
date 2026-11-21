@@ -3,16 +3,16 @@ using Microsoft.UI.Xaml.Controls;
 
 namespace Deckle.Atelier.Views;
 
-// "Décrire le dossier" (spec, Photos; boards 12.4, 12.19): a model on this
+// "Describe the folder" (spec, Photos; boards 12.4, 12.19): a model on this
 // computer goes through the folder's photos and describes each one that has
-// none. While it runs, the command gives way to "126 sur 412 décrites", a
-// progress bar and a way to stop; "Appliquer les marques…" and "Ouvrir dans
-// darktable" stay usable, and so does "Décrire cette photo" in the panel
+// none. While it runs, the command gives way to "126 of 412 described", a
+// progress bar and a way to stop; "Apply marks…" and "Open in
+// darktable" stay usable, and so does "Describe this photo" in the panel
 // (Open 27, drawn: the queue puts that photo first).
 //
 // The run belongs to the app (PhotoDescriptions): leaving the folder or
 // closing the window does not stop it, and the folder shows its progress
-// again when it is opened. Only "Arrêter" stops it. When it ends, a bar above
+// again when it is opened. Only "Stop describing the folder" stops it. When it ends, a bar above
 // the gallery says how many photos have a description and how many failed;
 // a stop says so too, and a failure of the setup says what is missing and
 // leads to the setting (Open 33, no board: said where the command is, as

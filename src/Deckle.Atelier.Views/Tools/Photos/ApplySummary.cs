@@ -4,12 +4,12 @@ using Microsoft.UI.Xaml.Media;
 
 namespace Deckle.Atelier.Views;
 
-// The summary "Appliquer les marques…" opens before anything moves (board
+// The summary "Apply marks…" opens before anything moves (board
 // 12.6): how many photos go to the Windows Recycle Bin and what they weigh,
 // that they can be recovered until the bin is emptied, a strip of the first
 // of them, then that the kept and the unmarked photos do not change. Its main
-// button names the act and its count ("Mettre 37 photos à la Corbeille");
-// "Annuler" leaves everything as it was.
+// button names the act and its count ("Move 37 photos to the Recycle Bin");
+// "Cancel" leaves everything as it was.
 //
 // A ContentDialog: the system's own surface for a decision that blocks the
 // window until it is taken, with its smoke layer and its keys (Enter, Esc).

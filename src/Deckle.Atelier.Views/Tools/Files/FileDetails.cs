@@ -4,7 +4,7 @@ namespace Deckle.Atelier.Views;
 
 // What the details panel holds for a file or a folder of the list: size, date
 // modified and location (board 12.1). The kind reads as File Explorer names a
-// type it knows nothing more of ("Fichier PDF"); the names Windows gives each
+// type it knows nothing more of ("PDF File"); the names Windows gives each
 // registered type come with the real file icons, behind the same seam.
 internal static class FileDetails
 {

@@ -38,7 +38,7 @@ public sealed class MapInventory
     }
 
     // What the map looks for, in the order of the sections: the empty state
-    // lists it (12.14, "Ni fichier de contexte, ni skill, ...").
+    // lists it (12.14, "No context file, no skill, ...").
     public static IReadOnlyList<MapItemKind> KindsLookedFor { get; } = Enum.GetValues<MapItemKind>();
 
     public string Folder { get; }
@@ -75,17 +75,17 @@ public sealed class MapInventory
 
     public MapItem? Find(string id) => _byId.GetValueOrDefault(id);
 
-    // "Cite (n)": what the item links to.
+    // "Cites (n)": what the item links to.
     public IReadOnlyList<MapLink> LinksFrom(MapItem item) => [.. _from[item.Id]];
 
-    // "Est cité par (n)": what links to the item.
+    // "Cited by (n)": what links to the item.
     public IReadOnlyList<MapLink> LinksTo(MapItem item) => [.. _to[item.Id]];
 
-    // "dans les deux sens": the other item links back.
+    // "both ways": the other item links back.
     public bool IsMutual(MapLink link) => _pairs.Contains((link.ToId.ToUpperInvariant(), link.FromId.ToUpperInvariant()));
 
     // The items linked to this one in either direction, each once: the
-    // "Liens" column (12.8a) and the nodes of the panel's graph.
+    // "Links" column (12.8a) and the nodes of the panel's graph.
     public IReadOnlyList<MapItem> Neighbours(MapItem item) =>
         [.. _from[item.Id].Select(l => l.ToId).Concat(_to[item.Id].Select(l => l.FromId))
             .Distinct(StringComparer.OrdinalIgnoreCase)

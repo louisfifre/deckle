@@ -259,29 +259,6 @@ public sealed partial class LlmProfilesSection : UserControl
         // a model and a prompt.
         OpenProfile(vm);
     }
-
-    // Scope: the Profiles list only, replaced by the defaults. The normalizer
-    // gives the fresh defaults their ids and re-pairs the active profile to
-    // them by name.
-    private async void ResetSection_Click(object sender, RoutedEventArgs e)
-    {
-        bool confirmed = await ConfirmationService.RequestAsync(
-            this.XamlRoot,
-            new ConfirmationRequest(
-                Loc.Get("Settings_ResetProfilesDialog_Title"),
-                Loc.Get("Settings_ResetProfilesDialog_Content"),
-                Loc.Get("Common_Reset"),
-                IsDestructive: true));
-        if (!confirmed)
-            return;
-
-        var defaults = new LlmSettings();
-        LlmSettingsService.Instance.Current.Profiles = defaults.Profiles;
-        LlmSettingsNormalizer.Apply(LlmSettingsService.Instance.Current);
-        LlmSettingsService.Instance.Save();
-        Reload();
-        ProfilesChanged?.Invoke(this, EventArgs.Empty);
-    }
 }
 
 // What a profile's provider ComboBox lists: the id it stores and the name it

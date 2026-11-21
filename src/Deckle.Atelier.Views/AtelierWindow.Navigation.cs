@@ -52,7 +52,7 @@ public sealed partial class AtelierWindow
     }
 
     // With no folder added, every button of the top row is disabled except
-    // the pane's, and the address bar says "Aucun dossier" (12.11).
+    // the pane's, and the address bar says "No folder" (12.11).
     private void ShowEmptyState()
     {
         ++_placeRequest;

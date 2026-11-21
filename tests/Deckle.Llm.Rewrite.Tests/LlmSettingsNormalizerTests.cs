@@ -9,7 +9,7 @@ public sealed class LlmSettingsNormalizerTests
     [Fact]
     public void RenamedProfileResyncsTheActiveProfileName()
     {
-        var settings = new LlmSettings();
+        LlmSettings settings = LlmSettingsFixtures.WithTwoProfiles();
         LlmSettingsNormalizer.RepairProfileReferences(settings);
         RewriteProfile profile = settings.Profiles[0];
         settings.ActiveProfileId = profile.Id;
@@ -43,8 +43,7 @@ public sealed class LlmSettingsNormalizerTests
     [Fact]
     public void ProfilesWithoutAnIdGetADistinctStableOne()
     {
-        var settings = new LlmSettings();
-        foreach (RewriteProfile profile in settings.Profiles) profile.Id = "";
+        LlmSettings settings = LlmSettingsFixtures.WithTwoProfiles();
 
         bool mutated = LlmSettingsNormalizer.RepairProfileReferences(settings);
 
@@ -57,7 +56,7 @@ public sealed class LlmSettingsNormalizerTests
     [Fact]
     public void AnActiveProfileKnownOnlyByNameIsPairedWithTheProfileIdIgnoringCase()
     {
-        var settings = new LlmSettings();
+        LlmSettings settings = LlmSettingsFixtures.WithTwoProfiles();
         LlmSettingsNormalizer.RepairProfileReferences(settings);
         RewriteProfile profile = settings.Profiles[0];
         settings.ActiveProfileId = null;
@@ -72,7 +71,7 @@ public sealed class LlmSettingsNormalizerTests
     [Fact]
     public void TheIdWinsOverAStaleNameOnTheActiveProfile()
     {
-        var settings = new LlmSettings();
+        LlmSettings settings = LlmSettingsFixtures.WithTwoProfiles();
         LlmSettingsNormalizer.RepairProfileReferences(settings);
         RewriteProfile first = settings.Profiles[0];
         RewriteProfile second = settings.Profiles[1];

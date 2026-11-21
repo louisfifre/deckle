@@ -193,7 +193,7 @@ internal sealed partial class SizesView : UserControl, IAtelierToolView
         Message.Visibility = message is null ? Visibility.Collapsed : Visibility.Visible;
     }
 
-    // "Analyser à nouveau (F5)", and beneath it when this place was last
+    // "Analyze again (F5)", and beneath it when this place was last
     // analysed (12.21).
     private void ShowRefreshLabel()
     {
