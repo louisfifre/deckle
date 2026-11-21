@@ -2396,14 +2396,6 @@ _Generated from `git ls-files` — do not edit by hand._
 │   │   ├── Deckle.Shell.WindowChrome.csproj
 │   │   ├── NavigationPane.cs
 │   │   └── NavigationPaneState.cs
-│   ├── Deckle.Speech/
-│   │   ├── ChatterboxSpeechBackend.cs
-│   │   ├── Deckle.Speech.csproj
-│   │   ├── DeckleSpeechSource.cs
-│   │   ├── ISpeechBackend.cs
-│   │   ├── SpeechEngine.cs
-│   │   ├── SpeechSettings.cs
-│   │   └── SpeechSettingsService.cs
 │   ├── Deckle.Transcription/
 │   │   ├── Corpus/
 │   │   │   ├── CorpusTier.cs
@@ -2518,6 +2510,7 @@ _Generated from `git ls-files` — do not edit by hand._
 │   │   │   ├── WhisperViewModel.DictationExperience.cs
 │   │   │   ├── WhisperViewModel.Engine.cs
 │   │   │   ├── WhisperViewModel.Settings.cs
+│   │   │   ├── WhisperViewModel.SpeechEngine.cs
 │   │   │   └── WhisperViewModel.Streaming.cs
 │   │   ├── Deckle.Transcription.Views.csproj
 │   │   ├── DecodingPage.xaml
@@ -3417,13 +3410,6 @@ _Generated from `git ls-files` — do not edit by hand._
 │   ├── Deckle.Shell.WindowChrome.Tests/
 │   │   ├── Deckle.Shell.WindowChrome.Tests.csproj
 │   │   └── NavigationPaneStateTests.cs
-│   ├── Deckle.Speech.Tests/
-│   │   ├── Deckle.Speech.Tests.csproj
-│   │   ├── IsolatedDataRoot.cs
-│   │   ├── MessageTemplateDoctrineTests.cs
-│   │   ├── SpeechEngineBugNotes.md
-│   │   ├── SpeechEngineTests.cs
-│   │   └── SpeechSettingsTests.cs
 │   ├── Deckle.TestSupport/
 │   │   ├── Deckle.TestSupport.csproj
 │   │   ├── EventArgsExtensions.cs
@@ -3464,6 +3450,7 @@ _Generated from `git ls-files` — do not edit by hand._
 │   │   ├── DictationRecoveryStoreTests.cs
 │   │   ├── DictationTableTemplateTests.cs
 │   │   ├── EnergySegmenterTests.cs
+│   │   ├── EngineChoiceSettingsTests.cs
 │   │   ├── FileBatchLifecycleTests.cs
 │   │   ├── FileToTextTests.cs
 │   │   ├── FileTranscriptionQueueTests.cs

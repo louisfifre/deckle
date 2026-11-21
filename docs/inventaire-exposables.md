@@ -8,7 +8,7 @@
 
 **Hors périmètre.** Les littéraux XAML (bornes `Minimum`/`Maximum`/`StepFrequency` des sliders), les tables lexicales préfixées `_`, et tout ce qui vit sous `tests/`.
 
-Total : **622 entrées** réparties sur **38 modules**.
+Total : **617 entrées** réparties sur **37 modules**.
 
 | Module | Entrées |
 |---|---|
@@ -44,7 +44,6 @@ Total : **622 entrées** réparties sur **38 modules**.
 | Deckle.Shell | 3 |
 | Deckle.Shell.TaskbarCover | 3 |
 | Deckle.Shell.TrayMenu | 2 |
-| Deckle.Speech | 5 |
 | Deckle.Transcription | 60 |
 | Deckle.Transcription.Whisper | 1 |
 | Deckle.Vad | 4 |
@@ -687,16 +686,6 @@ Total : **622 entrées** réparties sur **38 modules**.
 | CursorExcludeHalfExtent | tuning-constant | `18` | src/Deckle.Shell.TrayMenu/TrayContextMenuHost.cs:54 | non | Physical-pixel exclusion margin keeping the tray flyout off the tray icon (36px slot at 100% DPI). Derived from a system metric, not a taste knob. |
 | FlyoutFrameMargin | tuning-constant | `4.0` | src/Deckle.Shell.TrayMenu/TrayContextMenuHost.cs:61 | non | Fallback-path chrome margin for MeasureFlyout. Comment says it is imprecise by nature and no longer drives the nominal path (which reads the real presenter DesiredSize). Likely dead-weight rather than exposable. |
 
-## Deckle.Speech
-
-| Nom | Type | Valeur actuelle | Fichier:ligne | Juin | Doute |
-|---|---|---|---|---|---|
-| SpeechSettings.Enabled | persisted-setting | `false` | src/Deckle.Speech/SpeechSettings.cs:18 | oui | Verified. Persisted to <UserDataRoot>/modules/speech/settings.json via SpeechSettingsService. No consumer today: the read-aloud hotkey (Alt+Win+`) fires regardless of Enabled, per the class comment. Dormant skeleton — June lacuna #7. |
-| SpeechSettings.Voice | persisted-setting | `SpeechVoice.Pierre` | src/Deckle.Speech/SpeechSettings.cs:22 | oui | Verified. Closed enum {Pierre, Jessica} (FR reference clips). Wired through to ISpeechBackend.SynthesizeAsync but ignored by the Chatterbox stub. Enum set flagged in code as revisitable at the ONNX palier. |
-| SpeechSettings.Temperature | persisted-setting | `0.6` | src/Deckle.Speech/SpeechSettings.cs:27 | oui | Verified. Comment gives practical range [0.5, 0.7] (below 0.5 robotic) — a UI range hint the sweep does not carry. Ignored by the stub backend. |
-| SpeechEngine.OutputSampleRate | tuning-constant | `24000` | src/Deckle.Speech/SpeechEngine.cs:22 | non | Kept under doubt. private const, output render rate fixed at Chatterbox S3Gen's 24 kHz — dictated by the model, not a taste knob. Likely frozen-in-code, not exposable. |
-| ChatterboxSpeechBackend.SampleRate | tuning-constant | `24000` | src/Deckle.Speech/ChatterboxSpeechBackend.cs:17 | non | Kept under doubt. Duplicate of OutputSampleRate (same 24 kHz, two declaration sites). Model-imposed format constant; dedup by value before any count. |
-
 ## Deckle.Transcription
 
 | Nom | Type | Valeur actuelle | Fichier:ligne | Juin | Doute |
@@ -803,7 +792,6 @@ Reprises **verbatim** de la section « Lacunes / à recouper » de `docs/inventa
 - totalSettings=132 is a deduplicated estimate across seven overlapping zone reports that recount the same POCOs; it counts persisted category=='setting' entries (incl. frozen DSP params and dormant Speech skeleton) and excludes category=='diagnostic'/'command' and read-only ids (RewriteProfile.Id). A line-by-line POCO census would firm the exact figure.
 - EnergySegmenter HangoverCurve (X1/Y1/X2/Y2, defaults 0.85/0.10/0.90/0.25) is persisted but has NO UI anywhere (not Settings, not the composed fold, not Playground) — confirm it is intentionally unexposed (cubic-bezier easing) and whether it should ever surface.
 - Frozen Preprocessing DSP params (HighPassEnabled/Hz, GateEnabled, Compressor bundle, LimiterEnabled) are persisted but exposed only in Playground/never — confirm they stay frozen and are not migration candidates.
-- SpeechSettings (Enabled/Voice/Temperature) are fully persisted to modules/speech/settings.json with NO UI — dormant skeleton. Confirm they stay out of any Settings page until the ONNX backend lands.
 - TaskbarCoverSettings.Enabled and MouseWheelSettings.RecordEvents are persisted but live only in the tray menu / Playground respectively — confirm these are deliberately not in the Settings UI.
 - TemperatureIncrement (InfoBar warning when =0) and Logprob/NoSpeech sliders (Min/Max set in code-behind for a WinUI trimming bug) carry chrome the plain Slider/Number descriptor does not reproduce — confirm the composer can host that auxiliary chrome before migrating, or accept its loss.
 - AudioCorpusContent and LlmSettings.RuleMetric drive the VISIBILITY of sibling panels (not just their own value). The radio-Choice variant alone does not make them composable — they also need cross-sibling visibleWhen, which folds-within-folds and the current flat model may not support. Verify the composer's VisibleWhen reach before counting them as migrate-now.
@@ -813,7 +801,6 @@ Reprises **verbatim** de la section « Lacunes / à recouper » de `docs/inventa
 
 - Lacune 2 (EnergySegmenter) — `Deckle.Transcription` confirme -45.0 / 5000 / 500 / 15000 / 120000 / 150 / 250, et note que la section consolidée de juin (lignes 206-212) porte encore les anciens chiffres alors que sa table par module porte les bons.
 - Lacune 5 (HangoverCurve) — probablement périmée : le dépôt a depuis un `HangoverCurveCanvas` (éditeur de bézier Win2D dans `Ui/Controls/`). Son câblage dans WhisperPage n'a pas été vérifié.
-- Lacune 7 (SpeechSettings) — `Deckle.Speech` confirme les trois valeurs (false / Pierre / 0.6), sans dérive. `Enabled` n'a aujourd'hui aucun consommateur.
 - Lacune 8 (MouseWheelSettings.RecordEvents) — `Deckle.Input` confirme que c'est le seul réglage persisté du module.
 
 ---
