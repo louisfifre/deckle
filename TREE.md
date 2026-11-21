@@ -203,6 +203,7 @@ _Generated from `git ls-files` — do not edit by hand._
 │   │   ├── research--cerveau-llm--2026-10-13.md  — Cadrage vérifié (2026-10-13) — un cerveau LLM dans Deckle.Llm : les crédits API…
 │   │   ├── research--courbe-manipulation-directe--2026-11-07.md  — Note de conception du changement 7 de la revue de cohérence des pages audio (20…
 │   │   ├── research--cout-de-capture--2026-11-07.md  — Mesure (2026-11-07) : ce que coûte la capture Ambient à 60 Hz et au-delà sur l'…
+│   │   ├── research--fin-de-prise--2026-11-21.md  — Mesure (2026-11-21) du délai de fin de prise de 400 ms sur 113 prises brutes du…
 │   │   ├── research--prompts-de-reecriture--2026-11-07.md  — Ce que la boucle d'optimisation des prompts de réécriture et la campagne « prom…
 │   │   ├── research--settings-ux--2026-10-13.md  — Recherche vérifiée (2026-10-13), la direction Settings de Louis passée au cribl…
 │   │   ├── research--seuils-voix--2026-11-06.md  — Cadrage vérifié (2026-11-06) — les seuils de niveau et de détection de voix dup…
@@ -2518,6 +2519,7 @@ _Generated from `git ls-files` — do not edit by hand._
 │   │   │   ├── WhisperViewModel.DictationExperience.cs
 │   │   │   ├── WhisperViewModel.Engine.cs
 │   │   │   ├── WhisperViewModel.Settings.cs
+│   │   │   ├── WhisperViewModel.SpeechEngine.cs
 │   │   │   └── WhisperViewModel.Streaming.cs
 │   │   ├── Deckle.Transcription.Views.csproj
 │   │   ├── DecodingPage.xaml
@@ -3464,6 +3466,7 @@ _Generated from `git ls-files` — do not edit by hand._
 │   │   ├── DictationRecoveryStoreTests.cs
 │   │   ├── DictationTableTemplateTests.cs
 │   │   ├── EnergySegmenterTests.cs
+│   │   ├── EngineChoiceSettingsTests.cs
 │   │   ├── FileBatchLifecycleTests.cs
 │   │   ├── FileToTextTests.cs
 │   │   ├── FileTranscriptionQueueTests.cs

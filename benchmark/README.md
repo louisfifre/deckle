@@ -12,5 +12,6 @@ Experimental harnesses kept near Deckle but not product code. Only the rewrite e
 |---|---|
 | [`rewrite/paragraph-gate`](rewrite/paragraph-gate/) | Runs the production paragraph prompt, engine and diff gate on a local model. |
 | [`rewrite/model-compare`](rewrite/model-compare/) | Runs Claude models × prompt variants on the whole-dictation rewrite, judged by an LLM, and optimizes a profile's prompt in campaigns. |
+| [`capture-tail`](capture-tail/) | Single-file tool (`dotnet run TailMeasure.cs`) that measures, on corpus WAVs and with aggregate output only, how much speech the end-of-capture tail catches. |
 
 `Directory.Build.props` and `Directory.Packages.props` here cut the bench projects off from the root build conventions and from Central Package Management, so each study keeps its own package versions.
