@@ -15,12 +15,16 @@ namespace Deckle.Catalog;
 // square the shade of AccentFillColorDefault (Dark1, Light2), and the symbol
 // on it the colour of TextOnAccentFillColorPrimary (white, black).
 //
-// The four other tints have no theme resource in Windows: their values are
-// the accent swatches of Windows Settings (Personalisation > Colours), a
-// deeper one for the light theme and a brighter one of the same hue for the
-// dark theme. Each keeps at least 3:1 against the window's background, the
-// contrast WCAG asks of a graphic, and its symbol on the square keeps 4.5:1.
-// A proposal for the maintainer to change; the table below is the one place.
+// The four other tints have no theme resource in Windows. Each keeps the hue
+// of the Windows Settings accent swatch it was first taken from, but is built
+// in OKLCH, where one lightness reads as equally light across hues, so the
+// four sit together instead of shouting: the swatches themselves were too
+// vivid beside Mica. Light theme: chroma 0.15 and the lightest lightness that
+// keeps the white symbol on the square at 4.5:1 (about 0.58). Dark theme:
+// lightness 0.74, chroma 0.14, a soft pastel that keeps the black symbol at
+// 8.5:1 and 6.5:1 against the dark window. Each keeps at least 3:1 against
+// the window's background, the contrast WCAG asks of a graphic. The table
+// below is the one place the colours live.
 //
 // In high contrast every tint takes the system's colours: high contrast
 // replaces an app's colours by the person's own.
@@ -34,10 +38,10 @@ internal static class IconTintPalette
     //                                         light theme       dark theme
     private static readonly Dictionary<IconTint, (Color Light, Color Dark)> Swatches = new()
     {
-        [IconTint.Red] = (Rgb(0xD1, 0x34, 0x38), Rgb(0xFF, 0x43, 0x43)),
-        [IconTint.Orange] = (Rgb(0xCA, 0x50, 0x10), Rgb(0xF7, 0x63, 0x0C)),
-        [IconTint.Green] = (Rgb(0x10, 0x7C, 0x10), Rgb(0x00, 0xCC, 0x6A)),
-        [IconTint.Purple] = (Rgb(0x88, 0x17, 0x98), Rgb(0xC2, 0x39, 0xB3)),
+        [IconTint.Red] = (Rgb(0xC5, 0x51, 0x4D), Rgb(0xF7, 0x85, 0x7E)),
+        [IconTint.Orange] = (Rgb(0xC1, 0x56, 0x26), Rgb(0xF3, 0x8B, 0x60)),
+        [IconTint.Green] = (Rgb(0x31, 0x86, 0x2D), Rgb(0x73, 0xC1, 0x6D)),
+        [IconTint.Purple] = (Rgb(0xA4, 0x59, 0xB0), Rgb(0xD4, 0x8B, 0xDF)),
     };
 
     // Raised, off the UI thread, when the person changes Windows' accent
