@@ -58,6 +58,16 @@ _Generated from `git ls-files` — do not edit by hand._
 │   └── workflows/
 │       └── update-readme-stats.yml
 ├── benchmark/
+│   ├── capture-tail/
+│   │   ├── .gitignore
+│   │   ├── CaptureTail.csproj
+│   │   ├── EnergyProfile.cs
+│   │   ├── Program.cs
+│   │   ├── RawTakeCatalog.cs
+│   │   ├── Stats.cs
+│   │   ├── TailReplay.cs
+│   │   ├── WavSamples.cs
+│   │   └── WordMetrics.cs
 │   ├── rewrite/
 │   │   ├── model-compare/
 │   │   │   ├── campaigns/
