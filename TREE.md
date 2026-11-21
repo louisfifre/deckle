@@ -732,6 +732,7 @@ _Generated from `git ls-files` — do not edit by hand._
 │   │   ├── LogWindow.xaml.cs
 │   │   ├── ProdUpdate.cs
 │   │   ├── Program.cs
+│   │   ├── ResidentMutexGate.cs
 │   │   ├── SecondaryWindowPlacement.cs
 │   │   ├── TranscribeRewriteHistory.cs
 │   │   ├── TranscribeRewriteWindow.AutoSave.cs
@@ -2730,6 +2731,7 @@ _Generated from `git ls-files` — do not edit by hand._
 │   │   ├── MilestoneClosersTests.cs
 │   │   ├── ProdApplyUpdateTests.cs
 │   │   ├── ProdUpdateTests.cs
+│   │   ├── ResidentMutexGateTests.cs
 │   │   ├── ReswMirrorTests.cs
 │   │   ├── SelfCheckBugNotes.md
 │   │   ├── SelfCheckTests.cs
