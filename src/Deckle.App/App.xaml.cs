@@ -26,7 +26,6 @@ public partial class App : Microsoft.UI.Xaml.Application
     private LogWindow? _logWindow;
 
     private Settings.SettingsWindow? _settingsWindow;
-    private Mail.Hub.MailWindow? _mailWindow;
     private HudWindow? _hudWindow;
     private HudOverlayManager? _overlayManager;
     private TrayIconManager? _tray;

@@ -2,32 +2,40 @@
 .SYNOPSIS
     Self-check the built app
 .DESCRIPTION
-    Runs the built Deckle once in its self-check mode and judges its report.
-    Takes the already-built Deckle.exe of this checkout (it never builds), runs it
-    with --self-check on a fresh data root of its own, waits for it, and reads
-    the report.json it writes. The app opens its Settings window, walks every
-    page, opens the Log window, the small Transcribe and rewrite and Paste to
-    folder windows, the Mail window, the Atelier and Deckle Projects,
-    probes the microphone once and exits (see src/Deckle.App/App.SelfCheck.cs for what it composes and why).
+    Runs a built app of the suite once in its self-check mode and judges its
+    report. Takes the already-built executable of this checkout (it never
+    builds), runs it with --self-check on a fresh data root of its own, waits
+    for it, and reads the report.json it writes. By default the app is the
+    published Deckle: it opens its Settings window, walks every page, opens the
+    Log window, the small Transcribe and rewrite and Paste to folder windows
+    and Deckle Projects, probes the microphone once and exits (see
+    src/Deckle.App/App.SelfCheck.cs for what it composes and why). With -App
+    mail or atelier the run is the separate app's own walk (DeckleMail.exe,
+    DeckleAtelier.exe), which the published Deckle no longer holds.
 
     It runs beside the maintainer's resident Deckle: it takes no mutex of the
     resident app, composes no hook, no hotkey, no tray icon and no engine, and it
     never reads the maintainer's data root. The script prints the process ids of
-    the other Deckle processes before and after, so a run that touched the
-    resident app would show. One self-check runs at a time on the machine: a
+    the other processes of the same app before and after, so a run that touched
+    a resident instance would show. One self-check runs at a time on the machine: a
     second one waits for the first to end.
 
     A run fails when the app exits with anything but 0 or 1 (a crash exit code
     such as 0xC00000FD, a stack overflow, is named), when it times out, when no
     report was written, or when the report says "failed". Exit code of this
     script: 0 passed, 1 failed.
+.PARAMETER App
+    Which app of the suite: deckle (the published Deckle, the default), mail
+    (DeckleMail.exe) or atelier (DeckleAtelier.exe). Each has its own data
+    root, so the fresh root of the run isolates all three alike.
 .PARAMETER Only
-    Check one thing instead of everything: a window (settings, log,
-    transcribe-rewrite, paste-to-folder, mail, atelier, projects) or one view
-    of Settings, Mail, the Atelier, Projects or a small window's states, named
-    as its image is in a full run: settings/general, mail/activity,
+    Check one thing instead of everything: a window (for the published Deckle
+    settings, log, transcribe-rewrite, paste-to-folder, projects; for -App
+    atelier, atelier; for -App mail, mail) or one view
+    of Settings, the Atelier, Projects or a small window's states, named
+    as its image is in a full run: settings/general,
     atelier/photos-gallery, projects/p3, paste-to-folder/full (its states:
-    empty, list, failed, full). A Mail, Atelier or
+    empty, list, failed, full). An Atelier or
     Projects view is a state reached from the ones before it, so the walk is
     played up to it without pictures and stops there. The other windows and the microphone probe are left out, and
     "passed" then speaks of that target alone. A target that names nothing
@@ -56,10 +64,15 @@
     section: Run
     order: 125
     action: Self-check |
+    action: Self-check Mail | -App mail
+    action: Self-check Folders | -App atelier
 #>
 
 [CmdletBinding()]
 param(
+    # deckle, mail or atelier; checked below, not a [ValidateSet]: the script's one
+    # enumerated parameter is Configuration, which the launcher reads as its variant.
+    [string]$App = 'deckle',
     [string]$Only,
     [ValidateSet('Debug', 'Release')]
     [string]$Configuration = 'Debug',
@@ -72,11 +85,20 @@ param(
 )
 
 $ErrorActionPreference = 'Stop'
+if ($App -notin 'deckle', 'mail', 'atelier') { [Console]::Error.WriteLine("-App is deckle, mail or atelier, not '$App'."); exit 1 }
 
 $RepoRoot = if ($Target) { (Resolve-Path -LiteralPath $Target).Path } else { Split-Path -Parent $PSScriptRoot }
-$ExePath = Join-Path $RepoRoot "artifacts\bin\Deckle.App\$($Configuration.ToLowerInvariant())\Deckle.exe"
+# The three executables of the suite: project folder, executable name.
+$apps = @{
+    deckle  = @{ Project = 'Deckle.App'; Exe = 'Deckle.exe' }
+    mail    = @{ Project = 'Deckle.Mail.App'; Exe = 'DeckleMail.exe' }
+    atelier = @{ Project = 'Deckle.Atelier.App'; Exe = 'DeckleAtelier.exe' }
+}
+$AppProject = $apps[$App].Project
+$ProcessName = [System.IO.Path]::GetFileNameWithoutExtension($apps[$App].Exe)
+$ExePath = Join-Path $RepoRoot "artifacts\bin\$AppProject\$($Configuration.ToLowerInvariant())\$($apps[$App].Exe)"
 if (-not (Test-Path -LiteralPath $ExePath)) {
-    Write-Host "self-check: no built app at $ExePath. Build it first (scripts/build-locked.ps1 -Project src/Deckle.App/Deckle.App.csproj)." -ForegroundColor Red
+    Write-Host "self-check: no built app at $ExePath. Build it first (scripts/build-locked.ps1 -Project src/$AppProject/$AppProject.csproj)." -ForegroundColor Red
     exit 1
 }
 
@@ -106,7 +128,7 @@ if ($LinkRuntime) {
 }
 
 function Get-OtherDeckleIds([int]$Except) {
-    @(Get-Process -Name Deckle -ErrorAction SilentlyContinue | Where-Object { $_.Id -ne $Except } | ForEach-Object { $_.Id } | Sort-Object)
+    @(Get-Process -Name $ProcessName -ErrorAction SilentlyContinue | Where-Object { $_.Id -ne $Except } | ForEach-Object { $_.Id } | Sort-Object)
 }
 
 # DECKLE_DATA_ROOT goes to the child's environment only: this process, and the

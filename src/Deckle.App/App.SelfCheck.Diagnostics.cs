@@ -1,5 +1,6 @@
 using CommunityToolkit.WinUI.Controls;
 using Deckle.App.SelfCheck;
+using Deckle.Hosting.SelfCheck;
 using Deckle.Diagnostics.Logging;
 using Deckle.Diagnostics.Telemetry;
 using Deckle.Vision;

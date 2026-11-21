@@ -16,33 +16,9 @@ public sealed partial class DeckleAppSource
         if (IsEnabled()) WriteEvent(EvtUserFeedbackEmitted, severity, title, body, role);
     }
 
-    // One event for any secondary window step that failed without breaking
-    // the window. window: settings, log, mail. operation names the step
-    // (placement_restore, placement_save, placement_load...); reason is
-    // exception when ex_type and ex_message carry the cause.
-    [Event(EvtWindowOperationFailed,
-           Level = EventLevel.Warning,
-           Keywords = (EventKeywords)Keywords.Windowing,
-           Message = "A window step failed, and the window works on\nwindow={0} | operation={1} | reason={2} | ex_type={3} | ex_message={4}")]
-    public void WindowOperationFailed(string window, string operation, string reason, string ex_type, string ex_message)
-    {
-        if (IsEnabled()) WriteEvent(EvtWindowOperationFailed, window, operation, reason, ex_type, ex_message);
-    }
-
-    // Once per window per process: later opens re-activate the same window.
-    [Event(EvtWindowCreated,
-           Level = EventLevel.Informational,
-           Keywords = (EventKeywords)Keywords.Lifecycle,
-           Tags = ObservationTags.Milestone,
-           Message = "Window created")]
-    public void WindowCreated(string window)
-    {
-        if (IsEnabled()) WriteEvent(EvtWindowCreated, window);
-    }
-
     // Each time the person opens a window, created or already there:
     // milestone-tagged so log.jsonl says what was on screen. Only the
-    // window's name: settings, log, mail, atelier, projects.
+    // window's name: settings, log, atelier, projects.
     [Event(EvtWindowOpened,
            Level = EventLevel.Informational,
            Keywords = (EventKeywords)Keywords.Lifecycle,
@@ -51,16 +27,6 @@ public sealed partial class DeckleAppSource
     public void WindowOpened(string window)
     {
         if (IsEnabled()) WriteEvent(EvtWindowOpened, window);
-    }
-
-    // The window does not open; the exception goes on to the crash net.
-    [Event(EvtWindowOpenFailed,
-           Level = EventLevel.Error,
-           Keywords = (EventKeywords)Keywords.Lifecycle,
-           Message = "A window could not be opened\nwindow={0} | ex_type={1} | ex_message={2}")]
-    public void WindowOpenFailed(string window, string ex_type, string ex_message)
-    {
-        if (IsEnabled()) WriteEvent(EvtWindowOpenFailed, window, ex_type, ex_message);
     }
 
     // toggle is the TrayToggle id; the hotkey path also logs HotkeyToggle.

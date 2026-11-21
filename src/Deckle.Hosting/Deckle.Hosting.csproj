@@ -1,0 +1,31 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <RootNamespace>Deckle.Hosting</RootNamespace>
+    <!-- Window, ElementTheme and the imaging types are WinUI 3 / Windows App
+         SDK types. The project ships no XAML page or resource of its own. -->
+    <UseWinUI>true</UseWinUI>
+    <NoWarn>$(NoWarn);IDE1006</NoWarn>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <InternalsVisibleTo Include="Deckle.Hosting.Tests" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <PackageReference Include="Microsoft.WindowsAppSDK" />
+    <PackageReference Include="Microsoft.Windows.SDK.BuildTools" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\Deckle.Core\Deckle.Core.csproj" />
+    <ProjectReference Include="..\Deckle.Diagnostics\Deckle.Diagnostics.csproj" />
+    <!-- InterfaceCaptureRun: the self-check's window photographs. -->
+    <ProjectReference Include="..\Deckle.Vision\Deckle.Vision.csproj" />
+  </ItemGroup>
+
+  <!-- What an executable of the suite needs besides its own windows: the
+       resident-instance guard by identity, the diagnostics boot, the window
+       helpers (create, place, theme) and the self-check harness. Support, not
+       a domain: it knows no module by name, so the published Deckle and every
+       separate app are built on the same kit. -->
+</Project>

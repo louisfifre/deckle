@@ -1,28 +1,14 @@
 using Xunit;
+using Deckle.Core;
 
 namespace Deckle.Atelier.Tests;
 
-// The path rules every part of the Atelier agrees on, and the place built on
-// them: what the address bar shows and where Up stops.
+// The place built on the path rules (FolderPaths, in Core): what the address
+// bar shows and where Up stops.
 [Trait("Category", "unit")]
 public sealed class PathRulesTests
 {
     private static readonly AddedFolder Photos = new(@"D:\Photos", DateTimeOffset.UnixEpoch);
-
-    [Fact]
-    public void AFolderWhoseNameStartsLikeTheRootIsNotInsideIt()
-    {
-        Assert.False(FolderPaths.IsInside(@"D:\Photos", @"D:\Photos2\a"));
-        Assert.True(FolderPaths.IsInside(@"D:\Photos", @"d:\photos\2026\"));
-        Assert.True(FolderPaths.IsInside(@"D:\", @"D:\Photos"));
-    }
-
-    [Fact]
-    public void ADriveRootIsNamedByItsLetter()
-    {
-        Assert.Equal("D:", FolderPaths.DisplayName(@"D:\"));
-        Assert.Equal("Photos", FolderPaths.DisplayName(@"D:\Photos\"));
-    }
 
     [Fact]
     public void TheSegmentsStartAtTheAddedFolderAndEndAtThePlace()

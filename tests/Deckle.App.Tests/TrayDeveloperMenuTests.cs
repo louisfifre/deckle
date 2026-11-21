@@ -1,18 +1,32 @@
+using Deckle.Contributions;
 using Deckle.Shell.TrayMenu;
 using Xunit;
 
 namespace Deckle.App.Tests;
 
-// The developer tray menu: the alpha surfaces, then the developer tools, then
-// Logs and Restart at the bottom, each group behind a separator. The Atelier
-// and Deckle Projects show only while their modules are present.
+// The developer tray menu: the alpha surfaces (the contributed windows in
+// composition order, then Deckle Projects), then the developer tools, then
+// Logs and Restart at the bottom, each group behind a separator. A contributed
+// line is absent when its module is (the host drops it, ContributionHost); the
+// Projects line shows only while its module is present.
 [Trait("Category", "unit")]
 public sealed class TrayDeveloperMenuTests
 {
-    private static IReadOnlyList<TrayMenuEntry> Compose(bool showAtelier, bool showProjects = true)
+    // The lines the composition's windows ask for, as the host hands them over.
+    private static IReadOnlyList<ContributionTrayEntry> Contributed(bool contributed = true, Action? onPreview = null)
+    {
+        var entries = new List<ContributionTrayEntry>
+        {
+            new("preview", "TrayMenu_Preview", onPreview ?? (() => { })),
+        };
+        if (contributed) entries.Add(new("contributed", "TrayMenu_Contributed", () => { }));
+        return entries;
+    }
+
+    private static IReadOnlyList<TrayMenuEntry> Compose(bool showContributed, bool showProjects = true)
         => TrayDeveloperMenu.Compose(
-            showAtelier, showProjects, key => key,
-            () => { }, () => { }, () => { }, () => { }, () => { }, () => { });
+            Contributed(showContributed), showProjects, key => key,
+            () => { }, () => { }, () => { }, () => { });
 
     private static IEnumerable<string> CommandIds(IReadOnlyList<TrayMenuEntry> entries)
         => entries.OfType<TrayMenuCommand>().Select(c => c.Id);
@@ -21,30 +35,39 @@ public sealed class TrayDeveloperMenuTests
     public void TheMenuHoldsTheAlphaSurfacesThenTheCaptureThenLogsAndRestart()
     {
         Assert.Equal(
-            ["atelier", "projects", "mail", "capture-interface", "logs", "restart"],
-            CommandIds(Compose(showAtelier: true)));
+            ["preview", "contributed", "projects", "capture-interface", "logs", "restart"],
+            CommandIds(Compose(showContributed: true)));
     }
 
     [Fact]
-    public void TheAtelierEntryIsAbsentWhenItsModuleIs()
+    public void AContributedEntryIsAbsentWhenTheHostDroppedIt()
     {
         Assert.Equal(
-            ["projects", "mail", "capture-interface", "logs", "restart"],
-            CommandIds(Compose(showAtelier: false)));
+            ["preview", "projects", "capture-interface", "logs", "restart"],
+            CommandIds(Compose(showContributed: false)));
     }
 
     [Fact]
     public void TheProjectsEntryIsAbsentWhenItsModuleIs()
     {
         Assert.Equal(
-            ["atelier", "mail", "capture-interface", "logs", "restart"],
-            CommandIds(Compose(showAtelier: true, showProjects: false)));
+            ["preview", "contributed", "capture-interface", "logs", "restart"],
+            CommandIds(Compose(showContributed: true, showProjects: false)));
+    }
+
+    [Fact]
+    public void ALabelIsReadFromItsResourceKeyWhenTheMenuOpens()
+    {
+        IReadOnlyList<TrayMenuEntry> entries = Compose(showContributed: true);
+
+        Assert.Equal("TrayMenu_Preview", ((TrayMenuCommand)entries[0]).Label());
+        Assert.Equal("TrayMenu_Contributed", ((TrayMenuCommand)entries[1]).Label());
     }
 
     [Fact]
     public void LogsAndRestartCloseTheMenuBehindTheirOwnSeparator()
     {
-        IReadOnlyList<TrayMenuEntry> entries = Compose(showAtelier: true);
+        IReadOnlyList<TrayMenuEntry> entries = Compose(showContributed: true);
 
         Assert.Equal(2, entries.OfType<TrayMenuSeparator>().Count());
         Assert.IsType<TrayMenuSeparator>(entries[^3]);
@@ -55,7 +78,7 @@ public sealed class TrayDeveloperMenuTests
     [Fact]
     public void TheEverydayCommandsAreNotInThisMenu()
     {
-        IEnumerable<string> ids = CommandIds(Compose(showAtelier: true));
+        IEnumerable<string> ids = CommandIds(Compose(showContributed: true));
 
         Assert.DoesNotContain("settings", ids);
         Assert.DoesNotContain("quit", ids);
@@ -66,13 +89,17 @@ public sealed class TrayDeveloperMenuTests
     {
         var ran = new List<string>();
         IReadOnlyList<TrayMenuEntry> entries = TrayDeveloperMenu.Compose(
-            true, true, key => key,
-            () => ran.Add("atelier"), () => ran.Add("projects"), () => ran.Add("mail"),
+            [
+                new("preview", "TrayMenu_Preview", () => ran.Add("preview")),
+                new("contributed", "TrayMenu_Contributed", () => ran.Add("contributed")),
+            ],
+            true, key => key,
+            () => ran.Add("projects"),
             () => ran.Add("capture-interface"), () => ran.Add("logs"), () => ran.Add("restart"));
 
         foreach (TrayMenuCommand command in entries.OfType<TrayMenuCommand>())
             command.Invoke();
 
-        Assert.Equal(["atelier", "projects", "mail", "capture-interface", "logs", "restart"], ran);
+        Assert.Equal(["preview", "contributed", "projects", "capture-interface", "logs", "restart"], ran);
     }
 }

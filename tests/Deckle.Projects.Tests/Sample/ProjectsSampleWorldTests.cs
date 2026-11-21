@@ -1,5 +1,5 @@
-using Deckle.Atelier;
 using Xunit;
+using Deckle.Core;
 
 namespace Deckle.Projects.Tests;
 

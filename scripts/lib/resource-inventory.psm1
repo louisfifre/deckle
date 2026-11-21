@@ -116,7 +116,20 @@ function Invoke-ResourceInventory {
     $src = Join-Path $RepoRoot 'src'
     $allowlist = Get-ResourceAllowlist -Path $AllowlistPath
     $csFiles = @(Get-ChildItem -LiteralPath $src -Recurse -File -Filter '*.cs' | Where-Object { $_.FullName -notmatch '[\\/](bin|obj)[\\/]' } | Select-Object -Expand FullName)
-    $rootReferences = Get-StaticRootReferences -Paths $csFiles
+    # Each executable resolves Loc.Get against its own map: the published Deckle
+    # (Deckle.App, whatever is not listed here) and the separate apps beside it.
+    $appExecutables = @('Deckle.Mail.App', 'Deckle.Atelier.App')
+    $sep = [System.IO.Path]::DirectorySeparatorChar
+    $rootReferencesOf = @{ 'Deckle.App' = [System.Collections.Generic.HashSet[string]]::new([StringComparer]::Ordinal) }
+    foreach ($name in $appExecutables) { $rootReferencesOf[$name] = [System.Collections.Generic.HashSet[string]]::new([StringComparer]::Ordinal) }
+    foreach ($file in $csFiles) {
+        $owner = 'Deckle.App'
+        foreach ($name in $appExecutables) {
+            if ($file -like "*${sep}src${sep}${name}${sep}*") { $owner = $name }
+        }
+        foreach ($key in (Get-StaticRootReferences -Paths @($file))) { $rootReferencesOf[$owner].Add($key) | Out-Null }
+    }
+    $rootReferences = $rootReferencesOf['Deckle.App']
     $moduleReferences = @(Get-StaticModuleReferences -Paths $csFiles)
     $moduleReferenceKeys = [System.Collections.Generic.HashSet[string]]::new([StringComparer]::Ordinal)
     foreach ($reference in $moduleReferences) {
@@ -141,9 +154,12 @@ function Invoke-ResourceInventory {
     $divergences = [System.Collections.Generic.List[object]]::new()
     $appMap = $maps['Deckle.App']
 
-    foreach ($key in $rootReferences) {
-        if ($null -eq $appMap -or -not $appMap.ContainsKey($key)) {
-            $missing.Add([pscustomobject]@{ Assembly = 'Deckle.App'; Key = $key; Reference = 'Loc root map' })
+    foreach ($executable in $rootReferencesOf.Keys) {
+        $executableMap = $maps[$executable]
+        foreach ($key in $rootReferencesOf[$executable]) {
+            if ($null -eq $executableMap -or -not $executableMap.ContainsKey($key)) {
+                $missing.Add([pscustomobject]@{ Assembly = $executable; Key = $key; Reference = 'Loc root map' })
+            }
         }
     }
     foreach ($reference in $moduleReferences) {
@@ -189,6 +205,7 @@ function Invoke-ResourceInventory {
                 $moduleReferenceKeys.Contains("$($project.Assembly)|$key") -or
                 $requiredKeyIds.Contains("$($project.Assembly)|$key")
             if ($project.Assembly -eq 'Deckle.App') { $used = $used -or $rootReferences.Contains($key) -or $allLiterals.Contains($key) }
+            elseif ($rootReferencesOf.ContainsKey($project.Assembly)) { $used = $used -or $rootReferencesOf[$project.Assembly].Contains($key) }
             if (-not $used -and -not (Test-AllowedResourceKey -Assembly $project.Assembly -Key $key -Rules $allowlist.DynamicKeys)) {
                 $unused.Add([pscustomobject]@{ Assembly = $project.Assembly; Key = $key; Path = $project.Path })
             }

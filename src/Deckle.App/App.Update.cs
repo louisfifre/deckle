@@ -170,14 +170,8 @@ public partial class App
     // The running build's display version — the payload's bare number, the
     // same form the Installed-apps entry stores (informational +commit suffix
     // dropped).
-    private static string CurrentDisplayVersion()
-    {
-        if (Environment.ProcessPath is not { } exe) return "";
-        string? version = FileVersionInfo.GetVersionInfo(exe).ProductVersion;
-        if (string.IsNullOrWhiteSpace(version)) return "";
-        int plus = version.IndexOf('+');
-        return plus > 0 ? version[..plus] : version;
-    }
+    private static string CurrentDisplayVersion() => Deckle.Hosting.ProcessVersion.Display();
+
 
     // The release stage baked in by the csproj's DeckleStage property, through
     // an AssemblyMetadata item. Read from the attribute rather than parsed out

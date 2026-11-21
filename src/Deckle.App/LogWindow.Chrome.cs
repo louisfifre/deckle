@@ -61,7 +61,7 @@ public sealed partial class LogWindow : Window, ILogWindowSink
             _iconIdle = new BitmapImage(new Uri(idlePath));
         else
         {
-            DeckleAppSource.Log.WindowOperationFailed(
+            DeckleWindowingSource.Log.WindowOperationFailed(
                 "log", "icon_load", "idle_icon_not_found", "", "");
         }
 
@@ -69,7 +69,7 @@ public sealed partial class LogWindow : Window, ILogWindowSink
             _iconRecording = new BitmapImage(new Uri(recordingPath));
         else
         {
-            DeckleAppSource.Log.WindowOperationFailed(
+            DeckleWindowingSource.Log.WindowOperationFailed(
                 "log", "icon_load", "recording_icon_not_found", "", "");
         }
     }

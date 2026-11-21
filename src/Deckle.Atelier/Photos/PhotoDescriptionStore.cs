@@ -1,4 +1,5 @@
 using System.Text.Json;
+using Deckle.Core;
 
 namespace Deckle.Atelier;
 

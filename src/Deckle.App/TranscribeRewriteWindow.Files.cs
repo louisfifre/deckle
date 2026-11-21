@@ -1,3 +1,4 @@
+using Deckle.Diagnostics;
 using System.Collections.ObjectModel;
 using System.Collections.Specialized;
 using System.ComponentModel;
@@ -226,7 +227,7 @@ public sealed partial class TranscribeRewriteWindow
         }
         catch (Exception ex)
         {
-            DeckleAppSource.Log.WindowOperationFailed(
+            DeckleWindowingSource.Log.WindowOperationFailed(
                 "transcribe-rewrite", "open-folder", "exception", ex.GetType().Name, ex.Message);
         }
     }
@@ -257,7 +258,7 @@ public sealed partial class TranscribeRewriteWindow
         }
         catch (Exception ex)
         {
-            DeckleAppSource.Log.WindowOperationFailed(
+            DeckleWindowingSource.Log.WindowOperationFailed(
                 "transcribe-rewrite", "read-duration", "exception", ex.GetType().Name, ex.Message);
         }
     }

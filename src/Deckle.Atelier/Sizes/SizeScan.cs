@@ -1,6 +1,7 @@
 using System.Diagnostics;
 using System.IO.Enumeration;
 using System.Threading.Channels;
+using Deckle.Core;
 
 namespace Deckle.Atelier;
 

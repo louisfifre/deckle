@@ -9,8 +9,8 @@ Run one with `pwsh -NoProfile -File scripts/<path> [arguments]`. An action names
 - `build-locked.ps1` — Run one dotnet build or test under the machine-wide Deckle build lock. (not in the menu)
   - Parameters: -Project <string> (required), -Test, -Configuration <string>, -DotnetArgs <string[]>
 - `build-run.ps1` — **Build the app.** Build Deckle for the chosen configuration (x64) and, unless told not to, launch the fresh build.
-  - Actions: Build & run · Build (no run) `-NoRun`
-  - Parameters: -NoRun, -Wait, -Configuration Release|Debug, -Target <string>, -NoAutoRestart, -HudZOrderSelfTest
+  - Actions: Build & run · Build (no run) `-NoRun` · Build & run Mail `-App mail` · Build & run Folders `-App atelier`
+  - Parameters: -App <string>, -NoRun, -Wait, -Configuration Release|Debug, -Target <string>, -NoAutoRestart, -HudZOrderSelfTest
 - `build-server-watchdog.ps1` — Shut the .NET build servers down after five idle minutes. (not in the menu)
   - Parameters: -StateDir <string>, -Arm, -Run, -IdleMinutes <int>, -TickSeconds <int>
 - `deploy-prod.ps1` — **Update the prod copy.** Build main in Release in a build worktree of its own, check it with the self-check, and stage it in the prod copy, the Deckle the maintainer runs every day.
@@ -24,15 +24,15 @@ Run one with `pwsh -NoProfile -File scripts/<path> [arguments]`. An action names
 - `inspect-processes.ps1` — **Show running builds and Deckle instances.** Lists, read-only, the Deckle instances running on this machine with the folder each runs from, then the dotnet builds and tests in progress with their project and age, the build scripts waiting for a slot, and the .NET build servers left behind.
   - Actions: Inspect / processes
 - `launch-app.ps1` — **Launch the freshest built app.** Replace the running Deckle instance with the freshest already-built executable of the chosen configuration.
-  - Actions: Launch
-  - Parameters: -Configuration Release|Debug, -Target <string>, -Wait
+  - Actions: Launch · Launch Mail `-App mail` · Launch Folders `-App atelier`
+  - Parameters: -App <string>, -Configuration Release|Debug, -Target <string>, -Wait
 - `menu.ps1` — Entry of the repository's terminal menu. (not in the menu)
 - `read-log.ps1` — **Read Deckle's log.** Prints the latest entries of Deckle's diagnostics log, one line each: time, level, provider and event, message.
   - Actions: Inspect / log · Inspect / trace `-Trace`
   - Parameters: -Trace, -Last <int>, -Level <string>, -SinceMinutes <int>, -Match <string>, -Payload, -DataRoot <string>
-- `self-check.ps1` — **Self-check the built app.** Runs the built Deckle once in its self-check mode and judges its report.
-  - Actions: Self-check
-  - Parameters: -Only <string>, -Configuration Debug|Release, -Target <string>, -TimeoutSeconds <int>, -OutputFolder <string>, -LinkRuntime, -KeepData
+- `self-check.ps1` — **Self-check the built app.** Runs a built app of the suite once in its self-check mode and judges its report.
+  - Actions: Self-check · Self-check Mail `-App mail` · Self-check Folders `-App atelier`
+  - Parameters: -App <string>, -Only <string>, -Configuration Debug|Release, -Target <string>, -TimeoutSeconds <int>, -OutputFolder <string>, -LinkRuntime, -KeepData
 - `stats.ps1` — **Repository statistics.** Walk every project under src\ and build one file inventory per Deckle module, with line counts.
   - Actions: Statistics / repository
   - Parameters: -Target <string>, -WatchThreshold <int>, -TooLargeThreshold <int>, -CSharpWatchThreshold <int>, -CSharpTooLargeThreshold <int>, -ResourceWatchThreshold <int>, -ResourceTooLargeThreshold <int>, -Json <string>, -PassThru

@@ -1,5 +1,5 @@
 using System.Diagnostics;
-using Deckle.App.SelfCheck;
+using Deckle.Hosting.SelfCheck;
 using Deckle.Core;
 using Deckle.Transcription;
 using Deckle.Transcription.Parakeet;

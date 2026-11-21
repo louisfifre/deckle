@@ -1,5 +1,7 @@
+using static Deckle.Hosting.SelfCheck.SelfCheckCapture;
 using System.Diagnostics;
 using Deckle.App.SelfCheck;
+using Deckle.Hosting.SelfCheck;
 using Deckle.Core;
 using Deckle.Modules;
 using Deckle.Projects;
@@ -64,9 +66,9 @@ public partial class App
             new NoProjectOpener(),
             watchRuns: false);
 
-        // A hook that does nothing, so "Deckle Folders" shows on the project's
-        // page as it does when the Atelier is there; pressing it opens nothing.
-        var hooks = new ProjectsHooks { OpenInFolders = _ => Task.CompletedTask };
+        // The page as the published Deckle draws it: no hook, so no "Open in
+        // Deckle Folders" button (BuildProjectsHooks).
+        var hooks = new ProjectsHooks();
 
         ProjectsWindow window = CompleteProjectsWindow(() => new ProjectsWindow(workspace, hooks));
         OffscreenWindow.ShowInactive(window);

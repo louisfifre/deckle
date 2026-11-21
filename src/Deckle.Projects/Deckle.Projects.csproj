@@ -16,11 +16,10 @@
     <ProjectReference Include="..\Deckle.Diagnostics\Deckle.Diagnostics.csproj" />
     <!-- AppPaths: the module's data folder. Core holds no XAML. -->
     <ProjectReference Include="..\Deckle.Core\Deckle.Core.csproj" />
-    <!-- The map's inventory (the "An agent always reads" readout), the path
-         rules and the navigation history, reused rather than copied: the
-         dependency points toward the engine of Deckle Folders and never the
-         other way. -->
-    <ProjectReference Include="..\Deckle.Atelier\Deckle.Atelier.csproj" />
+    <!-- The map's inventory (the "An agent always reads" readout), shared with
+         Deckle Folders: both point toward the support library, neither toward
+         the other. The path rules and the navigation history are in Core. -->
+    <ProjectReference Include="..\Deckle.FolderMap\Deckle.FolderMap.csproj" />
   </ItemGroup>
 
   <ItemGroup>

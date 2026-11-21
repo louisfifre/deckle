@@ -1,4 +1,5 @@
 using System.Runtime.CompilerServices;
+using Deckle.FolderMap;
 
 namespace Deckle.Atelier.Views;
 

@@ -3,6 +3,8 @@ using Microsoft.UI.Xaml;
 using Microsoft.UI.Xaml.Controls;
 using Microsoft.UI.Xaml.Documents;
 using Microsoft.UI.Xaml.Media;
+using Deckle.Core;
+using Deckle.FolderMap;
 
 namespace Deckle.Atelier.Views;
 
@@ -72,7 +74,7 @@ internal static class MapDetails
     private static StackPanel LinkList(string titleKey, MapInventory map, IEnumerable<(MapItem Item, bool Mutual)> links)
     {
         List<(MapItem Item, bool Mutual)> ordered = [.. links
-            .OrderBy(l => l.Item.Name, FolderListing.NameOrder)
+            .OrderBy(l => l.Item.Name, FolderNameOrder.Comparer)
             .ThenBy(l => l.Item.RelativePath, StringComparer.Ordinal)];
 
         var list = new StackPanel { Spacing = 4 };

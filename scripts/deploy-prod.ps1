@@ -166,6 +166,19 @@ if ($LASTEXITCODE -ne 0) { throw "The Release build failed (exit code $LASTEXITC
 $output = Join-Path $BuildTree 'artifacts\bin\Deckle.App\release'
 if ((Get-BuildCommit $output) -ne $Commit) { throw "The build output under $output is not commit $Commit." }
 
+# Prod is the published Deckle alone: Mail and the Atelier are separate apps
+# (DeckleMail.exe, DeckleAtelier.exe) the maintainer tests from a checkout. The
+# guard test in Deckle.App.Tests (PublishedClosureTests) covers the references;
+# this checks the artifact itself, which is what would reach the maintainer.
+# The apps' own assemblies are named DeckleMail and DeckleAtelier, so the
+# libraries to look for are the Deckle.Mail* and Deckle.Atelier* ones.
+$unpublished = @(Get-ChildItem -LiteralPath $output -File |
+    Where-Object { $_.Name -like 'Deckle.Mail*' -or $_.Name -like 'Deckle.Atelier*' -or $_.Name -like 'DeckleMail*' -or $_.Name -like 'DeckleAtelier*' -or $_.Name -like '*Playground*' } |
+    ForEach-Object { $_.Name })
+if ($unpublished.Count -gt 0) {
+    throw "The Release build holds files of an unpublished app: $($unpublished -join ', '). Mail, the Atelier and the Playground are not part of the published Deckle; nothing was staged."
+}
+
 if (-not $SkipSelfCheck) {
     # A separate, reduced instance on its own data root: the resident Deckle
     # is left as it runs.

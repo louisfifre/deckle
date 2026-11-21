@@ -27,7 +27,7 @@ public sealed partial class LogWindow : Window, ILogWindowSink
         // No exception on either path: the reason carries the clipboard status.
         if (!result.Landed)
         {
-            DeckleAppSource.Log.WindowOperationFailed(
+            DeckleWindowingSource.Log.WindowOperationFailed(
                 "log", "clipboard_copy", App.ClipboardFailureReason(result.Status), "", "");
             return false;
         }
@@ -36,7 +36,7 @@ public sealed partial class LogWindow : Window, ILogWindowSink
         if (result.Status is ClipboardWriteStatus.VerifyMissing
             or ClipboardWriteStatus.VerifyLengthMismatch)
         {
-            DeckleAppSource.Log.WindowOperationFailed(
+            DeckleWindowingSource.Log.WindowOperationFailed(
                 "log", "clipboard_verify", App.ClipboardFailureReason(result.Status), "", "");
         }
 
@@ -128,7 +128,7 @@ public sealed partial class LogWindow : Window, ILogWindowSink
         }
         catch (Exception ex)
         {
-            DeckleAppSource.Log.WindowOperationFailed(
+            DeckleWindowingSource.Log.WindowOperationFailed(
                 "log", "save", "exception", ex.GetType().Name, ex.Message);
         }
     }

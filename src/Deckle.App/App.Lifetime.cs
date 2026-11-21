@@ -1,6 +1,7 @@
 using Deckle.App;
 using Deckle.Core;
 using Deckle.Diagnostics;
+using Deckle.Hosting;
 using Deckle.Transcription;
 using Deckle.Localization;
 
@@ -8,9 +9,8 @@ namespace Deckle.App;
 
 public partial class App
 {
-    private const string ResidentMutexName = @"Local\Deckle.Resident";
     private const string SecondInstanceFileName = "second-instance.txt";
-    private Mutex? _residentMutex;
+    private ResidentInstance? _residentInstance;
 
     // Read by ReportCrashDumpCapture: ownership is taken before any sink
     // exists, so the line waits for the sinks.
@@ -22,25 +22,21 @@ public partial class App
 
     private bool TryAcquireResidentOwnership()
     {
-        var outcome = ResidentMutexGate.TryAcquire(
-            () => new Mutex(initiallyOwned: false, ResidentMutexName),
-            out Mutex? mutex, out string? failure);
-
-        switch (outcome)
+        // The identity is the suite's own app: Local\Deckle.Resident, as ever.
+        // A mutex that cannot be created refuses the launch like a second one
+        // (ResidentInstance), and the cause goes to second-instance.txt.
+        ResidentInstance? instance = ResidentInstance.TryAcquire(AppIdentity.Current, out string? failure);
+        if (instance is null)
         {
-            case ResidentMutexGate.Outcome.AcquiredFromAbandoned:
-                _residentMutexAbandoned = true;
-                goto case ResidentMutexGate.Outcome.Acquired;
-            case ResidentMutexGate.Outcome.Acquired:
-                _residentMutex = mutex;
-                return true;
-            case ResidentMutexGate.Outcome.CreationFailed:
-                _residentRefusal = $"the resident gate could not be created ({failure})";
-                return false;
-            default:
-                _residentRefusal = "another Deckle is resident";
-                return false;
+            _residentRefusal = failure is null
+                ? "another Deckle is resident"
+                : $"the resident gate could not be created ({failure})";
+            return false;
         }
+
+        _residentInstance = instance;
+        _residentMutexAbandoned = instance.Abandoned;
+        return true;
     }
 
     // A rejected second instance has no sink and may not install one: the
@@ -55,18 +51,14 @@ public partial class App
 
     private void ReleaseResidentOwnership()
     {
-        Mutex? mutex = _residentMutex;
-        _residentMutex = null;
-        if (mutex is null) return;
+        ResidentInstance? instance = _residentInstance;
+        _residentInstance = null;
+        if (instance is null) return;
 
         // ApplicationException: this thread does not own the mutex (QuitApp
         // reached from another thread). The handle closes either way.
-        try { mutex.ReleaseMutex(); }
-        catch (ApplicationException ex)
-        {
+        if (instance.Release() is { } ex)
             DeckleAppSource.Log.ResidentMutexReleaseFailed(ex.GetType().Name, ex.Message);
-        }
-        finally { mutex.Dispose(); }
     }
 
     // How long a quit waits for the work in flight before it gives up on it.

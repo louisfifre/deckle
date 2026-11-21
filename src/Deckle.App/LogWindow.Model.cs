@@ -225,7 +225,7 @@ public sealed partial class LogWindow : Window, ILogWindowSink
         }
         catch (Exception ex)
         {
-            DeckleAppSource.Log.WindowOperationFailed(
+            DeckleWindowingSource.Log.WindowOperationFailed(
                 "log", "scroll_to_bottom", "exception", ex.GetType().Name, ex.Message);
         }
     }

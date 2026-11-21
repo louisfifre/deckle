@@ -1,3 +1,5 @@
+using Deckle.Core;
+
 namespace Deckle.Atelier;
 
 public enum RenameSkipReason
@@ -58,7 +60,7 @@ public static class PhotoRenamer
 
         var renames = new List<PlannedRename>();
         var skipped = new List<SkippedRename>();
-        foreach (PhotoFile photo in photos.OrderBy(p => p.Name, FolderListing.NameOrder))
+        foreach (PhotoFile photo in photos.OrderBy(p => p.Name, FolderNameOrder.Comparer))
         {
             if (takenOf(photo) is not { } taken)
             {

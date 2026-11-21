@@ -164,14 +164,19 @@ public partial class App
         else
             context.Skip(ModuleIds.Anytype, SkipNotPresent);
 
-        // Nothing runs at start: the window is built the first time the tray
-        // opens it (App.Atelier.cs). Logged so the boot names the module.
-        if (ModulePresence.IsPresent(ModuleIds.Atelier))
-            context.Compose(ModuleIds.Atelier, () => { });
-        else
-            context.Skip(ModuleIds.Atelier, SkipNotPresent);
+        // The contributed modules (PublishedComposition), none today:
+        // nothing runs at start, the tray builds the window the first time it
+        // opens it. Logged so the boot names the module.
+        foreach (Contributions.IContribution contribution in PublishedComposition.All)
+        {
+            if (contribution.Descriptor is not { } module) continue;
+            if (ModulePresence.IsPresent(module.Id))
+                context.Compose(module.Id, () => { });
+            else
+                context.Skip(module.Id, SkipNotPresent);
+        }
 
-        // Same as the Atelier: nothing runs at start, the tray builds the window
+        // Same: nothing runs at start, the tray builds the window
         // (App.Projects.cs).
         if (ModulePresence.IsPresent(ModuleIds.Projects))
             context.Compose(ModuleIds.Projects, () => { });

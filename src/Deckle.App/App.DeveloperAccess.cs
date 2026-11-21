@@ -10,9 +10,10 @@ namespace Deckle.App;
 // Developer mode (Settings > General > Developer, off by default) is the one
 // door to what an ordinary user has no use for: the surfaces still in alpha
 // and the developer tools. Its entry point is the right-click tray menu,
-// driven from here, and ShowMailLazy refuses while the mode is off, so no
-// path can bypass it. A Mail window left open when the mode goes off is
-// closed, since its entry point is gone.
+// driven from here, and the contribution host refuses to open a developer-only
+// window while the mode is off, so no path can bypass it. A developer-only
+// window left open when the mode goes off is closed, since its entry
+// point is gone.
 public partial class App
 {
     private static bool DeveloperModeEnabled
@@ -22,12 +23,10 @@ public partial class App
     // holds, and module presence does not change during a run.
     private IReadOnlyList<TrayMenuEntry> ComposeDeveloperTray()
         => TrayDeveloperMenu.Compose(
-            AtelierPresent,
+            PublishedHost.TrayEntries(forDeveloperMenu: true),
             ProjectsPresent,
             key => Loc.Get(key),
-            () => ShowAtelierWindowLazy(),
             () => ShowProjectsWindowLazy(),
-            () => ShowMailLazy(),
             () => CaptureInterfaceFromTray(),
             () => ShowLogWindowLazy(),
             () => RestartAppFromTray());
@@ -55,6 +54,7 @@ public partial class App
     private void ApplyDeveloperAccess()
     {
         if (DeveloperModeEnabled) return;
-        _mailWindow?.Close();
+        foreach (Microsoft.UI.Xaml.Window window in PublishedHost.DeveloperOnlyOpenWindows)
+            window.Close();
     }
 }

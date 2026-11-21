@@ -1,4 +1,5 @@
 using Deckle.App.SelfCheck;
+using Deckle.Hosting.SelfCheck;
 using Deckle.Llm.Rewrite;
 using Deckle.Vision;
 

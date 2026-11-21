@@ -1,3 +1,5 @@
+using Deckle.FolderMap;
+
 namespace Deckle.Atelier.Views;
 
 // One section of the map's list shown by sections (12.8a): its rows, and the

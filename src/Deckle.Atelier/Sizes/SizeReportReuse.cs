@@ -1,3 +1,5 @@
+using Deckle.Core;
+
 namespace Deckle.Atelier;
 
 // Whether the sizes tool can show a place from a report it already holds, or

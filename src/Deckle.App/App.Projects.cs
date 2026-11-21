@@ -1,5 +1,5 @@
+using Deckle.Hosting;
 using System.Diagnostics;
-using Deckle.Atelier.Views;
 using Deckle.Core;
 using Deckle.Diagnostics;
 using Deckle.Modules;
@@ -8,7 +8,7 @@ using Deckle.Projects.Views;
 
 namespace Deckle.App;
 
-// The Deckle Projects window, opened from the tray like the Atelier's: created
+// The Deckle Projects window, opened from the tray: created
 // on first use by the same lazy path, placed where the person left it, and
 // dropped on close so the next open builds a fresh one. The module composes
 // nothing at start: with no window open it costs nothing. Its data lives in
@@ -49,36 +49,23 @@ public partial class App
         // Not gated: one Stopwatch per window per process, and the provider
         // declares this milestone ungoverned.
         var sw = Stopwatch.StartNew();
-        var window = CreateWindowOrLog("projects", create);
-        SecondaryWindowPlacement.Restore(window, SecondaryWindowPlacement.Projects);
+        var window = WindowLifecycle.CreateOrLog("projects", create);
+        WindowPlacement.Restore(window, SecondaryWindowPlacement.Projects);
         window.AppWindow.Closing += (_, _) =>
-            SecondaryWindowPlacement.Save(window, SecondaryWindowPlacement.Projects);
+            WindowPlacement.Save(window, SecondaryWindowPlacement.Projects);
         window.Closed += (_, _) =>
         {
             if (ReferenceEquals(_projectsWindow, window)) _projectsWindow = null;
         };
 
         _projectsWindow = window;
-        ApplyThemeToSingle(window);
+        WindowTheme.Apply(window);
         DeckleWindowingSource.Log.WindowLoadComplete("projects", sw.ElapsedMilliseconds);
         return window;
     }
 
     // What Deckle Projects reaches in its neighbours. A hook left null makes its
-    // button absent from the page, so "Open in Deckle Folders" exists only while
-    // the Atelier module does.
-    private ProjectsHooks BuildProjectsHooks() => new()
-    {
-        OpenInFolders = AtelierPresent ? OpenInDeckleFoldersAsync : null,
-    };
-
-    // Deckle Folders on a folder it does not hold yet adds it there, then shows
-    // it (spec, Open in).
-    private async Task OpenInDeckleFoldersAsync(string path)
-    {
-        if (!AtelierPresent) return;
-        AtelierWindow window = EnsureAtelierWindow();
-        window.ShowAndActivate();
-        await window.OpenFolderAsync(path);
-    }
+    // button absent from the page: "Open in Deckle Folders" is absent here,
+    // since Deckle Folders is the separate app Deckle.Atelier.App.
+    private static ProjectsHooks BuildProjectsHooks() => new();
 }

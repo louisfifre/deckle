@@ -6,14 +6,23 @@
     executable of the chosen configuration. No build happens here. The running
     instance is stopped first: Deckle is single-instance, so the new process
     could not take over while the old one holds the resident mutex.
+    -App mail or atelier launches DeckleMail.exe or DeckleAtelier.exe instead:
+    separate apps with their own resident mutex and data root, so the running
+    Deckle is never stopped (only a previous instance of the same small app is).
 .NOTES
     section: Run
     order: 110
     action: Launch |
+    action: Launch Mail | -App mail
+    action: Launch Folders | -App atelier
 #>
 
 [CmdletBinding()]
 param(
+    # Which app of the suite: deckle (the published Deckle), mail or atelier.
+    # deckle, mail or atelier; checked below, not a [ValidateSet]: the script's one
+    # enumerated parameter is Configuration, which the launcher reads as its variant.
+    [string]$App = 'deckle',
     [ValidateSet('Release','Debug')]
     [string]$Configuration = 'Release',
     [string]$Target,
@@ -21,6 +30,7 @@ param(
 )
 
 $ErrorActionPreference = 'Stop'
+if ($App -notin 'deckle', 'mail', 'atelier') { [Console]::Error.WriteLine("-App is deckle, mail or atelier, not '$App'."); exit 1 }
 $ScriptDir = $PSScriptRoot
 $LibDir = Join-Path $ScriptDir 'lib'
 . (Join-Path $LibDir 'action-summary.ps1')
@@ -56,17 +66,20 @@ if ($Target) {
 
 Write-OutputText -Text "Repo: $RepoRoot" -Role Muted
 
-$AppArtifactsBin = Join-Path $RepoRoot 'artifacts\bin\Deckle.App'
+$AppProject  = @{ deckle = 'Deckle.App'; mail = 'Deckle.Mail.App'; atelier = 'Deckle.Atelier.App' }[$App]
+$ExeName     = @{ deckle = 'Deckle.exe'; mail = 'DeckleMail.exe'; atelier = 'DeckleAtelier.exe' }[$App]
+$ProcessName = [System.IO.Path]::GetFileNameWithoutExtension($ExeName)
+$AppArtifactsBin = Join-Path $RepoRoot "artifacts\bin\$AppProject"
 $PivotPrefix     = $Configuration.ToLowerInvariant()
 
-Write-WorkflowStep -Output $WorkflowOutput -Message 'Stop running Deckle instance'
-Stop-DeckleProcess -WriteEvent {
+Write-WorkflowStep -Output $WorkflowOutput -Message "Stop running $ProcessName instance"
+Stop-DeckleProcess -ProcessName $ProcessName -WriteEvent {
     param([string]$Role, [string]$Message)
     Write-WorkflowMessage -Output $WorkflowOutput -Message $Message -Role $Role
 }
 
 Write-WorkflowStep -Output $WorkflowOutput -Message "Resolve built executable ($Configuration)"
-$ExeCandidates = Get-ChildItem -Path $AppArtifactsBin -Recurse -Filter 'Deckle.exe' -ErrorAction SilentlyContinue |
+$ExeCandidates = Get-ChildItem -Path $AppArtifactsBin -Recurse -Filter $ExeName -ErrorAction SilentlyContinue |
     Where-Object { $_.Directory.Name -like "$PivotPrefix*" } |
     Sort-Object LastWriteTime -Descending
 
@@ -90,7 +103,7 @@ if ($Wait) {
     $deadline = (Get-Date).AddSeconds(5)
     do {
         Start-Sleep -Milliseconds 100
-        $proc = Get-Process -Name Deckle -ErrorAction SilentlyContinue | Select-Object -First 1
+        $proc = Get-Process -Name $ProcessName -ErrorAction SilentlyContinue | Select-Object -First 1
     } while (-not $proc -and (Get-Date) -lt $deadline)
     if ($proc) {
         Write-WorkflowStep -Output $WorkflowOutput -Message "Wait for Deckle PID $($proc.Id)"

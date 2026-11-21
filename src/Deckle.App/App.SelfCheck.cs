@@ -1,10 +1,12 @@
-using System.Runtime.InteropServices;
 using Deckle.App.SelfCheck;
+using Deckle.Hosting.SelfCheck;
+using static Deckle.Hosting.SelfCheck.SelfCheckCapture;
+using static Deckle.Hosting.SelfCheck.SelfCheckProcess;
+using Deckle.Contributions;
 using Deckle.Core;
 using Deckle.Diagnostics;
 using Deckle.Diagnostics.Logging;
 using Deckle.Vision;
-using WinRT.Interop;
 
 namespace Deckle.App;
 
@@ -21,7 +23,7 @@ namespace Deckle.App;
 // composes a short, explicit list of pieces (below); probes the microphone once;
 // opens the Settings window and walks every page of the rail, then opens the Log
 // window, the Transcribe and rewrite and Paste to folder windows in each of
-// their states, then the Mail window and its walk of drawn states;
+// their states, then the contributed windows (PublishedComposition);
 // photographs each, then the icon each window and Deckle.exe give the taskbar;
 // writes report.json (the contract
 // with scripts/self-check.ps1) and exits 0 when all is well, 1 otherwise.
@@ -40,19 +42,13 @@ public partial class App
 
     internal static bool IsSelfCheckMode(string[] args) => Array.IndexOf(args, SelfCheckFlag) >= 0;
 
-    // Exit codes the script reads next to the report.
-    private const int SelfCheckPassed = 0;
-    private const int SelfCheckFailed = 1;
-    private const int SelfCheckRefused = 2;
-
     private static readonly string[] ComposedBySelfCheck =
     [
         "diagnostics: local sinks (log.jsonl), application log, log window sink",
         "module registry and presence flags (a fresh root has no choice, so every module is present)",
         "settings surface: host hooks and every module's pages and search entries, as the resident app registers them",
         "theme from the settings of the run's own root",
-        "windows: Settings, Log, Transcribe and rewrite, Paste to folder, Mail, Atelier, Projects, created by the same lazy paths the tray uses",
-        "atelier: a sample folder generated under the run's own root, added as the picker adds one",
+        "windows: Settings, Log, Transcribe and rewrite, Paste to folder, Projects, created by the same lazy paths the tray uses",
         "projects: sample projects (folders, git repositories, stub script menus) generated under the run's own root, with a terminal that opens nothing and a fixed clock",
         "microphone: one shared open and close through MicrophoneCapture.Probe",
         "interface capture: the walk and the WindowSnapshot of the interface capture",
@@ -123,7 +119,7 @@ public partial class App
         // opens: walking nothing must never read as a pass.
         string? only = SelfCheckTarget.ReadArgument(args);
         string targetReason = "";
-        SelfCheckTarget? target = only is null ? null : SelfCheckTarget.Parse(only, out targetReason);
+        SelfCheckTarget? target = only is null ? null : SelfCheckTarget.Parse(only, SelfCheckWindowCatalog.Published, out targetReason);
 
         if (!gate.Allowed || string.IsNullOrWhiteSpace(outputFolder) || (only is not null && target is null))
         {
@@ -131,7 +127,7 @@ public partial class App
                 : string.IsNullOrWhiteSpace(outputFolder) ? "No output folder: usage is --self-check <output-folder> [--only <target>]."
                 : targetReason;
             WriteRefusal(outputFolder, reason);
-            TerminateWithoutExitHandlers(SelfCheckRefused);
+            TerminateWithoutExitHandlers(Refused);
             return;
         }
 
@@ -144,6 +140,10 @@ public partial class App
             Composed = [.. ComposedBySelfCheck],
             LeftOut = [.. LeftOutOfSelfCheck],
             Only = target?.Name,
+            // What a full run must have walked, and the probe it must have made:
+            // without them the verdict could not tell a short run from a whole one.
+            RequiredWindows = SelfCheckWindowCatalog.Published.Windows,
+            RequiresMicrophone = true,
         };
 
         int code;
@@ -176,7 +176,7 @@ public partial class App
         }
 
         report.Judge();
-        code = report.Outcome == "passed" ? SelfCheckPassed : SelfCheckFailed;
+        code = report.Outcome == "passed" ? Passed : Failed;
         Environment.Exit(code);
     }
 
@@ -419,77 +419,17 @@ public partial class App
             report.Save(outputFolder);
         }
 
-        if (Wants("mail"))
+        // The contributed windows (PublishedComposition), in composition order:
+        // none today. Each walk is told its window's name and the
+        // view asked for; one that ends on a targeted view without a failure
+        // says so itself.
+        foreach (ContributedWalk walk in PublishedHost.Walks)
         {
-            // The Mail window on its built-in sample: the window once, then each
-            // state the maintainer drew, page by page (MailWindow.Capture.cs), with
-            // the whole window again where the rail or the title bar changes.
-            Step("mail");
-            Mail.Hub.MailWindow mail = EnsureMailWindow();
-            OffscreenWindow.ShowInactive(mail);
-            await WaitUntilLoadedAsync(mail);
-            // A view that the walk does not have is answered with the ones it
-            // has, and nothing is walked.
-            string? onlyView = target?.View;
-            if (onlyView is not null && !Mail.Hub.MailWindow.CaptureSlugs.Contains(onlyView))
-                report.Views = [.. Mail.Hub.MailWindow.CaptureSlugs];
-            else await mail.WalkCapturesAsync(
-                async visit =>
-                {
-                    // A menu, flyout or dialog left open on purpose is the subject
-                    // of the step: the window is photographed with it, and the
-                    // walk closes it afterwards.
-                    if (visit.KeepsPopup)
-                    {
-                        report.Surfaces.Add(await CaptureWindowFrameAsync(
-                            run, mail, "mail", visit.Slug, visit.Label, visit.Loaded, visit.LoadMs));
-                        Step($"mail/{visit.Slug} done");
-                        return;
-                    }
-                    (int closed, int left) = await CloseTransientPopupsAsync(mail);
-                    SelfCheckSurface surface = new("mail", visit.Slug, visit.Label, visit.Loaded, visit.LoadMs, null,
-                        closed, left, "page-render");
-                    if (visit.Loaded && mail.CurrentPage is { } page)
-                    {
-                        try
-                        {
-                            ElementImage.Result image = await ElementImage.CapturePageAsync(
-                                page, Path.Combine(captures, $"mail-{visit.Slug}"));
-                            string[] files = [.. image.Files.Select(f => Path.GetRelativePath(outputFolder, f))];
-                            surface = surface with
-                            {
-                                Png = files[0],
-                                Parts = files.Length > 1 ? files : null,
-                                Width = image.Width,
-                                Height = image.Height,
-                            };
-                        }
-                        catch (Exception ex)
-                        {
-                            surface = surface with { Error = $"{ex.GetType().Name}: {ex.Message}" };
-                        }
-                    }
-                    report.Surfaces.Add(surface);
-                    if (visit.WholeWindow)
-                        report.Surfaces.Add(await CaptureWindowFrameAsync(
-                            run, mail, "mail", $"{visit.Slug}-window", visit.Label, visit.Loaded, visit.LoadMs));
-                    Step($"mail/{visit.Slug} done");
-                },
-                starting: (slug, label) => Step($"mail/{slug} ({label})"),
-                only: onlyView);
+            if (!Wants(walk.WindowName)) continue;
+            Step(walk.WindowName);
+            await walk.Run(new SelfCheckWalkContext(
+                this, report, run, outputFolder, target?.View, Step));
         }
-
-        if (Wants("atelier"))
-        {
-            Step("atelier");
-            // With a view for target, the walk is played up to it and ends
-            // there (SelfCheckWalkGate): that end is not a failure.
-            var gate = new SelfCheckWalkGate(target?.View);
-            try { await WalkAtelierAsync(report, run, outputFolder, Step, gate); }
-            catch (OperationCanceledException) when (gate.Done) { }
-            if (target?.View is not null && !gate.Reached) report.Views = gate.Offered;
-        }
-
         if (Wants("projects"))
         {
             Step("projects");
@@ -521,117 +461,13 @@ public partial class App
         Settings.SettingsService.Instance.Flush();
     }
 
-    private static async Task OpenAndCaptureAsync(
-        SelfCheckReport report,
-        InterfaceCaptureRun run,
-        string outputFolder,
-        string name,
-        Func<Microsoft.UI.Xaml.Window> ensure)
-    {
-        var clock = System.Diagnostics.Stopwatch.StartNew();
-        Microsoft.UI.Xaml.Window window = ensure();
-        OffscreenWindow.ShowInactive(window);
-        bool loaded = await WaitUntilLoadedAsync(window);
-        (int closed, int left) = loaded ? await CloseTransientPopupsAsync(window) : (0, 0);
-        report.Surfaces.Add(await CaptureWindowFrameAsync(
-            run, window, name, null, null, loaded, clock.ElapsedMilliseconds, closed, left));
-        report.Save(outputFolder);
-    }
-
-    // The window as a whole. The pixels DWM composed for it (WindowSnapshot) are
-    // the truest, backdrop and caption buttons included; a window nobody can see
-    // may deliver none, and then its XAML content is rendered instead, which the
-    // technique field of the report says.
-    private static async Task<SelfCheckSurface> CaptureWindowFrameAsync(
-        InterfaceCaptureRun run,
-        Microsoft.UI.Xaml.Window window,
-        string name,
-        string? page,
-        string? label,
-        bool loaded,
-        long ms,
-        int closed = 0,
-        int left = 0)
-    {
-        string technique = "window-capture";
-        string? file = null;
-        int width = 0, height = 0;
-        string? error = null;
-        if (loaded)
-        {
-            nint hwnd = WindowNative.GetWindowHandle(window);
-            if (await run.CaptureAsync(hwnd, name, page, label) && run.LastFile is { } captured)
-            {
-                file = Path.Combine("captures", captured);
-            }
-            else
-            {
-                technique = "window-render";
-                try
-                {
-                    string target = Path.Combine(run.Directory, page is null ? $"{name}.png" : $"{name}-{page}.png");
-                    ElementImage.Result image = await ElementImage.CaptureWindowContentAsync(window, target);
-                    file = Path.Combine("captures", Path.GetFileName(image.Files[0]));
-                    width = image.Width;
-                    height = image.Height;
-                }
-                catch (Exception ex)
-                {
-                    error = $"{ex.GetType().Name}: {ex.Message}";
-                }
-            }
-        }
-        return new SelfCheckSurface(name, page, label, loaded, ms, file, closed, left, technique, width, height, null, error);
-    }
-
-    // A capture shows the page alone. The walk itself leaves transient UI open:
-    // in the compact rail, selecting a child of a group opens the group's
-    // flyout, and it stays over the next pages (seen on the Diagnostics image).
-    // Every popup open over the window is closed before its image is taken; the
-    // count closed is recorded, and one that refuses to close is a failure of
-    // that image, so a reviewer never judges a page hidden behind a popup.
-    private static async Task<(int Closed, int StillOpen)> CloseTransientPopupsAsync(Microsoft.UI.Xaml.Window window)
-    {
-        if (window.Content?.XamlRoot is not { } root) return (0, 0);
-
-        var open = Microsoft.UI.Xaml.Media.VisualTreeHelper.GetOpenPopupsForXamlRoot(root);
-        int closed = 0;
-        foreach (Microsoft.UI.Xaml.Controls.Primitives.Popup popup in open)
-        {
-            popup.IsOpen = false;
-            closed++;
-        }
-        if (closed == 0) return (0, 0);
-
-        // The close reaches the screen on the next frames.
-        await Task.Delay(300);
-        return (closed, Microsoft.UI.Xaml.Media.VisualTreeHelper.GetOpenPopupsForXamlRoot(root).Count);
-    }
-
-    // The window's content reached Loaded, then two frames and a short settle,
-    // as the page walk waits before a capture.
-    private static async Task<bool> WaitUntilLoadedAsync(Microsoft.UI.Xaml.Window window)
-    {
-        var waited = System.Diagnostics.Stopwatch.StartNew();
-        while (waited.Elapsed < TimeSpan.FromSeconds(5))
-        {
-            if (window.Content is Microsoft.UI.Xaml.FrameworkElement { IsLoaded: true })
-            {
-                await Task.Delay(600);
-                return true;
-            }
-            await Task.Delay(30);
-        }
-        return false;
-    }
-
     // One shared open and close of the default microphone. Off the UI thread:
     // the probe blocks on the audio device. The native library failing to load
     // is told apart from a device that is absent or busy (SelfCheckMicrophone).
     private static async Task<SelfCheckMicrophone> ProbeMicrophoneForSelfCheckAsync()
     {
         Audio.ProbeResult probe = await Task.Run(() => new Audio.MicrophoneCapture().Probe(""));
-        SelfCheckMicrophone outcome = SelfCheckMicrophone.From(
+        SelfCheckMicrophone outcome = SelfCheckMicrophoneOutcome.From(
             probe.Ok, probe.Stage, probe.Kind,
             Audio.MicrophoneCapture.ErrorName(probe.ErrorCode),
             Audio.MicrophoneCapture.FormatErrorCode(probe.ErrorCode));
@@ -647,32 +483,4 @@ public partial class App
         return outcome;
     }
 
-    // A refusal writes its reason beside where the report would have been, so the
-    // caller reads it, and ends the process with no handler: ProcessExit would
-    // touch AppPaths, which is the root the gate has just protected.
-    private static void WriteRefusal(string? outputFolder, string reason)
-    {
-        if (string.IsNullOrWhiteSpace(outputFolder)) return;
-        try
-        {
-            Directory.CreateDirectory(outputFolder);
-            File.WriteAllText(Path.Combine(outputFolder, SelfCheckReport.FileName),
-                System.Text.Json.JsonSerializer.Serialize(
-                    new { outcome = "refused", reason },
-                    new System.Text.Json.JsonSerializerOptions { WriteIndented = true }));
-        }
-        catch (Exception)
-        {
-            // The exit code still says refused.
-        }
-    }
-
-    [DllImport("kernel32.dll", SetLastError = true)]
-    private static extern bool TerminateProcess(nint process, uint exitCode);
-
-    [DllImport("kernel32.dll")]
-    private static extern nint GetCurrentProcess();
-
-    private static void TerminateWithoutExitHandlers(int code)
-        => TerminateProcess(GetCurrentProcess(), (uint)code);
 }

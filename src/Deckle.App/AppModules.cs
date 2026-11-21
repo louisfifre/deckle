@@ -1,4 +1,5 @@
 using Deckle.Catalog;
+using Deckle.Contributions;
 using Deckle.Modules;
 
 namespace Deckle.App;
@@ -73,19 +74,17 @@ internal static class AppModules
 
         ModuleRegistry.Register(new ModuleDescriptor
         {
-            Id = ModuleIds.Atelier,
-            Glyph = Glyphs.Folder,
-            Order = 700,
-        });
-
-        ModuleRegistry.Register(new ModuleDescriptor
-        {
             Id = ModuleIds.Projects,
             Glyph = Glyphs.Folder,
             Order = 710,
-            // It reuses the Atelier's engine (the map's inventory and the
-            // folder paths), so that engine's DLLs must be on disk.
-            DependsOn = [ModuleIds.Atelier],
         });
+
+        // The descriptors of the contributed modules travel with them
+        // (PublishedComposition); a contribution that is not a module has none.
+        foreach (IContribution contribution in PublishedComposition.All)
+        {
+            if (contribution.Descriptor is { } descriptor)
+                ModuleRegistry.Register(descriptor);
+        }
     }
 }

@@ -1,3 +1,4 @@
+using Deckle.Diagnostics;
 using Microsoft.UI.Dispatching;
 using Microsoft.UI.Xaml.Controls;
 
@@ -52,7 +53,7 @@ public sealed partial class TranscribeRewriteWindow
         }
         catch (Exception ex) when (ex is IOException or UnauthorizedAccessException)
         {
-            DeckleAppSource.Log.WindowOperationFailed(
+            DeckleWindowingSource.Log.WindowOperationFailed(
                 "transcribe-rewrite", "autosave", "exception", ex.GetType().Name, ex.Message);
             ShowNotice(InfoBarSeverity.Error,
                 "TranscribeRewrite_AutoSaveFailed_Title", "TranscribeRewrite_AutoSaveFailed_Body");

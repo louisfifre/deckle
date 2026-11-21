@@ -1,3 +1,4 @@
+using Deckle.Hosting;
 using System.Diagnostics;
 using Deckle.Core;
 using Deckle.Diagnostics;
@@ -37,19 +38,19 @@ public partial class App
             // Not gated: one Stopwatch per window per process, and the provider
             // declares this milestone ungoverned.
             var sw = Stopwatch.StartNew();
-            var window = CreateWindowOrLog("paste-to-folder",
+            var window = WindowLifecycle.CreateOrLog("paste-to-folder",
                 () => new PasteWindow(AppPaths.GetModuleDirectory(PasteToFolderDataFolder)));
             // Its place only: its size is fixed in DIPs by the window itself.
-            SecondaryWindowPlacement.Restore(window, SecondaryWindowPlacement.PasteToFolder, keepSize: true);
+            WindowPlacement.Restore(window, SecondaryWindowPlacement.PasteToFolder, keepSize: true);
             window.AppWindow.Closing += (_, _) =>
-                SecondaryWindowPlacement.Save(window, SecondaryWindowPlacement.PasteToFolder);
+                WindowPlacement.Save(window, SecondaryWindowPlacement.PasteToFolder);
             window.Closed += (_, _) =>
             {
                 if (ReferenceEquals(_pasteWindow, window)) _pasteWindow = null;
             };
 
             _pasteWindow = window;
-            ApplyThemeToSingle(window);
+            WindowTheme.Apply(window);
             DeckleWindowingSource.Log.WindowLoadComplete("paste-to-folder", sw.ElapsedMilliseconds);
         }
         return _pasteWindow;

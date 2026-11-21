@@ -16,6 +16,8 @@
     <!-- IconChoice: an added folder's icon, the type the shared picker of
          Deckle.Catalog edits. Core holds no XAML. -->
     <ProjectReference Include="..\Deckle.Core\Deckle.Core.csproj" />
+    <!-- The map of a folder (Map* types), shared with Deckle Projects. -->
+    <ProjectReference Include="..\Deckle.FolderMap\Deckle.FolderMap.csproj" />
     <!-- Photos: capture data. Used by Photos/CaptureDataReader.cs alone. -->
     <PackageReference Include="MetadataExtractor" />
   </ItemGroup>

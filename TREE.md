@@ -444,7 +444,7 @@ _Generated from `git ls-files` — do not edit by hand._
 │   ├── read-log.ps1  — Read Deckle's log Prints the latest entries of Deckle's diagnostics log, one line each: time, lev…
 │   ├── README.md  — readme-scripts Dev workflows entry point for Deckle: the menu.ps1 launcher installed from Deck…
 │   ├── resource-validation.allowlist.json
-│   ├── self-check.ps1  — Self-check the built app Runs the built Deckle once in its self-check mode and judges its report. Takes…
+│   ├── self-check.ps1  — Self-check the built app Runs a built app of the suite once in its self-check mode and judges its report…
 │   ├── stats.ps1  — Repository statistics Walk every project under src\ and build one file inventory per Deckle module, w…
 │   ├── update-readme-stats.ps1  — Update the README pulse Regenerate the small "Development pulse" section in README.md from the local Gi…
 │   ├── verify-branch-server.ps1
@@ -611,8 +611,9 @@ _Generated from `git ls-files` — do not edit by hand._
 │   │   │   │   └── deckle--state--rewriting.ico
 │   │   │   └── Sounds/
 │   │   │       └── speech.wav
-│   │   ├── AtelierPhotoDescriptions/
-│   │   │   └── LlmPhotoDescriptionModel.cs
+│   │   ├── Composition/
+│   │   │   ├── PublishedComposition.cs
+│   │   │   └── SelfCheckWalkContext.cs
 │   │   ├── Diagnostics/
 │   │   │   ├── AppDiagnosticsBootstrap.cs
 │   │   │   ├── AppHudFeedbackSink.cs
@@ -647,13 +648,9 @@ _Generated from `git ls-files` — do not edit by hand._
 │   │   ├── Prod/
 │   │   │   └── apply-update.ps1
 │   │   ├── SelfCheck/
-│   │   │   ├── ElementImage.cs
 │   │   │   ├── IconImage.cs
-│   │   │   ├── OffscreenWindow.cs
-│   │   │   ├── SelfCheckDataRootGate.cs
-│   │   │   ├── SelfCheckPerf.cs
-│   │   │   ├── SelfCheckReport.cs
-│   │   │   └── SelfCheckTarget.cs
+│   │   │   ├── SelfCheckMicrophoneOutcome.cs
+│   │   │   └── SelfCheckWindowCatalog.cs
 │   │   ├── Strings/
 │   │   │   └── en-US/
 │   │   │       └── Resources.resw
@@ -662,9 +659,9 @@ _Generated from `git ls-files` — do not edit by hand._
 │   │   ├── App.Ambient.cs
 │   │   ├── App.Animations.cs
 │   │   ├── App.Anytype.cs
-│   │   ├── App.Atelier.cs
 │   │   ├── App.Autocorrect.cs
 │   │   ├── App.Autocorrect.Lifecycle.cs
+│   │   ├── App.Contributions.cs
 │   │   ├── App.DeveloperAccess.cs
 │   │   ├── App.Hotkeys.Actions.cs
 │   │   ├── App.Hotkeys.cs
@@ -679,15 +676,6 @@ _Generated from `git ls-files` — do not edit by hand._
 │   │   ├── App.PrecisionScroll.cs
 │   │   ├── App.Projects.cs
 │   │   ├── App.Relocate.cs
-│   │   ├── App.SelfCheck.Atelier.AddedFolders.cs
-│   │   ├── App.SelfCheck.Atelier.cs
-│   │   ├── App.SelfCheck.Atelier.FileSelection.cs
-│   │   ├── App.SelfCheck.Atelier.FolderIcons.cs
-│   │   ├── App.SelfCheck.Atelier.Map.cs
-│   │   ├── App.SelfCheck.Atelier.Photos.cs
-│   │   ├── App.SelfCheck.Atelier.Previews.cs
-│   │   ├── App.SelfCheck.Atelier.Search.cs
-│   │   ├── App.SelfCheck.Atelier.Sizes.cs
 │   │   ├── App.SelfCheck.cs
 │   │   ├── App.SelfCheck.Diagnostics.cs
 │   │   ├── App.SelfCheck.Icons.cs
@@ -732,7 +720,6 @@ _Generated from `git ls-files` — do not edit by hand._
 │   │   ├── LogWindow.xaml.cs
 │   │   ├── ProdUpdate.cs
 │   │   ├── Program.cs
-│   │   ├── ResidentMutexGate.cs
 │   │   ├── SecondaryWindowPlacement.cs
 │   │   ├── TranscribeRewriteHistory.cs
 │   │   ├── TranscribeRewriteWindow.AutoSave.cs
@@ -757,9 +744,7 @@ _Generated from `git ls-files` — do not edit by hand._
 │   │   │   ├── AddressResolver.cs
 │   │   │   ├── DeckleAtelierSource.FileRecycling.cs
 │   │   │   ├── FolderListing.cs
-│   │   │   ├── FolderPaths.cs
-│   │   │   ├── FolderPlace.cs
-│   │   │   └── NavigationHistory.cs
+│   │   │   └── FolderPlace.cs
 │   │   ├── Formatting/
 │   │   │   ├── EntryFormat.cs
 │   │   │   └── SelectionSummary.cs
@@ -780,26 +765,8 @@ _Generated from `git ls-files` — do not edit by hand._
 │   │   │   ├── DeckleAtelierSource.Launching.cs
 │   │   │   ├── FileLauncher.cs
 │   │   │   └── ShellFileLauncher.cs
-│   │   ├── Map/
-│   │   │   ├── DeckleAtelierSource.MapGraph.cs
-│   │   │   ├── FrontMatter.cs
-│   │   │   ├── MapConventions.cs
-│   │   │   ├── MapFileFacts.cs
-│   │   │   ├── MapFolderWalk.cs
-│   │   │   ├── MapGraphLayout.cs
-│   │   │   ├── MapInventory.cs
-│   │   │   ├── MapInventoryBuilder.cs
-│   │   │   ├── MapItem.cs
-│   │   │   ├── MapItemKind.cs
-│   │   │   ├── MapLink.cs
-│   │   │   ├── MapLinkReader.cs
-│   │   │   ├── MapListFilter.cs
-│   │   │   ├── MapListOrder.cs
-│   │   │   ├── MapNeighbourhood.cs
-│   │   │   ├── MapSection.cs
-│   │   │   ├── MapSkip.cs
-│   │   │   ├── McpDeclarations.cs
-│   │   │   └── TokenEstimate.cs
+│   │   ├── MapGraph/
+│   │   │   └── DeckleAtelierSource.MapGraph.cs
 │   │   ├── Photos/
 │   │   │   ├── CaptureData.cs
 │   │   │   ├── CaptureDataFormat.cs
@@ -856,6 +823,27 @@ _Generated from `git ls-files` — do not edit by hand._
 │   │   │   └── SizeScanOptions.cs
 │   │   ├── Deckle.Atelier.csproj
 │   │   └── DeckleAtelierSource.cs
+│   ├── Deckle.Atelier.App/
+│   │   ├── app.manifest
+│   │   ├── App.SelfCheck.cs
+│   │   ├── App.xaml
+│   │   ├── App.xaml.cs
+│   │   ├── AtelierContribution.cs
+│   │   ├── AtelierSelfCheck.AddedFolders.cs
+│   │   ├── AtelierSelfCheck.cs
+│   │   ├── AtelierSelfCheck.FileSelection.cs
+│   │   ├── AtelierSelfCheck.FolderIcons.cs
+│   │   ├── AtelierSelfCheck.Map.cs
+│   │   ├── AtelierSelfCheck.Photos.cs
+│   │   ├── AtelierSelfCheck.Previews.cs
+│   │   ├── AtelierSelfCheck.Search.cs
+│   │   ├── AtelierSelfCheck.Sizes.cs
+│   │   ├── AtelierWalkContext.cs
+│   │   ├── Composition.cs
+│   │   ├── Deckle.Atelier.App.csproj
+│   │   ├── DeckleAtelierAppSource.cs
+│   │   ├── LlmPhotoDescriptionModel.cs
+│   │   └── Program.cs
 │   ├── Deckle.Atelier.Views/
 │   │   ├── Address/
 │   │   │   ├── AddressBar.Icon.cs
@@ -1226,6 +1214,20 @@ _Generated from `git ls-files` — do not edit by hand._
 │   │   ├── Primitives/
 │   │   │   └── ColorSpace.cs
 │   │   └── Deckle.Composition.csproj
+│   ├── Deckle.Contributions/
+│   │   ├── ContributedWalk.cs
+│   │   ├── ContributedWindow.cs
+│   │   ├── ContributionHost.cs
+│   │   ├── ContributionHost.Tray.cs
+│   │   ├── ContributionHost.Windows.cs
+│   │   ├── ContributionRegistrationException.cs
+│   │   ├── ContributionTrayEntry.cs
+│   │   ├── ContributionValidation.cs
+│   │   ├── Deckle.Contributions.csproj
+│   │   ├── DeckleContributionsSource.cs
+│   │   ├── IContribution.cs
+│   │   ├── IContributionContext.cs
+│   │   └── IContributionHostServices.cs
 │   ├── Deckle.Core/
 │   │   ├── Design/
 │   │   │   ├── Dpi.cs
@@ -1250,9 +1252,15 @@ _Generated from `git ls-files` — do not edit by hand._
 │   │   │   └── Win32Clipboard.cs
 │   │   ├── Io/
 │   │   │   ├── Downloader.cs
+│   │   │   ├── FolderNameOrder.cs
+│   │   │   ├── FolderPaths.cs
 │   │   │   └── ProvisioningResult.cs
+│   │   ├── Navigation/
+│   │   │   └── NavigationHistory.cs
 │   │   ├── Paths/
+│   │   │   ├── AppIdentity.cs
 │   │   │   ├── AppPaths.cs
+│   │   │   ├── AppRoots.cs
 │   │   │   ├── DefaultDataRoot.cs
 │   │   │   └── ModuleDirectoryName.cs
 │   │   ├── CorpusPaths.cs
@@ -1339,6 +1347,27 @@ _Generated from `git ls-files` — do not edit by hand._
 │   │   ├── TelemetryListenerBootstrap.cs
 │   │   ├── TelemetrySettings.cs
 │   │   └── TelemetrySettingsService.cs
+│   ├── Deckle.FolderMap/
+│   │   ├── Deckle.FolderMap.csproj
+│   │   ├── DeckleFolderMapSource.cs
+│   │   ├── FrontMatter.cs
+│   │   ├── MapConventions.cs
+│   │   ├── MapFileFacts.cs
+│   │   ├── MapFolderWalk.cs
+│   │   ├── MapGraphLayout.cs
+│   │   ├── MapInventory.cs
+│   │   ├── MapInventoryBuilder.cs
+│   │   ├── MapItem.cs
+│   │   ├── MapItemKind.cs
+│   │   ├── MapLink.cs
+│   │   ├── MapLinkReader.cs
+│   │   ├── MapListFilter.cs
+│   │   ├── MapListOrder.cs
+│   │   ├── MapNeighbourhood.cs
+│   │   ├── MapSection.cs
+│   │   ├── MapSkip.cs
+│   │   ├── McpDeclarations.cs
+│   │   └── TokenEstimate.cs
 │   ├── Deckle.Home/
 │   │   ├── Schema/
 │   │   │   ├── README.md
@@ -1369,6 +1398,23 @@ _Generated from `git ls-files` — do not edit by hand._
 │   │   ├── HomeToolCatalog.cs
 │   │   ├── HomeTypedToolCatalog.cs
 │   │   └── OPERATIONS.md
+│   ├── Deckle.Hosting/
+│   │   ├── SelfCheck/
+│   │   │   ├── ElementImage.cs
+│   │   │   ├── OffscreenWindow.cs
+│   │   │   ├── SelfCheckCapture.cs
+│   │   │   ├── SelfCheckDataRootGate.cs
+│   │   │   ├── SelfCheckPerf.cs
+│   │   │   ├── SelfCheckProcess.cs
+│   │   │   ├── SelfCheckReport.cs
+│   │   │   └── SelfCheckTarget.cs
+│   │   ├── Deckle.Hosting.csproj
+│   │   ├── DiagnosticsHost.cs
+│   │   ├── ProcessVersion.cs
+│   │   ├── ResidentInstance.cs
+│   │   ├── WindowLifecycle.cs
+│   │   ├── WindowPlacement.cs
+│   │   └── WindowTheme.cs
 │   ├── Deckle.Hud/
 │   │   ├── Chrono/
 │   │   │   ├── GLOSSARY.md  — glossary-deckle-hud-chrono Chrono HUD element vocabulary. It names the face's eight elements and the accen…
@@ -1780,6 +1826,17 @@ _Generated from `git ls-files` — do not edit by hand._
 │   │   │   ├── TaskDayProposal.cs
 │   │   │   └── TriageList.cs
 │   │   └── Deckle.Mail.csproj
+│   ├── Deckle.Mail.App/
+│   │   ├── app.manifest
+│   │   ├── App.SelfCheck.cs
+│   │   ├── App.xaml
+│   │   ├── App.xaml.cs
+│   │   ├── Composition.cs
+│   │   ├── Deckle.Mail.App.csproj
+│   │   ├── DeckleMailAppSource.cs
+│   │   ├── MailContribution.cs
+│   │   ├── MailSelfCheck.cs
+│   │   └── Program.cs
 │   ├── Deckle.Mail.Hub/
 │   │   ├── Data/
 │   │   │   ├── ActivityEntry.cs
@@ -2726,12 +2783,11 @@ _Generated from `git ls-files` — do not edit by hand._
 │   │   ├── FileTranscriptionBugNotes.md
 │   │   ├── FileTranscriptionRunTests.cs
 │   │   ├── HudFeedbackSinkTests.cs
-│   │   ├── LlmPhotoDescriptionModelTests.cs
 │   │   ├── MessageTemplateDoctrineTests.cs
 │   │   ├── MilestoneClosersTests.cs
 │   │   ├── ProdApplyUpdateTests.cs
 │   │   ├── ProdUpdateTests.cs
-│   │   ├── ResidentMutexGateTests.cs
+│   │   ├── PublishedClosureTests.cs
 │   │   ├── ReswMirrorTests.cs
 │   │   ├── SelfCheckBugNotes.md
 │   │   ├── SelfCheckTests.cs
@@ -2739,6 +2795,11 @@ _Generated from `git ls-files` — do not edit by hand._
 │   │   ├── TrayDeveloperMenuTests.cs
 │   │   ├── TrayIncidentLinesTests.cs
 │   │   └── WindowOpenedEventTests.cs
+│   ├── Deckle.Atelier.App.Tests/
+│   │   ├── AtelierAppIdentityTests.cs
+│   │   ├── Deckle.Atelier.App.Tests.csproj
+│   │   ├── DeckleAtelierAppSourceTests.cs
+│   │   └── LlmPhotoDescriptionModelTests.cs
 │   ├── Deckle.Atelier.Tests/
 │   │   ├── Icons/
 │   │   │   ├── FileIconKeyTests.cs
@@ -2785,16 +2846,8 @@ _Generated from `git ls-files` — do not edit by hand._
 │   │   ├── FolderListingTests.cs
 │   │   ├── FolderPaneBugNotes.md
 │   │   ├── HeaviestFilesTests.cs
-│   │   ├── MapGraphLayoutTests.cs
-│   │   ├── MapInventoryTests.cs
-│   │   ├── MapListFilterTests.cs
-│   │   ├── MapListOrderTests.cs
-│   │   ├── MapNeighbourhoodTests.cs
 │   │   ├── MapSampleFolderTests.cs
-│   │   ├── MapSampleRepository.cs
-│   │   ├── MapTextTests.cs
 │   │   ├── MessageTemplateDoctrineTests.cs
-│   │   ├── NavigationHistoryTests.cs
 │   │   ├── PathRulesTests.cs
 │   │   ├── ScratchFolder.cs
 │   │   ├── SelectionSummaryTests.cs
@@ -2922,13 +2975,29 @@ _Generated from `git ls-files` — do not edit by hand._
 │   │   ├── Deckle.Chrono.Tests.csproj
 │   │   ├── DeckleChronoSourceTests.cs
 │   │   └── MessageTemplateDoctrineTests.cs
+│   ├── Deckle.Contributions.Tests/
+│   │   ├── Fakes/
+│   │   │   ├── FakeContribution.cs
+│   │   │   └── FakeHostServices.cs
+│   │   ├── AssemblyInfo.cs
+│   │   ├── ContributionObservabilityTests.cs
+│   │   ├── ContributionRegistrationTests.cs
+│   │   ├── ContributionTrayTests.cs
+│   │   ├── ContributionWindowTests.cs
+│   │   ├── Deckle.Contributions.Tests.csproj
+│   │   ├── DeckleContributionsSourceEventIdTests.cs
+│   │   └── MessageTemplateDoctrineTests.cs
 │   ├── Deckle.Core.Tests/
+│   │   ├── AppIdentityTests.cs
 │   │   ├── Deckle.Core.Tests.csproj
 │   │   ├── DpiTests.cs
+│   │   ├── FolderNameOrderTests.cs
+│   │   ├── FolderPathsTests.cs
 │   │   ├── HotkeyChordTests.cs
 │   │   ├── JsonSettingsStoreBugNotes.md
 │   │   ├── JsonSettingsStoreTests.cs
 │   │   ├── ModuleDirectoryNameTests.cs
+│   │   ├── NavigationHistoryTests.cs
 │   │   └── SpacingTests.cs
 │   ├── Deckle.Diagnostics.Logging.Tests/
 │   │   ├── Deckle.Diagnostics.Logging.Tests.csproj
@@ -2992,6 +3061,19 @@ _Generated from `git ls-files` — do not edit by hand._
 │   │   ├── UserIncidentListenerFaultTests.cs
 │   │   ├── UserIncidentRegistryTests.cs
 │   │   └── WorkIdTests.cs
+│   ├── Deckle.FolderMap.Tests/
+│   │   ├── Deckle.FolderMap.Tests.csproj
+│   │   ├── DeckleFolderMapSourceEventIdTests.cs
+│   │   ├── MapEventsTests.cs
+│   │   ├── MapGraphLayoutTests.cs
+│   │   ├── MapInventoryTests.cs
+│   │   ├── MapListFilterTests.cs
+│   │   ├── MapListOrderTests.cs
+│   │   ├── MapNeighbourhoodTests.cs
+│   │   ├── MapSampleRepository.cs
+│   │   ├── MapTextTests.cs
+│   │   ├── MessageTemplateDoctrineTests.cs
+│   │   └── ScratchFolder.cs
 │   ├── Deckle.Home.Tests/
 │   │   ├── AssemblyInfo.cs
 │   │   ├── Deckle.Home.Tests.csproj
@@ -3014,6 +3096,12 @@ _Generated from `git ls-files` — do not edit by hand._
 │   │   ├── HomeToolCatalogTests.cs
 │   │   ├── HomeTypedToolCatalogTests.cs
 │   │   └── MessageTemplateDoctrineTests.cs
+│   ├── Deckle.Hosting.Tests/
+│   │   ├── Deckle.Hosting.Tests.csproj
+│   │   ├── ProcessVersionTests.cs
+│   │   ├── ResidentInstanceTests.cs
+│   │   ├── SelfCheckTests.cs
+│   │   └── WindowThemeTests.cs
 │   ├── Deckle.Hud.Tests/
 │   │   ├── AnimationGateTests.cs
 │   │   ├── AnimationOfferTests.cs
@@ -3182,6 +3270,10 @@ _Generated from `git ls-files` — do not edit by hand._
 │   │   ├── ImageRequestTests.cs
 │   │   ├── LlmUsageLogTests.cs
 │   │   └── ReasoningOnTheWireTests.cs
+│   ├── Deckle.Mail.App.Tests/
+│   │   ├── Deckle.Mail.App.Tests.csproj
+│   │   ├── DeckleMailAppSourceTests.cs
+│   │   └── MailAppIdentityTests.cs
 │   ├── Deckle.Mail.Hub.Tests/
 │   │   ├── Deckle.Mail.Hub.Tests.csproj
 │   │   ├── MessageTemplateDoctrineTests.cs

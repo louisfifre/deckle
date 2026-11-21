@@ -6,15 +6,26 @@
     launch the fresh build. The build-only variant never stops the running
     instance: when it runs from this build's output directory the build is
     refused before compiling.
+    -App mail or atelier builds and starts DeckleMail.exe or DeckleAtelier.exe
+    instead: separate apps with their own resident mutex and data root, so the
+    running Deckle is never stopped nor touched (only a previous instance of
+    the same small app is replaced).
 .NOTES
     section: Run
     order: 120
     action: Build & run |
     action: Build (no run) | -NoRun
+    action: Build & run Mail | -App mail
+    action: Build & run Folders | -App atelier
 #>
 
 [CmdletBinding()]
 param(
+    # Which app of the suite: deckle (the published Deckle), mail (DeckleMail.exe)
+    # or atelier (DeckleAtelier.exe).
+    # deckle, mail or atelier; checked below, not a [ValidateSet]: the script's one
+    # enumerated parameter is Configuration, which the launcher reads as its variant.
+    [string]$App = 'deckle',
     # Build only. The running Deckle instance is never stopped; when it runs
     # from this build's output directory the build is refused before compiling,
     # because the assemblies it holds open cannot be replaced.
@@ -37,6 +48,7 @@ param(
 )
 
 $ErrorActionPreference = 'Stop'
+if ($App -notin 'deckle', 'mail', 'atelier') { [Console]::Error.WriteLine("-App is deckle, mail or atelier, not '$App'."); exit 1 }
 $ScriptDir  = $PSScriptRoot                                  # scripts/
 $LibDir = Join-Path $ScriptDir 'lib'
 . (Join-Path $LibDir 'action-summary.ps1')
@@ -77,15 +89,18 @@ if ($Target) {
 
 Write-OutputText -Text "Repo: $RepoRoot" -Role Muted
 
-$ProjectDir = Join-Path $RepoRoot 'src\Deckle.App'
-$Csproj     = Join-Path $ProjectDir 'Deckle.App.csproj'
+$AppProject  = @{ deckle = 'Deckle.App'; mail = 'Deckle.Mail.App'; atelier = 'Deckle.Atelier.App' }[$App]
+$ExeName     = @{ deckle = 'Deckle.exe'; mail = 'DeckleMail.exe'; atelier = 'DeckleAtelier.exe' }[$App]
+$ProcessName = [System.IO.Path]::GetFileNameWithoutExtension($ExeName)
+$ProjectDir = Join-Path $RepoRoot "src\$AppProject"
+$Csproj     = Join-Path $ProjectDir "$AppProject.csproj"
 
 if (-not (Test-Path $Csproj)) { throw "csproj not found at $Csproj — is '$RepoRoot' a Deckle repo?" }
 
 # The root Directory.Build.props puts every bin/ under
 # artifacts\bin\<Project>\<pivot>\; the App's pivot is the lowercased
 # configuration (single TFM, and x64 is not a pivot).
-$AppArtifactsBin = Join-Path $RepoRoot 'artifacts\bin\Deckle.App'
+$AppArtifactsBin = Join-Path $RepoRoot "artifacts\bin\$AppProject"
 $PivotPrefix     = $Configuration.ToLowerInvariant()
 
 # Build & run replaces the running instance: Deckle is single-instance (a
@@ -96,15 +111,15 @@ $PivotPrefix     = $Configuration.ToLowerInvariant()
 if ($NoRun) {
     $OutputDir = Join-Path $AppArtifactsBin $PivotPrefix
     Write-WorkflowStep -Output $WorkflowOutput -Message 'Check running Deckle instance'
-    $locking = Get-DeckleProcessInDirectory -Directory $OutputDir
+    $locking = Get-DeckleProcessInDirectory -Directory $OutputDir -ProcessName $ProcessName
     if ($locking.Count -gt 0) {
         $pids = ($locking | ForEach-Object { $_.Id }) -join ', '
         throw "Deckle PID $pids is running from $OutputDir, the directory this $Configuration build writes to, and -NoRun never stops it. Build Debug (separate output directory), build from another worktree, or drop -NoRun to replace the running instance with the fresh build."
     }
     Write-WorkflowMessage -Output $WorkflowOutput -Message "No running Deckle.exe in $OutputDir; any running instance is left untouched" -Role Muted
 } else {
-    Write-WorkflowStep -Output $WorkflowOutput -Message 'Stop running Deckle instance'
-    Stop-DeckleProcess -WriteEvent {
+    Write-WorkflowStep -Output $WorkflowOutput -Message "Stop running $ProcessName instance"
+    Stop-DeckleProcess -ProcessName $ProcessName -WriteEvent {
         param([string]$Role, [string]$Message)
         Write-WorkflowMessage -Output $WorkflowOutput -Message $Message -Role $Role
     }
@@ -145,10 +160,10 @@ if ($NoRun) {
 # so a RID-suffixed pivot cannot strand the launch on a stale exe; the newest
 # write wins when several pivots coexist.
 Write-WorkflowStep -Output $WorkflowOutput -Message 'Resolve built executable'
-$ExeCandidates = Get-ChildItem -Path $AppArtifactsBin -Recurse -Filter 'Deckle.exe' -ErrorAction SilentlyContinue |
+$ExeCandidates = Get-ChildItem -Path $AppArtifactsBin -Recurse -Filter $ExeName -ErrorAction SilentlyContinue |
     Where-Object { $_.Directory.Name -like "$PivotPrefix*" } |
     Sort-Object LastWriteTime -Descending
-if (-not $ExeCandidates) { throw "Exe not found under $AppArtifactsBin (expected artifacts\bin\Deckle.App\$PivotPrefix\Deckle.exe)" }
+if (-not $ExeCandidates) { throw "Exe not found under $AppArtifactsBin (expected artifacts\bin\$AppProject\$PivotPrefix\$ExeName)" }
 $ExePath = $ExeCandidates[0].FullName
 Write-WorkflowMessage -Output $WorkflowOutput -Message $ExePath
 
@@ -173,7 +188,10 @@ function Start-DeckleViaShell {
 # foreground state, so --post-build lets the app relaunch itself once through
 # the same ShellExecute primitive.
 $launchArgs = @()
-if ($HudZOrderSelfTest) {
+if ($App -ne 'deckle') {
+    # The small apps have no post-build restart nor HUD: nothing to pass.
+    $launchArgs = @()
+} elseif ($HudZOrderSelfTest) {
     $launchArgs = @('--post-build-hud-zorder-selftest')
 } elseif ($NoAutoRestart) {
     $launchArgs = @()
@@ -197,7 +215,7 @@ if ($Wait) {
     $deadline = (Get-Date).AddSeconds(5)
     do {
         Start-Sleep -Milliseconds 100
-        $proc = Get-Process -Name Deckle -ErrorAction SilentlyContinue | Select-Object -First 1
+        $proc = Get-Process -Name $ProcessName -ErrorAction SilentlyContinue | Select-Object -First 1
     } while (-not $proc -and (Get-Date) -lt $deadline)
     if ($proc) {
         Write-WorkflowStep -Output $WorkflowOutput -Message "Wait for Deckle PID $($proc.Id)"

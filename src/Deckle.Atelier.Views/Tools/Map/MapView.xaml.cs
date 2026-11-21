@@ -2,6 +2,8 @@ using Microsoft.UI.Xaml;
 using Microsoft.UI.Xaml.Automation;
 using Microsoft.UI.Xaml.Controls;
 using Microsoft.UI.Xaml.Data;
+using Deckle.Core;
+using Deckle.FolderMap;
 
 namespace Deckle.Atelier.Views;
 

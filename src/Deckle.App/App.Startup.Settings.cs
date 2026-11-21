@@ -159,6 +159,10 @@ public partial class App
                 "Deckle.Transcription.Views",
                 Transcription.Views.SettingsSearch.TelemetryEntries);
         }
+        // The contributions plant their start hooks, before the pages that
+        // read them are registered.
+        PublishedHost.Compose();
+
         if (context.RewritePresent)
         {
             // The dictation steps stream only on a streaming transcription;
@@ -167,7 +171,6 @@ public partial class App
             Llm.Rewrite.Views.LlmSettingsModule.TranscriptionStreams = () =>
                 transcriptionPresent
                 && TranscriptionSettingsService.Instance.Current.Streaming.Strategy == PipelineStrategyKind.Streaming;
-            ConfigureAtelierPhotoDescriptionSetting();
             RegisterSettingsModule(Llm.Rewrite.Views.LlmSettingsModule.Describe(order: 200), Llm.Rewrite.Views.SettingsSearch.Entries);
         }
         if (context.AutocorrectPresent)
