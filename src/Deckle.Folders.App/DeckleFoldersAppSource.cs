@@ -48,7 +48,7 @@ public sealed class DeckleFoldersAppSource : DeckleEventSource
            Level = EventLevel.Warning,
            Keywords = (EventKeywords)Keywords.Lifecycle,
            Tags = ObservationTags.Milestone,
-           Message = "Deckle Folders found its data in two folders and moved nothing; keep the one you want in apps\\folders and remove the other\nold_folder={0} | new_folder={1}")]
+           Message = "Deckle Folders found its data in two folders and moved nothing; keep the one you want as new_folder and remove the other\nold_folder={0} | new_folder={1}")]
     public void DataRootNotMoved(string old_folder, string new_folder)
     {
         if (IsEnabled()) WriteEvent(EvtDataRootNotMoved, old_folder, new_folder);
@@ -58,7 +58,7 @@ public sealed class DeckleFoldersAppSource : DeckleEventSource
            Level = EventLevel.Warning,
            Keywords = (EventKeywords)Keywords.Lifecycle,
            Tags = ObservationTags.Milestone,
-           Message = "Deckle Folders could not move its data to its new folder and starts empty; close any program using apps\\atelier and start it again\nold_folder={0} | new_folder={1} | ex_type={2} | ex_message={3}")]
+           Message = "Deckle Folders could not move its data to its new folder and starts empty; close any program using old_folder and start it again\nold_folder={0} | new_folder={1} | ex_type={2} | ex_message={3}")]
     public void DataRootMoveFailed(string old_folder, string new_folder, string ex_type, string ex_message)
     {
         if (IsEnabled()) WriteEvent(EvtDataRootMoveFailed, old_folder, new_folder, ex_type, ex_message);

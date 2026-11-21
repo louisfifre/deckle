@@ -145,4 +145,48 @@ public sealed class FoldersDataMigrationTests : IDisposable
         Assert.Equal("root", File.ReadAllText(Apps("folders", "settings.json")));
         Assert.Equal("model", File.ReadAllText(Apps("folders", "modules", "atelier", "a.json")));
     }
+
+    private string SuiteModule(string id, params string[] rest) => Path.Combine([_suite, "modules", id, .. rest]);
+
+    [Fact]
+    public void DataFromBeforeTheSeparateAppMovesIntoTheNewModuleFolder()
+    {
+        Write(SuiteModule("atelier", "added-folders.json"), "added");
+        Write(SuiteModule("projects", "keep.json"), "suite");
+
+        FoldersDataMigrationResult result = FoldersDataMigration.Run(_suite);
+
+        Assert.Equal(FoldersDataMigrationOutcome.Moved, result.Outcome);
+        Assert.Equal(Path.Combine("modules", "atelier"), result.From);
+        Assert.Equal(Path.Combine("apps", "folders", "modules", "folders"), result.To);
+        Assert.Equal("added", File.ReadAllText(Apps("folders", "modules", "folders", "added-folders.json")));
+        Assert.False(Directory.Exists(SuiteModule("atelier")));
+        Assert.Equal("suite", File.ReadAllText(SuiteModule("projects", "keep.json")));
+    }
+
+    [Fact]
+    public void DataFromBeforeTheSeparateAppStaysWhenTheNewAppHasItsOwn()
+    {
+        Write(SuiteModule("atelier", "added-folders.json"), "old");
+        Write(Apps("folders", "modules", "folders", "added-folders.json"), "new");
+
+        FoldersDataMigrationResult result = FoldersDataMigration.Run(_suite);
+
+        Assert.Equal(FoldersDataMigrationOutcome.BothExist, result.Outcome);
+        Assert.Equal("old", File.ReadAllText(SuiteModule("atelier", "added-folders.json")));
+        Assert.Equal("new", File.ReadAllText(Apps("folders", "modules", "folders", "added-folders.json")));
+    }
+
+    [Fact]
+    public void TheSeparateAppsOldRootWinsOverTheSuiteModuleFolder()
+    {
+        Write(Apps("atelier", "settings.json"), "root");
+        Write(SuiteModule("atelier", "added-folders.json"), "older");
+
+        FoldersDataMigrationResult result = FoldersDataMigration.Run(_suite);
+
+        Assert.Equal(FoldersDataMigrationOutcome.Moved, result.Outcome);
+        Assert.Equal(Path.Combine("apps", "atelier"), result.From);
+        Assert.Equal("older", File.ReadAllText(SuiteModule("atelier", "added-folders.json")));
+    }
 }

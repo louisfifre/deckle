@@ -120,8 +120,8 @@ public partial class App : Application
     private static void LogDataMigration()
     {
         FoldersDataMigrationResult result = Program.DataMigration;
-        string oldFolder = Path.Combine(AppRoots.AppsFolderName, FoldersDataMigration.OldAppId);
-        string newFolder = Path.Combine(AppRoots.AppsFolderName, FoldersDataMigration.NewAppId);
+        string oldFolder = result.From;
+        string newFolder = result.To;
         switch (result.Outcome)
         {
             case FoldersDataMigrationOutcome.Moved:
