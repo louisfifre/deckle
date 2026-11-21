@@ -49,11 +49,6 @@ public static class SettingsSearch
             LabelKey = "TrackpadPage_GesturesCard",
             Keywords = ["swipe", "neutralize", "virtual desktop", "task view"],
         },
-        new SettingSearchEntry
-        {
-            LabelKey = "TrackpadPage_RepairCard",
-            Keywords = ["pairing", "driver", "reconnect", "apple"],
-        },
         // "Start elevated" is a General page card now (Deckle.Settings
         // SettingsSearch, GeneralStartElevatedCard).
     ];

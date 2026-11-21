@@ -1534,8 +1534,6 @@ _Generated from `git ls-files` — do not edit by hand._
 │   │   └── SettingsSearch.cs
 │   ├── Deckle.Input.Trackpad/
 │   │   ├── Acts/
-│   │   │   ├── ConnectionRepair.cs
-│   │   │   ├── repair-trackpad-connection.ps1  — Repairs the Apple Magic Trackpad 2 Bluetooth pairing on Windows. The Apple Precision Touchpad driver (appleprecisiontrackpadbluetooth.inf, signe…
 │   │   │   └── WindowsGestureNeutralizer.cs
 │   │   ├── Engine/
 │   │   │   ├── ThreeFingerDragRecognizer.cs
@@ -3164,7 +3162,6 @@ _Generated from `git ls-files` — do not edit by hand._
 │   │   ├── SyntheticTouchpadFrameBuilderTests.cs
 │   │   └── WheelObservationBufferTests.cs
 │   ├── Deckle.Input.Trackpad.Tests/
-│   │   ├── ConnectionRepairTests.cs
 │   │   ├── Deckle.Input.Trackpad.Tests.csproj
 │   │   ├── DeckleTrackpadSourceTests.cs
 │   │   ├── MessageTemplateDoctrineTests.cs

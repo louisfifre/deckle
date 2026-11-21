@@ -34,7 +34,7 @@ public sealed class DeckleTrackpadSource : DeckleEventSource
     public const int EvtGesturesNeutralizedDetail = 9;
     public const int EvtGesturesRestored         = 10;
     // 11 retired.
-    public const int EvtRepairLaunched           = 12;
+    // 12 retired.
     // 13 retired.
     // 14 retired.
     // 15 retired.
@@ -46,11 +46,11 @@ public sealed class DeckleTrackpadSource : DeckleEventSource
     public const int EvtInjectionIncidentEnded   = 21;
     public const int EvtGestureWriteFailed       = 22;
     public const int EvtGestureStateUnreadable   = 23;
-    public const int EvtRepairLaunchFailed       = 24;
-    public const int EvtRepairCompleted          = 25;
-    public const int EvtRepairFailed             = 26;
+    // 24 retired.
+    // 25 retired.
+    // 26 retired.
     public const int EvtActFailed                = 27;
-    public const int EvtRepairExitUnobserved     = 28;
+    // 28 retired.
     public const int EvtPrimaryReleaseFailed     = 29;
     public const int EvtSettingsLoadWarning = 30;
     public const int EvtSettingsLoadError = 31;
@@ -221,60 +221,7 @@ public sealed class DeckleTrackpadSource : DeckleEventSource
         if (IsEnabled()) WriteEvent(EvtGestureStateUnreadable, query, ex_type, ex_message);
     }
 
-    [Event(EvtRepairLaunched,
-           Level = EventLevel.Informational,
-           Keywords = (EventKeywords)Keywords.Lifecycle,
-           Tags = ObservationTags.Milestone,
-           Message = "Connection repair script launched")]
-    public void RepairLaunched()
-    {
-        if (IsEnabled()) WriteEvent(EvtRepairLaunched);
-    }
-
-    // reason: uac_declined (win32_error 1223) or launch_failed.
-    [Event(EvtRepairLaunchFailed,
-           Level = EventLevel.Warning,
-           Keywords = (EventKeywords)Keywords.Lifecycle,
-           Message = "The connection repair script could not launch, so nothing was repaired\nreason={0} | win32_error={1} | ex_type={2} | ex_message={3}")]
-    public void RepairLaunchFailed(string reason, int win32_error, string ex_type, string ex_message)
-    {
-        if (IsEnabled()) WriteEvent(EvtRepairLaunchFailed, reason, win32_error, ex_type, ex_message);
-    }
-
-    [Event(EvtRepairCompleted,
-           Level = EventLevel.Informational,
-           Keywords = (EventKeywords)Keywords.Lifecycle,
-           Tags = ObservationTags.Milestone,
-           Message = "Connection repair script completed")]
-    public void RepairCompleted(int exit_code)
-    {
-        if (IsEnabled()) WriteEvent(EvtRepairCompleted, exit_code);
-    }
-
-    // reason: script_failed (the script's own exit 1 after a failed step),
-    // script_modified (exit 3: the extracted file did not match the embedded
-    // script's SHA-256, so it was refused), script_unreadable (exit 4) or
-    // script_interrupted (any other code, typically the console closed).
-    [Event(EvtRepairFailed,
-           Level = EventLevel.Warning,
-           Keywords = (EventKeywords)Keywords.Lifecycle,
-           Message = "The connection repair script failed, so the connection may still be broken\nreason={0} | exit_code={1}")]
-    public void RepairFailed(string reason, int exit_code)
-    {
-        if (IsEnabled()) WriteEvent(EvtRepairFailed, reason, exit_code);
-    }
-
-    // The repair runs regardless; only its outcome line is lost.
-    [Event(EvtRepairExitUnobserved,
-           Level = EventLevel.Verbose,
-           Keywords = (EventKeywords)Keywords.Lifecycle,
-           Message = "ex_type={0} | ex_message={1}")]
-    public void RepairExitUnobserved(string ex_type, string ex_message)
-    {
-        if (IsEnabled()) WriteEvent(EvtRepairExitUnobserved, ex_type, ex_message);
-    }
-
-    // act: gestures | repair. The page swallowed the exception; the act did
+    // act: gestures. The page swallowed the exception; the act did
     // not run, so what the user sees did not change.
     [Event(EvtActFailed,
            Level = EventLevel.Warning,
