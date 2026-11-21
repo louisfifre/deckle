@@ -52,7 +52,7 @@ Words a reader needs:
 - The **details panel** is the panel on the right that shows what the user needs of the selected item.
 - A **command for agents** is a job of the app offered to a program or a model, with named inputs.
 
-The screens are drawn on the canvas page "Référence" (pass 12), which the user accepted as the starting point; the wording is in the module's strings. Commands are named below by the label the drawings give them.
+The screens are drawn on the canvas page "Référence" (pass 12), which the user accepted as the starting point; the drawings are in French, and the wording is in the module's strings. Commands are named below by their label in those strings.
 
 ### The window
 
@@ -88,19 +88,19 @@ The screens are drawn on the canvas page "Référence" (pass 12), which the user
 1. The file list is the plain view of a folder: a details list with a header row, name, date modified, size.
 2. In large rows, the type, size and date sit under the name; in the gallery, each file shows a preview.
 3. Every file shows an icon for its type, whatever the type: a PDF and a Markdown file are told apart by their icon. The app can start without it.
-4. The pointer over a row shows two actions at most: "Ouvrir dans l'Explorateur" and "Mettre à la Corbeille". The room they take is the same on every row, so that opening a sub-folder whose rows have other actions never shifts the columns.
+4. The pointer over a row shows two actions at most: "Show in File Explorer" and "Move to Recycle Bin". The room they take is the same on every row, so that opening a sub-folder whose rows have other actions never shifts the columns.
 5. The panel of a file shows its size, date modified and location. The panel of a photo shows what the photo tool shows, without the folder's counters.
 
 ### Sorting photos: the photo tool
 
 1. The photo tool shows the photos of the current folder as a gallery. It serves to see, sort and select; never to retouch.
 2. Before any folder is added: nothing is shown except the way to add a folder and three short lines on what happens next (add a folder, ask for descriptions if wanted, search finds them). The photo tool never fills itself from the disk.
-3. Above the gallery: three counters (without a mark, to keep, to delete) and three commands, "Décrire le dossier", "Appliquer les marques…" and "Ouvrir dans darktable".
-4. The panel of a photo shows its mark with two buttons and their keys, G to keep and X to delete; what the camera recorded (the date it was taken, the camera, the lens, the exposure, and the place when the file holds one); the people recognised; and the written description.
+3. Above the gallery: three counters (without a mark, to keep, to delete) and three commands, "Describe the folder", "Apply marks…" and "Open in darktable".
+4. The panel of a photo shows its mark with two buttons and their keys, K to keep and X to delete; what the camera recorded (the date it was taken, the camera, the lens, the exposure, and the place when the file holds one); the people recognised; and the written description.
 5. The user marks a photo with the panel's buttons or the keys. Marking a photo changes nothing on the disk.
 6. A model running on this machine can describe one photo, or go through the whole folder and describe each photo. One click starts it, and the panel of a photo is where the user asks for its description.
-7. With no description yet, the panel says so and offers "Décrire cette photo". While one is being written, it says so, with a way to stop. Once written, it says that a model on this computer wrote it, and offers "Décrire à nouveau". While one photo is being described, "Décrire le dossier" stays usable.
-8. While the whole folder is described, "Décrire le dossier" gives way to how many photos are described out of how many, a progress bar and a way to stop; the other commands stay usable.
+7. With no description yet, the panel says so and offers "Describe this photo". While one is being written, it says so, with a way to stop. Once written, it says that a model on this computer wrote it, and offers "Describe again". While one photo is being described, "Describe the folder" stays usable.
+8. While the whole folder is described, "Describe the folder" gives way to how many photos are described out of how many, a progress bar and a way to stop; the other commands stay usable.
 9. A photo can be seen large inside the app. Seen large, it keeps the panel, shows its rank in the folder ("13 sur 412"), and moves to its neighbours with the arrow keys.
 10. "Appliquer les marques…" opens a summary: how many photos go to the Windows Recycle Bin and their weight, that they can be recovered until the bin is emptied, and that kept and unmarked photos do not change. Its buttons put that number of photos in the Recycle Bin, or cancel.
 11. After applying, the deleted photos have left the gallery, the counter of photos to delete is 0, "Appliquer les marques…" is disabled, and "Ouvrir dans darktable" becomes the main command.
@@ -186,7 +186,7 @@ Pass 12 drew one option for most questions below. Until the user says otherwise,
 22. **Is the sizes panel about what is selected, or always about the folder?** Drawn: the folder, even with a heavy file selected.
 23. **Does a row of the map show that it is always read, before the box is ticked?** Drawn: no.
 24. **After applying the marks, does the app say where the photos went?** Drawn: nothing says it.
-25. **While one photo is being described, does "Décrire le dossier" stay usable?** Drawn: yes.
+25. **While one photo is being described, does "Describe the folder" stay usable?** Drawn: yes.
 26. **What does the renaming in one step offer on screen, if anything?** The rich cases go through the commands for agents. Open: whether a simple case, such as the date in front of the name, has a button in the app. Not drawn.
 27. **How is a photo marked by voice?** Through Deckle's dictation, or otherwise. Not drawn.
 28. **Does the file list need its three displays?** The user had not thought of it for files and finds it not bad. Drawn: the three.
