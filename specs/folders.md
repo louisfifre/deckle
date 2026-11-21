@@ -180,7 +180,7 @@ Pass 12 drew one option for most questions below. Until the user says otherwise,
 15. **Where do videos go?** In the photo tool, in a tool of their own next to it, or nowhere. The user does not shoot video.
 16. **What do the two row actions do, per kind of item?** The user is not sure "open in File Explorer" is needed. Drawn: open in File Explorer, move to the Recycle Bin.
 17. **What comes first in a first version?** Read, not confirmed: photos and renaming.
-18. **The name of the app.** "Deckle Atelier" was the working name, and "Deckle Dossiers" is rejected. Built today: the interface shows "Deckle Folders".
+18. **The name of the app.** "Deckle Dossiers" is rejected. Built today: the interface shows "Deckle Folders".
 19. **Do the active tool, the main command and a pressed button share one fill?** The design system's accent is a grey, so they look alike. Drawn: yes.
 20. **Does a click on a counter of the photo tool filter the gallery?** Drawn: no, plain text.
 21. **Does a line of what an item cites, or of what cites it, lead to that item?** Drawn: no, plain text.

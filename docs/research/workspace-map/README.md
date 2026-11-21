@@ -1,6 +1,6 @@
 # Carte de l'espace de travail — prototype
 
-Prototype écrit le 2026-11-09 pour la tâche « Enquêter sur un mode graphe (tableau blanc) pour voir l'espace de travail et ses liens », dans le chantier de l'atelier. Il teste l'idée avant d'en faire un mode de l'atelier WinUI 3. Il lit seulement : rien n'est modifié dans les dossiers parcourus.
+Prototype écrit le 2026-11-09 pour la tâche « Enquêter sur un mode graphe (tableau blanc) pour voir l'espace de travail et ses liens », dans le chantier de Deckle Folders. Il teste l'idée avant d'en faire un mode de Deckle Folders (WinUI 3). Il lit seulement : rien n'est modifié dans les dossiers parcourus.
 
 L'espace se lit comme une carte qu'on zoome et qu'on parcourt, vue sous trois prismes. Un prisme est une question posée aux mêmes éléments :
 

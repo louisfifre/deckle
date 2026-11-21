@@ -50,7 +50,7 @@ Words a reader needs:
 - A **card** is a project's place on Home.
 - The **script menu** is the project's `scripts/menu.ps1`, installed from the deckle-scripts repository.
 - A **pinned action** is an entry of the script menu the user chose to keep at hand. One pinned action can be the **main action**.
-- **Deckle Folders** is the module that shows files and draws the map of a folder; `specs/atelier.md` calls it Deckle Atelier. **Deckle Agents** will manage MCP servers and skills, and does not exist yet.
+- **Deckle Folders** is the module that shows files and draws the map of a folder. **Deckle Agents** will manage MCP servers and skills, and does not exist yet.
 
 The screens are drawn in mockup v4; the wording is in the module's strings.
 
