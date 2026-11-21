@@ -133,6 +133,14 @@ public partial class App : Application
                     Path.Combine(newFolder, "modules", FoldersDataMigration.OldAppId),
                     Path.Combine(newFolder, "modules", FoldersDataMigration.NewAppId));
                 break;
+            case FoldersDataMigrationOutcome.MovedModuleFolderNotRenamed:
+                DeckleFoldersAppSource.Log.DataRootMoved(oldFolder, newFolder);
+                DeckleFoldersAppSource.Log.ModuleFolderRenameFailed(
+                    Path.Combine(newFolder, "modules", FoldersDataMigration.OldAppId),
+                    Path.Combine(newFolder, "modules", FoldersDataMigration.NewAppId),
+                    result.Error?.GetType().Name ?? "(unknown)",
+                    PathRedaction.Redact(result.Error?.Message ?? "(no message)"));
+                break;
             case FoldersDataMigrationOutcome.BothExist:
                 DeckleFoldersAppSource.Log.DataRootNotMoved(oldFolder, newFolder);
                 break;

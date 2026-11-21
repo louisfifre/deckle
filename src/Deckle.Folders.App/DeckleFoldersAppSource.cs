@@ -28,6 +28,7 @@ public sealed class DeckleFoldersAppSource : DeckleEventSource
     public const int EvtDataRootNotMoved = 8;
     public const int EvtDataRootMoveFailed = 9;
     public const int EvtModuleFolderKept = 10;
+    public const int EvtModuleFolderRenameFailed = 11;
 
     // The one-time move from the code name's folder (FoldersDataMigration).
     // Folders are named from the suite root, never as full paths.
@@ -71,6 +72,18 @@ public sealed class DeckleFoldersAppSource : DeckleEventSource
     public void ModuleFolderKept(string old_folder, string new_folder)
     {
         if (IsEnabled()) WriteEvent(EvtModuleFolderKept, old_folder, new_folder);
+    }
+
+    // The data root moved but modules\atelier could not be renamed: the module
+    // reads modules\folders, so its data stays out of reach until it is.
+    [Event(EvtModuleFolderRenameFailed,
+           Level = EventLevel.Warning,
+           Keywords = (EventKeywords)Keywords.Lifecycle,
+           Tags = ObservationTags.Milestone,
+           Message = "Deckle Folders moved its data folder but could not rename the module folder, so the module starts empty; close any program using it, then rename modules\\atelier to modules\\folders by hand\nold_folder={0} | new_folder={1} | ex_type={2} | ex_message={3}")]
+    public void ModuleFolderRenameFailed(string old_folder, string new_folder, string ex_type, string ex_message)
+    {
+        if (IsEnabled()) WriteEvent(EvtModuleFolderRenameFailed, old_folder, new_folder, ex_type, ex_message);
     }
 
     // Which Deckle Folders this is, in the payload: the message stays a sentence.

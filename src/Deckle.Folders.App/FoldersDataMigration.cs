@@ -22,7 +22,10 @@ public static class FoldersDataMigration
     // The module folder inside the data root, named after the module id.
     private const string ModulesFolderName = "modules";
 
-    public static FoldersDataMigrationResult Run(string suiteRoot)
+    public static FoldersDataMigrationResult Run(string suiteRoot) => Run(suiteRoot, Directory.Move);
+
+    // The move is a parameter so a test can fail one of the two moves alone.
+    public static FoldersDataMigrationResult Run(string suiteRoot, Action<string, string> move)
     {
         string appsRoot = Path.Combine(suiteRoot, "apps");
         string oldRoot = Path.Combine(appsRoot, OldAppId);
@@ -38,36 +41,48 @@ public static class FoldersDataMigration
 
         try
         {
-            Directory.Move(oldRoot, newRoot);
-
-            string oldModule = Path.Combine(newRoot, ModulesFolderName, OldAppId);
-            string newModule = Path.Combine(newRoot, ModulesFolderName, NewAppId);
-            if (Directory.Exists(oldModule))
-            {
-                // A module folder already named "folders" holds data of its
-                // own: leave both, the warning says so.
-                if (Directory.Exists(newModule))
-                    return new FoldersDataMigrationResult(FoldersDataMigrationOutcome.MovedModuleFolderKept, null);
-                Directory.Move(oldModule, newModule);
-            }
-            return new FoldersDataMigrationResult(FoldersDataMigrationOutcome.Moved, null);
+            move(oldRoot, newRoot);
         }
         catch (Exception ex) when (ex is IOException or UnauthorizedAccessException)
         {
             // A second copy racing for the same move, a file held open, a
-            // denied permission: the app starts on an empty data root and the
-            // old folder is still where it was.
+            // denied permission: nothing moved, the app starts on an empty
+            // data root and the old folder is still where it was.
             return new FoldersDataMigrationResult(FoldersDataMigrationOutcome.Failed, ex);
         }
+
+        string oldModule = Path.Combine(newRoot, ModulesFolderName, OldAppId);
+        string newModule = Path.Combine(newRoot, ModulesFolderName, NewAppId);
+        if (!Directory.Exists(oldModule))
+            return new FoldersDataMigrationResult(FoldersDataMigrationOutcome.Moved, null);
+
+        // A module folder already named "folders" holds data of its own:
+        // leave both, the warning says so.
+        if (Directory.Exists(newModule))
+            return new FoldersDataMigrationResult(FoldersDataMigrationOutcome.MovedModuleFolderKept, null);
+
+        try
+        {
+            move(oldModule, newModule);
+        }
+        catch (Exception ex) when (ex is IOException or UnauthorizedAccessException)
+        {
+            // The data root already moved: it is not "still where it was".
+            // Only the module folder kept its old name, and the module reads
+            // the new one, so its data is out of reach until it is renamed.
+            return new FoldersDataMigrationResult(FoldersDataMigrationOutcome.MovedModuleFolderNotRenamed, ex);
+        }
+        return new FoldersDataMigrationResult(FoldersDataMigrationOutcome.Moved, null);
     }
 }
-
 public enum FoldersDataMigrationOutcome
 {
     NothingToMove,
     Moved,
     // The data root moved, but modules\atelier stayed beside an existing modules\folders.
     MovedModuleFolderKept,
+    // The data root moved, but renaming modules\atelier failed: it keeps its old name.
+    MovedModuleFolderNotRenamed,
     // apps\atelier and apps\folders both exist: nothing was moved.
     BothExist,
     Failed,

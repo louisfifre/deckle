@@ -98,4 +98,51 @@ public sealed class FoldersDataMigrationTests : IDisposable
         Assert.Equal(FoldersDataMigrationOutcome.NothingToMove, second.Outcome);
         Assert.Equal("root", File.ReadAllText(Apps("folders", "settings.json")));
     }
+
+    [Fact]
+    public void AModuleFolderOnlyBesideAnExistingNewRootMovesNothing()
+    {
+        Write(Apps("atelier", "modules", "atelier", "a.json"), "old");
+        Write(Apps("folders", "settings.json"), "new");
+
+        FoldersDataMigrationResult result = FoldersDataMigration.Run(_suite);
+
+        Assert.Equal(FoldersDataMigrationOutcome.BothExist, result.Outcome);
+        Assert.Equal("old", File.ReadAllText(Apps("atelier", "modules", "atelier", "a.json")));
+    }
+
+    [Fact]
+    public void AFileHeldOpenInTheOldRootFailsTheMoveAndLeavesItInPlace()
+    {
+        string held = Apps("atelier", "settings.json");
+        Write(held, "root");
+        using var lockFile = new FileStream(held, FileMode.Open, FileAccess.Read, FileShare.None);
+
+        FoldersDataMigrationResult result = FoldersDataMigration.Run(_suite);
+
+        Assert.Equal(FoldersDataMigrationOutcome.Failed, result.Outcome);
+        Assert.NotNull(result.Error);
+        Assert.False(Directory.Exists(Apps("folders")));
+    }
+
+    [Fact]
+    public void AFailedModuleRenameAfterTheRootMovedIsReportedAsSuch()
+    {
+        Write(Apps("atelier", "settings.json"), "root");
+        Write(Apps("atelier", "modules", "atelier", "a.json"), "model");
+
+        // The seam stands in for a handle opened on the module folder between
+        // the two moves, which a real file lock cannot reproduce on its own.
+        FoldersDataMigrationResult result = FoldersDataMigration.Run(_suite, (from, to) =>
+        {
+            if (from.EndsWith(Path.Combine("modules", "atelier"), StringComparison.Ordinal))
+                throw new IOException("held open");
+            Directory.Move(from, to);
+        });
+
+        Assert.Equal(FoldersDataMigrationOutcome.MovedModuleFolderNotRenamed, result.Outcome);
+        Assert.IsType<IOException>(result.Error);
+        Assert.Equal("root", File.ReadAllText(Apps("folders", "settings.json")));
+        Assert.Equal("model", File.ReadAllText(Apps("folders", "modules", "atelier", "a.json")));
+    }
 }
