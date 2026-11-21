@@ -33,7 +33,7 @@ The dictation take needs the native runtime and a speech model. The run links th
 4. Compare: `pwsh -NoProfile -File scripts/bench/perf-compare.ps1 -Before <file or latest-3> -After <file or latest>`. A file name given alone is looked up in `artifacts/bench/`; `latest` is the newest pass and `latest-N` the one N before it.
 5. Quote the lines of the metric the fix targets, with both values, in the commit or the report.
 
-A metric flagged in both comparisons (the first pass against the third, the second against the fourth) is a real change. One flagged once is probably noise: a single page load moves by a hundred milliseconds from one run to the next, and another session's build or self-check running at the same time moves everything. Take the pass when the machine is quiet.
+A metric flagged in both comparisons (the first pass against the third, the second against the fourth) is a real change. One flagged once is probably noise: a single page load moves by a hundred milliseconds from one run to the next, and another session's build or self-check running at the same time moves everything. Take the pass when the machine is quiet. The first pass after a build is the slowest (cold files and caches: startup took 4.9 s, then 0.5 s on the next, in the two Debug passes taken to try the bench), so the first of each pair is a warm-up and the second is the one to quote.
 
 `perf-compare.ps1` flags a regression when a metric got worse by more than `-ThresholdPercent` (25 by default) and by more than its noise floor (50 ms, 10 MB, 25 handles, 0.2 of real time), and exits 1 then, 2 when the passes cannot be compared (a different configuration or target). Passes taken on Debug and Release are never compared with each other.
 
