@@ -63,3 +63,14 @@ Regression: `JsonlSinkMaintenanceTests.A_roll_that_cannot_happen_is_reported_onc
 - **Recurrence cue:** a `RowUnrouted` Warning, and a `RowsRoutedAgain` carrying the count of rows lost.
 
 Regression: `RoutedJsonlSinkRegressionTests.Rows_without_a_path_are_reported_once_and_counted_when_routing_resumes`.
+
+## A roll that could not happen was retried, and the file recounted, on every row
+
+- **Trigger:** a sink past its line cap whose roll keeps failing (the archive folder cannot be created, or a reader holds the active file so it cannot be moved). Reproduced 2026-11-21 by test.
+- **Observed symptom:** none in the log, which says the failure once. On disk, each row past the cap read the whole active file again to recount its lines.
+- **Cause (established by running the test):** `WriteOnWorker` tried the roll whenever the count was at or above the cap, and a failed roll recounted the file, so nothing spaced the attempts.
+- **Violated invariant:** maintenance that fails never costs more than the writes it rides on.
+- **Recurrence cue:** a `RotationFailed` followed by a `RotationRecovered` whose count of failures is close to the number of rows written in between.
+- **Also fixed:** an archive compressed to `<file>.<digits>.gz` was not a generation for `EnumerateGenerations`, so it escaped the cap and could lend its number to the next roll. No compression exists yet; the listing now reads the suffix first.
+
+Regression: `JsonlSinkMaintenanceTests.A_roll_that_cannot_happen_is_not_retried_on_every_row`, `JsonlSinkRotationTests.ACompressedGenerationKeepsItsNumberAndCountsTowardTheCap`.

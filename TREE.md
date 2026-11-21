@@ -965,9 +965,6 @@ _Generated from `git ls-files` — do not edit by hand._
 │   │   │   ├── NoiseGate.cs
 │   │   │   ├── PreprocessingSettings.cs
 │   │   │   └── TranscriptionPreprocessor.cs
-│   │   ├── Telemetry/
-│   │   │   ├── MicrophoneTelemetryCalculator.cs
-│   │   │   └── MicrophoneTelemetryPayload.cs
 │   │   ├── AudioFileDecoder.cs
 │   │   ├── AudioFileDecodeResult.cs
 │   │   ├── AudioLevelMapper.cs
@@ -989,6 +986,7 @@ _Generated from `git ls-files` — do not edit by hand._
 │   │   ├── MicrophoneLevelFeed.cs
 │   │   ├── MicrophoneLevelFeedFailure.cs
 │   │   ├── ProbeResult.cs
+│   │   ├── RecordingTailCalculator.cs
 │   │   ├── SpeakerOutput.cs
 │   │   ├── VoiceDetector.cs
 │   │   ├── VoiceLevelMeterHost.cs
@@ -1021,9 +1019,10 @@ _Generated from `git ls-files` — do not edit by hand._
 │   │   ├── Engine/
 │   │   │   ├── AutocorrectEngine.Commit.cs
 │   │   │   ├── AutocorrectEngine.cs
+│   │   │   ├── AutocorrectEngine.Enrollment.cs
 │   │   │   ├── AutocorrectEngine.Input.cs
 │   │   │   ├── AutocorrectEngine.Lifecycle.cs
-│   │   │   ├── AutocorrectEngine.Telemetry.cs
+│   │   │   ├── AutocorrectEngine.Rollup.cs
 │   │   │   ├── AutocorrectPolicySet.cs
 │   │   │   ├── BigramPairDisambiguator.cs
 │   │   │   ├── CasePattern.cs
@@ -1036,7 +1035,6 @@ _Generated from `git ls-files` — do not edit by hand._
 │   │   │   ├── MistouchFamilyCorrector.cs
 │   │   │   ├── QwertyAdjacency.cs
 │   │   │   ├── RestorerOptions.cs
-│   │   │   ├── SentenceCorpus.cs
 │   │   │   ├── TrainerReport.cs
 │   │   │   ├── TypoOptions.cs
 │   │   │   └── WordShape.cs
@@ -1078,7 +1076,6 @@ _Generated from `git ls-files` — do not edit by hand._
 │   │   │   ├── KeyDecoder.cs
 │   │   │   ├── Keystroke.cs
 │   │   │   ├── TypedWordTracker.cs
-│   │   │   ├── TypingStream.cs
 │   │   │   ├── WordBoundaries.cs
 │   │   │   └── WordCommit.cs
 │   │   ├── AutocorrectSettings.cs
@@ -1100,7 +1097,8 @@ _Generated from `git ls-files` — do not edit by hand._
 │   │   │   ├── SurfaceProfiler.cs
 │   │   │   └── SurfaceProfileReport.cs
 │   │   ├── Replay/
-│   │   │   └── CorpusReader.cs
+│   │   │   ├── CorpusReader.cs
+│   │   │   └── SentenceRecord.cs
 │   │   ├── DataSet.cs
 │   │   ├── Deckle.Autocorrect.Lab.csproj
 │   │   ├── DomainPackBuilder.cs
@@ -1124,7 +1122,6 @@ _Generated from `git ls-files` — do not edit by hand._
 │   │   │   ├── AppsEnrolledViewModel.cs
 │   │   │   ├── AutocorrectAppRow.cs
 │   │   │   ├── AutocorrectExcludedWordRow.cs
-│   │   │   ├── AutocorrectTelemetryViewModel.cs
 │   │   │   ├── AutocorrectViewModel.cs
 │   │   │   ├── AutocorrectViewModel.Settings.cs
 │   │   │   ├── DomainLanguageRow.cs
@@ -2160,10 +2157,7 @@ _Generated from `git ls-files` — do not edit by hand._
 │   │   ├── Dialogs/
 │   │   │   ├── ApplicationLogConsentDialog.cs
 │   │   │   ├── AudioCorpusConsentDialog.cs
-│   │   │   ├── AutocorrectDecisionsConsentDialog.cs
-│   │   │   ├── AutocorrectTextConsentDialog.cs
-│   │   │   ├── CorpusConsentDialog.cs
-│   │   │   └── MicrophoneTelemetryConsentDialog.cs
+│   │   │   └── CorpusConsentDialog.cs
 │   │   ├── Modules/
 │   │   │   └── SettingsModuleRegistry.cs
 │   │   ├── Pages/
@@ -2448,7 +2442,6 @@ _Generated from `git ls-files` — do not edit by hand._
 │   │   │   ├── TranscriptionEngine.StreamingPipeline.cs
 │   │   │   ├── TranscriptionEngine.Take.cs
 │   │   │   ├── TranscriptionEngine.TakeAudio.cs
-│   │   │   ├── TranscriptionEngine.Telemetry.cs
 │   │   │   └── TranscriptionEngine.Utterances.cs
 │   │   ├── Recovery/
 │   │   │   ├── DictationRecoveryStore.cs
@@ -2822,7 +2815,6 @@ _Generated from `git ls-files` — do not edit by hand._
 │   │   ├── MicrophoneCaptureTests.cs
 │   │   ├── MicrophoneErrorClassificationTests.cs
 │   │   ├── MicrophoneLevelFeedTests.cs
-│   │   ├── MicrophoneTelemetryCalculatorTests.cs
 │   │   ├── MilestoneClosersTests.cs
 │   │   ├── MonoConverterTests.cs
 │   │   ├── OperationalObservabilityCollection.cs
@@ -2832,6 +2824,7 @@ _Generated from `git ls-files` — do not edit by hand._
 │   │   ├── PortAudioDeploymentBugNotes.md
 │   │   ├── PortAudioDeploymentTests.cs
 │   │   ├── PortAudioInteropTests.cs
+│   │   ├── RecordingTailCalculatorTests.cs
 │   │   ├── StreamingResamplerTests.cs
 │   │   ├── SubWindowAssemblerTests.cs
 │   │   ├── SummaryTagTests.cs
@@ -2847,7 +2840,6 @@ _Generated from `git ls-files` — do not edit by hand._
 │   │   ├── AccentIndexTests.cs
 │   │   ├── AutocorrectDecisionMapTests.cs
 │   │   ├── AutocorrectEngineBackspaceTests.cs
-│   │   ├── AutocorrectEngineCorpusTests.cs
 │   │   ├── AutocorrectEngineCorrectionTests.cs
 │   │   ├── AutocorrectEngineGateTests.cs
 │   │   ├── AutocorrectEngineHarness.cs
@@ -2859,7 +2851,6 @@ _Generated from `git ls-files` — do not edit by hand._
 │   │   ├── AutocorrectObservabilityCollection.cs
 │   │   ├── AutocorrectSettingsTests.cs
 │   │   ├── AutocorrectTypingScenarioTests.cs
-│   │   ├── AutocorrectTypingStreamReplayMaintenanceTests.cs
 │   │   ├── BigramPairDisambiguatorTests.cs
 │   │   ├── BuildDataMaintenanceTests.cs
 │   │   ├── CaretParagraphContextTests.cs
@@ -2888,14 +2879,12 @@ _Generated from `git ls-files` — do not edit by hand._
 │   │   ├── PersonalDictionaryTests.cs
 │   │   ├── PersonalWordAdmissionTests.cs
 │   │   ├── RestorationEvaluatorTests.cs
-│   │   ├── SentenceCorpusTests.cs
 │   │   ├── SimulatedTextSurface.cs
 │   │   ├── SummaryTagTests.cs
 │   │   ├── SurfaceProfileMaintenanceTests.cs
 │   │   ├── SurfaceProfilerTests.cs
 │   │   ├── SurfaceProfileStoreTests.cs
 │   │   ├── TypedWordTrackerTests.cs
-│   │   ├── TypingStreamTests.cs
 │   │   └── WordBoundariesTests.cs
 │   ├── Deckle.Catalog.Tests/
 │   │   ├── CubicBezierTests.cs

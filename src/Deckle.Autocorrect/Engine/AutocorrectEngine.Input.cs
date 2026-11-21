@@ -8,25 +8,6 @@ namespace Deckle.Autocorrect;
 
 public sealed partial class AutocorrectEngine
 {
-    // Called by the app, off the input thread, when telemetry settings change.
-    // RequestDrain is the cross-thread marshalling point; the corpus itself
-    // remains input-thread-owned.
-    public void ReconcileTextTelemetry()
-    {
-        if (_textTelemetry?.Invoke() == true) return;
-        Interlocked.Exchange(ref _discardCorpusRequested, 1);
-        _host.RequestDrain();
-    }
-
-    private void OnDrainRequested()
-    {
-        if (Interlocked.Exchange(ref _discardCorpusRequested, 0) != 0)
-        {
-            _corpus?.Discard();
-            _stream?.Discard();
-        }
-    }
-
     private void OnKey(KeyboardKeyEvent e)
     {
         if (e.IsInjected)
@@ -45,12 +26,6 @@ public sealed partial class AutocorrectEngine
         if (stroke is null) return;
         var k = stroke.Value;
 
-        // The typing stream captures the verbatim stroke before the tracker
-        // interprets it. Gated per stroke — enrolled surfaces only, consent live;
-        // the password gate already cut above, before decoding.
-        if (ShouldFeedStream())
-            _stream?.OnKeystroke(k);
-
         _tracker.OnKeystroke(k);
     }
 
@@ -62,8 +37,6 @@ public sealed partial class AutocorrectEngine
         if (!_foreignMutationOpen)
         {
             _foreignMutationOpen = true;
-            _stream?.NotifyExternalMutation();
-            _corpus?.Reset(ResetReason.ExternalMutation);
 
             // Password text is never buffered, even when a synthetic producer
             // exposes its UTF-16 unit in the scan-code field.
@@ -141,45 +114,13 @@ public sealed partial class AutocorrectEngine
     {
         ClearForeignMutation();
         _tracker.NotifyPointerInteraction();
-        // Ungated: a span must close on every caret move, or a stale run would
-        // leak into whatever surface is typed next.
-        _stream?.NotifyPointerInteraction();
-    }
-
-    // One invalidation point for visible text that changed outside the decoded
-    // physical-key stream. Both semantic models and the verbatim replay span
-    // must stop at the same boundary or telemetry would claim a replayable run
-    // across characters it never observed.
-    private void InvalidateModeledSurface()
-    {
-        _stream?.NotifyExternalMutation();
-        _tracker.NotifyExternalMutation();
-    }
-
-    // The tracker reset (Enter, focus, pointer, navigation, …) closes the corpus run.
-    private void OnTrackerReset(ResetReason reason, bool droppedPartialWord)
-    {
-        // Close the corpus sentence first (Enter emits it tagged "enter", any other
-        // reason emits the partial run tagged "interrupted" — still verbatim keyboard
-        // input); the emit is gated downstream by the sink, so a flip to off between
-        // accumulation and reset cannot leak a sentence to disk.
-        _corpus?.Reset(reason);
-        // A reset that threw away a word in flight can leave its tail to commit as
-        // the next "word", a fragment at the sentence start. The corpus holds that
-        // next word suspect and drops it.
-        if (droppedPartialWord)
-            _corpus?.MarkNextWordSuspect();
     }
 
     private void OnFocusChanged()
     {
         ClearForeignMutation();
         var surface = _prober.Probe();
-        // The reset synchronously closes the corpus run and the typing-stream
-        // span. Keep the producing surface live until both have been emitted;
-        // only then publish the newly focused surface.
         _tracker.NotifyFocusChanged();
-        _stream?.NotifyFocusChanged();
         _surface = surface;
 
         bool enabled = IsEnabledFor(_settings(), surface.ProcessName);

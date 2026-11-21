@@ -1,4 +1,6 @@
 using System.Diagnostics.Tracing;
+using System.Text.Json;
+using Deckle.Core;
 using Deckle.Diagnostics;
 using Deckle.Diagnostics.Telemetry;
 using Deckle.TestSupport;
@@ -6,6 +8,8 @@ using Xunit;
 
 namespace Deckle.Diagnostics.Telemetry.Tests;
 
+// The dictation corpus is the only dataset left: these tests pin its consent
+// gate and the settings file it reads.
 [Trait("Category", "observability")]
 public sealed class TelemetryListenerBootstrapTests
 {
@@ -17,93 +21,9 @@ public sealed class TelemetryListenerBootstrapTests
         private TestTelemetrySource() { }
 
         [Event(1, Level = EventLevel.Verbose, Tags = ObservationTags.Dataset)]
-        public void MicrophoneTelemetryRecorded(string outcome)
+        public void CorpusAsrRecorded(string bucket, string tier, string text)
         {
-            if (IsEnabled()) WriteEvent(1, outcome);
-        }
-
-        [Event(2, Level = EventLevel.Verbose, Tags = ObservationTags.Dataset)]
-        public void AutocorrectDecisionRecorded(string outcome)
-        {
-            if (IsEnabled()) WriteEvent(2, outcome);
-        }
-    }
-
-    // The microphone level is a developer capture under Detailed logs: its
-    // own toggle on is not enough while that switch is off.
-    [Fact]
-    public void MicrophoneLevelWaitsForDetailedLogs()
-    {
-        string root = Path.Combine(
-            AppContext.BaseDirectory,
-            "telemetry-detail-gate-" + Guid.NewGuid().ToString("N"));
-        string microphone = Path.Combine(root, "microphone.jsonl");
-        bool detailed = false;
-
-        TelemetryListenerBootstrap.ShutDown();
-        using var dispatch = new DispatchEventListener();
-        try
-        {
-            TelemetryListenerBootstrap.Configure(
-                dispatch, root, validationSubdirectory: false);
-            TelemetryListenerBootstrap.ConfigureGates(
-                () => new TelemetrySettings { MicrophoneTelemetry = true });
-            TelemetryListenerBootstrap.ConfigureDetailGate(() => detailed);
-
-            TestTelemetrySource.Log.MicrophoneTelemetryRecorded("while-off");
-            dispatch.FlushSinks();
-            Assert.False(File.Exists(microphone) && new FileInfo(microphone).Length > 0);
-
-            detailed = true;
-            TestTelemetrySource.Log.MicrophoneTelemetryRecorded("while-on");
-            dispatch.FlushSinks();
-
-            string jsonl = SharedFileReader.ReadAllText(microphone);
-            Assert.Contains("while-on", jsonl);
-            Assert.DoesNotContain("while-off", jsonl);
-        }
-        finally
-        {
-            TelemetryListenerBootstrap.ShutDown();
-            if (Directory.Exists(root)) Directory.Delete(root, recursive: true);
-        }
-    }
-
-    // A correction decision carries the typed word: it is an option of the
-    // typed-text corpus and needs that consent as well as its own.
-    [Fact]
-    public void DecisionsNeedTheTypedTextConsent()
-    {
-        string root = Path.Combine(
-            AppContext.BaseDirectory,
-            "telemetry-decisions-" + Guid.NewGuid().ToString("N"));
-        string decisions = Path.Combine(root, "autocorrect.decisions.jsonl");
-        var settings = new TelemetrySettings { AutocorrectDecisions = true, AutocorrectText = false };
-
-        TelemetryListenerBootstrap.ShutDown();
-        using var dispatch = new DispatchEventListener();
-        try
-        {
-            TelemetryListenerBootstrap.Configure(
-                dispatch, root, validationSubdirectory: false);
-            TelemetryListenerBootstrap.ConfigureGates(() => settings);
-
-            TestTelemetrySource.Log.AutocorrectDecisionRecorded("without-text");
-            dispatch.FlushSinks();
-            Assert.False(File.Exists(decisions) && new FileInfo(decisions).Length > 0);
-
-            settings.AutocorrectText = true;
-            TestTelemetrySource.Log.AutocorrectDecisionRecorded("with-text");
-            dispatch.FlushSinks();
-
-            string jsonl = SharedFileReader.ReadAllText(decisions);
-            Assert.Contains("with-text", jsonl);
-            Assert.DoesNotContain("without-text", jsonl);
-        }
-        finally
-        {
-            TelemetryListenerBootstrap.ShutDown();
-            if (Directory.Exists(root)) Directory.Delete(root, recursive: true);
+            if (IsEnabled()) WriteEvent(1, bucket, tier, text);
         }
     }
 
@@ -115,19 +35,57 @@ public sealed class TelemetryListenerBootstrapTests
         private OperationalTelemetrySource() { }
 
         [Event(1, Level = EventLevel.Verbose)]
-        public void MicrophoneTelemetryRecorded(string outcome)
+        public void CorpusAsrRecorded(string bucket, string tier, string text)
         {
-            if (IsEnabled()) WriteEvent(1, outcome);
+            if (IsEnabled()) WriteEvent(1, bucket, tier, text);
+        }
+    }
+
+    private static string CorpusFile(string root) =>
+        Path.Combine(root, "corpus", "bucket", "tier", "corpus.jsonl");
+
+    private static string NewRoot(string label) =>
+        Path.Combine(AppContext.BaseDirectory, label + Guid.NewGuid().ToString("N"));
+
+    [Fact]
+    public void TheCorpusWaitsForItsConsentAndFollowsIt()
+    {
+        string root = NewRoot("telemetry-corpus-gate-");
+        string corpus = CorpusFile(root);
+        var settings = new TelemetrySettings { CorpusEnabled = false };
+
+        TelemetryListenerBootstrap.ShutDown();
+        using var dispatch = new DispatchEventListener();
+        try
+        {
+            TelemetryListenerBootstrap.Configure(
+                dispatch, root, validationSubdirectory: false);
+            TelemetryListenerBootstrap.ConfigureGates(() => settings);
+
+            TestTelemetrySource.Log.CorpusAsrRecorded("bucket", "tier", "while-off");
+            dispatch.FlushSinks();
+            Assert.False(File.Exists(corpus) && new FileInfo(corpus).Length > 0);
+
+            settings.CorpusEnabled = true;
+            TestTelemetrySource.Log.CorpusAsrRecorded("bucket", "tier", "while-on");
+            dispatch.FlushSinks();
+
+            string jsonl = SharedFileReader.ReadAllText(corpus);
+            Assert.Contains("while-on", jsonl);
+            Assert.DoesNotContain("while-off", jsonl);
+        }
+        finally
+        {
+            TelemetryListenerBootstrap.ShutDown();
+            if (Directory.Exists(root)) Directory.Delete(root, recursive: true);
         }
     }
 
     [Fact]
     public void ConsentedDatasetWritesOnlyExplicitlyTaggedEvents()
     {
-        string root = Path.Combine(
-            AppContext.BaseDirectory,
-            "telemetry-dataset-" + Guid.NewGuid().ToString("N"));
-        string microphone = Path.Combine(root, "microphone.jsonl");
+        string root = NewRoot("telemetry-dataset-");
+        string corpus = CorpusFile(root);
 
         TelemetryListenerBootstrap.ShutDown();
         using var dispatch = new DispatchEventListener();
@@ -136,17 +94,16 @@ public sealed class TelemetryListenerBootstrapTests
             TelemetryListenerBootstrap.Configure(
                 dispatch, root, validationSubdirectory: false);
             TelemetryListenerBootstrap.ConfigureGates(
-                () => new TelemetrySettings { MicrophoneTelemetry = true });
-            TelemetryListenerBootstrap.ConfigureDetailGate(() => true);
+                () => new TelemetrySettings { CorpusEnabled = true });
 
-            OperationalTelemetrySource.Log.MicrophoneTelemetryRecorded("operational");
-            Assert.False(File.Exists(microphone));
+            OperationalTelemetrySource.Log.CorpusAsrRecorded("bucket", "tier", "operational");
+            Assert.False(File.Exists(corpus));
 
-            TestTelemetrySource.Log.MicrophoneTelemetryRecorded("dataset");
+            TestTelemetrySource.Log.CorpusAsrRecorded("bucket", "tier", "dataset");
             dispatch.FlushSinks();
 
-            Assert.True(File.Exists(microphone));
-            string jsonl = SharedFileReader.ReadAllText(microphone);
+            Assert.True(File.Exists(corpus));
+            string jsonl = SharedFileReader.ReadAllText(corpus);
             Assert.Contains("dataset", jsonl);
             Assert.DoesNotContain("operational", jsonl);
         }
@@ -161,10 +118,8 @@ public sealed class TelemetryListenerBootstrapTests
     [Trait("Category", "regression")]
     public void AConsentReaderThatThrowsWritesNothingAndIsReportedAsASinkIncident()
     {
-        string root = Path.Combine(
-            AppContext.BaseDirectory,
-            "telemetry-gate-throws-" + Guid.NewGuid().ToString("N"));
-        string microphone = Path.Combine(root, "microphone.jsonl");
+        string root = NewRoot("telemetry-gate-throws-");
+        string corpus = CorpusFile(root);
         string failure = "consent store unreadable " + Guid.NewGuid().ToString("N");
 
         TelemetryListenerBootstrap.ShutDown();
@@ -177,11 +132,11 @@ public sealed class TelemetryListenerBootstrapTests
             TelemetryListenerBootstrap.ConfigureGates(
                 () => throw new InvalidOperationException(failure));
 
-            TestTelemetrySource.Log.MicrophoneTelemetryRecorded("unreadable consent");
+            TestTelemetrySource.Log.CorpusAsrRecorded("bucket", "tier", "unreadable consent");
             dispatch.FlushSinks();
 
             // Closed, as when no reader is wired: nothing reaches the disk.
-            Assert.False(File.Exists(microphone) && new FileInfo(microphone).Length > 0);
+            Assert.False(File.Exists(corpus) && new FileInfo(corpus).Length > 0);
             // And said: the dispatcher names the sink and the cause.
             Assert.Contains(
                 reports.Events,
@@ -197,10 +152,8 @@ public sealed class TelemetryListenerBootstrapTests
     [Fact]
     public void DatasetConsentDefaultsClosed()
     {
-        string root = Path.Combine(
-            AppContext.BaseDirectory,
-            "telemetry-closed-" + Guid.NewGuid().ToString("N"));
-        string microphone = Path.Combine(root, "microphone.jsonl");
+        string root = NewRoot("telemetry-closed-");
+        string corpus = CorpusFile(root);
 
         TelemetryListenerBootstrap.ShutDown();
         using var dispatch = new DispatchEventListener();
@@ -209,14 +162,67 @@ public sealed class TelemetryListenerBootstrapTests
             TelemetryListenerBootstrap.Configure(
                 dispatch, root, validationSubdirectory: false);
 
-            TestTelemetrySource.Log.MicrophoneTelemetryRecorded("closed");
+            TestTelemetrySource.Log.CorpusAsrRecorded("bucket", "tier", "closed");
 
-            Assert.False(File.Exists(microphone));
+            Assert.False(File.Exists(corpus));
         }
         finally
         {
             TelemetryListenerBootstrap.ShutDown();
             if (Directory.Exists(root)) Directory.Delete(root, recursive: true);
+        }
+    }
+
+    // The microphone level and the two typed-text options are gone, and a
+    // settings file written while they existed carries their keys. It must
+    // load, keep what a person chose for the corpus, and lose the rest on the
+    // next save.
+    [Fact]
+    [Trait("Category", "regression")]
+    public void AFileFromBeforeTheOtherDatasetsWereRemovedStillLoads()
+    {
+        string path = Path.Combine(
+            Path.GetTempPath(), $"deckle-telemetry-test-{Guid.NewGuid():N}.json");
+        string mutex = $"Deckle-Telemetry-Test-{Guid.NewGuid():N}";
+        var options = new JsonSerializerOptions
+        {
+            WriteIndented = true,
+            PropertyNamingPolicy = JsonNamingPolicy.CamelCase,
+        };
+        File.WriteAllText(path, """
+            {
+              "microphoneTelemetry": true,
+              "corpusEnabled": true,
+              "recordAudioCorpus": true,
+              "audioCorpusContent": 1,
+              "storageDirectory": "relocated",
+              "autocorrectDecisions": true,
+              "autocorrectText": true
+            }
+            """);
+
+        try
+        {
+            using (var store = new JsonSettingsStore<TelemetrySettings>(path, mutex, options))
+            {
+                Assert.True(store.Current.CorpusEnabled);
+                Assert.True(store.Current.RecordAudioCorpus);
+                Assert.Equal(AudioCorpusContent.AlwaysRaw, store.Current.AudioCorpusContent);
+                Assert.Equal("relocated", store.Current.StorageDirectory);
+
+                store.Save();
+                store.Flush();
+            }
+
+            string rewritten = File.ReadAllText(path);
+            Assert.DoesNotContain("microphoneTelemetry", rewritten);
+            Assert.DoesNotContain("autocorrectDecisions", rewritten);
+            Assert.DoesNotContain("autocorrectText", rewritten);
+            Assert.Contains("corpusEnabled", rewritten);
+        }
+        finally
+        {
+            if (File.Exists(path)) File.Delete(path);
         }
     }
 }

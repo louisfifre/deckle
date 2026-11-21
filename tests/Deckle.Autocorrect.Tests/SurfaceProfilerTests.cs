@@ -15,7 +15,7 @@ public class SurfaceProfilerTests
 {
     private static CorpusEntry Entry(
         string process, string closure = "sentence", string timing = "", string typed = "un mot")
-        => new(new SentenceCorpus.SentenceRecord(typed, typed, "", closure, timing), true, process);
+        => new(new SentenceRecord(typed, typed, "", closure, timing), true, process);
 
     [Fact]
     public void VentilatesByProcessBusiestFirst()

@@ -395,7 +395,6 @@ public sealed partial class TranscriptionEngine : IDisposable
         public RecordingHostAdapter(ITranscriptionEngineHost h) { _h = h; }
         public string AudioInputEndpointId     => _h.Audio.AudioInputEndpointId;
         public int  MaxRecordingDurationSeconds => _h.Audio.MaxRecordingDurationSeconds;
-        public bool MicrophoneTelemetryEnabled  => _h.Telemetry.MicrophoneTelemetry;
         public double VoiceLevelDbfs            => _h.Audio.VoiceLevelDbfs;
         public bool ExclusiveMode               => _h.Audio.ExclusiveMode;
     }

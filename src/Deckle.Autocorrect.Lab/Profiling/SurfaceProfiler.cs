@@ -59,7 +59,7 @@ public static class SurfaceProfiler
         private readonly List<int> _gaps = new();
         private int _timedSentences;
 
-        public void Add(SentenceCorpus.SentenceRecord record)
+        public void Add(SentenceRecord record)
         {
             switch (record.Closure)
             {

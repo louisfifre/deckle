@@ -96,12 +96,6 @@
   <data name="LoggingTranscriptionCard.Description" xml:space="preserve">
     <value>Each utterance and segment. Never what you said.</value>
   </data>
-  <data name="LoggingMicrophoneLevelCard.Header" xml:space="preserve">
-    <value>Microphone level</value>
-  </data>
-  <data name="LoggingMicrophoneLevelCard.Description" xml:space="preserve">
-    <value>The level of each recording. Levels only, never the sound.</value>
-  </data>
   <data name="LoggingLlmCard.Header" xml:space="preserve">
     <value>Language model calls</value>
   </data>

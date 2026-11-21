@@ -8,22 +8,22 @@
 
 **Hors périmètre.** Les littéraux XAML (bornes `Minimum`/`Maximum`/`StepFrequency` des sliders), les tables lexicales préfixées `_`, et tout ce qui vit sous `tests/`.
 
-Total : **622 entrées** réparties sur **38 modules**.
+Total : **617 entrées** réparties sur **38 modules**.
 
 | Module | Entrées |
 |---|---|
 | Deckle.Anytype | 12 |
 | Deckle.Anytype.Mcp | 3 |
 | Deckle.App | 4 |
-| Deckle.Audio | 45 |
-| Deckle.Autocorrect | 37 |
+| Deckle.Audio | 44 |
+| Deckle.Autocorrect | 36 |
 | Deckle.Autocorrect.Lab | 17 |
 | Deckle.Catalog | 2 |
 | Deckle.Composition | 62 |
 | Deckle.Core | 9 |
 | Deckle.Diagnostics | 5 |
 | Deckle.Diagnostics.Logging | 7 |
-| Deckle.Diagnostics.Telemetry | 7 |
+| Deckle.Diagnostics.Telemetry | 4 |
 | Deckle.Home | 3 |
 | Deckle.Hud | 26 |
 | Deckle.Input | 11 |
@@ -128,7 +128,6 @@ Total : **622 entrées** réparties sur **38 modules**.
 | PreprocessingSettings.LimiterCeilingDbfs | persisted-setting | `-1f` | src/Deckle.Audio/Preprocessing/PreprocessingSettings.cs:71 | oui |  |
 | PreprocessingSettings.LimiterReleaseMs | persisted-setting | `50f` | src/Deckle.Audio/Preprocessing/PreprocessingSettings.cs:72 | oui |  |
 | TranscriptionPreprocessor.SampleRate | tuning-constant | `16000.0` | src/Deckle.Audio/Preprocessing/TranscriptionPreprocessor.cs:42 | non | Frozen module-wide capture format the DSP time constants depend on. Not a knob. |
-| MicrophoneTelemetryCalculator.SubWindowSamples | tuning-constant | `800` | src/Deckle.Audio/Telemetry/MicrophoneTelemetryCalculator.cs:99 | non | 800 samples = 50 ms @16 kHz; must equal SubWindowAssembler.WindowMs (50 ms), the cut the capture emits. Structural, not tunable. |
 
 ## Deckle.Autocorrect
 
@@ -169,7 +168,6 @@ Total : **622 entrées** réparties sur **38 modules**.
 | UIAutomationCaretTextReader.VerificationGap | tuning-constant | `TimeSpan.FromMilliseconds(75)` | src/Deckle.Autocorrect/Recovery/CaretTextReader.cs:17 | non | Latency knob. |
 | TypedWordTracker.BufferCap | tuning-constant | `64` | src/Deckle.Autocorrect/Tracking/TypedWordTracker.cs:25 | non |  |
 | TypedWordTracker.SeparatorRunCap | tuning-constant | `8` | src/Deckle.Autocorrect/Tracking/TypedWordTracker.cs:55 | non | Canonical site. |
-| TypingStream.RunCap | tuning-constant | `512` | src/Deckle.Autocorrect/Tracking/TypingStream.cs:47 | non |  |
 | WordBoundaries.RightSingleQuote | tuning-constant | `'’'` | src/Deckle.Autocorrect/Tracking/WordBoundaries.cs:19 | non | Typographic apostrophe; frozen linguistic fact, kept only for doubt. |
 
 ## Deckle.Autocorrect.Lab
@@ -308,13 +306,10 @@ Total : **622 entrées** réparties sur **38 modules**.
 
 | Nom | Type | Valeur actuelle | Fichier:ligne | Juin | Doute |
 |---|---|---|---|---|---|
-| MicrophoneTelemetry | persisted-setting | `false` | src/Deckle.Diagnostics.Telemetry/TelemetrySettings.cs:14 | oui |  |
 | CorpusEnabled | persisted-setting | `false` | src/Deckle.Diagnostics.Telemetry/TelemetrySettings.cs:15 | oui |  |
 | RecordAudioCorpus | persisted-setting | `false` | src/Deckle.Diagnostics.Telemetry/TelemetrySettings.cs:16 | oui |  |
 | AudioCorpusContent | persisted-setting | `AudioCorpusContent.MatchTranscription` | src/Deckle.Diagnostics.Telemetry/TelemetrySettings.cs:25 | oui |  |
 | StorageDirectory | persisted-setting | `""` | src/Deckle.Diagnostics.Telemetry/TelemetrySettings.cs:29 | oui | June cites :31; actual line is :29 (drift after ApplicationLogToDisk left this POCO). Empty string resolves to AppPaths.TelemetryDirectory. |
-| AutocorrectDecisions | persisted-setting | `false` | src/Deckle.Diagnostics.Telemetry/TelemetrySettings.cs:36 | oui | June cites :38; actual line is :36. |
-| AutocorrectText | persisted-setting | `false` | src/Deckle.Diagnostics.Telemetry/TelemetrySettings.cs:44 | oui | June cites :46; actual line is :44. |
 
 ## Deckle.Home
 

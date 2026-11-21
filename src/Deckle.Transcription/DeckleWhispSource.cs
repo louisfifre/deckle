@@ -123,7 +123,7 @@ public sealed partial class DeckleWhispSource : DeckleEventSource
     public const int EvtTranscriptionPreprocessed        = 107;
     public const int EvtStreamingDrained                 = 108;
     // 109 retired.
-    public const int EvtPreprocessedTelemetryRecorded    = 110;
+    // 110 retired: the post-DSP microphone level dataset (microphone.processed.jsonl).
     // 111 retired.
     // 112 retired.
     public const int EvtConsumerUtterance                = 113;

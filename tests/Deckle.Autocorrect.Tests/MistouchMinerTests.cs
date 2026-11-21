@@ -29,7 +29,7 @@ public class MistouchMinerTests
 
     private static CorpusEntry Entry(
         string final, string history = "", string typed = "", string day = "2026-07-14")
-        => new(new SentenceCorpus.SentenceRecord(
+        => new(new SentenceRecord(
             typed.Length > 0 ? typed : final, final, history), true, "test.exe", day);
 
     private static MistouchMiner.MiningResult Mine(params CorpusEntry[] entries)

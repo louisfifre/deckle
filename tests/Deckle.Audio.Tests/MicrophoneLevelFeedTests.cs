@@ -196,7 +196,6 @@ public sealed class MicrophoneLevelFeedTests
         Assert.Equal(VoiceLevel, host.VoiceLevelDbfs);
         Assert.False(host.RetainsAudio);
         Assert.Equal(0, host.MaxRecordingDurationSeconds);
-        Assert.False(host.MicrophoneTelemetryEnabled);
         Assert.Equal("voice_meter", host.RecordingPurpose);
     }
 
@@ -248,7 +247,7 @@ public sealed class MicrophoneLevelFeedTests
         }
 
         private static CaptureResult Result(CaptureOutcome outcome, uint err)
-            => new(Array.Empty<float>(), null, outcome, TimeSpan.Zero, err);
+            => new(Array.Empty<float>(), outcome, TimeSpan.Zero, err);
 
         public void Dispose() => Disposed = true;
     }

@@ -11,15 +11,14 @@ namespace Deckle.Autocorrect.Lab;
 // tell the two apart. Day is the envelope timestamp's date (yyyy-MM-dd, "" when
 // absent).
 public readonly record struct CorpusEntry(
-    SentenceCorpus.SentenceRecord Record, bool HistoryPresent, string Process = "", string Day = "");
+    SentenceRecord Record, bool HistoryPresent, string Process = "", string Day = "");
 
 // Reads the typed-text corpus back off disk: one autocorrect.text.jsonl line per
 // completed sentence, the shape the JsonlSink writes —
 //   { "timestamp": …, "kind": "autocorrect_text", "session": …,
 //     "payload": { "process": …, "typed": …, "final": …, "history": …,
 //                  "closure": …, "timing": … } }
-// — into the same SentenceCorpus.SentenceRecord the accumulator emitted, so the
-// offline replay reads exactly what the live engine collected.
+// — into a SentenceRecord, so the offline replay reads what the engine collected.
 //
 // Tolerant by design: a blank line, a truncated tail line from a crash mid-write,
 // or a line missing its payload is skipped rather than fatal; a corpus is an
@@ -63,7 +62,7 @@ public static class CorpusReader
             string stamp = String(doc.RootElement, "timestamp");
             string day = stamp.Length >= 10 ? stamp[..10] : string.Empty;
 
-            var record = new SentenceCorpus.SentenceRecord(
+            var record = new SentenceRecord(
                 typed, final, String(payload, "history"), closure, String(payload, "timing"));
             entry = new CorpusEntry(record, historyPresent, String(payload, "process"), day);
             return true;

@@ -16,27 +16,15 @@ namespace Deckle.Catalog;
 public static class TelemetryConsent
 {
     public static Func<XamlRoot, Task<bool>>? ApplicationLog { get; set; }
-    public static Func<XamlRoot, Task<bool>>? Microphone { get; set; }
     public static Func<XamlRoot, Task<bool>>? Corpus { get; set; }
     public static Func<XamlRoot, Task<bool>>? AudioCorpus { get; set; }
-    public static Func<XamlRoot, Task<bool>>? AutocorrectDecisions { get; set; }
-    public static Func<XamlRoot, Task<bool>>? AutocorrectText { get; set; }
 
     public static Task<bool> RequestApplicationLog(XamlRoot root) =>
         ApplicationLog?.Invoke(root) ?? Task.FromResult(false);
-
-    public static Task<bool> RequestMicrophone(XamlRoot root) =>
-        Microphone?.Invoke(root) ?? Task.FromResult(false);
 
     public static Task<bool> RequestCorpus(XamlRoot root) =>
         Corpus?.Invoke(root) ?? Task.FromResult(false);
 
     public static Task<bool> RequestAudioCorpus(XamlRoot root) =>
         AudioCorpus?.Invoke(root) ?? Task.FromResult(false);
-
-    public static Task<bool> RequestAutocorrectDecisions(XamlRoot root) =>
-        AutocorrectDecisions?.Invoke(root) ?? Task.FromResult(false);
-
-    public static Task<bool> RequestAutocorrectText(XamlRoot root) =>
-        AutocorrectText?.Invoke(root) ?? Task.FromResult(false);
 }

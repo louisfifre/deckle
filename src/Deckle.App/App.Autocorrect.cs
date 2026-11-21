@@ -105,15 +105,6 @@ public partial class App
                 dictionary: dictionary,
                 french: french,
                 english: english,
-                // Read live so a Settings flip takes effect without a rebuild.
-                // An option of the typed-text corpus: it carries typed words,
-                // so it needs that consent as well as its own.
-                decisionTelemetry: () =>
-                    Deckle.Diagnostics.Telemetry.TelemetrySettingsService.Instance.Current is { } t
-                    && t.AutocorrectText && t.AutocorrectDecisions,
-                // The heaviest text capture, behind its own consent toggle.
-                textTelemetry: () =>
-                    Deckle.Diagnostics.Telemetry.TelemetrySettingsService.Instance.Current.AutocorrectText,
                 mistouchFamilies: mistouchFamilies);
 
             // Raised on the engine's input thread: the prompt is detached so it

@@ -22,14 +22,6 @@ public partial class DiagnosticsViewModel
     // log source under it is on by default, so the switch alone gives every
     // source's detail, and the list underneath is there for whoever wants to
     // choose. Those sources write log lines, the kind a person shares.
-    //
-    // The developer capture, the microphone level, comes last and shows only
-    // in developer mode (Settings > General): it is a dataset, not lines to
-    // share, and it records only in developer mode too, so the list an
-    // ordinary user sees is all the switch turns on. It keeps the consent it
-    // had as a dataset. Off, the switch stops every child whatever its own
-    // toggle says (App.DeveloperCapturesAdmitted,
-    // TelemetryListenerBootstrap.ReadDetailGate), and the children hide.
     public IReadOnlyList<SettingDescriptor> LogsSettings =>
     [
         Setting.Group("LoggingDetailedCard",
@@ -56,12 +48,6 @@ public partial class DiagnosticsViewModel
                 Setting.Toggle("LoggingWindowingCard",
                     () => WindowingDetails, value => WindowingDetails = value,
                     defaultValue: () => new LoggingSettings().WindowingDetails),
-
-                Setting.Toggle("LoggingMicrophoneLevelCard",
-                    () => MicrophoneLevel, value => MicrophoneLevel = value,
-                    visibleWhen: () => DeveloperMode,
-                    defaultValue: () => new TelemetrySettings().MicrophoneTelemetry,
-                    confirmOnEnable: TelemetryConsent.RequestMicrophone),
             ]),
 
         // The trace. How much history it keeps is decided, not set

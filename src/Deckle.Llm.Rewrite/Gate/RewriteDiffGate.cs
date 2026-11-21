@@ -11,7 +11,7 @@ namespace Deckle.Llm.Rewrite;
 // filtering.
 //
 // Pure code by design: no OS calls, no EventSource, no state. The caller
-// owns emission and consent, the same division as SentenceCorpus in the
+// owns emission and consent, the same division as CorrectionTrace in the
 // autocorrect engine.
 //
 // Severity is the calibration stance: a false reject costs one offer, a

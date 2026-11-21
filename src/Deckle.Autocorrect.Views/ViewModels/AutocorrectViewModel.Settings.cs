@@ -13,9 +13,6 @@ namespace Deckle.Autocorrect.Views;
 // AutocorrectSettings().Enabled — the same literal AutocorrectSettingsService
 // persists), so the card gets a per-card reset that goes active exactly when
 // the value leaves that default.
-//
-// The module's two dataset consents live in AutocorrectTelemetryViewModel,
-// composed on the Diagnostics page.
 public partial class AutocorrectViewModel
 {
     public IReadOnlyList<SettingDescriptor> AutocorrectSettingsManifest =>

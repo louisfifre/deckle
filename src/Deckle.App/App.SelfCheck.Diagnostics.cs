@@ -30,7 +30,6 @@ public partial class App
         TelemetrySettings telemetry = TelemetrySettingsService.Instance.Current;
         telemetry.CorpusEnabled = true;
         telemetry.RecordAudioCorpus = true;
-        telemetry.AutocorrectText = true;
         TelemetrySettingsService.Instance.Save();
     }
 
@@ -46,23 +45,8 @@ public partial class App
         var diagnostics = settings.CurrentPage as Diagnostics.Logging.Views.DiagnosticsPage;
         diagnostics?.ViewModel.Load();
 
-        // The run is in developer mode, which shows the developer captures
-        // under Detailed logs; the second photograph is the page an ordinary
-        // user sees, the mode off in this run's own settings only.
         await CaptureOpenPageAsync(report, settings, outputFolder, captures, loaded, elapsed,
-            "diagnostics-open", "Diagnostics (every fold open, developer mode)");
-
-        Settings.SettingsService.Instance.Current.Developer.DeveloperMode = false;
-        try
-        {
-            diagnostics?.ViewModel.Load();
-            await CaptureOpenPageAsync(report, settings, outputFolder, captures, loaded, elapsed,
-                "diagnostics-open-user", "Diagnostics (every fold open, developer mode off)");
-        }
-        finally
-        {
-            Settings.SettingsService.Instance.Current.Developer.DeveloperMode = true;
-        }
+            "diagnostics-open", "Diagnostics (every fold open)");
     }
 
     private static async Task CaptureOpenPageAsync(
