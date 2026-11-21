@@ -40,7 +40,7 @@ public sealed partial class AnytypeApiClient
         ArgumentNullException.ThrowIfNull(payload);
 
         JsonObject root = await SendAsync(
-            HttpMethod.Patch, $"{SpacePath(spaceId)}/types/{typeId}", payload, ct,
+            HttpMethod.Patch, $"{SpacePath(spaceId)}/types/{AnytypeObjectId.Escape(typeId, nameof(typeId))}", payload, ct,
             replaySafety: RequestReplaySafety.Safe).ConfigureAwait(false);
         return InnerOrRoot(root, "type");
     }
@@ -58,7 +58,7 @@ public sealed partial class AnytypeApiClient
         ArgumentException.ThrowIfNullOrWhiteSpace(spaceId);
         ArgumentException.ThrowIfNullOrWhiteSpace(typeId);
 
-        string path = $"{SpacePath(spaceId)}/types/{typeId}/templates?offset={offset}&limit={limit}";
+        string path = $"{SpacePath(spaceId)}/types/{AnytypeObjectId.Escape(typeId, nameof(typeId))}/templates?offset={offset}&limit={limit}";
         return await SendAsync(
             HttpMethod.Get, path, null, ct, replaySafety: RequestReplaySafety.Safe).ConfigureAwait(false);
     }
@@ -100,7 +100,7 @@ public sealed partial class AnytypeApiClient
         ArgumentNullException.ThrowIfNull(payload);
 
         JsonObject root = await SendAsync(
-            HttpMethod.Patch, $"{SpacePath(spaceId)}/properties/{propertyId}", payload, ct,
+            HttpMethod.Patch, $"{SpacePath(spaceId)}/properties/{AnytypeObjectId.Escape(propertyId, nameof(propertyId))}", payload, ct,
             replaySafety: RequestReplaySafety.Safe).ConfigureAwait(false);
         return InnerOrRoot(root, "property");
     }
@@ -115,7 +115,7 @@ public sealed partial class AnytypeApiClient
         ArgumentException.ThrowIfNullOrWhiteSpace(spaceId);
         ArgumentException.ThrowIfNullOrWhiteSpace(propertyId);
 
-        string path = $"{SpacePath(spaceId)}/properties/{propertyId}/tags?offset={offset}&limit={limit}";
+        string path = $"{SpacePath(spaceId)}/properties/{AnytypeObjectId.Escape(propertyId, nameof(propertyId))}/tags?offset={offset}&limit={limit}";
         return await SendAsync(
             HttpMethod.Get, path, null, ct, replaySafety: RequestReplaySafety.Safe).ConfigureAwait(false);
     }
@@ -131,7 +131,7 @@ public sealed partial class AnytypeApiClient
         ArgumentNullException.ThrowIfNull(payload);
 
         JsonObject root = await SendAsync(
-            HttpMethod.Post, $"{SpacePath(spaceId)}/properties/{propertyId}/tags", payload, ct)
+            HttpMethod.Post, $"{SpacePath(spaceId)}/properties/{AnytypeObjectId.Escape(propertyId, nameof(propertyId))}/tags", payload, ct)
             .ConfigureAwait(false);
         return InnerOrRoot(root, "tag");
     }
@@ -151,7 +151,7 @@ public sealed partial class AnytypeApiClient
         ArgumentNullException.ThrowIfNull(payload);
 
         JsonObject root = await SendAsync(
-            HttpMethod.Patch, $"{SpacePath(spaceId)}/properties/{propertyId}/tags/{tagId}", payload, ct,
+            HttpMethod.Patch, $"{SpacePath(spaceId)}/properties/{AnytypeObjectId.Escape(propertyId, nameof(propertyId))}/tags/{AnytypeObjectId.Escape(tagId, nameof(tagId))}", payload, ct,
             replaySafety: RequestReplaySafety.Safe).ConfigureAwait(false);
         return InnerOrRoot(root, "tag");
     }
@@ -167,14 +167,14 @@ public sealed partial class AnytypeApiClient
         ArgumentException.ThrowIfNullOrWhiteSpace(tagId);
 
         await SendAsync(
-            HttpMethod.Delete, $"{SpacePath(spaceId)}/properties/{propertyId}/tags/{tagId}", null, ct,
+            HttpMethod.Delete, $"{SpacePath(spaceId)}/properties/{AnytypeObjectId.Escape(propertyId, nameof(propertyId))}/tags/{AnytypeObjectId.Escape(tagId, nameof(tagId))}", null, ct,
             parseBody: false).ConfigureAwait(false);
     }
 
     private static string SpacePath(string spaceId)
     {
         ArgumentException.ThrowIfNullOrWhiteSpace(spaceId);
-        return $"/v1/spaces/{spaceId}";
+        return $"/v1/spaces/{AnytypeObjectId.Escape(spaceId, nameof(spaceId))}";
     }
 
     private static JsonObject InnerOrRoot(JsonObject root, string key) =>

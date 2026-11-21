@@ -21,7 +21,7 @@ public sealed class AnytypeV2ObjectReader(AnytypeV2Client client)
         AnytypeV2Response response = await _client.SendAsync(
                 new AnytypeV2Request(
                     HttpMethod.Get,
-                    $"objects/{objectId}",
+                    $"objects/{AnytypeObjectId.Segment(objectId, nameof(objectId))}",
                     Query: options?.ToQuery()),
                 ct)
             .ConfigureAwait(false);

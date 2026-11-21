@@ -36,7 +36,7 @@ public class SchemaAdminGesturesTests
     {
         var type = new JsonObject
         {
-            ["id"] = "type-piece",
+            ["id"] = "bafyreitypepieceaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
             ["key"] = "piece",
             ["name"] = name,
             ["plural_name"] = pluralName,
@@ -511,7 +511,7 @@ public class SchemaAdminGesturesTests
         ["has_more"] = false,
     };
 
-    static JsonObject PieceTypeDocument(string id = "type-piece") => new()
+    static JsonObject PieceTypeDocument(string id = "bafyreitypepieceaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa") => new()
     {
         ["kind"] = "object_type",
         ["id"] = id,
@@ -763,7 +763,7 @@ public class SchemaAdminGesturesTests
         });
         server.OnPostType(new JsonObject
         {
-            ["id"] = "type-piece",
+            ["id"] = "bafyreitypepieceaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
             ["key"] = "piece",
             ["name"] = "Pièce",
             ["plural_name"] = "Pièces",
@@ -834,7 +834,7 @@ public class SchemaAdminGesturesTests
             ["name"] = "Confirmé",
             ["color"] = "grey",
         });
-        server.OnPatchType("type-piece", ExistingType(name: "Nom live"));
+        server.OnPatchType("bafyreitypepieceaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa", ExistingType(name: "Nom live"));
 
         var gestures = NewGestures(server);
         string preview = await gestures.PreviewAsync("home", Manifest(), Ct);
@@ -960,7 +960,7 @@ public class SchemaAdminGesturesTests
             ["name"] = "Confirmé",
             ["color"] = "grey",
         });
-        server.OnPatchType("type-piece", new JsonObject { ["message"] = "failed to update type" }, status: 403);
+        server.OnPatchType("bafyreitypepieceaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa", new JsonObject { ["message"] = "failed to update type" }, status: 403);
 
         var gestures = NewGestures(server);
         string previewId = PreviewId(await gestures.PreviewAsync("home", Manifest(), Ct));
@@ -1017,7 +1017,7 @@ public class SchemaAdminGesturesTests
         server.OnPostPropertyTag("prop-etat", ExistingTag());
         server.OnPostType(new JsonObject
         {
-            ["id"] = "type-piece", ["key"] = "piece_2", ["name"] = "Pièce",
+            ["id"] = "bafyreitypepieceaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa", ["key"] = "piece_2", ["name"] = "Pièce",
             ["plural_name"] = "Pièces", ["layout"] = "basic",
         });
 
@@ -1027,7 +1027,7 @@ public class SchemaAdminGesturesTests
             () => gestures.ApplyAsync("home", previewId, Manifest(), confirm: true, Ct));
 
         Assert.Contains("piece_2", ex.Message);
-        Assert.Contains("type-piece", ex.Message);
+        Assert.Contains("bafyreitypepieceaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa", ex.Message);
         Assert.DoesNotContain(server.Requests, r => r.Method == "PATCH");
     }
 
@@ -1111,7 +1111,7 @@ public class SchemaAdminGesturesTests
         server.OnListTypes(Page(new JsonArray { ExistingType() }));
         server.OnListProperties(EmptyList());
         server.OnListProperties(EmptyList());
-        server.OnPatchType("type-piece", ExistingType(icon: new JsonObject
+        server.OnPatchType("bafyreitypepieceaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa", ExistingType(icon: new JsonObject
         {
             ["format"] = "emoji",
             ["emoji"] = "🚪",
@@ -1193,7 +1193,7 @@ public class SchemaAdminGesturesTests
         {
             ["object"] = new JsonObject
             {
-                ["id"] = "type-piece",
+                ["id"] = "bafyreitypepieceaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
                 ["properties"] = properties,
             },
         };
@@ -1219,7 +1219,7 @@ public class SchemaAdminGesturesTests
         using var server = new FakeAnytypeServer();
         server.OnListTypes(Page(new JsonArray { ExistingType() }));
         server.OnListProperties(EmptyList());
-        server.OnGetObject("type-piece", TypeObjectFace(null));
+        server.OnGetObject("bafyreitypepieceaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa", TypeObjectFace(null));
 
         string digest = await NewGestures(server).PreviewAsync(
             "home", DescriptionManifest("Espace physique de la maison"), Ct);
@@ -1234,7 +1234,7 @@ public class SchemaAdminGesturesTests
         using var server = new FakeAnytypeServer();
         server.OnListTypes(Page(new JsonArray { ExistingType() }));
         server.OnListProperties(EmptyList());
-        server.OnGetObject("type-piece", TypeObjectFace("Autre texte, posé en app"));
+        server.OnGetObject("bafyreitypepieceaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa", TypeObjectFace("Autre texte, posé en app"));
 
         string digest = await NewGestures(server).PreviewAsync(
             "home", DescriptionManifest("Espace physique de la maison"), Ct);
@@ -1253,7 +1253,7 @@ public class SchemaAdminGesturesTests
         using var server = new FakeAnytypeServer();
         server.OnListTypes(Page(new JsonArray { ExistingType() }));
         server.OnListProperties(EmptyList());
-        server.OnGetObject("type-piece", TypeObjectFace("Espace physique de la maison"));
+        server.OnGetObject("bafyreitypepieceaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa", TypeObjectFace("Espace physique de la maison"));
 
         string digest = await NewGestures(server).PreviewAsync(
             "home", DescriptionManifest("Espace physique de la maison"), Ct);
@@ -1270,9 +1270,9 @@ public class SchemaAdminGesturesTests
         server.OnListTypes(Page(new JsonArray { ExistingType() }));
         server.OnListProperties(EmptyList());
         server.OnListProperties(EmptyList());
-        server.OnGetObject("type-piece", TypeObjectFace(null));
-        server.OnGetObject("type-piece", TypeObjectFace(null));
-        server.OnPatchObject("type-piece", TypeObjectFace("Espace physique de la maison"));
+        server.OnGetObject("bafyreitypepieceaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa", TypeObjectFace(null));
+        server.OnGetObject("bafyreitypepieceaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa", TypeObjectFace(null));
+        server.OnPatchObject("bafyreitypepieceaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa", TypeObjectFace("Espace physique de la maison"));
 
         var gestures = NewGestures(server);
         string preview = await gestures.PreviewAsync(
@@ -1290,7 +1290,7 @@ public class SchemaAdminGesturesTests
         Assert.Equal("description", property["key"]!.GetValue<string>());
         Assert.Equal("Espace physique de la maison", property["text"]!.GetValue<string>());
         Assert.Single(server.Requests, request => request.Method == "PATCH");
-        Assert.EndsWith("/objects/type-piece", server.Requests.Single(r => r.Method == "PATCH").Path);
+        Assert.EndsWith("/objects/bafyreitypepieceaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa", server.Requests.Single(r => r.Method == "PATCH").Path);
     }
 
     [Fact]
@@ -1302,7 +1302,7 @@ public class SchemaAdminGesturesTests
         server.OnListProperties(EmptyList());
         server.OnListProperties(EmptyList());
         server.OnPostType(ExistingType());
-        server.OnPatchObject("type-piece", TypeObjectFace("Espace physique de la maison"));
+        server.OnPatchObject("bafyreitypepieceaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa", TypeObjectFace("Espace physique de la maison"));
 
         var gestures = NewGestures(server);
         string preview = await gestures.PreviewAsync(
@@ -1325,7 +1325,7 @@ public class SchemaAdminGesturesTests
 
     // ── Sections ──────────────────────────────────────────────────────────────
 
-    const string SectionCollectionId = "col-structure";
+    const string SectionCollectionId = "bafyreicolstructureaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa";
 
     // A section is one collection object (built-in type key "collection") whose
     // members are TYPE objects; the fixture declares the member type alongside.
@@ -1421,8 +1421,8 @@ public class SchemaAdminGesturesTests
         using var server = new FakeAnytypeServer();
         server.OnListTypes(Page(new JsonArray { ExistingFloorType() }));
         server.OnListProperties(EmptyList());
-        server.OnSearch(Page(new JsonArray { CollectionHit(id: "collection-a") }));
-        server.OnSearch(Page(new JsonArray { CollectionHit(id: "collection-b") }));
+        server.OnSearch(Page(new JsonArray { CollectionHit(id: "bafyreicollectionaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa") }));
+        server.OnSearch(Page(new JsonArray { CollectionHit(id: "bafyreicollectionbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb") }));
 
         string first = await NewGestures(server).PreviewAsync(
             "home", SectionManifest(declareType: false), Ct);
@@ -1710,7 +1710,7 @@ public class SchemaAdminGesturesTests
         }));
         server.OnListProperties(Page(new JsonArray { ExistingProperty(), NotesProperty(), ExtraProperty() }));
         server.OnListPropertyTags("prop-etat", EmptyList());
-        server.OnPatchType("type-piece", ExistingType(properties: new JsonArray { "prop-etat", "prop-notes" }));
+        server.OnPatchType("bafyreitypepieceaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa", ExistingType(properties: new JsonArray { "prop-etat", "prop-notes" }));
 
         var gestures = NewGestures(server);
         string previewId = PreviewId(await gestures.PreviewAsync("home", OrderedManifest(), Ct));
@@ -1719,7 +1719,7 @@ public class SchemaAdminGesturesTests
 
         Assert.Contains("propriétés alignées sur le manifeste · piece", digest);
         JsonObject patch = server.Requests
-            .Where(r => r.Method == "PATCH" && r.Path.EndsWith("/types/type-piece", StringComparison.Ordinal))
+            .Where(r => r.Method == "PATCH" && r.Path.EndsWith("/types/bafyreitypepieceaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa", StringComparison.Ordinal))
             .Select(r => (JsonObject)JsonNode.Parse(r.Body)!)
             .Single();
         JsonArray links = Assert.IsType<JsonArray>(patch["properties"]);

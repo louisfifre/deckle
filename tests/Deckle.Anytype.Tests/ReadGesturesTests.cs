@@ -14,12 +14,12 @@ namespace Deckle.Anytype.Tests;
 [Trait("Category", "integration")]
 public class ReadGesturesTests
 {
-    const string TaskId      = "bafyreiTaskaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa";
-    const string OtherTaskId = "bafyreiTask2aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa";
+    const string TaskId      = "bafyreitaskaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa";
+    const string OtherTaskId = "bafyreitask2aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa";
     const string ProjectId   = "bafyreiprojectaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa";
-    const string ReportId    = "bafyreiReportaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa";
-    const string IdeaId      = "bafyreiIdeeaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa";
-    const string DocId       = "bafyreiDocaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa";
+    const string ReportId    = "bafyreireportaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa";
+    const string IdeaId      = "bafyreiideeaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa";
+    const string DocId       = "bafyreidocaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa";
     static CancellationToken Ct => TestContext.Current.CancellationToken;
 
     // The v2 reads: the replies are queued in the order the gesture asks them
@@ -240,7 +240,7 @@ public class ReadGesturesTests
     [Fact]
     public async Task EpicPropertiesRendersTheTitleThenEachPropertyInTheTypesOrder()
     {
-        const string EpicId = "bafyreiEpicaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa";
+        const string EpicId = "bafyreiepicaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa";
         FakeV2Handler v2 = Reads(
             PropsReply(EpicId, "epic", "Deckle",
                 Str(DevSpace.Props.DoneDefinition, "Un utilitaire local tenu."),
@@ -592,7 +592,7 @@ public class ReadGesturesTests
     [Trait("Category", "regression")]
     public async Task ReportJournalReadsADuplicatedLinkOnceAndCapsTheNameReads()
     {
-        string[] ids = Enumerable.Range(1, 10).Select(i => $"bafyreiLink{i}").ToArray();
+        string[] ids = Enumerable.Range(1, 10).Select(i => $"bafyreilink{(char)('a' + i)}".PadRight(56, 'x')).ToArray();
         string[] linked = [.. ids, ids[0]];
         var replies = new List<string> { ReportProps(linked), ReportMd("# Journal 2026-07-21") };
         replies.AddRange(ids.Take(LinkedNames.MaxReads).Select((id, i) => PropsReply(id, "task", $"T{i + 1}")));
@@ -619,7 +619,7 @@ public class ReadGesturesTests
 
     // ── TaskReportsAsync / OrchestrationOverviewAsync ─────────────────────────
 
-    const string OtherReportId = "bafyreiReport2aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa";
+    const string OtherReportId = "bafyreireport2aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa";
 
     static string SearchPage(params JsonObject[] rows) => new JsonObject
     {

@@ -10,9 +10,9 @@ namespace Deckle.Anytype.Tests;
 [Trait("Category", "unit")]
 public class NameResolverTests
 {
-    const string FirstId  = "bafyreiNameaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa";
-    const string SecondId = "bafyreiNamebbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb";
-    const string ThirdId  = "bafyreiNameccccccccccccccccccccccccccccccccccccccccccccccccc";
+    const string FirstId  = "bafyreinameaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa";
+    const string SecondId = "bafyreinamebbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb";
+    const string ThirdId  = "bafyreinameccccccccccccccccccccccccccccccccccccccccccccccccc";
     static CancellationToken Ct => TestContext.Current.CancellationToken;
 
     static readonly AnytypeCredentials V2Credentials =
@@ -187,7 +187,7 @@ public class NameResolverTests
     public async Task TheCandidateListOfARefusalIsCappedAtTwenty()
     {
         var rows = Enumerable.Range(0, 30)
-            .Select(i => ($"bafyreiCap{i:D2}".PadRight(56, 'x'), $"Refonte {i}", "project"))
+            .Select(i => ($"bafyreicap{i:D2}".PadRight(56, 'x'), $"Refonte {i}", "project"))
             .ToArray();
         var handler = new FakeV2Handler().Reply(HttpStatusCode.OK, Rows(rows));
 

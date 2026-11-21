@@ -15,7 +15,7 @@ namespace Deckle.Anytype.Tests;
 [Trait("Category", "integration")]
 public class TaskGesturesTests
 {
-    const string TaskId = "bafyreiTaskaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa";
+    const string TaskId = "bafyreitaskaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa";
     static CancellationToken Ct => TestContext.Current.CancellationToken;
 
     // The v1 server answers the property list create reads for the slot: by

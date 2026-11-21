@@ -14,10 +14,10 @@ namespace Deckle.Anytype.Tests;
 [Trait("Category", "integration")]
 public class SessionGesturesTests
 {
-    const string TaskId      = "bafyreiTaskbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb";
-    const string OtherTaskId = "bafyreiTask2bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb";
-    const string ProjectId   = "bafyreiProjccccccccccccccccccccccccccccccccccccccccccc";
-    const string NewReport   = "bafyreiNewdddddddddddddddddddddddddddddddddddddddddddddd";
+    const string TaskId      = "bafyreitaskbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb";
+    const string OtherTaskId = "bafyreitask2bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb";
+    const string ProjectId   = "bafyreiprojccccccccccccccccccccccccccccccccccccccccccc";
+    const string NewReport   = "bafyreinewdddddddddddddddddddddddddddddddddddddddddddddd";
     static CancellationToken Ct => TestContext.Current.CancellationToken;
 
     static SessionGestures NewGestures(
@@ -113,7 +113,7 @@ public class SessionGesturesTests
 
     // ── close_report ─────────────────────────────────────────────────────────
 
-    const string OldReport = "bafyreiOldeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee";
+    const string OldReport = "bafyreioldeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee";
 
     static string Json(JsonObject o) => o.ToJsonString();
 

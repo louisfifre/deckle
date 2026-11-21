@@ -64,11 +64,11 @@ internal sealed class SpacePlanExecutor(
             case "collection_remove": await RemoveFromCollectionAsync(step, log, ct); break;
             case "template_delete":
                 await RefusableAsync(step, log, () => v2.SendAsync(HttpMethod.Delete,
-                    $"objects/{_templateIds[Str(step.Data, "for") + "/" + Str(step.Data, "name")]}", null, ct)).ConfigureAwait(false);
+                    PlanApi.ObjectPath(_templateIds[Str(step.Data, "for") + "/" + Str(step.Data, "name")]), null, ct)).ConfigureAwait(false);
                 break;
             case "object_delete":
                 await RefusableAsync(step, log, () => v2.SendAsync(HttpMethod.Delete,
-                    $"objects/{refs.ObjectIdOf(Str(step.Data, "kind"), Str(step.Data, "name"))}", null, ct)).ConfigureAwait(false);
+                    PlanApi.ObjectPath(refs.ObjectIdOf(Str(step.Data, "kind"), Str(step.Data, "name"))), null, ct)).ConfigureAwait(false);
                 break;
             case "type_delete":
                 await RefusableAsync(step, log, () => v2.SendAsync(HttpMethod.Delete,
@@ -197,7 +197,7 @@ internal sealed class SpacePlanExecutor(
         string? oldId = _templateIds.GetValueOrDefault(key);
         await PostTemplateAsync(step.Data!, ct).ConfigureAwait(false);
         if (oldId is not null)
-            await v2.SendAsync(HttpMethod.Delete, $"objects/{oldId}", null, ct).ConfigureAwait(false);
+            await v2.SendAsync(HttpMethod.Delete, PlanApi.ObjectPath(oldId), null, ct).ConfigureAwait(false);
         log.Add(step.Detail);
     }
 
@@ -218,7 +218,7 @@ internal sealed class SpacePlanExecutor(
     {
         string kind = host[..host.IndexOf(':')];
         string name = host[(host.IndexOf(':') + 1)..];
-        return kind == "type" ? $"types/{name}" : $"objects/{refs.ObjectId(name)}";
+        return kind == "type" ? $"types/{Uri.EscapeDataString(name)}" : PlanApi.ObjectPath(refs.ObjectId(name));
     }
 
     private sealed record LiveView(string Id, JsonObject Plan);
@@ -342,7 +342,7 @@ internal sealed class SpacePlanExecutor(
     // to the object itself. Each entry keeps its id so the list does not collapse.
     public async Task ReplacePlaceholderAsync(string objectId, List<string> log, CancellationToken ct)
     {
-        JsonObject doc = await v2.GetAsync($"objects/{objectId}", ct).ConfigureAwait(false);
+        JsonObject doc = await v2.GetAsync(PlanApi.ObjectPath(objectId), ct).ConfigureAwait(false);
         var ops = new List<JsonObject>();
         foreach (JsonObject block in (doc["blocks"] as JsonArray ?? []).OfType<JsonObject>().Where(b => Str(b, "type") == "dataview"))
             foreach (JsonObject view in (block["views"] as JsonArray ?? []).OfType<JsonObject>())
@@ -359,7 +359,7 @@ internal sealed class SpacePlanExecutor(
                 });
             }
         if (ops.Count == 0) return;
-        await v2.PatchOpsAsync($"objects/{objectId}", ops, ct).ConfigureAwait(false);
+        await v2.PatchOpsAsync(PlanApi.ObjectPath(objectId), ops, ct).ConfigureAwait(false);
         log.Add($"filtre « {PlanViews.TemplatePlaceholder} » remplacé par l'objet dans {ops.Count} vue(s)");
     }
 
@@ -402,7 +402,7 @@ internal sealed class SpacePlanExecutor(
     {
         string kind = targetSymbol[..Math.Max(0, targetSymbol.IndexOf(':'))];
         if (kind is not ("type" or "object")) return null;
-        string path = kind == "type" ? $"types/{targetSymbol[5..]}" : $"objects/{refs.ObjectId(targetSymbol["object:".Length..])}";
+        string path = kind == "type" ? $"types/{Uri.EscapeDataString(targetSymbol[5..])}" : PlanApi.ObjectPath(refs.ObjectId(targetSymbol["object:".Length..]));
         var (_, views) = await ReadViewsAsync(path, ct).ConfigureAwait(false);
         return views.FirstOrDefault(v => Str(v.Plan, "name") == viewName)?.Id;
     }
@@ -469,7 +469,7 @@ internal sealed class SpacePlanExecutor(
     private async Task SetTypeDisplayAsync(PlanStep step, List<string> log, CancellationToken ct)
     {
         string typeId = refs.TypeId(Str(step.Data, "type"));
-        await v2.PatchOpsAsync($"objects/{typeId}",
+        await v2.PatchOpsAsync(PlanApi.ObjectPath(typeId),
             [new JsonObject { ["op"] = "set_properties", ["set"] = step.Data!["set"]!.DeepClone() }], ct).ConfigureAwait(false);
         log.Add(step.Detail);
     }
@@ -483,14 +483,14 @@ internal sealed class SpacePlanExecutor(
     {
         JsonObject page = step.Data!;
         string id = refs.ObjectId(Str(page, "name"));
-        JsonObject doc = await v2.GetAsync($"objects/{id}", ct).ConfigureAwait(false);
+        JsonObject doc = await v2.GetAsync(PlanApi.ObjectPath(id), ct).ConfigureAwait(false);
         var ops = new List<JsonObject>();
         foreach (JsonObject block in (doc["blocks"] as JsonArray ?? []).OfType<JsonObject>())
             if ((block["indent"]?.GetValue<int>() ?? 0) == 0 && Str(block, "id").Length > 0)
                 ops.Add(new JsonObject { ["op"] = "delete_block", ["id"] = Str(block, "id"), ["recursive"] = true });
         if (page["blocks"] is JsonArray blocks && blocks.Count > 0)
             ops.Add(new JsonObject { ["op"] = "insert_blocks", ["blocks"] = InsertForm(PlanViews.BodyToWire(blocks, refs)) });
-        if (ops.Count > 0) await v2.PatchOpsAsync($"objects/{id}", ops, ct).ConfigureAwait(false);
+        if (ops.Count > 0) await v2.PatchOpsAsync(PlanApi.ObjectPath(id), ops, ct).ConfigureAwait(false);
         await ReplacePlaceholderAsync(id, log, ct).ConfigureAwait(false);
         log.Add(step.Detail);
     }
@@ -525,7 +525,7 @@ internal sealed class SpacePlanExecutor(
         var items = new JsonArray();
         foreach (JsonNode? item in data["items"] as JsonArray ?? []) items.Add(ResolveMember(item!.GetValue<string>()));
         string id = refs.ObjectIdOf("collection", Str(data, "name"));
-        await RefusableAsync(step, log, () => v2.PatchOpsAsync($"objects/{id}",
+        await RefusableAsync(step, log, () => v2.PatchOpsAsync(PlanApi.ObjectPath(id),
             [new JsonObject { ["op"] = "remove_items", ["items"] = items }], ct)).ConfigureAwait(false);
     }
 
