@@ -71,3 +71,4 @@ scripts/lib/hooks/commit-msg text eol=lf
 # set regenerates it through the pre-commit hook. Needs the driver registered
 # (`git config merge.ours.driver true`), done by scripts/setup/install-hooks.ps1.
 TREE.md merge=ours
+*.onnx binary

@@ -4,6 +4,15 @@
   </PropertyGroup>
 
   <ItemGroup>
+    <!-- The mel front end of onnx-asr 0.12.0, MIT (NOTICE.md). None items, not Content, flat beside the executable:
+         the same rule as portaudio.dll in Deckle.Audio, because the app's MSIX tooling would put a library's
+         Content under a folder named after the library, and it takes anything under a folder called Assets
+         for Content, which is why the folder is MelFrontEnd. -->
+    <None Include="MelFrontEnd\nemo128.onnx" Link="parakeet-nemo128.onnx" CopyToOutputDirectory="PreserveNewest" CopyToPublishDirectory="PreserveNewest" />
+    <None Include="MelFrontEnd\onnx-asr.LICENSE.txt" Link="parakeet-onnx-asr.LICENSE.txt" CopyToOutputDirectory="PreserveNewest" CopyToPublishDirectory="PreserveNewest" />
+  </ItemGroup>
+
+  <ItemGroup>
     <InternalsVisibleTo Include="Deckle.Transcription.Parakeet.Tests" />
   </ItemGroup>
 

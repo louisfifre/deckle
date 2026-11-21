@@ -23,7 +23,6 @@ public sealed class ParakeetModelFilesTests : IDisposable
 
     private static readonly string[] RequiredFiles =
     [
-        "nemo128.onnx",
         Path.Combine("fp32", "encoder-model.onnx"),
         Path.Combine("fp32", "decoder_joint-model.onnx"),
         "vocab.txt",
@@ -53,7 +52,6 @@ public sealed class ParakeetModelFilesTests : IDisposable
     [InlineData(0)]
     [InlineData(1)]
     [InlineData(2)]
-    [InlineData(3)]
     public void AnyMissingRequiredFileBreaksCompleteness(int missingIndex)
     {
         for (int i = 0; i < RequiredFiles.Length; i++)
@@ -78,11 +76,21 @@ public sealed class ParakeetModelFilesTests : IDisposable
     }
 
     [Fact]
+    public void TheMelFrontEndIsShippedWithTheAppNotReadFromTheModelFolder()
+    {
+        Assert.Equal(Path.Combine(AppContext.BaseDirectory, "parakeet-nemo128.onnx"), ParakeetModelFiles.BundledPreprocessor);
+        Assert.True(File.Exists(ParakeetModelFiles.BundledPreprocessor), "The build must copy the bundled mel graph beside the assembly.");
+        // The shipped graph is onnx-asr 0.12.0's, not the model repository's: its hash is recorded in NOTICE.md.
+        Assert.Equal(
+            "5B4A84C52EEAA615DC46D781CC7E4598F9B432184831D57493C48ADCD01371A9",
+            Convert.ToHexString(System.Security.Cryptography.SHA256.HashData(File.ReadAllBytes(ParakeetModelFiles.BundledPreprocessor))));
+    }
+
+    [Fact]
     public void PathsFollowTheModelFolderLayout()
     {
         var files = new ParakeetModelFiles(_root);
 
-        Assert.Equal(Path.Combine(_root, "nemo128.onnx"), files.Preprocessor);
         Assert.Equal(Path.Combine(_root, "fp16", "encoder-model.fp16.onnx"), files.EncoderFp16);
         Assert.Equal(Path.Combine(_root, "vocab.txt"), files.Vocabulary);
     }

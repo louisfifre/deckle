@@ -2,11 +2,11 @@ using Deckle.Inference.Onnx;
 
 namespace Deckle.Transcription.Parakeet;
 
-// The two audio-side networks of the model run back to back: nemo128 (the mel
-// front end, on the CPU) turns the waveform into 128-band features, and the encoder
+// The two audio-side networks run back to back: nemo128 (the mel front end Deckle ships, on the CPU) turns the waveform into 128-band features, and the encoder
 // (DirectML or CPU) turns those into one 1024-wide frame per 80 ms. Input and output
 // names and types are those verified on the exported files: nemo128 takes
-// waveforms f32 [B,N] and waveforms_lens i64 [B]; the encoder takes audio_signal f32
+// waveforms f32 [B,N] and waveforms_lens i64 [B] and returns features_lens = N / 160, one fewer than
+// its columns (the last is zeroed), which the encoder is given as it is; the encoder takes audio_signal f32
 // [B,128,F] and length i64 [B], and its output is f32 [B,1024,T] with encoded_lengths
 // i64 [B], in both precisions (the FP16 encoder keeps FP32 inputs and outputs).
 

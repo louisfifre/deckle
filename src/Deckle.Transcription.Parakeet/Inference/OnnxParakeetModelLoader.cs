@@ -3,7 +3,8 @@ using Deckle.Transcription.Parakeet.Tokenization;
 
 namespace Deckle.Transcription.Parakeet;
 
-// Opens the four files of a model folder. Placement follows the measured spike: the mel
+// Opens the encoder, decoder-joint and vocabulary of a model folder, and the mel front end Deckle ships.
+// Placement follows the measured spike: the mel
 // front end and decoder_joint are small and run on the CPU; the encoder is the heavy part and
 // goes to DirectML (about 3.5x faster than the CPU in steady state), falling back to the CPU
 // when the device cannot be used. Encoder precision is the caller's choice (FP32 by default).
@@ -14,7 +15,7 @@ internal sealed class OnnxParakeetModelLoader : IParakeetModelLoader
     public ParakeetLoadOutcome Load(ParakeetModelFiles files, ParakeetEncoderPrecision precision, bool useGpu)
     {
         string encoderPath = precision == ParakeetEncoderPrecision.Fp16 ? files.EncoderFp16 : files.EncoderFp32;
-        foreach (string required in new[] { files.Vocabulary, files.Preprocessor, encoderPath, files.DecoderJoint })
+        foreach (string required in new[] { files.Vocabulary, ParakeetModelFiles.BundledPreprocessor, encoderPath, files.DecoderJoint })
         {
             if (!File.Exists(required)) return ParakeetLoadOutcome.Failed("file_not_found", required);
         }
@@ -24,7 +25,7 @@ internal sealed class OnnxParakeetModelLoader : IParakeetModelLoader
         {
             ParakeetVocabulary vocabulary = ParakeetVocabulary.Load(files.Vocabulary);
 
-            var preprocessor = Track(opened, new OnnxModelSession(files.Preprocessor));
+            var preprocessor = Track(opened, new OnnxModelSession(ParakeetModelFiles.BundledPreprocessor));
             (OnnxModelSession encoderSession, string accelerator, string? fallbackType) = OpenEncoder(encoderPath, useGpu);
             opened.Add(encoderSession);
             var decoderJoint = Track(opened, new OnnxModelSession(files.DecoderJoint));
