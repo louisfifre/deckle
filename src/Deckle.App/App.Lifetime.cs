@@ -16,40 +16,41 @@ public partial class App
     // exists, so the line waits for the sinks.
     private static bool _residentMutexAbandoned;
 
+    // Why the gate refused, for NoteSecondInstanceRejected: a plain second
+    // launch, or a mutex that could not be created at all.
+    private string? _residentRefusal;
+
     private bool TryAcquireResidentOwnership()
     {
-        var mutex = new Mutex(initiallyOwned: false, ResidentMutexName);
-        bool acquired;
-        try
-        {
-            acquired = mutex.WaitOne(0);
-        }
-        catch (AbandonedMutexException)
-        {
-            // The previous process died without orderly teardown. Windows grants
-            // this thread ownership; recovery is safe because no old hook remains.
-            acquired = true;
-            _residentMutexAbandoned = true;
-        }
+        var outcome = ResidentMutexGate.TryAcquire(
+            () => new Mutex(initiallyOwned: false, ResidentMutexName),
+            out Mutex? mutex, out string? failure);
 
-        if (!acquired)
+        switch (outcome)
         {
-            mutex.Dispose();
-            return false;
+            case ResidentMutexGate.Outcome.AcquiredFromAbandoned:
+                _residentMutexAbandoned = true;
+                goto case ResidentMutexGate.Outcome.Acquired;
+            case ResidentMutexGate.Outcome.Acquired:
+                _residentMutex = mutex;
+                return true;
+            case ResidentMutexGate.Outcome.CreationFailed:
+                _residentRefusal = $"the resident gate could not be created ({failure})";
+                return false;
+            default:
+                _residentRefusal = "another Deckle is resident";
+                return false;
         }
-
-        _residentMutex = mutex;
-        return true;
     }
 
     // A rejected second instance has no sink and may not install one: the
     // resident run holds the log open for writing, so the fact goes to a
     // small file of its own, beside the launcher's. The resident run copies it into
     // the log at its next start (ReportRejectedSecondInstances).
-    private static void NoteSecondInstanceRejected() =>
+    private void NoteSecondInstanceRejected() =>
         NoteFile.Append(
             Path.Combine(AppPaths.DiagnosticsDirectory, SecondInstanceFileName),
-            $"pid={Environment.ProcessId} | another Deckle is resident, this one exits",
+            $"pid={Environment.ProcessId} | {_residentRefusal ?? "another Deckle is resident"}, this one exits",
             DateTimeOffset.Now);
 
     private void ReleaseResidentOwnership()
