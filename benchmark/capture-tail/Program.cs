@@ -2,7 +2,7 @@
 // tail can go down or must go up.
 //
 //   CaptureTail energy <telemetry-dir> <since yyyy-MM-dd>
-//   CaptureTail replay <telemetry-dir> <since yyyy-MM-dd> [<max takes>]
+//   CaptureTail replay <telemetry-dir> <since yyyy-MM-dd> [<max takes> [<skip takes>]]
 //
 // <telemetry-dir> is the folder holding `audio\` and `corpus\` (the corpus root of
 // the data folder). Takes are the raw captures written since <since> (the tail
@@ -19,14 +19,14 @@ using Deckle.Benchmark.CaptureTail;
 
 if (args.Length < 3 || args[0] is not ("energy" or "replay"))
 {
-    Console.Error.WriteLine("usage: CaptureTail energy|replay <telemetry-dir> <since yyyy-MM-dd> [<max takes>]");
+    Console.Error.WriteLine("usage: CaptureTail energy|replay <telemetry-dir> <since yyyy-MM-dd> [<max takes> [<skip takes>]]");
     return 2;
 }
 
 string telemetryDir = args[1];
 var since = DateTime.Parse(args[2], CultureInfo.InvariantCulture);
 int maxTakes = args.Length > 3 ? int.Parse(args[3], CultureInfo.InvariantCulture) : int.MaxValue;
-
+int skipTakes = args.Length > 4 ? int.Parse(args[4], CultureInfo.InvariantCulture) : 0;
 var catalog = RawTakeCatalog.Load(Path.Combine(telemetryDir, "corpus"));
 string audioDir = Path.Combine(telemetryDir, "audio");
 List<string> wavs = Directory.Exists(audioDir)
@@ -44,5 +44,5 @@ if (wavs.Count == 0) return 0;
 if (args[0] == "energy")
     EnergyProfile.Run(wavs);
 else
-    await TailReplay.RunAsync(wavs, maxTakes);
+    await TailReplay.RunAsync(wavs.Skip(skipTakes).ToList(), maxTakes);
 return 0;
