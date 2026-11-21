@@ -10,8 +10,8 @@
     Log window, the small Transcribe and rewrite and Paste to folder windows
     and Deckle Projects, probes the microphone once and exits (see
     src/Deckle.App/App.SelfCheck.cs for what it composes and why). With -App
-    mail or atelier the run is the separate app's own walk (DeckleMail.exe,
-    DeckleAtelier.exe), which the published Deckle no longer holds.
+    mail or folders the run is the separate app's own walk (DeckleMail.exe,
+    DeckleFolders.exe), which the published Deckle no longer holds.
 
     It runs beside the maintainer's resident Deckle: it takes no mutex of the
     resident app, composes no hook, no hotkey, no tray icon and no engine, and it
@@ -26,16 +26,16 @@
     script: 0 passed, 1 failed.
 .PARAMETER App
     Which app of the suite: deckle (the published Deckle, the default), mail
-    (DeckleMail.exe) or atelier (DeckleAtelier.exe). Each has its own data
+    (DeckleMail.exe) or folders (DeckleFolders.exe). Each has its own data
     root, so the fresh root of the run isolates all three alike.
 .PARAMETER Only
     Check one thing instead of everything: a window (for the published Deckle
     settings, log, transcribe-rewrite, paste-to-folder, projects; for -App
-    atelier, atelier; for -App mail, mail) or one view
-    of Settings, the Atelier, Projects or a small window's states, named
+    folders, folders; for -App mail, mail) or one view
+    of Settings, Deckle Folders, Projects or a small window's states, named
     as its image is in a full run: settings/general,
-    atelier/photos-gallery, projects/p3, paste-to-folder/full (its states:
-    empty, list, failed, full). An Atelier or
+    folders/photos-gallery, projects/p3, paste-to-folder/full (its states:
+    empty, list, failed, full). A Folders or
     Projects view is a state reached from the ones before it, so the walk is
     played up to it without pictures and stops there. The other windows and the microphone probe are left out, and
     "passed" then speaks of that target alone. A target that names nothing
@@ -65,12 +65,12 @@
     order: 125
     action: Self-check |
     action: Self-check Mail | -App mail
-    action: Self-check Folders | -App atelier
+    action: Self-check Folders | -App folders
 #>
 
 [CmdletBinding()]
 param(
-    # deckle, mail or atelier; checked below, not a [ValidateSet]: the script's one
+    # deckle, mail or folders; checked below, not a [ValidateSet]: the script's one
     # enumerated parameter is Configuration, which the launcher reads as its variant.
     [string]$App = 'deckle',
     [string]$Only,
@@ -85,14 +85,14 @@ param(
 )
 
 $ErrorActionPreference = 'Stop'
-if ($App -notin 'deckle', 'mail', 'atelier') { [Console]::Error.WriteLine("-App is deckle, mail or atelier, not '$App'."); exit 1 }
+if ($App -notin 'deckle', 'mail', 'folders') { [Console]::Error.WriteLine("-App is deckle, mail or folders, not '$App'."); exit 1 }
 
 $RepoRoot = if ($Target) { (Resolve-Path -LiteralPath $Target).Path } else { Split-Path -Parent $PSScriptRoot }
 # The three executables of the suite: project folder, executable name.
 $apps = @{
     deckle  = @{ Project = 'Deckle.App'; Exe = 'Deckle.exe' }
     mail    = @{ Project = 'Deckle.Mail.App'; Exe = 'DeckleMail.exe' }
-    atelier = @{ Project = 'Deckle.Atelier.App'; Exe = 'DeckleAtelier.exe' }
+    folders = @{ Project = 'Deckle.Folders.App'; Exe = 'DeckleFolders.exe' }
 }
 $AppProject = $apps[$App].Project
 $ProcessName = [System.IO.Path]::GetFileNameWithoutExtension($apps[$App].Exe)

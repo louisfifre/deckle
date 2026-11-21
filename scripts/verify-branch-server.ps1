@@ -75,7 +75,7 @@ try {
 
     # --- The run's own token ----------------------------------------------
     # An administrator's SSH token has SeBackupPrivilege and its kin enabled;
-    # .NET opens folders with backup semantics, so the Atelier tests that deny
+    # .NET opens folders with backup semantics, so Deckle Folders tests that deny
     # a folder listing read it anyway and fail (measured 2026-11-17). They are
     # disabled in this process before any child starts: a child inherits a
     # copy of this token, so dotnet and the test hosts see files as a standard
