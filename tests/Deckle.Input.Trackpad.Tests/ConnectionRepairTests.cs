@@ -141,4 +141,79 @@ public class ConnectionRepairTests : IDisposable
         Assert.True(process.WaitForExit(60_000));
         Assert.True(process.ExitCode == 0, output);
     }
-}
+
+    // The backup-folder functions of the shipped script, loaded without running
+    // the script (it refuses to run unelevated). Only the read-only checks and
+    // the link-safe delete are exercised: creating the locked folder needs
+    // an elevated session and is checked by hand there.
+    private string RunBackupFunctions(string body)
+    {
+        using Stream resource = typeof(ConnectionRepair).Assembly.GetManifestResourceStream(
+            "Deckle.Input.Trackpad.Acts.repair-trackpad-connection.ps1")!;
+        using var reader = new StreamReader(resource, Encoding.UTF8);
+        string script = WriteScript("shipped-functions.ps1", reader.ReadToEnd());
+
+        string load =
+            "$ast = [System.Management.Automation.Language.Parser]::ParseFile($env:SCRIPT_TARGET, [ref]$null, [ref]$null); " +
+            "$wanted = 'Test-IsReparsePoint','Test-TrustedItem','Test-TrustedTree','Remove-Tree'; " +
+            "$ast.EndBlock.Statements | Where-Object { " +
+            "($_ -is [System.Management.Automation.Language.FunctionDefinitionAst] -and $wanted -contains $_.Name) -or " +
+            "($_ -is [System.Management.Automation.Language.AssignmentStatementAst] -and $_.Left.VariablePath.UserPath -in 'TrustedSids','WriteRights') " +
+            "} | ForEach-Object { Invoke-Expression $_.Extent.Text }; ";
+        var psi = new ProcessStartInfo
+        {
+            FileName = "powershell.exe",
+            UseShellExecute = false,
+            RedirectStandardOutput = true,
+            RedirectStandardError = true,
+            CreateNoWindow = true,
+        };
+        foreach (string a in new[] { "-NoProfile", "-Command", load + body }) psi.ArgumentList.Add(a);
+        psi.Environment["SCRIPT_TARGET"] = script;
+        psi.Environment["TEST_DIR"] = _dir;
+        using Process process = Process.Start(psi)!;
+        string output = process.StandardOutput.ReadToEnd() + process.StandardError.ReadToEnd();
+        Assert.True(process.WaitForExit(60_000));
+        return output.Trim();
+    }
+
+    // A folder a user pre-created (here: the test's own temp folder) keeps the
+    // user's owner and rights, so it must never count as the admin-only backup.
+    [Fact]
+    [Trait("Category", "integration")]
+    public void AFolderOwnedByTheUserIsNotTrusted()
+    {
+        string dir = Path.Combine(_dir, "precreated");
+        Directory.CreateDirectory(dir);
+        File.WriteAllText(Path.Combine(dir, "appleprecisiontrackpadbluetooth.inf"), "planted");
+
+        Assert.Equal("False", RunBackupFunctions("Test-TrustedTree (Join-Path $env:TEST_DIR 'precreated')"));
+    }
+
+    [Fact]
+    [Trait("Category", "integration")]
+    public void AJunctionIsNeverTrustedNorFollowedWhenDeleted()
+    {
+        string target = Path.Combine(_dir, "target");
+        Directory.CreateDirectory(target);
+        string keep = Path.Combine(target, "keep.txt");
+        File.WriteAllText(keep, "keep");
+        string dir = Path.Combine(_dir, "withjunction");
+        Directory.CreateDirectory(dir);
+        string link = Path.Combine(dir, "link");
+        // mklink /J needs no privilege, unlike a symbolic link.
+        var mk = Process.Start(new ProcessStartInfo("cmd.exe", $"/c mklink /J \"{link}\" \"{target}\"")
+            { UseShellExecute = false, CreateNoWindow = true, RedirectStandardOutput = true })!;
+        mk.StandardOutput.ReadToEnd();
+        mk.WaitForExit();
+        Assert.True(Directory.Exists(link));
+
+        string output = RunBackupFunctions(
+            "$d = Join-Path $env:TEST_DIR 'withjunction'; " +
+            "$l = Get-Item -LiteralPath (Join-Path $d 'link') -Force; " +
+            "[string](Test-IsReparsePoint $l); Remove-Tree $d");
+
+        Assert.Equal("True", output);
+        Assert.False(Directory.Exists(dir));
+        Assert.True(File.Exists(keep));
+    }}

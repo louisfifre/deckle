@@ -18,17 +18,17 @@
     This script is extracted and launched (elevated) by Deckle's trackpad
     module. It is safe to re-run: each step detects the current state.
 
-.PARAMETER BackupDir
-    Where the driver backup is exported. Defaults to a folder under
-    %ProgramData% that only administrators and SYSTEM can write, because the
-    backup is reinstalled as administrator. The folder is locked down on each
-    run, including a custom one passed here.
+.NOTES
+    The driver backup is reinstalled as administrator, so it lives in one folder
+    directly under %ProgramData% that only administrators and SYSTEM can write.
+    Any folder already there that is not provably theirs (owner, rights, content,
+    no reparse point) is deleted and recreated with the right owner and rights
+    in one step. There is no parameter to point the backup elsewhere: a folder
+    the script does not control cannot be trusted.
 #>
 
 [CmdletBinding()]
-param(
-    [string]$BackupDir
-)
+param()
 
 $ErrorActionPreference = 'Stop'
 $InfOriginalName = 'appleprecisiontrackpadbluetooth.inf'
@@ -126,33 +126,120 @@ if (-not (Test-Admin)) {
     exit 1
 }
 
-# ── Resolve backup directory ──────────────────────────────────────────────────
+# ── Backup directory ──────────────────────────────────────────────────────────
 
-# The backup is reinstalled as administrator, so it must live where only
-# administrators can write: under %ProgramData%, never under the user's profile
-# (nor under DECKLE_DATA_ROOT, which the user controls). The folder is locked
-# down each run, so a folder that already exists with looser rights is fixed.
-function Protect-BackupDir {
+# The backup is reinstalled as administrator, so whoever can write into it can
+# run code as administrator. It lives in ONE folder directly under %ProgramData%
+# (a parent folder would be one more place a user could own), and the folder is
+# trusted only when everything in it is provably administrators' and SYSTEM's.
+# Anything else is deleted and recreated, because a folder pre-created by a user
+# keeps its owner, its rights and its content, and Set-Acl on the folder alone
+# changes none of the content.
+$TrustedSids = @('S-1-5-32-544', 'S-1-5-18')   # Administrators, SYSTEM
+
+# Any right that lets a holder change, add, remove or re-permission something.
+$WriteRights = [Security.AccessControl.FileSystemRights]'WriteData, AppendData, WriteExtendedAttributes, WriteAttributes, DeleteSubdirectoriesAndFiles, Delete, ChangePermissions, TakeOwnership'
+
+function Test-IsReparsePoint {
+    param([IO.FileSystemInfo]$Item)
+    return (($Item.Attributes -band [IO.FileAttributes]::ReparsePoint) -ne 0)
+}
+
+# True when the item is not a link, is owned by a trusted SID, and no other SID
+# holds a write right on it.
+function Test-TrustedItem {
+    param([IO.FileSystemInfo]$Item)
+    if (Test-IsReparsePoint $Item) { return $false }
+    $acl = $Item.GetAccessControl()   # not Get-Acl: no module to load
+    $owner = $acl.GetOwner([Security.Principal.SecurityIdentifier]).Value
+    if ($TrustedSids -notcontains $owner) { return $false }
+    foreach ($rule in $acl.GetAccessRules($true, $true, [Security.Principal.SecurityIdentifier])) {
+        if ($rule.AccessControlType -ne 'Allow') { continue }
+        if ($TrustedSids -contains $rule.IdentityReference.Value) { continue }
+        if (($rule.FileSystemRights -band $WriteRights) -ne 0) { return $false }
+    }
+    return $true
+}
+
+# True when the folder and everything under it is trusted. A link is never
+# followed: it makes the tree untrusted.
+function Test-TrustedTree {
     param([string]$Dir)
-    New-Item -ItemType Directory -Path $Dir -Force | Out-Null
-    $admins = New-Object Security.Principal.SecurityIdentifier('S-1-5-32-544')
-    $system = New-Object Security.Principal.SecurityIdentifier('S-1-5-18')
+    if (-not (Test-Path -LiteralPath $Dir)) { return $false }
+    $root = Get-Item -LiteralPath $Dir -Force
+    if (-not $root.PSIsContainer) { return $false }
+    if (-not (Test-TrustedItem $root)) { return $false }
+    foreach ($child in Get-ChildItem -LiteralPath $Dir -Force) {
+        if (-not (Test-TrustedItem $child)) { return $false }
+        if ($child.PSIsContainer -and -not (Test-TrustedTree $child.FullName)) { return $false }
+    }
+    return $true
+}
+
+# Deletes a tree without ever following a link: a junction or symlink is removed
+# itself, its target is left alone (Remove-Item -Recurse can walk into one on
+# Windows PowerShell 5.1).
+function Remove-Tree {
+    param([string]$Path)
+    $item = Get-Item -LiteralPath $Path -Force
+    if (Test-IsReparsePoint $item) {
+        if ($item.PSIsContainer) { [IO.Directory]::Delete($Path) } else { [IO.File]::Delete($Path) }
+        return
+    }
+    if ($item.PSIsContainer) {
+        foreach ($child in Get-ChildItem -LiteralPath $Path -Force) { Remove-Tree $child.FullName }
+        [IO.Directory]::Delete($Path)
+    }
+    else {
+        [IO.File]::SetAttributes($Path, [IO.FileAttributes]::Normal)
+        [IO.File]::Delete($Path)
+    }
+}
+
+# Ends the run on an unrecoverable problem with the backup folder.
+function Stop-BackupDir {
+    param([string]$What)
+    Write-Err $What
+    Write-Host '  Nothing was reinstalled. Delete the folder by hand as Administrator' -ForegroundColor Red
+    Write-Host "  ($BackupDir) and re-run this script." -ForegroundColor Red
+    Read-Host '  Press Enter to close'
+    exit 1
+}
+
+function Initialize-BackupDir {
+    param([string]$Dir)
+
+    if (Test-Path -LiteralPath $Dir) {
+        if (Test-TrustedTree $Dir) {
+            Write-Info 'Backup folder is administrator-only — kept as it is.'
+            return
+        }
+        Write-Warn 'Backup folder is not administrator-only (owner, rights, content or a link) — deleting it.'
+        try { Remove-Tree $Dir } catch { Stop-BackupDir "Could not delete the untrusted backup folder: $($_.Exception.Message)" }
+    }
+
+    # Created with its owner and rights in the same call: no moment where the
+    # folder exists with the rights inherited from %ProgramData%.
+    $admins = New-Object Security.Principal.SecurityIdentifier($TrustedSids[0])
+    $system = New-Object Security.Principal.SecurityIdentifier($TrustedSids[1])
     $inherit = [Security.AccessControl.InheritanceFlags]'ContainerInherit, ObjectInherit'
-    $acl = New-Object Security.AccessControl.DirectorySecurity
-    $acl.SetOwner($admins)
-    $acl.SetAccessRuleProtection($true, $false)
+    $security = New-Object Security.AccessControl.DirectorySecurity
+    $security.SetOwner($admins)
+    $security.SetAccessRuleProtection($true, $false)
     foreach ($sid in @($admins, $system)) {
-        $acl.AddAccessRule((New-Object Security.AccessControl.FileSystemAccessRule(
+        $security.AddAccessRule((New-Object Security.AccessControl.FileSystemAccessRule(
             $sid, 'FullControl', $inherit, 'None', 'Allow')))
     }
-    Set-Acl -Path $Dir -AclObject $acl
+    try { (New-Object IO.DirectoryInfo($Dir)).Create($security) }
+    catch { Stop-BackupDir "Could not create the backup folder: $($_.Exception.Message)" }
+
+    if (-not (Test-TrustedTree $Dir) -or @(Get-ChildItem -LiteralPath $Dir -Force).Count -ne 0) {
+        Stop-BackupDir 'The new backup folder is not empty and administrator-only as expected.'
+    }
 }
 
-if (-not $BackupDir) {
-    $BackupDir = Join-Path $env:ProgramData 'Deckle\trackpad-driver-backup'
-}
-Protect-BackupDir $BackupDir
-
+$BackupDir = Join-Path $env:ProgramData 'DeckleTrackpadDriverBackup'
+Initialize-BackupDir $BackupDir
 Write-Section 'Apple Magic Trackpad 2 — connection repair'
 Write-Info "Driver INF       : $InfOriginalName"
 Write-Info "Backup directory : $BackupDir"
@@ -163,8 +250,6 @@ $published = Find-PublishedName
 
 if ($published) {
     Write-Ok "Driver found in store as: $published"
-
-    New-Item -ItemType Directory -Path $BackupDir -Force | Out-Null
 
     Write-Info "Exporting backup to: $BackupDir"
     & pnputil /export-driver $published "$BackupDir"
@@ -184,7 +269,7 @@ else {
     }
     else {
         Write-Err 'Driver not found in the store and no trusted backup exists.'
-        Write-Host '  (A backup left by an older version under the user profile is not trusted.)' -ForegroundColor Red
+        Write-Host '  (A backup left in any other place, or by an older version, is not trusted.)' -ForegroundColor Red
         Write-Host '  The Apple trackpad driver does not appear to be installed.' -ForegroundColor Red
         Write-Host '  Pair the trackpad once (Windows will install the driver),' -ForegroundColor Red
         Write-Host '  then re-run this script.' -ForegroundColor Red
@@ -211,11 +296,14 @@ Read-Host '  When the trackpad is paired and connected, press Enter to continue'
 
 Write-Section 'Step 3 — Reinstall the driver onto the device'
 
+if (-not (Test-TrustedTree $BackupDir)) {
+    Stop-BackupDir 'The backup folder changed and is no longer administrator-only.'
+}
 $backupInf = Find-BackupInf $BackupDir
 if (-not $backupInf) {
     Write-Err "Backup INF not found under: $BackupDir"
-    Write-Host '  Cannot reinstall the driver without its backup. Locate the' -ForegroundColor Red
-    Write-Host '  exported backup and re-run, or pass -BackupDir explicitly.' -ForegroundColor Red
+    Write-Host '  Cannot reinstall the driver without its backup. Restore the' -ForegroundColor Red
+    Write-Host '  exported backup and re-run.' -ForegroundColor Red
     Read-Host '  Press Enter to close'
     exit 1
 }
