@@ -1,0 +1,28 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <RootNamespace>Deckle.Folders</RootNamespace>
+    <!-- EventSource [Event] parameters use snake_case so the ETW payload
+         keys land as-is in the JSONL output; IDE1006 would flag them. -->
+    <NoWarn>$(NoWarn);IDE1006</NoWarn>
+  </PropertyGroup>
+
+  <!-- Deckle Folders' logic: the folders the person added and their
+       persistence, the listing of a folder, the place inside an added folder
+       and its navigation history. No XAML and no WindowsAppSDK, so every rule
+       here is tested without a window; Deckle.Folders.Views presents it.
+       Deckle.Diagnostics is referenced only for the EventSource. -->
+  <ItemGroup>
+    <ProjectReference Include="..\Deckle.Diagnostics\Deckle.Diagnostics.csproj" />
+    <!-- IconChoice: an added folder's icon, the type the shared picker of
+         Deckle.Catalog edits. Core holds no XAML. -->
+    <ProjectReference Include="..\Deckle.Core\Deckle.Core.csproj" />
+    <!-- The map of a folder (Map* types), shared with Deckle Projects. -->
+    <ProjectReference Include="..\Deckle.FolderMap\Deckle.FolderMap.csproj" />
+    <!-- Photos: capture data. Used by Photos/CaptureDataReader.cs alone. -->
+    <PackageReference Include="MetadataExtractor" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <InternalsVisibleTo Include="Deckle.Folders.Tests" />
+  </ItemGroup>
+</Project>

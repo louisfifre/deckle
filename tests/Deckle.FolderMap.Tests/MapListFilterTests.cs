@@ -3,7 +3,7 @@ using Xunit;
 namespace Deckle.FolderMap.Tests;
 
 // The boxes above the map's list, and the total of the rows they keep.
-[Collection("atelier provider singleton")]
+[Collection("folders provider singleton")]
 [Trait("Category", "integration")]
 public sealed class MapListFilterTests
 {

@@ -10,7 +10,7 @@ namespace Deckle.Paste;
 // holds a cross-process mutex, which settings edited by hand need. This one
 // value changes only when the person chooses a folder, is written at once,
 // and is read by one window, so a plain atomic write (temp file, then move)
-// is the whole need. Same reasoning as Deckle.Atelier's AddedFolderStore.
+// is the whole need. Same reasoning as Deckle.Folders's AddedFolderStore.
 //
 // A file that cannot be read is copied aside as "<name>.bad" and the store
 // starts with no folder, so a broken file never blocks the window and nothing

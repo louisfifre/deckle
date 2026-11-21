@@ -55,7 +55,7 @@ public sealed class ContributionRegistrationTests
     [Fact]
     public void ADescriptorOfAnotherIdIsRefused()
     {
-        var list = new IContribution[] { new FakeContribution { Id = "mail", Descriptor = Module("atelier") } };
+        var list = new IContribution[] { new FakeContribution { Id = "mail", Descriptor = Module("folders") } };
 
         Assert.Equal(RegistrationRefusals.DescriptorIdMismatch, Refused(() => Host(list)));
     }
@@ -66,7 +66,7 @@ public sealed class ContributionRegistrationTests
         var list = new IContribution[]
         {
             new FakeContribution { Id = "mail", Windows = [_probe.Window("main")] },
-            new FakeContribution { Id = "atelier", Windows = [_probe.Window("main")] },
+            new FakeContribution { Id = "folders", Windows = [_probe.Window("main")] },
         };
 
         Assert.Equal(RegistrationRefusals.DuplicateWindow, Refused(() => Host(list)));
@@ -97,7 +97,7 @@ public sealed class ContributionRegistrationTests
             {
                 Id = "mail",
                 Windows = [_probe.Window("mail")],
-                SelfCheckWalks = [new ContributedWalk { WindowName = "atelier", Run = _ => Task.CompletedTask }],
+                SelfCheckWalks = [new ContributedWalk { WindowName = "folders", Run = _ => Task.CompletedTask }],
             },
         };
 
@@ -121,7 +121,7 @@ public sealed class ContributionRegistrationTests
     {
         var list = new IContribution[]
         {
-            new FakeContribution { Id = "atelier", Descriptor = Module("atelier", 1, "rewrite") },
+            new FakeContribution { Id = "folders", Descriptor = Module("folders", 1, "rewrite") },
         };
 
         ContributionHost host = Host(list);
@@ -134,12 +134,12 @@ public sealed class ContributionRegistrationTests
     {
         var list = new IContribution[]
         {
-            new FakeContribution { Id = "atelier", Descriptor = Module("atelier", 50) },
+            new FakeContribution { Id = "folders", Descriptor = Module("folders", 50) },
             new FakeContribution { Id = "preview" },
             new FakeContribution { Id = "mail", Descriptor = Module("mail", 10) },
         };
 
-        Assert.Equal(["mail", "atelier"], Host(list).Descriptors.Select(d => d.Id));
+        Assert.Equal(["mail", "folders"], Host(list).Descriptors.Select(d => d.Id));
     }
 
     [Fact]

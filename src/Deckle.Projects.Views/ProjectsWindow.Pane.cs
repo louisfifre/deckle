@@ -29,7 +29,7 @@ public sealed partial class ProjectsWindow
 
     // Draws the pane from the store. Items carry their place in Tag and the pane
     // hears one ItemInvoked for all of them: a handler on each item made the
-    // Atelier's pane fail to open once its items were rebuilt (the cause inside
+    // Folders's pane fail to open once its items were rebuilt (the cause inside
     // NavigationView was not established there), so none is attached here.
     private void RebuildPane()
     {

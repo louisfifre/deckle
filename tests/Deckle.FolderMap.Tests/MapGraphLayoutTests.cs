@@ -5,7 +5,7 @@ namespace Deckle.FolderMap.Tests;
 // Where the large graph puts the items it draws: one column per kind, only
 // what the filter keeps, the chosen item and its neighbours standing out, and
 // past the rows a column can hold, the chosen item's neighbourhood and "+N".
-[Collection("atelier provider singleton")]
+[Collection("folders provider singleton")]
 [Trait("Category", "integration")]
 public sealed class MapGraphLayoutTests
 {

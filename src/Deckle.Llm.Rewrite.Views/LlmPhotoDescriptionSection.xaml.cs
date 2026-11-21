@@ -6,14 +6,14 @@ namespace Deckle.Llm.Rewrite.Views;
 
 // ─── LlmPage Photo descriptions section ──────────────────────────────────────
 //
-// The one setting of the Atelier that concerns a model: which provider and
+// The one setting of Deckle Folders that concerns a model: which provider and
 // which model describe photos. It sits on this page because this is where
 // Deckle keeps its providers and their models, and the person who adds an
 // Ollama here finds the photo choice beside it.
 //
 // Only providers whose address is on this PC are offered: a picture never
-// leaves the machine (the Atelier's adapter refuses any other address again
-// before sending). The value is the Atelier's (PhotoDescriptionModelSetting),
+// leaves the machine (Deckle Folders' adapter refuses any other address again
+// before sending). The value is Deckle Folders' (PhotoDescriptionModelSetting),
 // written when its gesture ends: a provider picked, a model chosen or typed
 // and left. Nothing chosen is the default, and the section's reset returns to
 // it.
@@ -35,7 +35,7 @@ public sealed partial class LlmPhotoDescriptionSection : UserControl
         InitializeComponent();
     }
 
-    // Shown only when the host gave the setting, that is when the Atelier is
+    // Shown only when the host gave the setting, that is when Deckle Folders is
     // installed.
     public void Reload()
     {
@@ -125,7 +125,7 @@ public sealed partial class LlmPhotoDescriptionSection : UserControl
     private void ModelBox_LostFocus(object sender, RoutedEventArgs e) => Save();
 
     // A choice is a provider and a model: with either missing, nothing is
-    // chosen, and the Atelier says so where photos are described.
+    // chosen, and Deckle Folders says so where photos are described.
     private void Save()
     {
         if (_setting is null) return;

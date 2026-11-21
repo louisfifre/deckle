@@ -7,8 +7,8 @@ namespace Deckle.Projects.Tests;
 // Parallel work on a provider's partial files can give two events one id and
 // git merges them without a conflict because they sit in different files. An
 // EventSource with a duplicate id cannot build its event table, so the whole
-// Deckle-Projects provider goes silent. The Atelier met it first
-// (Deckle.Atelier.Tests/AtelierEventIdBugNotes.md): this test reads the [Event]
+// Deckle-Projects provider goes silent. Deckle Folders met it first
+// (Deckle.Folders.Tests/FoldersEventIdBugNotes.md): this test reads the [Event]
 // attributes the runtime reads and names the clash.
 [Trait("Category", "regression")]
 public sealed class DeckleProjectsSourceEventIdTests

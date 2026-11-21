@@ -1,6 +1,6 @@
 namespace Deckle.Core;
 
-// The few path rules every part of the Atelier must agree on. Windows paths
+// The few path rules every part of Deckle Folders must agree on. Windows paths
 // compare without case, a folder is written without a trailing separator
 // except a drive root ("D:\"), and "inside" means a whole segment matches:
 // D:\Photos2 is not inside D:\Photos.

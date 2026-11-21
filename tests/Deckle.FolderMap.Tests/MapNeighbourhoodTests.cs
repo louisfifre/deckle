@@ -4,7 +4,7 @@ namespace Deckle.FolderMap.Tests;
 
 // The neighbours the map panel's small graph draws, in a fixed order, and
 // the "+N" that counts the rest.
-[Collection("atelier provider singleton")]
+[Collection("folders provider singleton")]
 [Trait("Category", "integration")]
 public sealed class MapNeighbourhoodTests
 {

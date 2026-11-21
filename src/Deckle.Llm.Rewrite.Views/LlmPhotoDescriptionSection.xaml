@@ -5,7 +5,7 @@
     xmlns:controls="using:CommunityToolkit.WinUI.Controls"
     xmlns:catalog="using:Deckle.Catalog">
 
-    <!-- The model that describes the Atelier's photos: a provider on this PC
+    <!-- The model that describes Deckle Folders' photos: a provider on this PC
          and a model it serves. The caption says the one rule that holds
          whatever is picked. Tag is the search index's scroll-to handle. -->
     <catalog:SettingsSection x:Name="Section"

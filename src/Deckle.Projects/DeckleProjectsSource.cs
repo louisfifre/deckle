@@ -11,7 +11,7 @@ namespace Deckle.Projects;
 // The events live in one partial file per concern, each with its own block of
 // ids, so work done side by side never takes the same number (two [Event]
 // methods sharing an id silence the whole provider, see
-// tests/Deckle.Atelier.Tests/AtelierEventIdBugNotes.md):
+// tests/Deckle.Folders.Tests/FoldersEventIdBugNotes.md):
 //
 //    1-9    the project store                 (Store/)
 //   10-19   what is read from a folder        (Readouts/)

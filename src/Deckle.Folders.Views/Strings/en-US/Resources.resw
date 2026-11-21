@@ -1,0 +1,352 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Deckle Folders' wording, in English like every other catalog of the project
+     (Strings/en-US, its neutral language). It was first written in French;
+     the maintainer runs Deckle in English and asked for it in English on
+     2026-11-21. Product names ("Deckle Folders") stay in code, as Loc.cs asks.
+     Code reads these keys through FoldersText (Loc.GetFrom), so they need no
+     copy in Deckle.App. -->
+<root>
+  <resheader name="resmimetype">
+    <value>text/microsoft-resx</value>
+  </resheader>
+  <resheader name="version">
+    <value>2.0</value>
+  </resheader>
+  <resheader name="reader">
+    <value>System.Resources.ResXResourceReader, System.Windows.Forms, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
+  </resheader>
+  <resheader name="writer">
+    <value>System.Resources.ResXResourceWriter, System.Windows.Forms, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
+  </resheader>
+
+  <!-- Top row -->
+  <data name="Pane_Open" xml:space="preserve"><value>Open the folders pane</value></data>
+  <data name="Nav_Back" xml:space="preserve"><value>Back (Alt+Left Arrow)</value></data>
+  <data name="Nav_Forward" xml:space="preserve"><value>Forward (Alt+Right Arrow)</value></data>
+  <data name="Nav_Up" xml:space="preserve"><value>Up to parent folder (Alt+Up Arrow)</value></data>
+  <data name="Nav_Refresh" xml:space="preserve"><value>Refresh (F5)</value></data>
+  <data name="Search" xml:space="preserve"><value>Search</value></data>
+  <!-- The search button's panel (12.13) -->
+  <data name="SearchAbsentTitle.Text" xml:space="preserve"><value>Command Palette isn't installed</value></data>
+  <data name="SearchAbsentBody.Text" xml:space="preserve"><value>Deckle Folders searches through PowerToys Command Palette, a free tool from Microsoft. Install PowerToys to use it.</value></data>
+  <data name="SearchInstallPowerToys.Content" xml:space="preserve"><value>Install PowerToys…</value></data>
+  <data name="SearchLater.Content" xml:space="preserve"><value>Not now</value></data>
+  <data name="SearchInCommandPalette.Text" xml:space="preserve"><value>Search happens in PowerToys Command Palette: open it with Win+Alt+Space, its default shortcut.</value></data>
+  <data name="Tools_Group" xml:space="preserve"><value>Tools</value></data>
+
+  <!-- Address bar -->
+  <data name="Address_Label" xml:space="preserve"><value>Address</value></data>
+  <data name="Address_None" xml:space="preserve"><value>No folder</value></data>
+  <data name="Address_Chevron_Format" xml:space="preserve"><value>Folders in {0}</value></data>
+  <data name="Address_NotFound_Format" xml:space="preserve"><value>Deckle Folders can't find "{0}". Check the spelling and try again.</value></data>
+  <data name="Address_Outside_Format" xml:space="preserve"><value>"{0}" isn't in any added folder. Add the folder that contains it first.</value></data>
+  <data name="Common_Ok" xml:space="preserve"><value>OK</value></data>
+
+  <!-- Added folders -->
+  <data name="Folders_Pane" xml:space="preserve"><value>Added folders</value></data>
+  <data name="Folders_Add" xml:space="preserve"><value>Add a folder…</value></data>
+  <data name="Folders_Item_Format" xml:space="preserve"><value>{0}, {1}</value></data>
+  <data name="Folders_Item_NotFound_Format" xml:space="preserve"><value>{0}, not found: {1}</value></data>
+  <data name="Folders_Item_Unreadable_Format" xml:space="preserve"><value>{0}, can't be read: {1}</value></data>
+  <data name="Folders_More" xml:space="preserve"><value>More options</value></data>
+  <data name="Folders_ShowInExplorer" xml:space="preserve"><value>Open in File Explorer</value></data>
+  <data name="Folders_ChangeIcon" xml:space="preserve"><value>Change icon…</value></data>
+  <data name="Folders_Remove" xml:space="preserve"><value>Remove from Deckle Folders</value></data>
+  <data name="Folders_RemoveHint" xml:space="preserve"><value>The folder stays on the disk</value></data>
+  <data name="Folders_NotFound_Title" xml:space="preserve"><value>This folder can't be found</value></data>
+  <data name="Folders_NotFound_Body_Format" xml:space="preserve"><value>Deckle Folders can no longer find {0}. The folder may have been moved, renamed or deleted, or its drive isn't connected. Once it's back, refresh.</value></data>
+  <data name="Folders_Unreadable_Title" xml:space="preserve"><value>This folder can't be read</value></data>
+  <data name="Folders_Unreadable_Body_Format" xml:space="preserve"><value>Deckle Folders can't access {0}. Check that you have permission to open it, then refresh.</value></data>
+  <!-- Tools -->
+  <data name="Tool_Files" xml:space="preserve"><value>Files</value></data>
+  <data name="Tool_Photos" xml:space="preserve"><value>Photos</value></data>
+  <data name="Tool_Sizes" xml:space="preserve"><value>Sizes</value></data>
+  <data name="Tool_Map" xml:space="preserve"><value>Map</value></data>
+  <data name="Tool_Placeholder" xml:space="preserve"><value>This tool isn't built yet.</value></data>
+
+  <!-- Empty state (board 12.11) -->
+  <data name="EmptyTitle.Text" xml:space="preserve"><value>Deckle Folders shows only the folders you add</value></data>
+  <data name="EmptyBody.Text" xml:space="preserve"><value>Nothing else on the drive is read. No photo and no photo data leaves this computer.</value></data>
+  <data name="EmptyDrop.Text" xml:space="preserve"><value>or drag a folder here</value></data>
+  <data name="EmptyStep1Title.Text" xml:space="preserve"><value>You add a folder</value></data>
+  <data name="EmptyStep1Body.Text" xml:space="preserve"><value>Deckle Folders finds the photos, documents, code and scripts in it on its own.</value></data>
+  <data name="EmptyStep2Title.Text" xml:space="preserve"><value>You ask for descriptions, if you want them</value></data>
+  <data name="EmptyStep2Body.Text" xml:space="preserve"><value>A model on this computer describes a photo, or a whole folder. Nothing starts on its own.</value></data>
+  <data name="EmptyStep3Title.Text" xml:space="preserve"><value>Search finds them again</value></data>
+  <data name="EmptyStep3Body.Text" xml:space="preserve"><value>From the magnifier at the top right: a person's name, a word from the description.</value></data>
+
+  <!-- File list -->
+  <data name="FilesHeaderName.Text" xml:space="preserve"><value>Name</value></data>
+  <data name="FilesHeaderModified.Text" xml:space="preserve"><value>Date modified</value></data>
+  <data name="FilesHeaderSize.Text" xml:space="preserve"><value>Size</value></data>
+  <data name="Files_Empty" xml:space="preserve"><value>This folder is empty.</value></data>
+  <data name="Files_NotFound" xml:space="preserve"><value>This folder no longer exists.</value></data>
+  <data name="Files_AccessDenied" xml:space="preserve"><value>You don't have access to this folder.</value></data>
+  <data name="Files_Unreadable" xml:space="preserve"><value>This folder can't be read.</value></data>
+  <data name="Display_Group" xml:space="preserve"><value>View</value></data>
+  <data name="Display_List" xml:space="preserve"><value>List</value></data>
+  <data name="Display_LargeRows" xml:space="preserve"><value>Large rows</value></data>
+  <data name="Display_Gallery" xml:space="preserve"><value>Gallery</value></data>
+  <data name="Files_Summary_Separator" xml:space="preserve"><value> · </value></data>
+  <!-- The two actions of a row (12.1). The button shows the action, its
+       accessible name adds the item, so a screen reader says which row. -->
+  <data name="Files_ShowInFolder" xml:space="preserve"><value>Show in File Explorer</value></data>
+  <data name="Files_Recycle" xml:space="preserve"><value>Move to Recycle Bin</value></data>
+  <data name="Files_ShowInFolder_Name_Format" xml:space="preserve"><value>Show in File Explorer: {0}</value></data>
+  <data name="Files_Recycle_Name_Format" xml:space="preserve"><value>Move to Recycle Bin: {0}</value></data>
+  <!-- What the file tool says when Windows did not do what was asked. -->
+  <data name="Files_Recycle_Stayed_Format" xml:space="preserve"><value>"{0}" couldn't be moved to the Recycle Bin. It stays in the folder.</value></data>
+  <data name="Files_Recycle_Destroyed_Format" xml:space="preserve"><value>"{0}" was permanently deleted instead of going to the Recycle Bin.</value></data>
+  <!-- The same, for several items sent by the Delete key; {0} is their number. -->
+  <data name="Files_Recycle_Stayed_Many_Format" xml:space="preserve"><value>{0} items couldn't be moved to the Recycle Bin. They stay in the folder.</value></data>
+  <data name="Files_Recycle_Destroyed_Many_Format" xml:space="preserve"><value>{0} items were permanently deleted instead of going to the Recycle Bin.</value></data>
+  <data name="Files_Open_Failed_Format" xml:space="preserve"><value>"{0}" couldn't be opened.</value></data>
+  <data name="Files_ShowInFolder_Failed_Format" xml:space="preserve"><value>File Explorer couldn't show "{0}".</value></data>
+  <data name="Files_Gone_Format" xml:space="preserve"><value>"{0}" is no longer in this folder.</value></data>
+  <!-- The panel of several items selected (SelectionSummary): "One" is the
+       form a count of one takes, "Many" every other; {0} is the number. -->
+  <data name="Files_Selection_Items_One_Format" xml:space="preserve"><value>{0} item selected</value></data>
+  <data name="Files_Selection_Items_Many_Format" xml:space="preserve"><value>{0} items selected</value></data>
+  <data name="Files_Selection_Folders_One_Format" xml:space="preserve"><value>{0} folder</value></data>
+  <data name="Files_Selection_Folders_Many_Format" xml:space="preserve"><value>{0} folders</value></data>
+  <data name="Files_Selection_Files_One_Format" xml:space="preserve"><value>{0} file</value></data>
+  <data name="Files_Selection_Files_Many_Format" xml:space="preserve"><value>{0} files</value></data>
+  <data name="Files_Selection_Size_WithoutFolders_Format" xml:space="preserve"><value>{0}, not counting folders</value></data>
+
+  <!-- Details panel -->
+  <data name="Details_Panel" xml:space="preserve"><value>Details</value></data>
+  <data name="Details_Section" xml:space="preserve"><value>Details</value></data>
+  <data name="Details_Size" xml:space="preserve"><value>Size</value></data>
+  <data name="Details_Modified" xml:space="preserve"><value>Date modified</value></data>
+  <data name="Details_Location" xml:space="preserve"><value>Location</value></data>
+  <data name="Kind_Folder" xml:space="preserve"><value>File folder</value></data>
+  <data name="Kind_File" xml:space="preserve"><value>File</value></data>
+  <data name="Kind_File_Format" xml:space="preserve"><value>{0} File</value></data>
+
+  <!-- ── Photo tool (Tools/Photos) ── -->
+  <data name="Photos_Gallery" xml:space="preserve"><value>Photos in the folder</value></data>
+  <data name="Photos_Empty" xml:space="preserve"><value>No photos in this folder.</value></data>
+  <data name="Photos_Count_Unmarked_Format" xml:space="preserve"><value>{0} unmarked</value></data>
+  <data name="Photos_Count_Keep_Format" xml:space="preserve"><value> · {0} to keep</value></data>
+  <data name="Photos_Count_Delete_Format" xml:space="preserve"><value> · {0} to delete</value></data>
+  <data name="Photos_Apply" xml:space="preserve"><value>Apply marks…</value></data>
+  <data name="Photos_Darktable" xml:space="preserve"><value>Open in darktable</value></data>
+  <data name="Photos_Darktable_Tip" xml:space="preserve"><value>Open this folder in darktable to edit it</value></data>
+  <data name="Photos_Darktable_TipMissing" xml:space="preserve"><value>darktable isn't installed on this computer</value></data>
+  <data name="Photos_Darktable_NotFound" xml:space="preserve"><value>darktable can't be found</value></data>
+  <data name="Photos_Darktable_NotFoundBody" xml:space="preserve"><value>Install darktable, then select Open in darktable again.</value></data>
+  <data name="Photos_Darktable_Install" xml:space="preserve"><value>Download darktable</value></data>
+  <data name="Photos_Darktable_Failed" xml:space="preserve"><value>darktable didn't open</value></data>
+  <data name="Photos_Darktable_FailedBody" xml:space="preserve"><value>Try again. If it happens again, reinstall darktable.</value></data>
+  <data name="Photos_Tile_Keep_Format" xml:space="preserve"><value>{0}, to keep</value></data>
+  <data name="Photos_Tile_Delete_Format" xml:space="preserve"><value>{0}, to delete</value></data>
+  <data name="Photos_LeaveLarge" xml:space="preserve"><value>Back to the gallery (Esc)</value></data>
+  <data name="Photos_Previous" xml:space="preserve"><value>Previous photo (Left Arrow)</value></data>
+  <data name="Photos_Next" xml:space="preserve"><value>Next photo (Right Arrow)</value></data>
+  <data name="Photos_Kind_Raw" xml:space="preserve"><value>Raw</value></data>
+  <data name="Photos_Kind_Format" xml:space="preserve"><value>{0} · {1}</value></data>
+  <data name="Photos_KindRank_Format" xml:space="preserve"><value>{0} · {1} of {2}</value></data>
+  <data name="Photos_ManyKind_Format" xml:space="preserve"><value>Photos · {0}</value></data>
+  <data name="Photos_ManyTitle_Format" xml:space="preserve"><value>{0} photos selected</value></data>
+  <data name="Photos_Section_Mark" xml:space="preserve"><value>Mark</value></data>
+  <data name="Photos_Mark_Keep" xml:space="preserve"><value>Keep</value></data>
+  <data name="Photos_Mark_Delete" xml:space="preserve"><value>Delete</value></data>
+  <data name="Photos_Mark_Keys" xml:space="preserve"><value>K to keep · X to delete</value></data>
+  <data name="Photos_Mark_KeysLarge" xml:space="preserve"><value>K to keep · X to delete · ← → next photo</value></data>
+  <data name="Photos_Section_Capture" xml:space="preserve"><value>Capture</value></data>
+  <data name="Photos_Capture_Taken" xml:space="preserve"><value>Date taken</value></data>
+  <data name="Photos_Capture_Camera" xml:space="preserve"><value>Camera</value></data>
+  <data name="Photos_Capture_Lens" xml:space="preserve"><value>Lens</value></data>
+  <data name="Photos_Capture_Exposure" xml:space="preserve"><value>Exposure</value></data>
+  <data name="Photos_Capture_Place" xml:space="preserve"><value>Location</value></data>
+  <data name="Photos_Capture_None" xml:space="preserve"><value>This file holds no capture data.</value></data>
+  <data name="Photos_Capture_Unreadable" xml:space="preserve"><value>The capture data of this file can't be read.</value></data>
+  <data name="Photos_Summary_Title_One" xml:space="preserve"><value>{0} photo goes to the Windows Recycle Bin</value></data>
+  <data name="Photos_Summary_Title_Other" xml:space="preserve"><value>{0} photos go to the Windows Recycle Bin</value></data>
+  <data name="Photos_Summary_Weight_Format" xml:space="preserve"><value>{0}. Recoverable until the Recycle Bin is emptied.</value></data>
+  <data name="Photos_Summary_More_Format" xml:space="preserve"><value>+{0}</value></data>
+  <data name="Photos_Summary_Kept_One" xml:space="preserve"><value>{0} photo to keep: nothing changes on the drive.</value></data>
+  <data name="Photos_Summary_Kept_Other" xml:space="preserve"><value>{0} photos to keep: nothing changes on the drive.</value></data>
+  <data name="Photos_Summary_Unmarked_One" xml:space="preserve"><value>{0} unmarked photo: nothing changes.</value></data>
+  <data name="Photos_Summary_Unmarked_Other" xml:space="preserve"><value>{0} unmarked photos: nothing changes.</value></data>
+  <data name="Photos_Summary_Confirm_One" xml:space="preserve"><value>Move {0} photo to the Recycle Bin</value></data>
+  <data name="Photos_Summary_Confirm_Other" xml:space="preserve"><value>Move {0} photos to the Recycle Bin</value></data>
+  <data name="Photos_Summary_Cancel" xml:space="preserve"><value>Cancel</value></data>
+  <data name="Photos_Applying_Format" xml:space="preserve"><value>Moving to the Recycle Bin: {0} of {1}</value></data>
+  <data name="Photos_Stayed_One" xml:space="preserve"><value>{0} photo couldn't be moved to the Recycle Bin. It stays in the folder, with its mark.</value></data>
+  <data name="Photos_Stayed_Other" xml:space="preserve"><value>{0} photos couldn't be moved to the Recycle Bin. They stay in the folder, with their marks.</value></data>
+  <data name="Photos_Destroyed_One" xml:space="preserve"><value>{0} photo was permanently deleted instead of going to the Recycle Bin.</value></data>
+  <data name="Photos_Destroyed_Other" xml:space="preserve"><value>{0} photos were permanently deleted instead of going to the Recycle Bin.</value></data>
+  <data name="Photos_NamesMore_Format" xml:space="preserve"><value>{0} and {1} more</value></data>
+  <data name="Photos_Describe_Folder" xml:space="preserve"><value>Describe the folder</value></data>
+  <data name="Photos_Describe_Progress_Format" xml:space="preserve"><value>{0} of {1} described</value></data>
+  <data name="Photos_Describe_Stop" xml:space="preserve"><value>Stop describing the folder</value></data>
+  <data name="Photos_Describe_Done_Format" xml:space="preserve"><value>Folder description finished: {0} of {1} photos described.</value></data>
+  <data name="Photos_Describe_Failed_One" xml:space="preserve"><value>{0} photo couldn't be described.</value></data>
+  <data name="Photos_Describe_Failed_Other" xml:space="preserve"><value>{0} photos couldn't be described.</value></data>
+  <data name="Photos_Describe_Stopped_Format" xml:space="preserve"><value>Folder description stopped: {0} of {1} photos described.</value></data>
+  <data name="Photos_Describe_NotDone" xml:space="preserve"><value>The folder couldn't be described</value></data>
+  <data name="Photos_Section_Description" xml:space="preserve"><value>Description</value></data>
+  <data name="Photos_Description_None" xml:space="preserve"><value>This photo has no description yet.</value></data>
+  <data name="Photos_Description_DescribeOne" xml:space="preserve"><value>Describe this photo</value></data>
+  <data name="Photos_Description_InProgress" xml:space="preserve"><value>Describing…</value></data>
+  <data name="Photos_Description_Stop" xml:space="preserve"><value>Stop</value></data>
+  <data name="Photos_Description_WrittenBy" xml:space="preserve"><value>Written by a model on this computer.</value></data>
+  <data name="Photos_Description_Again" xml:space="preserve"><value>Describe again</value></data>
+  <data name="Photos_Description_Retry" xml:space="preserve"><value>Try again</value></data>
+  <data name="Photos_Description_Settings" xml:space="preserve"><value>Open settings</value></data>
+  <data name="Photos_DescriptionFailure_NoModelChosen" xml:space="preserve"><value>No model is chosen to describe photos. Choose one in settings.</value></data>
+  <data name="Photos_DescriptionFailure_ServerUnreachable" xml:space="preserve"><value>The model's server isn't responding. Start it on this computer, then try again.</value></data>
+  <data name="Photos_DescriptionFailure_ImagesNotSupported" xml:space="preserve"><value>The chosen model can't read images. Choose another one in settings.</value></data>
+  <data name="Photos_DescriptionFailure_EndpointNotLocal" xml:space="preserve"><value>The chosen provider isn't on this computer, and no photo leaves it. Choose a local provider in settings.</value></data>
+  <data name="Photos_DescriptionFailure_PhotoUnreadable" xml:space="preserve"><value>This photo can't be read.</value></data>
+  <data name="Photos_DescriptionFailure_Stopped" xml:space="preserve"><value>The description was stopped before it was written.</value></data>
+  <data name="Photos_DescriptionFailure_Other" xml:space="preserve"><value>The model didn't describe this photo: it refused the request or didn't answer in time.</value></data>
+  <!-- Sizes tool (boards 12.7, 12.21, 12.23) -->
+  <data name="Sizes_HeaderName" xml:space="preserve"><value>Name</value></data>
+  <data name="Sizes_HeaderSize" xml:space="preserve"><value>Size</value></data>
+  <data name="Sizes_Share_Total_Format" xml:space="preserve"><value>Bar length = share of the folder's {0}</value></data>
+  <data name="Sizes_Share_Measured_Format" xml:space="preserve"><value>Bar length = share of the {0} measured</value></data>
+  <data name="Sizes_Progress_Format" xml:space="preserve"><value>{0} of {1} measured</value></data>
+  <data name="Sizes_Progress_Reading" xml:space="preserve"><value>Reading the folder…</value></data>
+  <data name="Sizes_Progress_Name" xml:space="preserve"><value>Analysis progress</value></data>
+  <data name="Sizes_Stop" xml:space="preserve"><value>Stop</value></data>
+  <data name="Sizes_Stopped" xml:space="preserve"><value>Analysis stopped</value></data>
+  <data name="Sizes_Stopped_Format" xml:space="preserve"><value>Analysis stopped: {0} of {1} measured</value></data>
+  <data name="Sizes_Finished_Format" xml:space="preserve"><value>Analyzed at {0}</value></data>
+  <data name="Sizes_Finished_Earlier_Format" xml:space="preserve"><value>Analyzed on {0}</value></data>
+  <data name="Sizes_Refresh" xml:space="preserve"><value>Analyze again (F5)</value></data>
+  <data name="Sizes_Refresh_Today_Format" xml:space="preserve"><value>Last analyzed at {0}</value></data>
+  <data name="Sizes_Refresh_Earlier_Format" xml:space="preserve"><value>Last analyzed on {0}</value></data>
+  <data name="Sizes_Failed" xml:space="preserve"><value>The analysis failed. Press F5 to try again.</value></data>
+  <data name="Sizes_Pending" xml:space="preserve"><value>…</value></data>
+  <data name="Sizes_LooseFiles_Format" xml:space="preserve"><value>Files in this folder ({0})</value></data>
+  <data name="Sizes_Row_Automation_Format" xml:space="preserve"><value>{0}, {1}</value></data>
+  <data name="Sizes_Heavy_Automation_Format" xml:space="preserve"><value>{0}, in {1}, {2}</value></data>
+  <data name="Sizes_Unreadable_One" xml:space="preserve"><value>A folder couldn't be read. Its size isn't counted.</value></data>
+  <data name="Sizes_Unreadable_Many_Format" xml:space="preserve"><value>{0} folders couldn't be read. Their size isn't counted.</value></data>
+  <data name="Sizes_PlaceUnreadable" xml:space="preserve"><value>This folder couldn't be read in full. The sizes count only what was read.</value></data>
+  <data name="Sizes_RowUnreadable_One" xml:space="preserve"><value>A folder below couldn't be read: it isn't counted.</value></data>
+  <data name="Sizes_RowUnreadable_Many_Format" xml:space="preserve"><value>{0} folders below couldn't be read: they aren't counted.</value></data>
+  <data name="Sizes_Panel_Kind" xml:space="preserve"><value>Current folder</value></data>
+  <data name="Sizes_Panel_Section" xml:space="preserve"><value>Analysis</value></data>
+  <data name="Sizes_Panel_Total" xml:space="preserve"><value>Size</value></data>
+  <data name="Sizes_Panel_State" xml:space="preserve"><value>Status</value></data>
+  <data name="Sizes_Panel_Running" xml:space="preserve"><value>Running…</value></data>
+  <data name="Sizes_Panel_Failed" xml:space="preserve"><value>Failed</value></data>
+  <data name="Sizes_Panel_Unreadable" xml:space="preserve"><value>Not read</value></data>
+  <data name="Sizes_Panel_Unreadable_One" xml:space="preserve"><value>1 folder</value></data>
+  <data name="Sizes_Panel_Unreadable_Many_Format" xml:space="preserve"><value>{0} folders</value></data>
+  <data name="Sizes_Heaviest" xml:space="preserve"><value>Largest below</value></data>
+  <data name="Sizes_Heaviest_None" xml:space="preserve"><value>No files.</value></data>
+  <!-- Map tool (name not chosen): list, filters, empty state, panel -->
+  <data name="MapFilters_Group" xml:space="preserve"><value>Filters</value></data>
+  <data name="MapAlwaysRead.Content" xml:space="preserve"><value>Always read by an LLM</value></data>
+  <data name="Map_Display_Group" xml:space="preserve"><value>View</value></data>
+  <data name="Map_Display_Flat" xml:space="preserve"><value>List</value></data>
+  <data name="Map_Display_Sections" xml:space="preserve"><value>Group by type</value></data>
+  <data name="MapHeaderName.Text" xml:space="preserve"><value>Name</value></data>
+  <data name="MapHeaderKind.Text" xml:space="preserve"><value>Type</value></data>
+  <data name="MapHeaderLinks.Text" xml:space="preserve"><value>Links</value></data>
+  <data name="MapHeaderLines.Text" xml:space="preserve"><value>Lines</value></data>
+  <data name="MapHeaderTokens.Text" xml:space="preserve"><value>Estimated tokens</value></data>
+  <data name="MapHeaderModified.Text" xml:space="preserve"><value>Date modified</value></data>
+  <data name="Map_TokensHint" xml:space="preserve"><value>Estimated without a model: about one token per four characters. French and code often take more.</value></data>
+  <data name="Map_Kind_ContextFile" xml:space="preserve"><value>Context file</value></data>
+  <data name="Map_Kind_Skill" xml:space="preserve"><value>Skill</value></data>
+  <data name="Map_Kind_McpServer" xml:space="preserve"><value>MCP server</value></data>
+  <data name="Map_Kind_Script" xml:space="preserve"><value>Script</value></data>
+  <data name="Map_Kind_StandardFile" xml:space="preserve"><value>Standard file</value></data>
+  <data name="Map_Kinds_ContextFile" xml:space="preserve"><value>Context files</value></data>
+  <data name="Map_Kinds_Skill" xml:space="preserve"><value>Skills</value></data>
+  <data name="Map_Kinds_McpServer" xml:space="preserve"><value>MCP servers</value></data>
+  <data name="Map_Kinds_Script" xml:space="preserve"><value>Scripts</value></data>
+  <data name="Map_Kinds_StandardFile" xml:space="preserve"><value>Standard files</value></data>
+  <data name="Map_LookedFor_ContextFile" xml:space="preserve"><value>context file</value></data>
+  <data name="Map_LookedFor_Skill" xml:space="preserve"><value>skill</value></data>
+  <data name="Map_LookedFor_McpServer" xml:space="preserve"><value>MCP server</value></data>
+  <data name="Map_LookedFor_Script" xml:space="preserve"><value>script</value></data>
+  <data name="Map_LookedFor_StandardFile" xml:space="preserve"><value>standard repository file</value></data>
+  <data name="Map_LookedFor_Separator" xml:space="preserve"><value>, no </value></data>
+  <data name="Map_LookedFor_Format" xml:space="preserve"><value>No {0}.</value></data>
+  <data name="Map_Empty_Format" xml:space="preserve"><value>Nothing to show in {0}</value></data>
+  <data name="Map_NoMatch" xml:space="preserve"><value>No item matches the filters.</value></data>
+  <data name="Map_NotFound" xml:space="preserve"><value>This folder no longer exists.</value></data>
+  <data name="Map_AccessDenied" xml:space="preserve"><value>You don't have access to this folder.</value></data>
+  <data name="Map_Truncated_Format" xml:space="preserve"><value>Partial inventory: the scan stopped after {0} items.</value></data>
+  <data name="Map_Total_Format" xml:space="preserve"><value>Total always read ({0})</value></data>
+  <data name="Map_Details_Section" xml:space="preserve"><value>Details</value></data>
+  <data name="Map_Details_Description" xml:space="preserve"><value>Description</value></data>
+  <data name="Map_Details_Command" xml:space="preserve"><value>Starts with</value></data>
+  <data name="Map_Details_Loading" xml:space="preserve"><value>Read</value></data>
+  <data name="Map_Loading_AtSessionStart" xml:space="preserve"><value>At the start of every session</value></data>
+  <data name="Map_Loading_OnDemand" xml:space="preserve"><value>When the work needs it</value></data>
+  <data name="Map_Loading_NotLoaded" xml:space="preserve"><value>Never as an instruction</value></data>
+  <data name="Map_Details_ReadBy" xml:space="preserve"><value>By</value></data>
+  <data name="Map_Details_Startup" xml:space="preserve"><value>At startup</value></data>
+  <data name="Map_Startup_Format" xml:space="preserve"><value>Name and description, about {0} tokens</value></data>
+  <data name="Map_Details_Lines" xml:space="preserve"><value>Lines</value></data>
+  <data name="Map_Details_Tokens" xml:space="preserve"><value>Tokens</value></data>
+  <data name="Map_Tokens_Format" xml:space="preserve"><value>About {0}</value></data>
+  <data name="Map_Details_Modified" xml:space="preserve"><value>Date modified</value></data>
+  <data name="Map_Details_Location" xml:space="preserve"><value>Location</value></data>
+  <data name="Map_Location_Line_Format" xml:space="preserve"><value>{0}, line {1}</value></data>
+  <data name="Map_Graph_Section" xml:space="preserve"><value>Graph</value></data>
+  <data name="Map_Graph_Name_Format" xml:space="preserve"><value>Link graph of {0}</value></data>
+  <data name="Map_Graph_More_Format" xml:space="preserve"><value>+{0}</value></data>
+  <data name="Map_Graph_More_Name_Format" xml:space="preserve"><value>{0} more links, listed below</value></data>
+  <data name="Map_Graph_Enlarge" xml:space="preserve"><value>Enlarge the graph</value></data>
+  <data name="Map_LargeGraph_Name" xml:space="preserve"><value>Large link graph</value></data>
+  <data name="Map_LargeGraph_Node_Name_Format" xml:space="preserve"><value>{0}, {1}</value></data>
+  <data name="Map_LargeGraph_More_Name_Format" xml:space="preserve"><value>{0} more items, not drawn</value></data>
+  <data name="Map_LargeGraph_Dimension_Group" xml:space="preserve"><value>Dimension</value></data>
+  <data name="MapLargeGraph2D.Content" xml:space="preserve"><value>2D</value></data>
+  <data name="MapLargeGraph3D.Content" xml:space="preserve"><value>3D · later</value></data>
+  <data name="Map_LargeGraph_Leave" xml:space="preserve"><value>Leave the large graph</value></data>
+  <data name="Map_LargeGraph_Leave_Tip" xml:space="preserve"><value>Leave the large graph (Esc)</value></data>
+  <data name="Map_Links_Section" xml:space="preserve"><value>Links</value></data>
+  <data name="Map_Cites_Format" xml:space="preserve"><value>Cites ({0})</value></data>
+  <data name="Map_CitedBy_Format" xml:space="preserve"><value>Cited by ({0})</value></data>
+  <data name="Map_Mutual" xml:space="preserve"><value>both ways</value></data>
+  <data name="Map_None" xml:space="preserve"><value>Nothing in this folder.</value></data>
+  <data name="Map_NoLinks" xml:space="preserve"><value>Cites nothing and is cited by nothing in this folder.</value></data>
+
+  <!-- An added folder's icon (spec, Window; boards 12.3, 12.3b): the address
+       bar's icon button, then the keys the shared picker of Deckle.Catalog
+       asks its host for (IconPicker.cs lists them). -->
+  <data name="Address_Icon_Format" xml:space="preserve"><value>Change the icon of {0}</value></data>
+  <data name="IconPicker_Icon" xml:space="preserve"><value>Icon</value></data>
+  <data name="IconPicker_Color" xml:space="preserve"><value>Color</value></data>
+  <data name="IconPicker_Background" xml:space="preserve"><value>Background</value></data>
+  <data name="IconPicker_Background_Off" xml:space="preserve"><value>No background</value></data>
+  <data name="IconPicker_Background_On" xml:space="preserve"><value>Square background</value></data>
+  <data name="IconPicker_Symbol_Folder" xml:space="preserve"><value>Folder</value></data>
+  <data name="IconPicker_Symbol_Photos" xml:space="preserve"><value>Photos</value></data>
+  <data name="IconPicker_Symbol_Documents" xml:space="preserve"><value>Documents</value></data>
+  <data name="IconPicker_Symbol_Code" xml:space="preserve"><value>Code</value></data>
+  <data name="IconPicker_Symbol_Music" xml:space="preserve"><value>Music</value></data>
+  <data name="IconPicker_Symbol_Videos" xml:space="preserve"><value>Videos</value></data>
+  <data name="IconPicker_Symbol_Downloads" xml:space="preserve"><value>Downloads</value></data>
+  <data name="IconPicker_Symbol_Archive" xml:space="preserve"><value>Archives</value></data>
+  <data name="IconPicker_Symbol_Work" xml:space="preserve"><value>Work</value></data>
+  <data name="IconPicker_Symbol_Home" xml:space="preserve"><value>Home</value></data>
+  <data name="IconPicker_Symbol_People" xml:space="preserve"><value>People</value></data>
+  <data name="IconPicker_Symbol_Favorite" xml:space="preserve"><value>Favorite</value></data>
+  <data name="IconPicker_Symbol_Instructions" xml:space="preserve"><value>Instructions</value></data>
+  <data name="IconPicker_Symbol_Intelligence" xml:space="preserve"><value>AI</value></data>
+  <data name="IconPicker_Symbol_Terminal" xml:space="preserve"><value>Terminal</value></data>
+  <data name="IconPicker_Symbol_Settings" xml:space="preserve"><value>Settings</value></data>
+  <data name="IconPicker_Symbol_Bug" xml:space="preserve"><value>Bug</value></data>
+  <data name="IconPicker_Symbol_Test" xml:space="preserve"><value>Tests</value></data>
+  <data name="IconPicker_Symbol_Important" xml:space="preserve"><value>Important</value></data>
+  <data name="IconPicker_Symbol_Flag" xml:space="preserve"><value>Flag</value></data>
+  <data name="IconPicker_Symbol_Tag" xml:space="preserve"><value>Tag</value></data>
+  <data name="IconPicker_Symbol_Idea" xml:space="preserve"><value>Ideas</value></data>
+  <data name="IconPicker_Symbol_Private" xml:space="preserve"><value>Private</value></data>
+  <data name="IconPicker_Symbol_Cloud" xml:space="preserve"><value>Cloud</value></data>
+  <data name="IconPicker_Tint_Accent" xml:space="preserve"><value>Windows accent color</value></data>
+  <data name="IconPicker_Tint_Red" xml:space="preserve"><value>Red</value></data>
+  <data name="IconPicker_Tint_Orange" xml:space="preserve"><value>Orange</value></data>
+  <data name="IconPicker_Tint_Green" xml:space="preserve"><value>Green</value></data>
+  <data name="IconPicker_Tint_Purple" xml:space="preserve"><value>Purple</value></data>
+</root>

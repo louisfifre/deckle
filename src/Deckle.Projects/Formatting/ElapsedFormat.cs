@@ -5,7 +5,7 @@ namespace Deckle.Projects;
 // The two ways a duration reads on a project's page: how long an action has
 // been running ("1 min 12 s") and how long ago it ended ("4 min ago"). English
 // literals, since Deckle ships English strings only, and pure, so a test can
-// hold them to their boundaries; the Atelier keeps EntryFormat in its engine for
+// hold them to their boundaries; Deckle Folders keeps EntryFormat in its engine for
 // the same reason.
 public static class ElapsedFormat
 {

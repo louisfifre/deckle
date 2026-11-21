@@ -118,8 +118,8 @@ public sealed class ContributionWindowTests
     [Fact]
     public void AWindowOfAModuleThePersonDidNotInstallDoesNotOpen()
     {
-        ContributionHost host = Host(id: "atelier", descriptor: Module("atelier"));
-        _services.AbsentModules.Add("atelier");
+        ContributionHost host = Host(id: "folders", descriptor: Module("folders"));
+        _services.AbsentModules.Add("folders");
 
         Assert.False(host.Open("mail"));
         Assert.Equal(0, _probe.Created);

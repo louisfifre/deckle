@@ -11,8 +11,8 @@ public class SelfCheckTests
 {
     // The windows of the composition the tests stand for: the published Deckle's.
     private static readonly SelfCheckWindows Catalog = new(
-        ["settings", "log", "transcribe-rewrite", "paste-to-folder", "mail", "atelier", "projects"],
-        ["settings", "transcribe-rewrite", "paste-to-folder", "mail", "atelier", "projects"]);
+        ["settings", "log", "transcribe-rewrite", "paste-to-folder", "mail", "folders", "projects"],
+        ["settings", "transcribe-rewrite", "paste-to-folder", "mail", "folders", "projects"]);
 
     private static SelfCheckMicrophone Probe(string outcome, string? stage = null)
         => new(outcome, stage, "E_NOTFOUND", "0x80070490");
@@ -83,7 +83,7 @@ public class SelfCheckTests
         report.Surfaces.Add(new SelfCheckSurface("transcribe-rewrite", null, null, true, 300, @"captures\transcribe-rewrite.png"));
         report.Surfaces.Add(new SelfCheckSurface("paste-to-folder", null, null, true, 200, @"captures\paste-to-folder.png"));
         report.Surfaces.Add(new SelfCheckSurface("mail", "triage", "Triage", true, 300, @"captures\mail-triage.png"));
-        report.Surfaces.Add(new SelfCheckSurface("atelier", "files", null, true, 400, @"captures\atelier-files.png"));
+        report.Surfaces.Add(new SelfCheckSurface("folders", "files", null, true, 400, @"captures\folders-files.png"));
         report.Surfaces.Add(new SelfCheckSurface("projects", "h1", null, true, 400, @"captures\projects-h1.png"));
         report.Microphone = new SelfCheckMicrophone(SelfCheckMicrophone.Ok, null, "OK", "0");
         return report;
@@ -258,7 +258,7 @@ public class SelfCheckTests
     [InlineData("transcribe-rewrite")]
     [InlineData("paste-to-folder")]
     [InlineData("mail")]
-    [InlineData("atelier")]
+    [InlineData("folders")]
     [InlineData("projects")]
     [Trait("Category", "unit")]
     public void Verdict_FailsWhenARequiredWindowWasNeverWalked(string window)
@@ -399,7 +399,7 @@ public class SelfCheckTests
     [InlineData("settings/general", "settings", "general")]
     [InlineData(" Settings/LLM-Rewrite ", "settings", "llm-rewrite")]
     [InlineData("mail/activity", "mail", "activity")]
-    [InlineData("atelier/photos-gallery", "atelier", "photos-gallery")]
+    [InlineData("folders/photos-gallery", "folders", "photos-gallery")]
     [InlineData("projects/p3", "projects", "p3")]
     [InlineData("paste-to-folder", "paste-to-folder", null)]
     [InlineData("paste-to-folder/failed", "paste-to-folder", "failed")]

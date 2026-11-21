@@ -11,7 +11,7 @@
   <!-- The Deckle Projects window: Home, a category's page, a project's page.
        Dependencies point one way: this project reads Deckle.Projects (its
        engine), which knows nothing of it. It does not reference
-       Deckle.Atelier.Views: "Open in Deckle Folders" is a hook the host hands
+       Deckle.Folders.Views: "Open in Deckle Folders" is a hook the host hands
        the window (ProjectsHooks), so the two windows never learn each other. -->
   <ItemGroup>
     <PackageReference Include="Microsoft.WindowsAppSDK" />
