@@ -2515,6 +2515,7 @@ _Generated from `git ls-files` — do not edit by hand._
 │   │   │   ├── WhisperViewModel.DictationExperience.cs
 │   │   │   ├── WhisperViewModel.Engine.cs
 │   │   │   ├── WhisperViewModel.Settings.cs
+│   │   │   ├── WhisperViewModel.SpeechEngine.cs
 │   │   │   └── WhisperViewModel.Streaming.cs
 │   │   ├── Deckle.Transcription.Views.csproj
 │   │   ├── DecodingPage.xaml

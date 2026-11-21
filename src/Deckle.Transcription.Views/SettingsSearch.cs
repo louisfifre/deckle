@@ -48,6 +48,15 @@ public static class SettingsSearch
             Keywords = ["hud", "indicator", "fade", "position", "transcript", "panel"],
         },
 
+        // "Speech engine" — the Whisper / Parakeet fold (the Parakeet model
+        // folder, the state of its files and the encoder precision ride under it).
+        new SettingSearchEntry
+        {
+            LabelKey = "WhisperEngineMode",
+            Keywords = ["whisper", "parakeet", "engine", "backend", "preview", "nvidia",
+                        "model", "folder", "encoder", "precision", "fp16", "fp32"],
+        },
+
         // Language selector (bespoke — editable ComboBox, Tag'd in the XAML).
         new SettingSearchEntry
         {

@@ -36,6 +36,14 @@ public sealed partial class WhisperPage : Page
     private string _startupModel = "";
     private bool _startupUseGpu;
 
+    // The engine choice and the two values only Parakeet reads. The backend is
+    // built once at startup, so a different choice waits for the restart; the
+    // folder and the precision are read at each model load, and the same footer
+    // carries them.
+    private AsrBackendKind _startupBackend;
+    private string _startupParakeetFolder = "";
+    private ParakeetEncoderPrecision _startupParakeetEncoder;
+
     // Defaults resolved from the Engine POCO — single source of truth for the
     // bespoke Model / Language / InitialPrompt resets below.
     private static readonly EngineSettings _engineDefaults = new();
@@ -142,6 +150,7 @@ public sealed partial class WhisperPage : Page
                 BehaviourSection.IsResetEnabled = composer.IsDirty());
         _behaviourComposer = behaviourComposer;
 
+        ComposeRegion(SpeechEngineHost, ViewModel.SpeechEngineSettings);
         ComposeRegion(UseGpuHost, ViewModel.UseGpuSettingsManifest);
         ComposeRegion(ModelsDirectoryHost, ViewModel.ModelsDirectorySettingsManifest);
         // The decoding and streaming manifests compose on DecodingPage and
@@ -189,7 +198,12 @@ public sealed partial class WhisperPage : Page
         SyncLanguageCombo();
         _startupModel = ViewModel.Model;
         _startupUseGpu = ViewModel.UseGpu;
+        _startupBackend = ViewModel.Backend;
+        _startupParakeetFolder = ViewModel.ParakeetModelDirectory;
+        _startupParakeetEncoder = ViewModel.ParakeetEncoder;
         _initializing = false;
+        ApplyEngineVisibility();
+        UpdateRestartState();
         GateResetAll();
 
         // Speech isn't provisioned until the runtime + model are on disk. When
@@ -198,7 +212,9 @@ public sealed partial class WhisperPage : Page
         // The App answers the probe (this page can't see the Whisper module);
         // unwired (tests, previews) reads as provisioned.
         bool speechReady = SettingsHost.IsSpeechProvisioned?.Invoke() ?? true;
-        SetupInfoBar.IsOpen = !speechReady;
+        // The probe answers for Whisper (its runtime and a model); Parakeet needs
+        // neither, and its own card says what its folder lacks.
+        SetupInfoBar.IsOpen = !speechReady && ViewModel.IsWhisperChosen;
     }
 
     private void OnSetupClick(object sender, RoutedEventArgs e) =>
@@ -218,7 +234,14 @@ public sealed partial class WhisperPage : Page
         {
             case nameof(WhisperViewModel.Model):
             case nameof(WhisperViewModel.UseGpu):
+            case nameof(WhisperViewModel.ParakeetModelDirectory):
+            case nameof(WhisperViewModel.ParakeetEncoder):
                 UpdateRestartState();
+                break;
+            case nameof(WhisperViewModel.Backend):
+                ApplyEngineVisibility();
+                UpdateRestartState();
+                SetupInfoBar.IsOpen = SetupInfoBar.IsOpen && ViewModel.IsWhisperChosen;
                 break;
             case nameof(WhisperViewModel.ModelsDirectory):
                 _initializing = true;
@@ -430,10 +453,28 @@ public sealed partial class WhisperPage : Page
     // Model and GPU require a restart. When their current value differs from
     // the startup snapshot, the footer appears (pattern Windows Terminal).
 
+    // The cards that configure Whisper alone are hidden while another engine is
+    // chosen: a setting that does not apply is hidden, never greyed. They keep
+    // their values, so choosing Whisper again finds them as they were.
+    private void ApplyEngineVisibility()
+    {
+        Visibility whisper = ViewModel.IsWhisperChosen ? Visibility.Visible : Visibility.Collapsed;
+        InitialPromptCard.Visibility = whisper;
+        LanguageCard.Visibility = whisper;
+        ModelCard.Visibility = whisper;
+    }
+
+    // What needs a restart depends on the engine that will run: the Whisper model
+    // matters to Whisper alone, and the Parakeet folder and precision to Parakeet
+    // alone. The GPU switch and the engine choice itself matter to both.
     private void UpdateRestartState()
     {
-        bool dirty = ViewModel.Model != _startupModel
-                  || ViewModel.UseGpu != _startupUseGpu;
+        bool whisper = ViewModel.IsWhisperChosen;
+        bool dirty = ViewModel.Backend != _startupBackend
+                  || ViewModel.UseGpu != _startupUseGpu
+                  || (whisper && ViewModel.Model != _startupModel)
+                  || (!whisper && (ViewModel.ParakeetModelDirectory != _startupParakeetFolder
+                                   || ViewModel.ParakeetEncoder != _startupParakeetEncoder));
         RestartFooter.Visibility = dirty
             ? Visibility.Visible : Visibility.Collapsed;
     }
@@ -453,6 +494,9 @@ public sealed partial class WhisperPage : Page
             // Revert the VM properties to the startup snapshot.
             ViewModel.Model = _startupModel;
             ViewModel.UseGpu = _startupUseGpu;
+            ViewModel.Backend = _startupBackend;
+            ViewModel.ParakeetModelDirectory = _startupParakeetFolder;
+            ViewModel.ParakeetEncoder = _startupParakeetEncoder;
 
             // Sync the AutoSuggestBox (not bound).
             ModelSuggest.Text = _startupModel;

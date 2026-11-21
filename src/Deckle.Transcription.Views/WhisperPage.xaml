@@ -102,6 +102,16 @@
                 <catalog:SettingsSection x:Uid="WhisperPageModelEngineSection">
                 <StackPanel Spacing="{StaticResource SettingsCardSpacing}">
 
+                <!-- Speech engine — composed. The Whisper / Parakeet choice heads
+                     the fold, which holds what only Parakeet reads (its model
+                     folder with the state of the files, the encoder precision).
+                     It leads the section because it decides which of the cards
+                     below apply: the initial prompt, the language and the model
+                     are Whisper's, and the page hides them while Parakeet is the
+                     chosen engine. -->
+                <StackPanel x:Name="SpeechEngineHost"
+                            Spacing="{StaticResource SettingsCardSpacing}" />
+
                 <controls:SettingsExpander x:Name="InitialPromptCard"
                                            x:Uid="WhisperInitialPromptCard"
                                            Tag="WhisperInitialPromptCard">

@@ -419,7 +419,7 @@
     <value>GPU acceleration</value>
   </data>
   <data name="WhisperUseGpuCard.Description" xml:space="preserve">
-    <value>Faster transcription through Vulkan. Turn off if you see instability or crashes.</value>
+    <value>Faster transcription on the graphics card. Turn off if you see instability or crashes.</value>
   </data>
   <data name="WhisperVadEnabledCard.Header" xml:space="preserve">
     <value>Trim silence around speech</value>
@@ -527,9 +527,56 @@
     <value>Models folder</value>
   </data>
   <data name="WhisperModelsDirCard.Description" xml:space="preserve">
-    <value>Where the Whisper and Silero model files live.</value>
+    <value>Where the speech models and the Silero model live.</value>
   </data>
-  <data name="WhisperRestartDiscard.Content" xml:space="preserve">
+  <!-- The speech engine fold (WhisperViewModel.SpeechEngineSettings). The choice
+       is read at startup: a change waits for the restart footer. -->
+  <data name="WhisperEngineMode.Header" xml:space="preserve">
+    <value>Speech engine</value>
+  </data>
+  <data name="WhisperEngineMode.Description" xml:space="preserve">
+    <value>What turns your voice into text, from the next start. Parakeet is a preview: it reads its model from the Location below and ignores the Whisper model, language and initial prompt.</value>
+  </data>
+  <data name="WhisperEngineWhisper.Content" xml:space="preserve">
+    <value>Whisper</value>
+  </data>
+  <data name="WhisperEngineParakeet.Content" xml:space="preserve">
+    <value>Parakeet (preview)</value>
+  </data>
+  <data name="WhisperParakeetFilesCard.Header" xml:space="preserve">
+    <value>Model files</value>
+  </data>
+  <data name="WhisperParakeetFiles_Complete" xml:space="preserve">
+    <value>Complete model found.</value>
+  </data>
+  <data name="WhisperParakeetFiles_CompleteWithFp16" xml:space="preserve">
+    <value>Complete model found, with an FP16 encoder.</value>
+  </data>
+  <data name="WhisperParakeetFiles_Incomplete" xml:space="preserve">
+    <value>No complete model in this folder. It must hold vocab.txt, nemo128.onnx and the fp32 folder with the encoder and the decoder.</value>
+  </data>
+  <data name="WhisperParakeetEncoderCard.Header" xml:space="preserve">
+    <value>Encoder precision</value>
+  </data>
+  <data name="WhisperParakeetEncoderCard.Description" xml:space="preserve">
+    <value>FP16 stores the encoder's numbers on 16 bits instead of 32 (FP32): half the memory, no speed gain on the graphics card, and it can cost accuracy on French. FP32 is the safe choice.</value>
+  </data>
+  <data name="WhisperParakeetEncoderFp32.Content" xml:space="preserve">
+    <value>FP32</value>
+  </data>
+  <data name="WhisperParakeetEncoderFp16.Content" xml:space="preserve">
+    <value>FP16</value>
+  </data>
+  <data name="WhisperParakeetEncoderMissing.Message" xml:space="preserve">
+    <value>This folder has no FP16 encoder, so Parakeet cannot load with this precision.</value>
+  </data>
+  <!-- DecodingPage, while Parakeet is the chosen engine. -->
+  <data name="DecodingPageWhisperOnlyInfoBar.Title" xml:space="preserve">
+    <value>These settings are for Whisper</value>
+  </data>
+  <data name="DecodingPageWhisperOnlyInfoBar.Message" xml:space="preserve">
+    <value>Parakeet is the chosen speech engine and does not read them. The silence trim below still applies.</value>
+  </data>  <data name="WhisperRestartDiscard.Content" xml:space="preserve">
     <value>Discard</value>
   </data>
   <data name="WhisperRestartNow.Content" xml:space="preserve">
