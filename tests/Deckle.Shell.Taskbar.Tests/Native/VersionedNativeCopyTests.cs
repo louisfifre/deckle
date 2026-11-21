@@ -112,6 +112,41 @@ public sealed class VersionedNativeCopyTests : IDisposable
         Assert.True(File.Exists(rebuilt));
     }
 
+    // The copy lives in a folder the user can write and is loaded into explorer:
+    // a file under the right name with the wrong bytes must not be returned.
+    [Fact]
+    public void EnsureReplacesACopyWhoseBytesAreNotTheSources()
+    {
+        string source = MakeSource("a.dll");
+        VersionedNativeCopy copy = NewCopy();
+        string path = copy.Ensure(source);
+        File.WriteAllBytes(path, [1, 2, 3]);
+
+        string again = copy.Ensure(source);
+
+        Assert.Equal(path, again);
+        Assert.Equal(File.ReadAllBytes(source), File.ReadAllBytes(again));
+        Assert.Single(Directory.GetFiles(Path.GetDirectoryName(again)!));
+    }
+
+    [Fact]
+    public void EnsureNeverReturnsAWrongCopyThatCannotBeReplaced()
+    {
+        string source = MakeSource("a.dll");
+        VersionedNativeCopy copy = NewCopy();
+        string path = copy.Ensure(source);
+        File.WriteAllBytes(path, [1, 2, 3]);
+
+        using (new FileStream(path, FileMode.Open, FileAccess.Read, FileShare.Read))
+        {
+            // Windows reports a replace of an open file as an IO error or as access denied.
+            Exception thrown = Assert.ThrowsAny<Exception>(() => copy.Ensure(source));
+            Assert.True(thrown is IOException or UnauthorizedAccessException, thrown.GetType().Name);
+        }
+
+        Assert.Equal(File.ReadAllBytes(source), File.ReadAllBytes(copy.Ensure(source)));   // released: healed
+    }
+
     [Fact]
     public void SweepRemovesEveryOtherVersionAndKeepsTheOneNamed()
     {

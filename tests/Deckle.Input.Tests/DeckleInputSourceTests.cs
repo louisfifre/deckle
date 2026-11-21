@@ -114,23 +114,4 @@ public class DeckleInputSourceTests : IDisposable
             OperationalLogAdmission.SetActive(OperationalLogActivity.Autocorrect, false);
         }
     }
-
-    [Fact]
-    public void FrameRollupFollowsInputActivityWhilePresenceRemainsAdmitted()
-    {
-        using var listener = new TestEventListener("Deckle-Input");
-
-        DeckleInputSource.Log.FrameRollup(10, 100, 2, 3, 0, 0, 0, 0);
-        DeckleInputSource.Log.TouchpadAbsent();
-
-        Assert.Single(listener.Events);
-        Assert.Equal(DeckleInputSource.EvtTouchpadAbsent, listener.Events[0].EventId);
-
-        OperationalLogAdmission.Configure(
-            static activity => activity == OperationalLogActivity.Input);
-        DeckleInputSource.Log.FrameRollup(10, 100, 2, 3, 0, 0, 0, 0);
-
-        Assert.Equal(2, listener.Events.Count);
-        Assert.Equal(DeckleInputSource.EvtFrameRollup, listener.Events[1].EventId);
-    }
 }

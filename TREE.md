@@ -3357,6 +3357,7 @@ _Generated from `git ls-files` — do not edit by hand._
 │   │   │   ├── TaskbarCustomizerTests.cs
 │   │   │   ├── TaskbarDocumentBuilderTests.cs
 │   │   │   ├── TaskbarEngineHostStopTests.cs
+│   │   │   ├── TaskbarPipeServerResilienceTests.cs
 │   │   │   ├── TaskbarPipeServerTests.cs
 │   │   │   ├── TaskbarProblemReaderTests.cs
 │   │   │   ├── ThumbnailBoxTests.cs

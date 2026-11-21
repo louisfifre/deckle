@@ -11,11 +11,10 @@ namespace Deckle.Input.Tests;
 [Trait("Category", "observability")]
 public sealed class SummaryTagTests
 {
-    [Theory]
-    [InlineData(nameof(DeckleInputSource.FrameRollup))]
-    [InlineData(nameof(DeckleInputSource.KeyboardRollup))]
-    public void AnInputRollupCarriesTheSummaryTag(string eventName)
+    [Fact]
+    public void AnInputRollupCarriesTheSummaryTag()
     {
+        const string eventName = nameof(DeckleInputSource.KeyboardRollup);
         MethodInfo method = typeof(DeckleInputSource).GetMethod(eventName)!;
         EventAttribute attribute = method.GetCustomAttribute<EventAttribute>()!;
 

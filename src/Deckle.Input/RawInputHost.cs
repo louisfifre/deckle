@@ -24,7 +24,6 @@ namespace Deckle.Input;
 public sealed class RawInputHost : IDisposable
 {
     private const string ClassName = "DeckleInputHost";
-    private const double RollupPeriodMs = 5000;
     private const int StopTimeoutMs = 3000;
 
     private static readonly Stopwatch s_clock = Stopwatch.StartNew();
@@ -43,15 +42,6 @@ public sealed class RawInputHost : IDisposable
     private IntPtr _rawBuffer;
     private int _rawBufferSize;
     private byte[] _hidPayload = new byte[256];
-
-    // Rollup accumulators — input thread only.
-    private double _rollupStartMs = -1;
-    private double _lastFrameMs = -1;
-    private int _rollupFrames;
-    private int _rollupFragmented;
-    private int _rollupMaxTips;
-    private double _rollupMaxGapMs;
-    private long _rollupOrphans, _rollupFlushes, _rollupMismatches;
 
     private volatile bool _running;
 
@@ -481,62 +471,7 @@ public sealed class RawInputHost : IDisposable
             var frame = device.Assembler.Add(report, now);
             if (frame is null) continue;
 
-            TrackRollup(frame, device.Assembler);
             FrameAssembled?.Invoke(frame);
         }
-    }
-
-    private void TrackRollup(ContactFrame frame, ContactFrameAssembler assembler)
-    {
-        if (!DeckleInputSource.IsInputActivitySummaryEnabled(
-                System.Diagnostics.Tracing.EventLevel.Verbose,
-                (System.Diagnostics.Tracing.EventKeywords)Deckle.Diagnostics.Keywords.Heartbeat))
-        {
-            _rollupStartMs = -1;
-            return;
-        }
-
-        if (_rollupStartMs < 0)
-        {
-            _rollupStartMs = frame.TimestampMs;
-            _lastFrameMs = frame.TimestampMs;
-            _rollupFrames = 0;
-            _rollupFragmented = 0;
-            _rollupMaxTips = 0;
-            _rollupMaxGapMs = 0;
-            _rollupOrphans = assembler.OrphanContinuations;
-            _rollupFlushes = assembler.IncompleteFlushes;
-            _rollupMismatches = assembler.ScanTimeMismatches;
-        }
-
-        _rollupFrames++;
-        if (frame.ReportCount > 1) _rollupFragmented++;
-        int tips = frame.TipCount;
-        if (tips > _rollupMaxTips) _rollupMaxTips = tips;
-        double gap = frame.TimestampMs - _lastFrameMs;
-        if (gap > _rollupMaxGapMs) _rollupMaxGapMs = gap;
-        _lastFrameMs = frame.TimestampMs;
-
-        double elapsed = frame.TimestampMs - _rollupStartMs;
-        if (elapsed < RollupPeriodMs) return;
-
-        DeckleInputSource.Log.FrameRollup(
-            _rollupFrames,
-            Math.Round(_rollupFrames * 1000.0 / elapsed, 1),
-            Math.Round(_rollupMaxGapMs, 1),
-            _rollupMaxTips,
-            _rollupFragmented,
-            assembler.OrphanContinuations - _rollupOrphans,
-            assembler.IncompleteFlushes - _rollupFlushes,
-            assembler.ScanTimeMismatches - _rollupMismatches);
-
-        _rollupStartMs = frame.TimestampMs;
-        _rollupFrames = 0;
-        _rollupFragmented = 0;
-        _rollupMaxTips = 0;
-        _rollupMaxGapMs = 0;
-        _rollupOrphans = assembler.OrphanContinuations;
-        _rollupFlushes = assembler.IncompleteFlushes;
-        _rollupMismatches = assembler.ScanTimeMismatches;
     }
 }
