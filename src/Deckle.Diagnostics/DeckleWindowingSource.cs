@@ -212,9 +212,13 @@ public sealed class DeckleWindowingSource : DeckleEventSource
     //
     // Not governed: it fires at most once per window per process and costs
     // one Stopwatch, so a slow first open stays readable in a field report.
+    // A Summary record, so that it reaches log.jsonl, where the measurement
+    // bench (scripts/bench) and a field report read it: Verbose alone stayed
+    // out of that file.
     [Event(EvtWindowLoadComplete,
            Level = EventLevel.Verbose,
            Keywords = (EventKeywords)Keywords.Windowing,
+           Tags = ObservationTags.Summary,
            Message = "window={0} | load_ms={1}")]
     public void WindowLoadComplete(string window, long load_ms)
     {
