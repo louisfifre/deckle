@@ -1187,6 +1187,20 @@ _Generated from `git ls-files` — do not edit by hand._
 │   │   ├── Primitives/
 │   │   │   └── ColorSpace.cs
 │   │   └── Deckle.Composition.csproj
+│   ├── Deckle.Contributions/
+│   │   ├── ContributedWalk.cs
+│   │   ├── ContributedWindow.cs
+│   │   ├── ContributionHost.cs
+│   │   ├── ContributionHost.Tray.cs
+│   │   ├── ContributionHost.Windows.cs
+│   │   ├── ContributionRegistrationException.cs
+│   │   ├── ContributionTrayEntry.cs
+│   │   ├── ContributionValidation.cs
+│   │   ├── Deckle.Contributions.csproj
+│   │   ├── DeckleContributionsSource.cs
+│   │   ├── IContribution.cs
+│   │   ├── IContributionContext.cs
+│   │   └── IContributionHostServices.cs
 │   ├── Deckle.Core/
 │   │   ├── Design/
 │   │   │   ├── Dpi.cs
@@ -2911,6 +2925,18 @@ _Generated from `git ls-files` — do not edit by hand._
 │   │   ├── ChronoTimerTests.cs
 │   │   ├── Deckle.Chrono.Tests.csproj
 │   │   ├── DeckleChronoSourceTests.cs
+│   │   └── MessageTemplateDoctrineTests.cs
+│   ├── Deckle.Contributions.Tests/
+│   │   ├── Fakes/
+│   │   │   ├── FakeContribution.cs
+│   │   │   └── FakeHostServices.cs
+│   │   ├── AssemblyInfo.cs
+│   │   ├── ContributionObservabilityTests.cs
+│   │   ├── ContributionRegistrationTests.cs
+│   │   ├── ContributionTrayTests.cs
+│   │   ├── ContributionWindowTests.cs
+│   │   ├── Deckle.Contributions.Tests.csproj
+│   │   ├── DeckleContributionsSourceEventIdTests.cs
 │   │   └── MessageTemplateDoctrineTests.cs
 │   ├── Deckle.Core.Tests/
 │   │   ├── Deckle.Core.Tests.csproj

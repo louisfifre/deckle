@@ -1,0 +1,28 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <RootNamespace>Deckle.Contributions</RootNamespace>
+    <!-- Window is a WinUI 3 type, so the contract needs the Microsoft.WinUI
+         reference the WindowsAppSDK package surfaces under UseWinUI. The
+         project ships no XAML page or resource of its own, so no PRI. -->
+    <UseWinUI>true</UseWinUI>
+    <!-- EventSource [Event] parameters intentionally use snake_case
+         so the ETW payload keys land directly in the JSONL output. -->
+    <NoWarn>$(NoWarn);IDE1006</NoWarn>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <PackageReference Include="Microsoft.WindowsAppSDK" />
+    <PackageReference Include="Microsoft.Windows.SDK.BuildTools" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\Deckle.Core\Deckle.Core.csproj" />
+    <ProjectReference Include="..\Deckle.Diagnostics\Deckle.Diagnostics.csproj" />
+    <ProjectReference Include="..\Deckle.Modules\Deckle.Modules.csproj" />
+  </ItemGroup>
+
+  <!-- The contract a module uses to join an executable's composition (what it
+       contributes: windows, self-check walks, start hooks), and the host
+       runner that turns a composition into lazy windows and tray entries.
+       Support, not a domain: it knows no module by name. -->
+</Project>
