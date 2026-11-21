@@ -17,13 +17,24 @@ namespace Deckle.App;
 // fails its image, and so the run.
 public partial class App
 {
+    // Run by the harness through AtelierContribution. With a view for target,
+    // the walk is played up to it and ends there (SelfCheckWalkGate): that end
+    // is not a failure.
+    internal async Task RunAtelierWalkAsync(SelfCheckWalkContext context)
+    {
+        var gate = new SelfCheckWalkGate(context.TargetView);
+        try { await WalkAtelierAsync(context.Report, context.Run, context.OutputFolder, context.Step, gate); }
+        catch (OperationCanceledException) when (gate.Done) { }
+        if (context.TargetView is not null && !gate.Reached) context.Report.Views = gate.Offered;
+    }
+
     private async Task WalkAtelierAsync(
         SelfCheckReport report, InterfaceCaptureRun run, string outputFolder, Action<string> step,
         SelfCheckWalkGate gate)
     {
         UseReviewPhotoDescriptions();
         var clock = System.Diagnostics.Stopwatch.StartNew();
-        AtelierWindow window = EnsureAtelierWindow();
+        var window = (AtelierWindow)PublishedHost.Ensure("atelier");
         OffscreenWindow.ShowInactive(window);
         bool loaded = await WaitUntilLoadedAsync(window);
 

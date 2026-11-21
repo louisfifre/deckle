@@ -19,15 +19,15 @@ public partial class App
 
     private async Task CaptureTaskbarIconsAsync(SelfCheckReport report, string captures, string outputFolder)
     {
-        (string Name, Func<Microsoft.UI.Xaml.Window> Window)[] windows =
-        [
+        var windows = new List<(string Name, Func<Microsoft.UI.Xaml.Window> Window)>
+        {
             ("settings", EnsureSettingsWindow),
             ("log", EnsureLogWindow),
             ("transcribe-rewrite", EnsureTranscribeRewriteWindow),
-            ("mail", EnsureMailWindow),
-            ("atelier", EnsureAtelierWindow),
-            ("projects", EnsureProjectsWindow),
-        ];
+        };
+        foreach (string name in PublishedHost.WindowNames)
+            windows.Add((name, () => PublishedHost.Ensure(name)));
+        windows.Add(("projects", EnsureProjectsWindow));
         foreach ((string name, Func<Microsoft.UI.Xaml.Window> window) in windows)
         {
             nint hwnd = WindowNative.GetWindowHandle(window());

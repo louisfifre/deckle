@@ -23,12 +23,22 @@ internal sealed record SelfCheckTarget(string Window, string? View)
 
     // The windows a full run walks, in walk order. The verdict requires each
     // of them of a full run, and the one named of a targeted run.
+    // The contributed windows (PublishedComposition) walk after the host's
+    // own, before Projects, in composition order.
     public static readonly string[] Windows =
-        ["settings", "log", "transcribe-rewrite", "paste-to-folder", "mail", "atelier", "projects"];
+    [
+        "settings", "log", "transcribe-rewrite", "paste-to-folder",
+        .. PublishedComposition.Walks.Select(w => w.WindowName),
+        "projects",
+    ];
 
     // The windows whose walk shows more than one view.
     private static readonly string[] WithViews =
-        ["settings", "transcribe-rewrite", "paste-to-folder", "mail", "atelier", "projects"];
+    [
+        "settings", "transcribe-rewrite", "paste-to-folder",
+        .. PublishedComposition.Walks.Where(w => w.HasViews).Select(w => w.WindowName),
+        "projects",
+    ];
 
     public string Name => View is null ? Window : $"{Window}/{View}";
 

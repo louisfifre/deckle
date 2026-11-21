@@ -594,6 +594,11 @@ _Generated from `git ls-files` — do not edit by hand._
 │   │   │       └── speech.wav
 │   │   ├── AtelierPhotoDescriptions/
 │   │   │   └── LlmPhotoDescriptionModel.cs
+│   │   ├── Composition/
+│   │   │   ├── AtelierContribution.cs
+│   │   │   ├── MailContribution.cs
+│   │   │   ├── PublishedComposition.cs
+│   │   │   └── SelfCheckWalkContext.cs
 │   │   ├── Diagnostics/
 │   │   │   ├── AppDiagnosticsBootstrap.cs
 │   │   │   ├── AppHudFeedbackSink.cs
@@ -644,6 +649,7 @@ _Generated from `git ls-files` — do not edit by hand._
 │   │   ├── App.Anytype.cs
 │   │   ├── App.Autocorrect.cs
 │   │   ├── App.Autocorrect.Lifecycle.cs
+│   │   ├── App.Contributions.cs
 │   │   ├── App.DeveloperAccess.cs
 │   │   ├── App.Hotkeys.Actions.cs
 │   │   ├── App.Hotkeys.cs
@@ -670,6 +676,7 @@ _Generated from `git ls-files` — do not edit by hand._
 │   │   ├── App.SelfCheck.cs
 │   │   ├── App.SelfCheck.Diagnostics.cs
 │   │   ├── App.SelfCheck.Icons.cs
+│   │   ├── App.SelfCheck.Mail.cs
 │   │   ├── App.SelfCheck.Projects.Category.cs
 │   │   ├── App.SelfCheck.Projects.cs
 │   │   ├── App.SelfCheck.Projects.Home.cs

@@ -10,7 +10,7 @@ public partial class App
     private void ApplyRecordingStateToWindows(bool isRecording)
     {
         _logWindow?.SetRecordingState(isRecording);
-        _mailWindow?.SetRecordingState(isRecording);
+        _publishedHost?.SetRecordingState(isRecording);
         _settingsWindow?.SetRecordingState(isRecording);
     }
 
@@ -85,41 +85,6 @@ public partial class App
             DeckleWindowingSource.Log.WindowLoadComplete("settings", sw.ElapsedMilliseconds);
         }
         return _settingsWindow;
-    }
-
-    // The Deckle Mail window, on its built-in sample until the engine is
-    // wired. A preview for the maintainer: it opens only under the developer
-    // setting, and no module or setting of its
-    // own registers it yet (that comes with the real engine).
-    private void ShowMailLazy()
-    {
-        if (!DeveloperModeEnabled) return;
-        EnsureMailWindow().ShowAndActivate();
-        DeckleAppSource.Log.WindowOpened("mail");
-    }
-
-    private Mail.Hub.MailWindow EnsureMailWindow()
-    {
-        if (_mailWindow is null)
-        {
-            // Not gated: one Stopwatch per window per process, and the provider
-            // declares this milestone ungoverned.
-            var sw = Stopwatch.StartNew();
-            var window = CreateWindowOrLog("mail", () => new Mail.Hub.MailWindow());
-            SecondaryWindowPlacement.Restore(window, SecondaryWindowPlacement.Mail);
-            window.AppWindow.Closing += (_, _) =>
-                SecondaryWindowPlacement.Save(window, SecondaryWindowPlacement.Mail);
-            window.Closed += (_, _) =>
-            {
-                if (ReferenceEquals(_mailWindow, window)) _mailWindow = null;
-            };
-
-            _mailWindow = window;
-            window.SetRecordingState(_lastRecordingState);
-            ApplyThemeToSingle(window);
-            DeckleWindowingSource.Log.WindowLoadComplete("mail", sw.ElapsedMilliseconds);
-        }
-        return _mailWindow;
     }
 
     // The constructor is where XAML parsing and page composition fail. The

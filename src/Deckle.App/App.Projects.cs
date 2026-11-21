@@ -1,5 +1,4 @@
 using System.Diagnostics;
-using Deckle.Atelier.Views;
 using Deckle.Core;
 using Deckle.Diagnostics;
 using Deckle.Modules;
@@ -64,21 +63,16 @@ public partial class App
         return window;
     }
 
+    // Opens a folder in Deckle Folders: planted at start by the contribution
+    // that carries that window (AtelierContribution.Compose), null while none
+    // does.
+    internal static Func<string, Task>? OpenInFoldersHook { get; set; }
+
     // What Deckle Projects reaches in its neighbours. A hook left null makes its
     // button absent from the page, so "Open in Deckle Folders" exists only while
-    // the Atelier module does.
-    private ProjectsHooks BuildProjectsHooks() => new()
+    // a contribution plants it.
+    private static ProjectsHooks BuildProjectsHooks() => new()
     {
-        OpenInFolders = AtelierPresent ? OpenInDeckleFoldersAsync : null,
+        OpenInFolders = OpenInFoldersHook,
     };
-
-    // Deckle Folders on a folder it does not hold yet adds it there, then shows
-    // it (spec, Open in).
-    private async Task OpenInDeckleFoldersAsync(string path)
-    {
-        if (!AtelierPresent) return;
-        AtelierWindow window = EnsureAtelierWindow();
-        window.ShowAndActivate();
-        await window.OpenFolderAsync(path);
-    }
 }

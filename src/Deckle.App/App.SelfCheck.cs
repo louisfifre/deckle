@@ -1,5 +1,6 @@
 using System.Runtime.InteropServices;
 using Deckle.App.SelfCheck;
+using Deckle.Contributions;
 using Deckle.Core;
 using Deckle.Diagnostics;
 using Deckle.Diagnostics.Logging;
@@ -411,77 +412,17 @@ public partial class App
             report.Save(outputFolder);
         }
 
-        if (Wants("mail"))
+        // The contributed windows (PublishedComposition), in composition order:
+        // Mail, then the Atelier. Each walk is told its window's name and the
+        // view asked for; one that ends on a targeted view without a failure
+        // says so itself.
+        foreach (ContributedWalk walk in PublishedHost.Walks)
         {
-            // The Mail window on its built-in sample: the window once, then each
-            // state the maintainer drew, page by page (MailWindow.Capture.cs), with
-            // the whole window again where the rail or the title bar changes.
-            Step("mail");
-            Mail.Hub.MailWindow mail = EnsureMailWindow();
-            OffscreenWindow.ShowInactive(mail);
-            await WaitUntilLoadedAsync(mail);
-            // A view that the walk does not have is answered with the ones it
-            // has, and nothing is walked.
-            string? onlyView = target?.View;
-            if (onlyView is not null && !Mail.Hub.MailWindow.CaptureSlugs.Contains(onlyView))
-                report.Views = [.. Mail.Hub.MailWindow.CaptureSlugs];
-            else await mail.WalkCapturesAsync(
-                async visit =>
-                {
-                    // A menu, flyout or dialog left open on purpose is the subject
-                    // of the step: the window is photographed with it, and the
-                    // walk closes it afterwards.
-                    if (visit.KeepsPopup)
-                    {
-                        report.Surfaces.Add(await CaptureWindowFrameAsync(
-                            run, mail, "mail", visit.Slug, visit.Label, visit.Loaded, visit.LoadMs));
-                        Step($"mail/{visit.Slug} done");
-                        return;
-                    }
-                    (int closed, int left) = await CloseTransientPopupsAsync(mail);
-                    SelfCheckSurface surface = new("mail", visit.Slug, visit.Label, visit.Loaded, visit.LoadMs, null,
-                        closed, left, "page-render");
-                    if (visit.Loaded && mail.CurrentPage is { } page)
-                    {
-                        try
-                        {
-                            ElementImage.Result image = await ElementImage.CapturePageAsync(
-                                page, Path.Combine(captures, $"mail-{visit.Slug}"));
-                            string[] files = [.. image.Files.Select(f => Path.GetRelativePath(outputFolder, f))];
-                            surface = surface with
-                            {
-                                Png = files[0],
-                                Parts = files.Length > 1 ? files : null,
-                                Width = image.Width,
-                                Height = image.Height,
-                            };
-                        }
-                        catch (Exception ex)
-                        {
-                            surface = surface with { Error = $"{ex.GetType().Name}: {ex.Message}" };
-                        }
-                    }
-                    report.Surfaces.Add(surface);
-                    if (visit.WholeWindow)
-                        report.Surfaces.Add(await CaptureWindowFrameAsync(
-                            run, mail, "mail", $"{visit.Slug}-window", visit.Label, visit.Loaded, visit.LoadMs));
-                    Step($"mail/{visit.Slug} done");
-                },
-                starting: (slug, label) => Step($"mail/{slug} ({label})"),
-                only: onlyView);
+            if (!Wants(walk.WindowName)) continue;
+            Step(walk.WindowName);
+            await walk.Run(new SelfCheckWalkContext(
+                this, report, run, outputFolder, target?.View, Step));
         }
-
-        if (Wants("atelier"))
-        {
-            Step("atelier");
-            // With a view for target, the walk is played up to it and ends
-            // there (SelfCheckWalkGate): that end is not a failure.
-            var gate = new SelfCheckWalkGate(target?.View);
-            try { await WalkAtelierAsync(report, run, outputFolder, Step, gate); }
-            catch (OperationCanceledException) when (gate.Done) { }
-            if (target?.View is not null && !gate.Reached) report.Views = gate.Offered;
-        }
-
         if (Wants("projects"))
         {
             Step("projects");

@@ -46,9 +46,14 @@ public partial class App
 
         int windows = 0;
         foreach (var window in new Microsoft.UI.Xaml.Window?[]
-                 { app._settingsWindow, app._mailWindow, app._logWindow, app._hudWindow, app._transcriptPanel })
+                 { app._settingsWindow, app._logWindow, app._hudWindow, app._transcriptPanel })
         {
             if (window is null) continue;
+            ApplyThemeToSingle(window, source);
+            windows++;
+        }
+        foreach (Microsoft.UI.Xaml.Window window in app._publishedHost?.OpenWindows ?? [])
+        {
             ApplyThemeToSingle(window, source);
             windows++;
         }
