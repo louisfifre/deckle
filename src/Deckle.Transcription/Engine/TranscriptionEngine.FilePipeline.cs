@@ -133,22 +133,29 @@ public sealed partial class TranscriptionEngine
         }
     }
 
-    private static void HandleDecodeFailure(string path, AudioFileDecodeResult decoded)
+    internal static void HandleDecodeFailure(string path, AudioFileDecodeResult decoded)
     {
         var (title, body) = LocalizeDecodeFailure(decoded.Status);
         // The status is the cause here; no exception was thrown.
-        DeckleWhispSource.Log.FileDecodeFailed(Path.GetFileName(path), decoded.Status.ToString(), "", "");
+        DeckleWhispSource.Log.FileDecodeFailed(decoded.Status.ToString(), "", "");
+        DeckleWhispSource.Log.FileDecodeFailedDetail(Path.GetFileName(path));
         EmitUserFeedback(FB_ERROR, title, body, FB_OVERLAY);
     }
 
-    private static void HandleDecodeException(string path, Exception exception)
+    internal static void HandleDecodeException(string path, Exception exception)
     {
         var (title, body) = LocalizeDecodeFailure(AudioFileDecodeStatus.ReadError);
+        // An I/O exception message usually quotes the path it failed on, so the
+        // file's path and name are masked before the message reaches the default log.
+        string fileName = Path.GetFileName(path);
+        string message = exception.Message.Replace(path, "<file>", StringComparison.OrdinalIgnoreCase);
+        if (fileName.Length > 0)
+            message = message.Replace(fileName, "<file>", StringComparison.OrdinalIgnoreCase);
         DeckleWhispSource.Log.FileDecodeFailed(
-            Path.GetFileName(path),
             AudioFileDecodeStatus.ReadError.ToString(),
             exception.GetType().Name,
-            exception.Message);
+            message);
+        DeckleWhispSource.Log.FileDecodeFailedDetail(fileName);
         EmitUserFeedback(FB_ERROR, title, body, FB_OVERLAY);
     }
 
@@ -175,10 +182,11 @@ public sealed partial class TranscriptionEngine
             // batch's Starting → Transcribing edge yet: a later valid file still
             // needs to publish the one Transcribing status that moves the HUD out
             // of Charging.
-            string file = Path.GetFileName(prepared.SourcePath);
             if (prepared.Audio.Length == 0)
             {
-                DeckleWhispSource.Log.FileTranscriptionEmpty(prepared.Index, files, file);
+                DeckleWhispSource.Log.FileTranscriptionEmpty(prepared.Index, files);
+                DeckleWhispSource.Log.FileTranscriptionEmptyDetail(
+                    prepared.Index, Path.GetFileName(prepared.SourcePath));
                 continue;
             }
 
@@ -227,7 +235,6 @@ public sealed partial class TranscriptionEngine
                     production = await TranscribePreparedFileAsync(
                         prepared,
                         files,
-                        file,
                         primeTask,
                         first,
                         cancellationToken).ConfigureAwait(false);
@@ -274,7 +281,7 @@ public sealed partial class TranscriptionEngine
                 // The batch worker remains alive and the next prepared file uses
                 // a fresh segmented session.
                 DeckleWhispSource.Log.FileTranscriptionFailed(
-                    prepared.Index, files, file, "exception", ex.GetType().Name, ex.Message);
+                    prepared.Index, files, "exception", ex.GetType().Name, ex.Message);
                 EmitUserFeedback(FB_ERROR,
                     Loc.Get("Engine_TranscriptionFailed_Title"),
                     Loc.Get("Engine_TranscriptionFailed_Body"),
@@ -289,7 +296,6 @@ public sealed partial class TranscriptionEngine
     private async Task<PipelineProduction?> TranscribePreparedFileAsync(
         PreparedFileTranscription prepared,
         int files,
-        string file,
         Task<bool> primeTask,
         bool announceTranscribing,
         CancellationToken cancellationToken)
@@ -301,7 +307,7 @@ public sealed partial class TranscriptionEngine
             // null, so no later file reports the same closed gate. The causes
             // are on the WarmupTestFailed lines.
             DeckleWhispSource.Log.FileTranscriptionFailed(
-                prepared.Index, files, file, "transcription_unavailable", "", "");
+                prepared.Index, files, "transcription_unavailable", "", "");
             EmitTranscriptionUnavailable();
             EndTake(TakeOutcomes.Failed, TakeEndReasons.TranscriptionUnavailable);
             return null;
@@ -311,7 +317,7 @@ public sealed partial class TranscriptionEngine
         {
             // The load cause sits on ModelUnavailable; this names the file it
             // cost, and LoadModel gave the person the one message.
-            DeckleWhispSource.Log.FileTranscriptionFailed(prepared.Index, files, file, "model_not_ready", "", "");
+            DeckleWhispSource.Log.FileTranscriptionFailed(prepared.Index, files, "model_not_ready", "", "");
             RaiseStatus(StatusPhase.ModelNotReady, Loc.Get("Status_ModelNotReady"));
             EndTake(TakeOutcomes.Failed, TakeEndReasons.ModelNotReady);
             return null;
@@ -348,7 +354,7 @@ public sealed partial class TranscriptionEngine
         if (consumed.Incomplete)
         {
             // The per-utterance cause is on UtteranceSkipped or ConsumerUtterance.
-            DeckleWhispSource.Log.FileTranscriptionFailed(prepared.Index, files, file, "incomplete", "", "");
+            DeckleWhispSource.Log.FileTranscriptionFailed(prepared.Index, files, "incomplete", "", "");
             EmitUserFeedback(FB_ERROR,
                 Loc.Get("Engine_TranscriptionFailed_Title"),
                 Loc.Get("Engine_TranscriptionFailed_Body"),

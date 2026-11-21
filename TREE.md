@@ -3470,6 +3470,7 @@ _Generated from `git ls-files` — do not edit by hand._
 │   │   ├── EnergySegmenterTests.cs
 │   │   ├── EngineChoiceSettingsTests.cs
 │   │   ├── FileBatchLifecycleTests.cs
+│   │   ├── FileDecodeFailureLogTests.cs
 │   │   ├── FileToTextTests.cs
 │   │   ├── FileTranscriptionQueueTests.cs
 │   │   ├── FileTranscriptionResultTests.cs
