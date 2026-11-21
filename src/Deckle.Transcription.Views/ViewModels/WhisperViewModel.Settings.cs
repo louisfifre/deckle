@@ -181,6 +181,9 @@ public partial class WhisperViewModel
                     () => NoSpeechThreshold,
                     value => NoSpeechThreshold = value,
                     new MagnitudeArgs(0.05, 0.80, Slider: false),
+                    // Whisper's own cut-off: Parakeet does not read it, so the
+                    // card is hidden while another engine is chosen.
+                    visibleWhen: () => IsWhisperChosen,
                     defaultValue: () => new ConfidenceSettings().NoSpeechThreshold),
             ]),
     ];

@@ -17,6 +17,10 @@ public sealed partial class DecodingPage : Page
 
     private readonly List<SettingsComposer> _composers = new();
 
+    // The composer of the silence guards: the one fold of this page that Parakeet
+    // shares with Whisper (the Silero trim).
+    private SettingsComposer? _silenceGuardsComposer;
+
     public DecodingPage()
     {
         InitializeComponent();
@@ -27,34 +31,56 @@ public sealed partial class DecodingPage : Page
         // the cached page.
         Compose(DecodingHost, ViewModel.DecodingSettingsManifest);
         Compose(ConfidenceHost, ViewModel.ConfidenceSettingsManifest);
-        Compose(SilenceGuardsHost, ViewModel.SilenceGuardSettings);
+        _silenceGuardsComposer = Compose(SilenceGuardsHost, ViewModel.SilenceGuardSettings);
         Compose(OutputFiltersHost, ViewModel.OutputFilterSettingsManifest);
         Compose(ContextHost, ViewModel.ContextSettingsManifest);
     }
 
-    private void Compose(Panel host, IReadOnlyList<SettingDescriptor> settings)
+    private SettingsComposer Compose(Panel host, IReadOnlyList<SettingDescriptor> settings)
     {
         var composer = new SettingsComposer(host, ViewModel);
         composer.DirtyChanged += (_, _) => GateResetAll();
         composer.Compose(settings);
         _composers.Add(composer);
+        return composer;
     }
 
     protected override void OnNavigatedTo(NavigationEventArgs e)
     {
         base.OnNavigatedTo(e);
         ViewModel.Load();
+        ApplyEngineVisibility();
         // Load() may raise no PropertyChanged on a clean profile, so no composer
         // DirtyChanged would fire — settle the gate off the freshly-loaded values.
         GateResetAll();
     }
 
-    // Active-when-dirty over every composer; the header asks before firing.
+    // Whisper parameters apply to Whisper alone: while another engine is chosen
+    // their sections are hidden (a setting that does not apply is hidden, never
+    // greyed) and a note says why. Their values stay as they were.
+    private void ApplyEngineVisibility()
+    {
+        Visibility whisper = ViewModel.IsWhisperChosen ? Visibility.Visible : Visibility.Collapsed;
+        DecodingSection.Visibility = whisper;
+        ConfidenceSection.Visibility = whisper;
+        OutputFiltersSection.Visibility = whisper;
+        ContextSection.Visibility = whisper;
+        WhisperOnlyInfoBar.IsOpen = !ViewModel.IsWhisperChosen;
+    }
+
+    // The composers the person can see: every one for Whisper, the silence
+    // guards alone otherwise, so Reset all never rewrites a value the page hides.
+    private IEnumerable<SettingsComposer> VisibleComposers() =>
+        ViewModel.IsWhisperChosen
+            ? _composers
+            : _composers.Where(c => c == _silenceGuardsComposer);
+
+    // Active-when-dirty over the visible composers; the header asks before firing.
     private void GateResetAll() =>
-        Header.IsResetAllEnabled = _composers.Any(c => c.IsDirty());
+        Header.IsResetAllEnabled = VisibleComposers().Any(c => c.IsDirty());
 
     private void ResetAll_Click(object sender, RoutedEventArgs e)
     {
-        foreach (SettingsComposer composer in _composers) composer.ResetAll();
+        foreach (SettingsComposer composer in VisibleComposers().ToList()) composer.ResetAll();
     }
 }
