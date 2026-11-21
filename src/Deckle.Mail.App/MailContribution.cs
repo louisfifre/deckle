@@ -2,12 +2,12 @@ using Deckle.Contributions;
 using Deckle.Mail.Hub;
 using Deckle.Modules;
 
-namespace Deckle.App;
+namespace Deckle.Mail.App;
 
 // The Deckle Mail window, on its built-in sample until the engine is wired. A
-// preview for the maintainer: it opens only under the developer setting, and
-// no module or setting of its own registers it yet (that comes with the real
-// engine), hence no descriptor.
+// preview for the maintainer: it lives in its own app, so the published Deckle
+// carries nothing of it, and no module or setting of its own registers it yet
+// (that comes with the real engine), hence no descriptor and no tray entry.
 internal sealed class MailContribution : IContribution
 {
     public string Id => "mail";
@@ -21,8 +21,6 @@ internal sealed class MailContribution : IContribution
             Name = "mail",
             Create = () => new MailWindow(),
             Show = window => ((MailWindow)window).ShowAndActivate(),
-            TrayLabelKey = "TrayMenu_Mail",
-            DeveloperOnly = true,
             SetRecordingState = (window, isRecording) => ((MailWindow)window).SetRecordingState(isRecording),
         },
     ];
@@ -36,11 +34,7 @@ internal sealed class MailContribution : IContribution
         {
             WindowName = "mail",
             ShowsViewsAtRun = true,
-            Run = context =>
-            {
-                SelfCheckWalkContext walk = SelfCheckWalkContext.From(context);
-                return walk.App.WalkMailAsync(walk);
-            },
+            Run = context => MailSelfCheck.WalkAsync(MailWalkContext.From(context)),
         },
     ];
 

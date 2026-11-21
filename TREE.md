@@ -596,7 +596,6 @@ _Generated from `git ls-files` — do not edit by hand._
 │   │   │   └── LlmPhotoDescriptionModel.cs
 │   │   ├── Composition/
 │   │   │   ├── AtelierContribution.cs
-│   │   │   ├── MailContribution.cs
 │   │   │   ├── PublishedComposition.cs
 │   │   │   └── SelfCheckWalkContext.cs
 │   │   ├── Diagnostics/
@@ -673,7 +672,6 @@ _Generated from `git ls-files` — do not edit by hand._
 │   │   ├── App.SelfCheck.cs
 │   │   ├── App.SelfCheck.Diagnostics.cs
 │   │   ├── App.SelfCheck.Icons.cs
-│   │   ├── App.SelfCheck.Mail.cs
 │   │   ├── App.SelfCheck.Projects.Category.cs
 │   │   ├── App.SelfCheck.Projects.cs
 │   │   ├── App.SelfCheck.Projects.Home.cs
@@ -1801,6 +1799,17 @@ _Generated from `git ls-files` — do not edit by hand._
 │   │   │   ├── TaskDayProposal.cs
 │   │   │   └── TriageList.cs
 │   │   └── Deckle.Mail.csproj
+│   ├── Deckle.Mail.App/
+│   │   ├── app.manifest
+│   │   ├── App.SelfCheck.cs
+│   │   ├── App.xaml
+│   │   ├── App.xaml.cs
+│   │   ├── Composition.cs
+│   │   ├── Deckle.Mail.App.csproj
+│   │   ├── DeckleMailAppSource.cs
+│   │   ├── MailContribution.cs
+│   │   ├── MailSelfCheck.cs
+│   │   └── Program.cs
 │   ├── Deckle.Mail.Hub/
 │   │   ├── Data/
 │   │   │   ├── ActivityEntry.cs
@@ -3240,6 +3249,10 @@ _Generated from `git ls-files` — do not edit by hand._
 │   │   ├── ImageRequestTests.cs
 │   │   ├── LlmUsageLogTests.cs
 │   │   └── ReasoningOnTheWireTests.cs
+│   ├── Deckle.Mail.App.Tests/
+│   │   ├── Deckle.Mail.App.Tests.csproj
+│   │   ├── DeckleMailAppSourceTests.cs
+│   │   └── MailAppIdentityTests.cs
 │   ├── Deckle.Mail.Hub.Tests/
 │   │   ├── Deckle.Mail.Hub.Tests.csproj
 │   │   ├── MessageTemplateDoctrineTests.cs

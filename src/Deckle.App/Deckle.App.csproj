@@ -154,7 +154,6 @@
     <ProjectReference Include="..\Deckle.Llm\Deckle.Llm.csproj" />
     <ProjectReference Include="..\Deckle.Llm.Rewrite\Deckle.Llm.Rewrite.csproj" />
     <ProjectReference Include="..\Deckle.Llm.Rewrite.Views\Deckle.Llm.Rewrite.Views.csproj" />
-    <ProjectReference Include="..\Deckle.Mail.Hub\Deckle.Mail.Hub.csproj" />
     <ProjectReference Include="..\Deckle.Modules\Deckle.Modules.csproj" />
     <ProjectReference Include="..\Deckle.Notifications\Deckle.Notifications.csproj" />
     <ProjectReference Include="..\Deckle.Orchestration\Deckle.Orchestration.csproj" />

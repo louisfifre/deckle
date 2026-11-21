@@ -13,11 +13,11 @@ namespace Deckle.App.Tests;
 public sealed class TrayDeveloperMenuTests
 {
     // The lines the composition's windows ask for, as the host hands them over.
-    private static IReadOnlyList<ContributionTrayEntry> Contributed(bool atelier = true, Action? onMail = null)
+    private static IReadOnlyList<ContributionTrayEntry> Contributed(bool atelier = true, Action? onPreview = null)
     {
         var entries = new List<ContributionTrayEntry>
         {
-            new("mail", "TrayMenu_Mail", onMail ?? (() => { })),
+            new("preview", "TrayMenu_Preview", onPreview ?? (() => { })),
         };
         if (atelier) entries.Add(new("atelier", "TrayMenu_Atelier", () => { }));
         return entries;
@@ -35,7 +35,7 @@ public sealed class TrayDeveloperMenuTests
     public void TheMenuHoldsTheAlphaSurfacesThenTheCaptureThenLogsAndRestart()
     {
         Assert.Equal(
-            ["mail", "atelier", "projects", "capture-interface", "logs", "restart"],
+            ["preview", "atelier", "projects", "capture-interface", "logs", "restart"],
             CommandIds(Compose(showAtelier: true)));
     }
 
@@ -43,7 +43,7 @@ public sealed class TrayDeveloperMenuTests
     public void AContributedEntryIsAbsentWhenTheHostDroppedIt()
     {
         Assert.Equal(
-            ["mail", "projects", "capture-interface", "logs", "restart"],
+            ["preview", "projects", "capture-interface", "logs", "restart"],
             CommandIds(Compose(showAtelier: false)));
     }
 
@@ -51,7 +51,7 @@ public sealed class TrayDeveloperMenuTests
     public void TheProjectsEntryIsAbsentWhenItsModuleIs()
     {
         Assert.Equal(
-            ["mail", "atelier", "capture-interface", "logs", "restart"],
+            ["preview", "atelier", "capture-interface", "logs", "restart"],
             CommandIds(Compose(showAtelier: true, showProjects: false)));
     }
 
@@ -60,7 +60,7 @@ public sealed class TrayDeveloperMenuTests
     {
         IReadOnlyList<TrayMenuEntry> entries = Compose(showAtelier: true);
 
-        Assert.Equal("TrayMenu_Mail", ((TrayMenuCommand)entries[0]).Label());
+        Assert.Equal("TrayMenu_Preview", ((TrayMenuCommand)entries[0]).Label());
         Assert.Equal("TrayMenu_Atelier", ((TrayMenuCommand)entries[1]).Label());
     }
 
@@ -90,7 +90,7 @@ public sealed class TrayDeveloperMenuTests
         var ran = new List<string>();
         IReadOnlyList<TrayMenuEntry> entries = TrayDeveloperMenu.Compose(
             [
-                new("mail", "TrayMenu_Mail", () => ran.Add("mail")),
+                new("preview", "TrayMenu_Preview", () => ran.Add("preview")),
                 new("atelier", "TrayMenu_Atelier", () => ran.Add("atelier")),
             ],
             true, key => key,
@@ -100,6 +100,6 @@ public sealed class TrayDeveloperMenuTests
         foreach (TrayMenuCommand command in entries.OfType<TrayMenuCommand>())
             command.Invoke();
 
-        Assert.Equal(["mail", "atelier", "projects", "capture-interface", "logs", "restart"], ran);
+        Assert.Equal(["preview", "atelier", "projects", "capture-interface", "logs", "restart"], ran);
     }
 }

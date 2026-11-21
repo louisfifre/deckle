@@ -7,7 +7,7 @@
     with --self-check on a fresh data root of its own, waits for it, and reads
     the report.json it writes. The app opens its Settings window, walks every
     page, opens the Log window, the small Transcribe and rewrite and Paste to
-    folder windows, the Mail window, the Atelier and Deckle Projects,
+    folder windows, the Atelier and Deckle Projects,
     probes the microphone once and exits (see src/Deckle.App/App.SelfCheck.cs for what it composes and why).
 
     It runs beside the maintainer's resident Deckle: it takes no mutex of the
@@ -23,11 +23,11 @@
     script: 0 passed, 1 failed.
 .PARAMETER Only
     Check one thing instead of everything: a window (settings, log,
-    transcribe-rewrite, paste-to-folder, mail, atelier, projects) or one view
-    of Settings, Mail, the Atelier, Projects or a small window's states, named
-    as its image is in a full run: settings/general, mail/activity,
+    transcribe-rewrite, paste-to-folder, atelier, projects) or one view
+    of Settings, the Atelier, Projects or a small window's states, named
+    as its image is in a full run: settings/general,
     atelier/photos-gallery, projects/p3, paste-to-folder/full (its states:
-    empty, list, failed, full). A Mail, Atelier or
+    empty, list, failed, full). An Atelier or
     Projects view is a state reached from the ones before it, so the walk is
     played up to it without pictures and stops there. The other windows and the microphone probe are left out, and
     "passed" then speaks of that target alone. A target that names nothing

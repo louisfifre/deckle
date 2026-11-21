@@ -723,9 +723,6 @@
   <data name="TrayMenu_Projects" xml:space="preserve">
     <value>Deckle Projects</value>
   </data>
-  <data name="TrayMenu_Mail" xml:space="preserve">
-    <value>Deckle Mail (preview)</value>
-  </data>
   <data name="TrayMenu_CaptureInterface" xml:space="preserve">
     <value>Capture the interface</value>
   </data>
