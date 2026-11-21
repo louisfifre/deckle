@@ -9,7 +9,7 @@ namespace Deckle.Atelier.Views;
 // What the details panel holds for an item of the map (board 12.8a): what it
 // is and where, its details, then its links apart from them (spec, Details
 // panel: "For an item that has links, the panel separates its details from
-// its links"): the small graph, then "Cite" and "Est cité par", which say in
+// its links"): the small graph, then "Cites" and "Cited by", which say in
 // words what the graph shows. The details come from DetailsSheet so the
 // panel opens like every other tool's; the graph and the lists are sections
 // drawn the same way (MapPanelSection).
@@ -67,7 +67,7 @@ internal static class MapDetails
                 (AtelierText.Get("Map_Details_Location"), location));
     }
 
-    // "Cite (4)" then one line per item, by name; a link both ways says so
+    // "Cites (4)" then one line per item, by name; a link both ways says so
     // after the name, in secondary text (12.8a). Plain text (Open 23).
     private static StackPanel LinkList(string titleKey, MapInventory map, IEnumerable<(MapItem Item, bool Mutual)> links)
     {

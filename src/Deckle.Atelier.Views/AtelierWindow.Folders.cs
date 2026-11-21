@@ -142,7 +142,7 @@ public sealed partial class AtelierWindow
         return parts;
     }
 
-    // "Retirer de Deckle Folders": not drawn; the spec keeps the right-click
+    // "Remove from Deckle Folders": not drawn; the spec keeps the right-click
     // free ("never by a right-click", of the icon), so the removal is a
     // button in sight, as File Explorer's own lists put a cross on an entry.
     // No confirmation: nothing on the disk changes, and adding the folder

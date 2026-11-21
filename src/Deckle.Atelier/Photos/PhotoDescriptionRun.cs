@@ -13,8 +13,8 @@ public enum PhotoDescriptionRunState
     Failed,
 }
 
-// One folder gone through photo after photo, for "Décrire le dossier" (12.4):
-// "126 sur 412 décrites", a progress bar and a way to stop (12.19).
+// One folder gone through photo after photo, for "Describe the folder" (12.4):
+// "126 of 412 described", a progress bar and a way to stop (12.19).
 //
 // Described counts the photos of the folder that have a description, the
 // ones described before the run included, so the counter reads as the

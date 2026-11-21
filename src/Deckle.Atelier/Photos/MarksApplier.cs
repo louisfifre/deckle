@@ -4,10 +4,10 @@ namespace Deckle.Atelier;
 
 public sealed record PlannedRecycle(PhotoFile Photo, IReadOnlyList<string> Sidecars);
 
-// What "Appliquer les marques…" will do, for the summary the view shows
-// before anything moves (12.6): "37 photos vont à la Corbeille de Windows ·
-// 0,9 Go", "160 photos à garder : rien ne change sur le disque", "215 photos
-// sans marque : rien ne change".
+// What "Apply marks…" will do, for the summary the view shows
+// before anything moves (12.6): "37 photos go to the Windows Recycle Bin",
+// "0.9 GB. Recoverable until the Recycle Bin is emptied.", "160 photos to
+// keep: nothing changes on the drive.", "215 unmarked photos: nothing changes."
 //
 // RecycleBytes counts the photos, as the board's weight does; their sidecars
 // weigh a few kilobytes and go with them.
@@ -19,7 +19,7 @@ public sealed record MarksPlan(
     int Unmarked,
     RenamePlan Renames)
 {
-    // Nothing to apply: the view disables "Appliquer les marques…" (12.22).
+    // Nothing to apply: the view disables "Apply marks…" (12.22).
     public bool IsEmpty => Recycles.Count == 0 && Renames.Renames.Count == 0;
 }
 
@@ -37,14 +37,14 @@ public sealed record MarksOutcome(IReadOnlyList<RecycleResult> Recycles, IReadOn
 }
 
 // Applies the marks of a folder in one step that first shows what will happen
-// (spec, Journeys and Behaviours). The photos marked "À supprimer" go to the
+// (spec, Journeys and Behaviours). The photos marked "Delete" go to the
 // Windows Recycle Bin with their darktable sidecars. The kept and unmarked
 // photos do not change (12.6), unless the caller asks for the kept ones to be
 // renamed by date in the same step: no board draws that option, so it is off
 // unless asked (Open question 28).
 //
 // After the application, the marks of recycled photos leave the store, the
-// kept marks stay (12.22 still counts "160 à garder"), and a renamed photo's
+// kept marks stay (12.22 still counts "160 to keep"), and a renamed photo's
 // mark follows its name.
 public static class MarksApplier
 {

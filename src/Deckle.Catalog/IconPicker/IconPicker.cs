@@ -12,13 +12,13 @@ namespace Deckle.Catalog;
 // host opens it under the icon it changes, as a flyout (CreateFlyout), and
 // saves each choice it reports.
 //
-// Two labels, "Icône" and "Couleur", and no title naming the item. A choice
+// Two labels, "Icon" and "Color", and no title naming the item. A choice
 // applies at once: there is no confirm button (12.3b), and ChoiceChanged
 // fires on every change, the arrow keys included, as Windows Settings applies
 // an accent swatch the moment it is selected.
 //
-// The wording belongs to the host, in its own language and its own catalog:
-// the Atelier is French, Mail is English. The picker asks it for these keys:
+// The wording belongs to the host, in its own catalog and language, not to
+// the picker. The picker asks it for these keys:
 // IconPicker_Icon, IconPicker_Color, IconPicker_Background (the row of the
 // background option), IconPicker_Background_Off, IconPicker_Background_On,
 // IconPicker_Symbol_<IconSymbol> and IconPicker_Tint_<IconTint> for every

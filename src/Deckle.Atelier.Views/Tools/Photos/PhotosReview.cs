@@ -12,7 +12,7 @@ namespace Deckle.Atelier.Views;
 // sends a file to the Recycle Bin.
 public static class PhotosReview
 {
-    // Sets the mark of the named photos as G or X would on a selection, and
+    // Sets the mark of the named photos as K or X would on a selection, and
     // waits for the store to hold it.
     public static Task MarkAsync(Window window, IEnumerable<string> names, PhotoMark mark)
     {
@@ -58,8 +58,8 @@ public static class PhotosReview
     // the folder shown. The self-check gives the app a model of its own that
     // answers what the walk wants and never reaches a server.
 
-    // "Décrire cette photo" on the selected photo; returns once its panel
-    // reads "Description en cours…" or the description has ended.
+    // "Describe this photo" on the selected photo; returns once its panel
+    // reads "Describing…" or the description has ended.
     public static async Task DescribeSelectedAsync(Window window)
     {
         (PhotoDescriptions descriptions, PhotoFile photo) = Selected(window);
@@ -67,7 +67,7 @@ public static class PhotosReview
         await Task.Delay(100);
     }
 
-    // "Arrêter" in the selected photo's panel.
+    // "Stop" in the selected photo's panel.
     public static void StopSelected(Window window)
     {
         (PhotoDescriptions descriptions, PhotoFile photo) = Selected(window);
@@ -88,7 +88,7 @@ public static class PhotosReview
         await Task.Delay(100);
     }
 
-    // "Décrire le dossier"; returns once the run is under way.
+    // "Describe the folder"; returns once the run is under way.
     public static Task DescribeFolderAsync(Window window) => Find(window).DescribeFolderAsync();
 
     // Waits until the folder's run has described at least that many photos.
@@ -104,7 +104,7 @@ public static class PhotosReview
         await Task.Delay(150);
     }
 
-    // "Arrêter" beside the folder's progress bar.
+    // "Stop describing the folder" beside the folder's progress bar.
     public static void StopFolder(Window window) => Find(window).StopFolderForReview();
 
     private static (PhotoDescriptions, PhotoFile) Selected(Window window)

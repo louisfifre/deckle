@@ -4,8 +4,8 @@
     xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
     Opacity="0">
 
-    <!-- The two actions of a row (spec, File list; 12.1): "Ouvrir dans
-         l'Explorateur" and "Mettre à la Corbeille". The control always takes
+    <!-- The two actions of a row (spec, File list; 12.1): "Show in
+         File Explorer" and "Move to Recycle Bin". The control always takes
          its width, shown or not, so no column moves when they appear, and a
          folder whose rows held other actions would line up the same. Subtle
          icon buttons, as Windows draws the commands of a list row; over a

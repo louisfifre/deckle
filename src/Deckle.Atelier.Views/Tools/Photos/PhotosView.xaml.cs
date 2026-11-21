@@ -9,7 +9,7 @@ namespace Deckle.Atelier.Views;
 // The photo tool's centre (spec, Photos; boards 12.4, 12.5, 12.6, 12.22): the
 // photos of the folder as a gallery, the counters of the marks and the
 // commands above it. A click selects and fills the panel; a double-click or
-// Enter shows the photo large; G and X mark (spec, Behaviours: a click never
+// Enter shows the photo large; K and X mark (spec, Behaviours: a click never
 // opens the item).
 //
 // Nothing here touches the disk on the UI thread: the folder is listed, the
@@ -124,7 +124,7 @@ internal sealed partial class PhotosView : UserControl, IAtelierToolView
         return new MarkCounts(_tiles.Count - keep - delete, keep, delete);
     }
 
-    // "215 sans marque · 160 à garder · 37 à supprimer" (12.4). What is left
+    // "215 unmarked · 160 to keep · 37 to delete" (12.4). What is left
     // to sort leads, in the stronger weight the board gives it. Applying is
     // the main command while there is something to delete; once nothing is,
     // darktable is (12.22, Open 21 drawn: one accent fill).
@@ -196,9 +196,9 @@ internal sealed partial class PhotosView : UserControl, IAtelierToolView
 
     // ── Marks ─────────────────────────────────────────────────────────────
 
-    // G, X or a button of the panel. Pressing the mark the photos already
+    // K, X or a button of the panel. Pressing the mark the photos already
     // carry takes it off, as pressing a pressed toggle releases it: the way
-    // back to "sans marque" needs no third key. Marking changes nothing on
+    // back to "unmarked" needs no third key. Marking changes nothing on
     // the disk but the app's own store (spec, Behaviours).
     private void MarkSelection(PhotoMark mark)
     {

@@ -55,7 +55,7 @@ public sealed class PhotoDescriptionStore
         lock (_lock) return photos.Count(p => _descriptions.ContainsKey(p.Name));
     }
 
-    // "Décrire à nouveau" replaces the text: one description per photo.
+    // "Describe again" replaces the text: one description per photo.
     public void Set(string fileName, PhotoDescription description)
     {
         lock (_lock)

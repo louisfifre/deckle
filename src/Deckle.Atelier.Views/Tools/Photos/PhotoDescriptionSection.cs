@@ -9,10 +9,10 @@ namespace Deckle.Atelier.Views;
 // The description in a photo's panel (spec, Photos; boards 12.4, 12.24, 12.5),
 // the same in the photo tool and the file tool since both build the panel
 // with PhotoDetails:
-// - none yet: says so and offers "Décrire cette photo" (12.4);
-// - under way: "Description en cours…" and "Arrêter" (12.24);
-// - written: the text, that a model on this computer wrote it, and "Décrire à
-//   nouveau" (12.5);
+// - none yet: says so and offers "Describe this photo" (12.4);
+// - under way: "Describing…" and "Stop" (12.24);
+// - written: the text, that a model on this computer wrote it, and "Describe
+//   again" (12.5);
 // - failed or stopped (Open 33, no board): one plain sentence and the way to
 //   try again, as Explorer says a step that did not happen and offers it
 //   again; a failure of the setup (no model chosen, a server that does not
