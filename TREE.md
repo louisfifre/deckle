@@ -2401,14 +2401,6 @@ _Generated from `git ls-files` — do not edit by hand._
 │   │   ├── Deckle.Shell.WindowChrome.csproj
 │   │   ├── NavigationPane.cs
 │   │   └── NavigationPaneState.cs
-│   ├── Deckle.Speech/
-│   │   ├── ChatterboxSpeechBackend.cs
-│   │   ├── Deckle.Speech.csproj
-│   │   ├── DeckleSpeechSource.cs
-│   │   ├── ISpeechBackend.cs
-│   │   ├── SpeechEngine.cs
-│   │   ├── SpeechSettings.cs
-│   │   └── SpeechSettingsService.cs
 │   ├── Deckle.Transcription/
 │   │   ├── Corpus/
 │   │   │   ├── CorpusTier.cs
@@ -3423,13 +3415,6 @@ _Generated from `git ls-files` — do not edit by hand._
 │   ├── Deckle.Shell.WindowChrome.Tests/
 │   │   ├── Deckle.Shell.WindowChrome.Tests.csproj
 │   │   └── NavigationPaneStateTests.cs
-│   ├── Deckle.Speech.Tests/
-│   │   ├── Deckle.Speech.Tests.csproj
-│   │   ├── IsolatedDataRoot.cs
-│   │   ├── MessageTemplateDoctrineTests.cs
-│   │   ├── SpeechEngineBugNotes.md
-│   │   ├── SpeechEngineTests.cs
-│   │   └── SpeechSettingsTests.cs
 │   ├── Deckle.TestSupport/
 │   │   ├── Deckle.TestSupport.csproj
 │   │   ├── EventArgsExtensions.cs

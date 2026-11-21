@@ -194,7 +194,6 @@ public partial class App
         TryShutdown("message_host_dispose", () => _messageHost?.Dispose());
         TryShutdown("overlay_manager_dispose", () => _overlayManager?.Dispose());
         TryShutdown("engine_dispose", () => _engine?.Dispose());
-        TryShutdown("speech_engine_dispose", () => _speechEngine?.Dispose());
         TryShutdown("trackpad_shutdown", ShutdownTrackpad);
         TryShutdown("taskbar_cover_shutdown", ShutdownTaskbarCover);
         TryShutdown("taskbar_shutdown", ShutdownTaskbar);

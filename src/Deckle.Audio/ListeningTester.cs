@@ -14,7 +14,7 @@ namespace Deckle.Audio;
 //
 // Capture follows MicLevelTester: a fresh MicrophoneCapture per take and a
 // throwaway host whose duration cap IS the take length, so the capture stops
-// itself. Playback follows SpeechEngine: one CancellationTokenSource swapped
+// itself. Playback keeps one CancellationTokenSource swapped
 // under a lock, so a new play (or a new take) cancels the clip in flight.
 //
 // No log of its own: MicrophoneCapture and SpeakerOutput log the take and the
