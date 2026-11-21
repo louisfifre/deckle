@@ -68,7 +68,9 @@ public sealed class JsonlSinkMaintenanceTests : IDisposable
         var sink = NewSink(maxLines: 2);
         try
         {
-            // The cap is 2: lines 3 to 6 each try the roll and each fail.
+            // The cap is 2 and a failed roll waits one more line (a twentieth of
+            // the cap, at least one): lines 3 and 5 try the roll and fail, lines 4
+            // and 6 do not try.
             for (int i = 1; i <= 6; i++) sink.Write(Line(i));
             sink.Flush();
             WaitFor(() => ReportsFor(reports).Any(r => r.EventName == "RotationFailed"));
@@ -97,10 +99,46 @@ public sealed class JsonlSinkMaintenanceTests : IDisposable
             closed =>
             {
                 Assert.Equal("RotationRecovered", closed.EventName);
-                Assert.Equal(4, closed.Payload[1]);
+                Assert.Equal(2, closed.Payload[1]);
             });
     }
 
+
+    // A roll that fails recounts the active file. Before the retry delay every
+    // row past the cap tried the roll again, so a file whose move a reader
+    // refused was read in full once per row.
+    [Fact]
+    public void A_roll_that_cannot_happen_is_not_retried_on_every_row()
+    {
+        using var reports = new TestEventListener("Deckle-Diagnostics");
+        string archive = Path.Combine(_directory, "archive");
+        File.WriteAllText(archive, "in the way");
+
+        // The cap is 100, so a failed roll waits for 5 more lines. Rows 101,
+        // 107, 113, 119, 125, 131 and 137 try the roll: 7 attempts for 40 rows
+        // past the cap, where one attempt per row made 40.
+        var sink = NewSink(maxLines: 100);
+        try
+        {
+            for (int i = 1; i <= 140; i++) sink.Write(Line(i));
+            sink.Flush();
+            WaitFor(() => ReportsFor(reports).Any(r => r.EventName == "RotationFailed"));
+
+            File.Delete(archive);
+            // The last failed attempt was at row 137, so the next one is due
+            // once 142 lines are written; row 143 gets there.
+            for (int i = 141; i <= 143; i++) sink.Write(Line(i));
+            sink.Flush();
+            WaitFor(() => ReportsFor(reports).Any(r => r.EventName == "RotationRecovered"));
+        }
+        finally
+        {
+            sink.Dispose();
+        }
+
+        var recovered = Assert.Single(ReportsFor(reports), r => r.EventName == "RotationRecovered");
+        Assert.Equal(7, recovered.Payload[1]);
+    }
     [Fact]
     public void An_old_generation_that_cannot_be_deleted_is_reported()
     {

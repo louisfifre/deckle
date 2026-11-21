@@ -16,10 +16,11 @@ namespace Deckle.Diagnostics;
 // (the trace's retention): the reader form is read at each roll and at start,
 // so a lowered cap trims at the next roll without rebuilding the sink.
 //
-// Scope. Only the operational log files (setup, log, trace) roll. The dataset
-// channels (microphone, corpus) are append-only datasets with a
-// stable cross-session contract and are never given a rotation policy —
-// losing their tail would corrupt the dataset.
+// Scope. Only the operational log files (setup, log, trace) roll today. The
+// dictation corpus is an append-only dataset that its readers take as one file
+// per bucket, so it has no rotation policy yet; it may be given one only with a
+// null cap, whose archives are never deleted, and once its readers read the
+// archive folder too.
 public sealed class JsonlRotationPolicy
 {
     private readonly Func<int?> _maxArchives;
