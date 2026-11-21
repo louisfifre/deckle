@@ -30,7 +30,7 @@ param(
 )
 
 $ErrorActionPreference = 'Stop'
-if ($App -notin 'deckle', 'mail', 'atelier') { throw "-App is deckle, mail or atelier, not '$App'." }
+if ($App -notin 'deckle', 'mail', 'atelier') { [Console]::Error.WriteLine("-App is deckle, mail or atelier, not '$App'."); exit 1 }
 $ScriptDir = $PSScriptRoot
 $LibDir = Join-Path $ScriptDir 'lib'
 . (Join-Path $LibDir 'action-summary.ps1')

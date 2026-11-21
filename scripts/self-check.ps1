@@ -85,7 +85,7 @@ param(
 )
 
 $ErrorActionPreference = 'Stop'
-if ($App -notin 'deckle', 'mail', 'atelier') { throw "-App is deckle, mail or atelier, not '$App'." }
+if ($App -notin 'deckle', 'mail', 'atelier') { [Console]::Error.WriteLine("-App is deckle, mail or atelier, not '$App'."); exit 1 }
 
 $RepoRoot = if ($Target) { (Resolve-Path -LiteralPath $Target).Path } else { Split-Path -Parent $PSScriptRoot }
 # The three executables of the suite: project folder, executable name.
