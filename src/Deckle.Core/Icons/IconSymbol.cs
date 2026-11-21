@@ -1,8 +1,10 @@
 namespace Deckle.Core;
 
-// The symbols an IconChoice can show, in the order the picker lays them out.
-// The set stays small, from two rows of four to three rows of six (specs/
-// atelier.md, Window): twelve, two rows of six.
+// The symbols an IconChoice can show, in the order the picker lays them out,
+// six to a row (specs/atelier.md, Added folders): twenty-four, four rows. The
+// first two rows say what a folder holds; the last two, added for sorting
+// work (Louis, 2026-11-21), say what the person does with it: development on
+// the third row, marks on the fourth.
 //
 // Persisted by name: a member is never renamed, and a new one is added at the
 // end of a row, never in place of another.
@@ -20,4 +22,18 @@ public enum IconSymbol
     Home,
     People,
     Favorite,
+
+    Instructions,
+    Intelligence,
+    Terminal,
+    Settings,
+    Bug,
+    Test,
+
+    Important,
+    Flag,
+    Tag,
+    Idea,
+    Private,
+    Cloud,
 }

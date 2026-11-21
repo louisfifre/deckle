@@ -20,6 +20,21 @@ internal static class IconSymbolGlyphs
         IconSymbol.Home => "",       // Home
         IconSymbol.People => "",     // People
         IconSymbol.Favorite => "",   // FavoriteStar
-        _ => "",                     // Folder
+        IconSymbol.Instructions => "", // Edit, the pencil
+        // SquareSparkle, the sign Windows 11 gives its AI features. It came
+        // with a recent Segoe Fluent Icons (present in version 1.56); an older
+        // font draws an empty tile.
+        IconSymbol.Intelligence => "",
+        IconSymbol.Terminal => "",     // CommandPrompt
+        IconSymbol.Settings => "",     // Settings
+        IconSymbol.Bug => "",          // Bug
+        IconSymbol.Test => "",         // Beaker
+        IconSymbol.Important => "",    // Important
+        IconSymbol.Flag => "",         // Flag
+        IconSymbol.Tag => "",          // Tag
+        IconSymbol.Idea => "",         // Lightbulb
+        IconSymbol.Private => "",      // Lock
+        IconSymbol.Cloud => "",        // Cloud
+        _ =>"",                     // Folder
     };
 }
