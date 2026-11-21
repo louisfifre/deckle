@@ -10,7 +10,8 @@ namespace Deckle.Atelier;
 // file opens with the application Windows associates with its type. With
 // ErrorDialog set, the shell keeps its own UI: a type with no application
 // gets Windows' "How do you want to open this file?", as in File Explorer,
-// rather than a silent failure.
+// rather than a silent failure. Given a folder, the shell opens it in File
+// Explorer, which is how an added folder's menu shows it there.
 //
 // ShowInFolder goes through SHOpenFolderAndSelectItems: File Explorer opens
 // the item's folder, or comes to a window already on it, with the item
@@ -26,7 +27,7 @@ public sealed partial class ShellFileLauncher : IFileLauncher
 {
     public LaunchOutcome Open(string path)
     {
-        if (!File.Exists(path)) return NotLaunched("open", path, "missing", 0, LaunchStatus.Missing);
+        if (!File.Exists(path) && !Directory.Exists(path)) return NotLaunched("open", path, "missing", 0, LaunchStatus.Missing);
         try
         {
             // The process, when the shell hands one back, is the

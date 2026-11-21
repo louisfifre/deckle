@@ -29,7 +29,7 @@ public partial class App
     {
         gate.ThrowIfDone();
 
-        async Task Capture(string state, Func<Task> reach)
+        async Task Capture(string state, Func<Task> reach, bool keepPopups = false)
         {
             gate.ThrowIfDone();
             bool photographed = gate.Photographs(state);
@@ -48,7 +48,7 @@ public partial class App
                 return;
             }
             if (!photographed) return;
-            (int closed, int left) = await CloseTransientPopupsAsync(window);
+            (int closed, int left) = keepPopups ? (0, 0) : await CloseTransientPopupsAsync(window);
             report.Surfaces.Add(await CaptureWindowFrameAsync(
                 run, window, "atelier", state, null, true, clock.ElapsedMilliseconds, closed, left));
             report.Save(outputFolder);
@@ -60,14 +60,30 @@ public partial class App
         }
 
         string documents = Path.Combine(sample, "Documents");
-        await Capture("folders-remove-button", async () =>
+        await Capture("folders-more-button", async () =>
         {
             await window.AddFolderForReviewAsync(sample);
             window.SetPaneOpenForReview(true);
             await Task.Delay(300);
-            Check(window.ShowRemoveButtonForReview(documents), "The remove button did not show on the item.");
+            Check(window.ShowMoreButtonForReview(documents), "The \"...\" button did not show on the item.");
         });
-        window.HideRemoveButtonsForReview();
+        window.HideMoreButtonsForReview();
+
+        // The folder's menu, the same under "..." and at a right click, in the
+        // opened pane and in the pane reduced to icons.
+        foreach (bool paneOpen in (bool[])[true, false])
+        {
+            await Capture(paneOpen ? "folders-menu" : "folders-menu-reduced", async () =>
+            {
+                window.SetPaneOpenForReview(paneOpen);
+                await Task.Delay(300);
+                IReadOnlyList<string> labels = window.ShowFolderMenuForReview(documents);
+                Check(labels.Count == 3, $"The folder's menu holds {labels.Count} items, not 3.");
+                await Task.Delay(300);
+            }, keepPopups: true);
+            window.HideFolderMenuForReview();
+        }
+        window.SetPaneOpenForReview(true);
 
         // The folder the window stands in goes; the window moves to the one
         // that takes its place in the pane, and Back no longer leads into it.
