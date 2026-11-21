@@ -4,8 +4,11 @@
 .DESCRIPTION
     Populates the native and models folders under the user data root with the
     whisper.cpp DLLs, the Visual C++ runtime they import and the Whisper
-    models the app needs at runtime. Idempotent: skips files already present
-    at the same size unless -Force.
+    models the app needs at runtime. Idempotent: skips a downloaded file that
+    already carries the SHA-256 pinned in the C# code (a wrong or truncated one
+    is deleted and fetched again) and a copied DLL of the same size, unless
+    -Force. Every download is checked against its pinned SHA-256 before it
+    takes its place.
 .NOTES
     order: 130
     action: Runtime assets / set up |
@@ -39,7 +42,7 @@ param(
     [switch]$WithLarge,
 
     # Re-copy / re-download even if the destination already exists with
-    # the matching size.
+    # the matching size (DLLs) or SHA-256 (downloads).
     [switch]$Force
 )
 
@@ -48,6 +51,7 @@ $ScriptDir = $PSScriptRoot
 $LibDir = Join-Path (Split-Path -Parent $ScriptDir) 'lib'
 . (Join-Path $LibDir 'action-summary.ps1')
 Import-Module (Join-Path $LibDir 'native-runtime-release.psm1') -Force
+Import-Module (Join-Path $LibDir 'download-integrity.psm1') -Force
 
 $Repo = Split-Path -Parent (Split-Path -Parent $PSScriptRoot)
 
@@ -87,6 +91,13 @@ $NativeRuntimeSource = Join-Path $Repo 'src\Deckle.Transcription.Whisper\Setup\N
 $NativeRuntimeCatalog = Get-DeckleNativeRuntimeCatalog -SourcePath $NativeRuntimeSource
 $CatalogDlls = @($NativeRuntimeCatalog.Names)
 
+# The SHA-256 of every download is read where the app's setup wizard reads it,
+# so the two cannot drift apart.
+$SpeechModelsSource = Join-Path $Repo 'src\Deckle.Transcription.Whisper\Setup\SpeechModels.cs'
+$SileroVadSource = Join-Path $Repo 'src\Deckle.Vad\SileroVadModel.cs'
+$ModelHashes = Get-DeckleSpeechModelHashes -SourcePath $SpeechModelsSource
+$SileroSha256 = Get-DeckleSileroVadHash -SourcePath $SileroVadSource
+
 # Must match NativeRuntime.CurrentBundle.Url.
 $DeckleRepoSlug = 'louisfifre/deckle'
 
@@ -104,19 +115,36 @@ function CopyIdempotent($src, $dst) {
 }
 
 # curl.exe ships with Windows and beats Invoke-WebRequest on large files.
-# $expectedMinBytes is a coarse "present and roughly complete" check.
-function Download($url, $dst, $expectedMinBytes) {
+# The file lands under a .part name and takes its place only once its SHA-256
+# equals $expectedSha256: a wrong download is deleted and never replaces a good
+# file. A file already at the destination counts as present only by that same
+# hash, never by its size.
+function Download($url, $dst, $expectedSha256) {
     $name = Split-Path $dst -Leaf
-    if (-not $Force -and (Test-Path $dst) -and ((Get-Item $dst).Length -ge $expectedMinBytes)) {
-        Write-WorkflowMessage -Output $WorkflowOutput -Message "already present $name ($([math]::Round((Get-Item $dst).Length/1MB,1)) MB)"
-        return
+    if (-not $Force -and (Test-Path $dst)) {
+        if (Test-DeckleFileSha256 -Path $dst -ExpectedSha256 $expectedSha256) {
+            Write-WorkflowMessage -Output $WorkflowOutput -Message "already present $name ($([math]::Round((Get-Item $dst).Length/1MB,1)) MB, SHA-256 verified)"
+            return
+        }
+        Write-WorkflowMessage -Output $WorkflowOutput -Message "$name does not match its pinned SHA-256, downloading it again" -Role Warning
     }
+    $part = "$dst.part"
+    if (Test-Path $part) { Remove-Item $part -Force }
     Write-Host "         downloading $name ..."
-    & curl.exe -L --fail --retry 3 --progress-bar -o $dst $url
+    & curl.exe -L --fail --retry 3 --progress-bar -o $part $url
     $curlExitCode = $LASTEXITCODE
     Write-Host ''
-    if ($curlExitCode -ne 0) { throw "curl failed for $url" }
-    Write-WorkflowMessage -Output $WorkflowOutput -Message "downloaded $name ($([math]::Round((Get-Item $dst).Length/1MB,1)) MB)"
+    if ($curlExitCode -ne 0) {
+        if (Test-Path $part) { Remove-Item $part -Force }
+        throw "curl failed for $url"
+    }
+    if (-not (Test-DeckleFileSha256 -Path $part -ExpectedSha256 $expectedSha256)) {
+        $actual = (Get-FileHash -LiteralPath $part -Algorithm SHA256).Hash.ToLowerInvariant()
+        Remove-Item $part -Force
+        throw "SHA-256 mismatch for $name from $url : expected $expectedSha256, got $actual. The file was deleted."
+    }
+    Move-Item -LiteralPath $part -Destination $dst -Force
+    Write-WorkflowMessage -Output $WorkflowOutput -Message "downloaded $name ($([math]::Round((Get-Item $dst).Length/1MB,1)) MB, SHA-256 verified)"
 }
 
 Write-WorkflowStep -Output $WorkflowOutput -Message "target root: $TargetRoot"
@@ -134,8 +162,12 @@ foreach ($d in @($TargetNative, $TargetModels)) {
 Write-WorkflowStep -Output $WorkflowOutput -Message 'native runtime'
 
 if ($FromRelease) {
-    # Integrity rests on HTTPS here: the wizard checks SHA-256 against
-    # NativeRuntime.CurrentBundle, this dev convenience carries no hash.
+    # The zip is checked against NativeRuntime.CurrentBundle, as the wizard
+    # does. That pins one version, so any other cannot be verified.
+    $bundle = Get-DeckleNativeRuntimeBundle -SourcePath $NativeRuntimeSource
+    if ($FromRelease -ne $bundle.Version) {
+        throw "-FromRelease $FromRelease cannot be verified: the app pins native runtime $($bundle.Version) (NativeRuntime.CurrentBundle)."
+    }
     $url = "https://github.com/$DeckleRepoSlug/releases/download/native-v$FromRelease/deckle-native-$FromRelease.zip"
     $tmpZip = Join-Path ([System.IO.Path]::GetTempPath()) "deckle-native-$FromRelease.zip"
     $NativeSource = "GitHub Release native-v$FromRelease"
@@ -147,6 +179,17 @@ if ($FromRelease) {
     Write-Host ''
     if ($curlExitCode -ne 0) { throw "curl failed for $url" }
     Write-WorkflowMessage -Output $WorkflowOutput -Message "downloaded $(Split-Path $tmpZip -Leaf) ($([math]::Round((Get-Item $tmpZip).Length/1MB,1)) MB)"
+
+    # Size and SHA-256 of the whole zip, then each DLL against the zip's own
+    # SHA256SUMS, all before anything is extracted. A bad zip is deleted.
+    try {
+        $null = Assert-DeckleNativeRuntimeArtifact -Bundle $bundle -ArtifactPath $tmpZip
+        Assert-DeckleNativeRuntimeArchive -ArchivePath $tmpZip -DllNames $CatalogDlls
+    } catch {
+        Remove-Item $tmpZip -Force -ErrorAction SilentlyContinue
+        throw "Native runtime bundle refused and deleted: $($_.Exception.Message)"
+    }
+    Write-WorkflowMessage -Output $WorkflowOutput -Message "verified $(Split-Path $tmpZip -Leaf) (SHA-256 matches NativeRuntime.CurrentBundle)"
 
     # Extract only the catalog entries — same defense-in-depth filter the
     # C# side applies in NativeRuntime.InstallFromZipAsync.
@@ -207,14 +250,14 @@ $baseDst = Join-Path $TargetModels 'ggml-base.bin'
 Download `
     'https://huggingface.co/ggerganov/whisper.cpp/resolve/main/ggml-base.bin' `
     $baseDst `
-    130MB
+    $ModelHashes['ggml-base.bin']
 
 if ($WithLarge) {
     $largeDst = Join-Path $TargetModels 'ggml-large-v3.bin'
     Download `
         'https://huggingface.co/ggerganov/whisper.cpp/resolve/main/ggml-large-v3.bin' `
         $largeDst `
-        3000MB
+        $ModelHashes['ggml-large-v3.bin']
 } else {
     Write-WorkflowMessage -Output $WorkflowOutput -Message 'skipped ggml-large-v3.bin (pass -WithLarge to fetch ~3 GB model)'
 }
@@ -224,7 +267,7 @@ $vadDst = Join-Path $TargetModels 'silero_vad.onnx'
 Download `
     'https://raw.githubusercontent.com/snakers4/silero-vad/v6.2/src/silero_vad/data/silero_vad.onnx' `
     $vadDst `
-    2200KB
+    $SileroSha256
 $ModelStatus = if ($WithLarge) { 'Base, large, and Silero VAD present' } else { 'Base and Silero VAD present; large skipped' }
 
 $nativeCount = (Get-ChildItem $TargetNative -File -ErrorAction SilentlyContinue | Measure-Object).Count

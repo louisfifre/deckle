@@ -346,6 +346,7 @@ _Generated from `git ls-files` — do not edit by hand._
 │   │   ├── build-server-cleanup.ps1
 │   │   ├── context-inventory.psm1
 │   │   ├── deckle-process.ps1
+│   │   ├── download-integrity.psm1
 │   │   ├── manifest.ps1
 │   │   ├── native-console.ps1
 │   │   ├── native-runtime-release.psm1
@@ -397,6 +398,7 @@ _Generated from `git ls-files` — do not edit by hand._
 │   │   │   ├── build-locked.tests.ps1
 │   │   │   ├── build-server-watchdog.tests.ps1
 │   │   │   ├── BuildServerWatchdogBugNotes.md
+│   │   │   ├── fetch-autocorrect-data.tests.ps1
 │   │   │   ├── inspect-context.tests.ps1
 │   │   │   ├── InspectContextBugNotes.md
 │   │   │   ├── perf-compare.tests.ps1
@@ -408,6 +410,7 @@ _Generated from `git ls-files` — do not edit by hand._
 │   │       ├── anytype-backend.tests.ps1
 │   │       ├── context-inventory.tests.ps1
 │   │       ├── deckle-process.tests.ps1
+│   │       ├── download-integrity.tests.ps1
 │   │       ├── native-runtime-release.tests.ps1
 │   │       ├── pe-fixture.ps1
 │   │       ├── pe-imports.tests.ps1
