@@ -11,7 +11,11 @@ namespace Deckle.Shell.Taskbar;
 // Deckle is the server, so that "Deckle is gone" is simply the pipe closing,
 // and the DLL decides on its own what that means (restore and unload).
 // One instance at a time: a second client cannot take the place of the first.
-// The pipe is open to the current user only, which is who explorer runs as.
+// The pipe is open to the current user, which is who explorer runs as. For a
+// packaged client it is also open to ALL APPLICATION PACKAGES (read and write),
+// because StartMenuExperienceHost runs in an AppContainer that a plain user
+// entry does not admit; that entry exists only when allowPackagedClients is set,
+// which the host does for a packaged target (TaskbarTarget.Packaged).
 //
 // Run accepts one client, reads its lines until it disconnects, then waits for
 // the next one: after an explorer restart a new DLL connects to the same pipe.
