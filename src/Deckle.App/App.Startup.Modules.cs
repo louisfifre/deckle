@@ -170,7 +170,7 @@ public partial class App
         else
             context.Skip(ModuleIds.Anytype, SkipNotPresent);
 
-        // The contributed modules (PublishedComposition), such as the Atelier:
+        // The contributed modules (PublishedComposition), none today:
         // nothing runs at start, the tray builds the window the first time it
         // opens it. Logged so the boot names the module.
         foreach (Contributions.IContribution contribution in PublishedComposition.All)

@@ -1,11 +1,10 @@
 using static Deckle.Hosting.SelfCheck.SelfCheckCapture;
-using Deckle.App.SelfCheck;
 using Deckle.Hosting.SelfCheck;
 using Deckle.Atelier.Views;
 using Deckle.Core;
 using Deckle.Vision;
 
-namespace Deckle.App;
+namespace Deckle.Atelier.App;
 
 // The self-check's walk of the added folders' icons, called last from
 // WalkAtelierAsync so the states before it keep their one added folder. It
@@ -14,7 +13,7 @@ namespace Deckle.App;
 // the way a tile of the picker does, and photographs the pane reduced to its
 // icons and opened, then the picker of a folder whose icon sits on its
 // square. Nothing outside the sample folder is added or changed.
-public partial class App
+internal static partial class AtelierSelfCheck
 {
     private static readonly (string[] Path, IconChoice Icon)[] SampleFolderIcons =
     [
@@ -25,7 +24,7 @@ public partial class App
         (["Projets"], new IconChoice(IconSymbol.Code, IconTint.Purple, true)),
     ];
 
-    private async Task WalkAtelierFolderIconsAsync(
+    private static async Task WalkAtelierFolderIconsAsync(
         SelfCheckReport report, InterfaceCaptureRun run, string outputFolder, Action<string> step,
         AtelierWindow window, string sample, SelfCheckWalkGate gate)
     {

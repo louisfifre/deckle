@@ -1,12 +1,11 @@
 using static Deckle.Hosting.SelfCheck.SelfCheckCapture;
-using Deckle.App.SelfCheck;
 using Deckle.Hosting.SelfCheck;
 using Deckle.Atelier;
 using Deckle.Atelier.Views;
 using Deckle.Core;
 using Deckle.Vision;
 
-namespace Deckle.App;
+namespace Deckle.Atelier.App;
 
 // The self-check's walk of the photo tool, on a shoot made from nothing
 // (SamplePhotos) inside the sample folder: the gallery, a photo selected with
@@ -16,14 +15,14 @@ namespace Deckle.App;
 // then closed with "Annuler": the self-check never sends a file to the
 // Recycle Bin. Marks a kept data root may hold are cleared first, so the
 // gallery is photographed without any.
-public partial class App
+internal static partial class AtelierSelfCheck
 {
     private static readonly string[] SampleKept =
         ["DSC_0201.JPG", "DSC_0202.JPG", "DSC_0204.JPG", "DSC_0206.JPG", "DSC_0207.JPG", "DSC_0209.JPG", "DSC_0210.JPG"];
 
     private static readonly string[] SampleDeleted = ["DSC_0203.JPG", "DSC_0208.JPG", "DSC_0216.JPG"];
 
-    private async Task WalkAtelierPhotosAsync(
+    private static async Task WalkAtelierPhotosAsync(
         SelfCheckReport report, InterfaceCaptureRun run, string outputFolder, Action<string> step,
         AtelierWindow window, string sample, SelfCheckWalkGate gate)
     {
@@ -122,7 +121,7 @@ public partial class App
     {
         AtelierToolCatalog.PhotoDescriptionModel = ReviewDescriber;
         AtelierToolCatalog.PhotoDescriptionReadiness = null;
-        string stored = Path.Combine(AppPaths.GetModuleDirectory(Deckle.Modules.ModuleIds.Atelier), PhotoDescriptionStore.DirectoryName);
+        string stored = Path.Combine(AppPaths.GetModuleDirectory(AtelierContribution.ModuleId), PhotoDescriptionStore.DirectoryName);
         try { if (Directory.Exists(stored)) Directory.Delete(stored, recursive: true); }
         catch (IOException) { }
         catch (UnauthorizedAccessException) { }

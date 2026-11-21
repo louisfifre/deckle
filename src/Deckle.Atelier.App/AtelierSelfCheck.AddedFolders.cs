@@ -1,10 +1,9 @@
 using static Deckle.Hosting.SelfCheck.SelfCheckCapture;
-using Deckle.App.SelfCheck;
 using Deckle.Hosting.SelfCheck;
 using Deckle.Atelier.Views;
 using Deckle.Vision;
 
-namespace Deckle.App;
+namespace Deckle.Atelier.App;
 
 // The self-check's walk of the added folders' removal and of the states no
 // board draws (spec, Open 33), called last from WalkAtelierAsync, once the
@@ -17,7 +16,7 @@ namespace Deckle.App;
 // self-check-sample folder: the folder that vanishes is one it made there a
 // moment before. Removing a folder only forgets its entry; nothing presses a
 // button that opens an application.
-public partial class App
+internal static partial class AtelierSelfCheck
 {
     // The window's minimum width, in DIPs (AtelierWindow.ApplyChrome), and
     // the size it is drawn at.
@@ -25,7 +24,7 @@ public partial class App
     private const int AtelierDrawnWidth = 1280;
     private const int AtelierDrawnHeight = 800;
 
-    private async Task WalkAtelierAddedFoldersAsync(
+    private static async Task WalkAtelierAddedFoldersAsync(
         SelfCheckReport report, InterfaceCaptureRun run, string outputFolder, Action<string> step,
         AtelierWindow window, string sample, SelfCheckWalkGate gate)
     {

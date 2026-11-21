@@ -3,7 +3,7 @@ using Deckle.Atelier;
 using Deckle.Llm;
 using Deckle.Llm.Rewrite;
 
-namespace Deckle.App;
+namespace Deckle.Atelier.App;
 
 // ─── The Atelier's photo descriptions, over Deckle.Llm ──────────────────────
 //

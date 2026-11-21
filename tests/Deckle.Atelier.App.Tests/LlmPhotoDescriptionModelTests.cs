@@ -3,7 +3,7 @@ using Deckle.Atelier;
 using Deckle.Llm;
 using Xunit;
 
-namespace Deckle.App.Tests;
+namespace Deckle.Atelier.App.Tests;
 
 // The adapter between the Atelier's description seam and Deckle.Llm: it reads
 // the one stored choice, sends only to a provider on this machine, and words

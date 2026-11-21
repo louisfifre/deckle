@@ -592,10 +592,7 @@ _Generated from `git ls-files` — do not edit by hand._
 │   │   │   │   └── deckle--state--rewriting.ico
 │   │   │   └── Sounds/
 │   │   │       └── speech.wav
-│   │   ├── AtelierPhotoDescriptions/
-│   │   │   └── LlmPhotoDescriptionModel.cs
 │   │   ├── Composition/
-│   │   │   ├── AtelierContribution.cs
 │   │   │   ├── PublishedComposition.cs
 │   │   │   └── SelfCheckWalkContext.cs
 │   │   ├── Diagnostics/
@@ -660,15 +657,6 @@ _Generated from `git ls-files` — do not edit by hand._
 │   │   ├── App.PrecisionScroll.cs
 │   │   ├── App.Projects.cs
 │   │   ├── App.Relocate.cs
-│   │   ├── App.SelfCheck.Atelier.AddedFolders.cs
-│   │   ├── App.SelfCheck.Atelier.cs
-│   │   ├── App.SelfCheck.Atelier.FileSelection.cs
-│   │   ├── App.SelfCheck.Atelier.FolderIcons.cs
-│   │   ├── App.SelfCheck.Atelier.Map.cs
-│   │   ├── App.SelfCheck.Atelier.Photos.cs
-│   │   ├── App.SelfCheck.Atelier.Previews.cs
-│   │   ├── App.SelfCheck.Atelier.Search.cs
-│   │   ├── App.SelfCheck.Atelier.Sizes.cs
 │   │   ├── App.SelfCheck.cs
 │   │   ├── App.SelfCheck.Diagnostics.cs
 │   │   ├── App.SelfCheck.Icons.cs
@@ -815,6 +803,27 @@ _Generated from `git ls-files` — do not edit by hand._
 │   │   │   └── SizeScanOptions.cs
 │   │   ├── Deckle.Atelier.csproj
 │   │   └── DeckleAtelierSource.cs
+│   ├── Deckle.Atelier.App/
+│   │   ├── app.manifest
+│   │   ├── App.SelfCheck.cs
+│   │   ├── App.xaml
+│   │   ├── App.xaml.cs
+│   │   ├── AtelierContribution.cs
+│   │   ├── AtelierSelfCheck.AddedFolders.cs
+│   │   ├── AtelierSelfCheck.cs
+│   │   ├── AtelierSelfCheck.FileSelection.cs
+│   │   ├── AtelierSelfCheck.FolderIcons.cs
+│   │   ├── AtelierSelfCheck.Map.cs
+│   │   ├── AtelierSelfCheck.Photos.cs
+│   │   ├── AtelierSelfCheck.Previews.cs
+│   │   ├── AtelierSelfCheck.Search.cs
+│   │   ├── AtelierSelfCheck.Sizes.cs
+│   │   ├── AtelierWalkContext.cs
+│   │   ├── Composition.cs
+│   │   ├── Deckle.Atelier.App.csproj
+│   │   ├── DeckleAtelierAppSource.cs
+│   │   ├── LlmPhotoDescriptionModel.cs
+│   │   └── Program.cs
 │   ├── Deckle.Atelier.Views/
 │   │   ├── Address/
 │   │   │   ├── AddressBar.Icon.cs
@@ -2765,7 +2774,6 @@ _Generated from `git ls-files` — do not edit by hand._
 │   │   ├── FileTranscriptionBugNotes.md
 │   │   ├── FileTranscriptionRunTests.cs
 │   │   ├── HudFeedbackSinkTests.cs
-│   │   ├── LlmPhotoDescriptionModelTests.cs
 │   │   ├── MessageTemplateDoctrineTests.cs
 │   │   ├── MilestoneClosersTests.cs
 │   │   ├── ProdApplyUpdateTests.cs
@@ -2777,6 +2785,11 @@ _Generated from `git ls-files` — do not edit by hand._
 │   │   ├── TrayDeveloperMenuTests.cs
 │   │   ├── TrayIncidentLinesTests.cs
 │   │   └── WindowOpenedEventTests.cs
+│   ├── Deckle.Atelier.App.Tests/
+│   │   ├── AtelierAppIdentityTests.cs
+│   │   ├── Deckle.Atelier.App.Tests.csproj
+│   │   ├── DeckleAtelierAppSourceTests.cs
+│   │   └── LlmPhotoDescriptionModelTests.cs
 │   ├── Deckle.Atelier.Tests/
 │   │   ├── Icons/
 │   │   │   ├── FileIconKeyTests.cs

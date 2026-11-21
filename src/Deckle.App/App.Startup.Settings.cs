@@ -161,9 +161,8 @@ public partial class App
                 "Deckle.Transcription.Views",
                 Transcription.Views.SettingsSearch.TelemetryEntries);
         }
-        // The contributions plant their start hooks: the Atelier's photo-model
-        // choice on the Rewriting page below, the Projects window's link to it.
-        // Before the pages that read them are registered.
+        // The contributions plant their start hooks, before the pages that
+        // read them are registered.
         PublishedHost.Compose();
 
         if (context.RewritePresent)

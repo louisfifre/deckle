@@ -12,7 +12,7 @@ namespace Deckle.App;
 // and the developer tools. Its entry point is the right-click tray menu,
 // driven from here, and the contribution host refuses to open a developer-only
 // window while the mode is off, so no path can bypass it. A developer-only
-// window (the Atelier) left open when the mode goes off is closed, since its entry
+// window left open when the mode goes off is closed, since its entry
 // point is gone.
 public partial class App
 {

@@ -8,7 +8,7 @@ using Deckle.Projects.Views;
 
 namespace Deckle.App;
 
-// The Deckle Projects window, opened from the tray like the Atelier's: created
+// The Deckle Projects window, opened from the tray: created
 // on first use by the same lazy path, placed where the person left it, and
 // dropped on close so the next open builds a fresh one. The module composes
 // nothing at start: with no window open it costs nothing. Its data lives in
@@ -64,16 +64,8 @@ public partial class App
         return window;
     }
 
-    // Opens a folder in Deckle Folders: planted at start by the contribution
-    // that carries that window (AtelierContribution.Compose), null while none
-    // does.
-    internal static Func<string, Task>? OpenInFoldersHook { get; set; }
-
     // What Deckle Projects reaches in its neighbours. A hook left null makes its
-    // button absent from the page, so "Open in Deckle Folders" exists only while
-    // a contribution plants it.
-    private static ProjectsHooks BuildProjectsHooks() => new()
-    {
-        OpenInFolders = OpenInFoldersHook,
-    };
+    // button absent from the page: "Open in Deckle Folders" is absent here,
+    // since Deckle Folders is the separate app Deckle.Atelier.App.
+    private static ProjectsHooks BuildProjectsHooks() => new();
 }

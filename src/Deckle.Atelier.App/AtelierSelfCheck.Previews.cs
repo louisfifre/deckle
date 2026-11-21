@@ -1,7 +1,7 @@
 using Deckle.Atelier;
 using Deckle.Atelier.Views;
 
-namespace Deckle.App;
+namespace Deckle.Atelier.App;
 
 // The self-check's image of the gallery's previews (spec, Behaviours: "it
 // also shows PDFs and Markdown files large"), called from WalkAtelierAsync
@@ -10,7 +10,7 @@ namespace Deckle.App;
 // tile still shows its type icon. The other PDFs of the sample hold zeroes,
 // so the same image shows that a PDF Windows cannot read keeps its icon.
 // Nothing is opened. It leaves the gallery shown, as it found it.
-public partial class App
+internal static partial class AtelierSelfCheck
 {
     private static Task WalkAtelierPreviewsAsync(
         AtelierWindow window, Func<string, Func<Task>?, Task> capture) =>

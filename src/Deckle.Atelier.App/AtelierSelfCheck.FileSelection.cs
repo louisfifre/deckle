@@ -1,7 +1,7 @@
 using Deckle.Atelier;
 using Deckle.Atelier.Views;
 
-namespace Deckle.App;
+namespace Deckle.Atelier.App;
 
 // The self-check's walk of the file tool's states no board draws (spec, Open
 // 33), called from WalkAtelierAsync once the three displays are photographed:
@@ -11,7 +11,7 @@ namespace Deckle.App;
 // empty folder. Nothing is opened nor sent to the Recycle Bin. It ends where
 // it began: in the root of the sample, in the list, "notes-2023.zip"
 // selected, so the states after it see what they saw before.
-public partial class App
+internal static partial class AtelierSelfCheck
 {
     private static async Task WalkAtelierFileSelectionAsync(
         AtelierWindow window, Func<string, Func<Task>?, Task> capture)

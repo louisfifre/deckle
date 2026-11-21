@@ -2,7 +2,7 @@ using Deckle.Atelier;
 using Deckle.Atelier.Views;
 using Deckle.FolderMap;
 
-namespace Deckle.App;
+namespace Deckle.Atelier.App;
 
 // The map's states in the self-check's walk of the Atelier: the list on a
 // sample project (12.8b), an item selected with its panel and graph (12.8a),
@@ -13,7 +13,7 @@ namespace Deckle.App;
 // (MapSampleFolder) once the file tool's states are photographed, so those
 // images stay as they were, and before the address bar's text mode, which
 // stays open across navigation and would hide the path in these images.
-public partial class App
+internal static partial class AtelierSelfCheck
 {
     private static async Task WalkAtelierMapAsync(AtelierWindow window, string sample, Func<string, Func<Task>?, Task> capture)
     {

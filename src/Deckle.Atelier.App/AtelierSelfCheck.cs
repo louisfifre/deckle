@@ -1,12 +1,12 @@
 using static Deckle.Hosting.SelfCheck.SelfCheckCapture;
-using Deckle.App.SelfCheck;
+using Deckle.Contributions;
 using Deckle.Hosting.SelfCheck;
 using Deckle.Atelier;
 using Deckle.Atelier.Views;
 using Deckle.Core;
 using Deckle.Vision;
 
-namespace Deckle.App;
+namespace Deckle.Atelier.App;
 
 // The self-check's walk of the Atelier window. The run's data root is fresh,
 // so the window first opens with no folder: the empty state of board 12.11.
@@ -17,26 +17,26 @@ namespace Deckle.App;
 // too), in each registered tool, with the pane open, and one folder down.
 // A state that fails to show
 // fails its image, and so the run.
-public partial class App
+internal static partial class AtelierSelfCheck
 {
-    // Run by the harness through AtelierContribution. With a view for target,
+    // Run by the harness through AtelierContribution (AtelierWalkContext). With a view for target,
     // the walk is played up to it and ends there (SelfCheckWalkGate): that end
     // is not a failure.
-    internal async Task RunAtelierWalkAsync(SelfCheckWalkContext context)
+    internal static async Task RunAtelierWalkAsync(AtelierWalkContext context)
     {
         var gate = new SelfCheckWalkGate(context.TargetView);
-        try { await WalkAtelierAsync(context.Report, context.Run, context.OutputFolder, context.Step, gate); }
+        try { await WalkAtelierAsync(context.Host, context.Report, context.Run, context.OutputFolder, context.Step, gate); }
         catch (OperationCanceledException) when (gate.Done) { }
         if (context.TargetView is not null && !gate.Reached) context.Report.Views = gate.Offered;
     }
 
-    private async Task WalkAtelierAsync(
-        SelfCheckReport report, InterfaceCaptureRun run, string outputFolder, Action<string> step,
+    private static async Task WalkAtelierAsync(
+        ContributionHost host, SelfCheckReport report, InterfaceCaptureRun run, string outputFolder, Action<string> step,
         SelfCheckWalkGate gate)
     {
         UseReviewPhotoDescriptions();
         var clock = System.Diagnostics.Stopwatch.StartNew();
-        var window = (AtelierWindow)PublishedHost.Ensure("atelier");
+        var window = (AtelierWindow)host.Ensure("atelier");
         OffscreenWindow.ShowInactive(window);
         bool loaded = await WaitUntilLoadedAsync(window);
 

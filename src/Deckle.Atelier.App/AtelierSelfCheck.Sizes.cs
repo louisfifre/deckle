@@ -2,7 +2,7 @@ using Deckle.Atelier;
 using Deckle.Atelier.Views;
 using Deckle.Core;
 
-namespace Deckle.App;
+namespace Deckle.Atelier.App;
 
 // The self-check's walk of the sizes tool, called from WalkAtelierAsync once
 // every tool has been photographed. It adds to the sample folder what the
@@ -19,7 +19,7 @@ namespace Deckle.App;
 // Refresh's tooltip is read, not photographed: a tooltip opened on a window
 // nobody sees is moved onto a monitor (WindowShortcutBugNotes.md). It goes
 // back up last, so the walk goes on where it was.
-public partial class App
+internal static partial class AtelierSelfCheck
 {
     private static readonly TimeSpan SizesPatience = TimeSpan.FromSeconds(30);
 

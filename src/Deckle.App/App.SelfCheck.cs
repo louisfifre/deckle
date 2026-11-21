@@ -48,8 +48,7 @@ public partial class App
         "module registry and presence flags (a fresh root has no choice, so every module is present)",
         "settings surface: host hooks and every module's pages and search entries, as the resident app registers them",
         "theme from the settings of the run's own root",
-        "windows: Settings, Log, Transcribe and rewrite, Paste to folder, Atelier, Projects, created by the same lazy paths the tray uses",
-        "atelier: a sample folder generated under the run's own root, added as the picker adds one",
+        "windows: Settings, Log, Transcribe and rewrite, Paste to folder, Projects, created by the same lazy paths the tray uses",
         "projects: sample projects (folders, git repositories, stub script menus) generated under the run's own root, with a terminal that opens nothing and a fixed clock",
         "microphone: one shared open and close through MicrophoneCapture.Probe",
         "interface capture: the walk and the WindowSnapshot of the interface capture",
@@ -413,7 +412,7 @@ public partial class App
         }
 
         // The contributed windows (PublishedComposition), in composition order:
-        // the Atelier today. Each walk is told its window's name and the
+        // none today. Each walk is told its window's name and the
         // view asked for; one that ends on a targeted view without a failure
         // says so itself.
         foreach (ContributedWalk walk in PublishedHost.Walks)

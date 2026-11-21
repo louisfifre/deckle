@@ -1,11 +1,10 @@
 using static Deckle.Hosting.SelfCheck.SelfCheckCapture;
-using Deckle.App.SelfCheck;
 using Deckle.Hosting.SelfCheck;
 using Deckle.Atelier;
 using Deckle.Atelier.Views;
 using Deckle.Vision;
 
-namespace Deckle.App;
+namespace Deckle.Atelier.App;
 
 // The self-check's walk of the search button, called from WalkAtelierAsync
 // with folders added, so the button is enabled, and before the added folders'
@@ -17,14 +16,14 @@ namespace Deckle.App;
 // do not depend on what this machine has installed. Nothing presses the
 // panel's buttons: the walk never opens the Store, a browser or Command
 // Palette.
-public partial class App
+internal static partial class AtelierSelfCheck
 {
     private sealed class FixedCommandPaletteProbe(bool installed) : ICommandPaletteProbe
     {
         public bool IsInstalled() => installed;
     }
 
-    private async Task WalkAtelierSearchAsync(
+    private static async Task WalkAtelierSearchAsync(
         SelfCheckReport report, InterfaceCaptureRun run, string outputFolder, Action<string> step,
         AtelierWindow window, SelfCheckWalkGate gate)
     {
