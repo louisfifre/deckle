@@ -51,18 +51,26 @@ public sealed class ParakeetBackendSystemTests
         Assert.Contains("transcription", result.FullText, StringComparison.OrdinalIgnoreCase);
     }
 
-    // Audio over the 30 s chunk limit goes through LongAudioChunker, which cuts at a pause. The
-    // signal is the reference speech repeated with 1.5 s of silence between copies, so every cut
-    // can land in a gap; one copy is allowed to be lost in case a cut still lands badly.
+    // Audio up to the encoder cap (LongAudioChunker.MaxChunkSamples, 120 s) goes through the encoder in
+    // one pass, and longer audio is cut at a pause. The signal is the reference speech repeated with
+    // 1.5 s of silence between copies, so every cut can land in a gap; one copy is allowed to be lost
+    // in case a cut still lands badly.
     [Fact]
-    public async Task InstalledParakeetTranscribesAudioLongerThanOneChunk()
+    public Task InstalledParakeetTranscribesAudioBelowTheCapInOnePass() =>
+        TranscribeRepeatedSpeechAsync(targetSeconds: 60, expectedChunks: 1);
+
+    [Fact]
+    public Task InstalledParakeetTranscribesAudioLongerThanTheCap() =>
+        TranscribeRepeatedSpeechAsync(targetSeconds: 130, expectedChunks: 2);
+
+    private static async Task TranscribeRepeatedSpeechAsync(double targetSeconds, int expectedChunks)
     {
         var files = new ParakeetModelFiles(ModelFolder);
         Assert.SkipUnless(files.IsComplete, $"No complete Parakeet model at {ModelFolder}.");
 
         float[] speech = ReadReferenceSpeech();
-        const int copies = 12;
         float[] gap = new float[(int)(1.5 * LongAudioChunker.SampleRate)];
+        int copies = (int)Math.Ceiling(targetSeconds / ((double)(speech.Length + gap.Length) / LongAudioChunker.SampleRate));
         var signal = new List<float>();
         for (int i = 0; i < copies; i++)
         {
@@ -72,8 +80,8 @@ public sealed class ParakeetBackendSystemTests
         float[] pcm = signal.ToArray();
         double audioSeconds = (double)pcm.Length / LongAudioChunker.SampleRate;
 
-        Assert.True(audioSeconds > 40, $"The signal lasts {audioSeconds:F1} s, expected well over one chunk.");
-        Assert.True(LongAudioChunker.Split(pcm).Count >= 2, "The signal must be cut into at least two chunks.");
+        Assert.True(audioSeconds >= targetSeconds, $"The signal lasts {audioSeconds:F1} s, expected at least {targetSeconds} s.");
+        Assert.Equal(expectedChunks, LongAudioChunker.Split(pcm).Count);
 
         using var backend = await LoadBackendAsync(ParakeetEncoderPrecision.Fp32);
         TranscriptionResult result = await backend.TranscribeAsync(pcm, null, TestContext.Current.CancellationToken);
