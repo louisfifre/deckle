@@ -1,2 +1,4 @@
 email-address | specs/deckle-mail.md | maison@exemple.fr | invented example address, already public in the earlier spec and used by the Mail sample data
 email-address | .push-guard-allow | maison@exemple.fr | the line above names the address it accepts
+anytype-id | tests/Deckle.Anytype.Tests/NameResolverTests.cs | bafyreinameaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa | synthetic test id, made of one repeated letter, points to no object
+anytype-id | .push-guard-allow | bafyreinameaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa | the line above names the id it accepts
