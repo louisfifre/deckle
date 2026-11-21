@@ -161,7 +161,7 @@ internal sealed class SchemaViewReader(AnytypeV2Client client)
                 AnytypeV2Response response = await client.SendAsync(
                         new AnytypeV2Request(
                             HttpMethod.Get,
-                            $"{route}/{id}/views",
+                            $"{route}/{AnytypeObjectId.Escape(id, nameof(id))}/views",
                             Query: Page(offset),
                             SpaceId: spaceId),
                         ct)

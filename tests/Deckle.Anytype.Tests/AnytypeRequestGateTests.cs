@@ -45,8 +45,8 @@ public class AnytypeRequestGateTests
         using var client = new AnytypeApiClient(Credentials, endpointTrust: null, handler);
 
         await Task.WhenAll(
-            client.GetObjectAsync("o1", Ct),
-            client.V2.SendAsync(new AnytypeV2Request(HttpMethod.Get, "objects/o1"), Ct));
+            client.GetObjectAsync("bafyreiobjectaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa", Ct),
+            client.V2.SendAsync(new AnytypeV2Request(HttpMethod.Get, "objects/bafyreiobjectaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"), Ct));
 
         Assert.Equal(2, handler.Served);
         Assert.Equal(1, handler.Peak);
@@ -61,7 +61,7 @@ public class AnytypeRequestGateTests
 
         // Reaching the gate again would throw ObjectDisposedException if the
         // borrower had disposed it.
-        await client.GetObjectAsync("o1", Ct);
+        await client.GetObjectAsync("bafyreiobjectaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa", Ct);
 
         Assert.Equal(1, handler.Served);
     }

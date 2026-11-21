@@ -2632,8 +2632,10 @@ _Generated from `git ls-files` — do not edit by hand._
 │   │   ├── AnytypeApiClientBugNotes.md
 │   │   ├── AnytypeApiClientReplayTests.cs
 │   │   ├── AnytypeCredentialsTests.cs
+│   │   ├── AnytypeCredentialsToStringTests.cs
 │   │   ├── AnytypeHotLoopCollection.cs
 │   │   ├── AnytypeHotLoopCountTests.cs
+│   │   ├── AnytypeObjectIdTests.cs
 │   │   ├── AnytypePathRedactionTests.cs
 │   │   ├── AnytypeRequestGateTests.cs
 │   │   ├── AnytypeSpaceAliasesTests.cs

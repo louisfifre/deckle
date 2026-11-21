@@ -1,4 +1,5 @@
 using System.Text.Json.Nodes;
+using System.Text.RegularExpressions;
 using Deckle.Anytype;
 
 namespace Deckle.Anytype;
@@ -85,16 +86,24 @@ public sealed class NotFoundException : Exception
 // Stable provider identity used by replayable mutations. A display name is a
 // useful read selector, but it is not a recovery coordinate: the mutation may
 // rename it before its response reaches the caller.
-public static class AnytypeObjectId
+public static partial class AnytypeObjectId
 {
-    // Anytype object ids are CIDv1 (base32): they start with "bafy" and are
-    // substantially longer than schema keys or display names.
+    // Anytype object ids are CIDv1 in lowercase base32 ([a-z2-7]): "bafy" then
+    // letters and digits 2 to 7, no dot, no slash. Measured on the ids the
+    // module sends (objects, types, properties, tags, collections): none carries
+    // a dot. The only id with a dot is a SPACE id (see SpaceSegment).
+    [GeneratedRegex("^bafy[a-z2-7]+$")]
+    private static partial Regex Shape();
+
+    // A real id is far longer than a schema key or a display name, so a short
+    // word that happens to start with "bafy" stays a name to resolve.
+    private const int MinLength = 40;
+
     public static bool Is(string? value)
     {
         if (string.IsNullOrWhiteSpace(value)) return false;
         string candidate = value.Trim();
-        return candidate.Length > 40
-            && candidate.StartsWith("bafy", StringComparison.Ordinal);
+        return candidate.Length > MinLength && Shape().IsMatch(candidate);
     }
 
     public static string Require(string? value, string parameterName)
@@ -104,6 +113,25 @@ public static class AnytypeObjectId
                 $"L’argument « {parameterName} » doit être un id Anytype stable (bafy…).",
                 parameterName);
         return value!.Trim();
+    }
+
+    // An object id as one URL path segment: refused unless it has the id shape
+    // (so "../", "?", "#", a space or an empty value never leave the process),
+    // then escaped anyway, so the shape check is not the only barrier.
+    public static string Segment(string? value, string parameterName) =>
+        Uri.EscapeDataString(Require(value, parameterName));
+
+    // Ids that are not objects (a type id, a property id, a tag id, a space id)
+    // and keys keep their own forms, and a space id carries a dot, so they are
+    // escaped, not shape-checked. A value empty or made only of dots is refused:
+    // ".." would be collapsed by the URL parser into another route.
+    public static string Escape(string? value, string parameterName)
+    {
+        if (string.IsNullOrWhiteSpace(value) || value.All(c => c == '.'))
+            throw new ArgumentException(
+                $"L’argument « {parameterName} » n’est pas utilisable dans une adresse de l’API.",
+                parameterName);
+        return Uri.EscapeDataString(value.Trim());
     }
 }
 

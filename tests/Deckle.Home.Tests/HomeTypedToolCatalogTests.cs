@@ -110,7 +110,7 @@ public sealed class HomeTypedToolCatalogTests
     public async Task TypedPointCreateSendsFlatValuesThroughTheExistingGesture()
     {
         using var server = new FakeHomeAnytypeServer();
-        server.SetObjects(FakeHomeAnytypeServer.Room("room-zz", "ZZ", "Fictional room"));
+        server.SetObjects(FakeHomeAnytypeServer.Room("bafyreiroomzzaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa", "ZZ", "Fictional room"));
         ToolDescriptor tool = HomeTypedToolCatalog.Build(() => Gestures(server))
             .Single(value => value.Name == "point_create");
 
@@ -150,7 +150,7 @@ public sealed class HomeTypedToolCatalogTests
     public async Task TypedTodoUpdateRejectsADeviceOnlyFieldBeforeWriting()
     {
         using var server = new FakeHomeAnytypeServer();
-        server.SetObjects(FakeHomeAnytypeServer.Todo("todo-1", "Fictional task", null, done: false));
+        server.SetObjects(FakeHomeAnytypeServer.Todo("bafyreitodobaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa", "Fictional task", null, done: false));
         ToolDescriptor tool = HomeTypedToolCatalog.Build(() => Gestures(server))
             .Single(value => value.Name == "todo_update");
 
@@ -165,7 +165,7 @@ public sealed class HomeTypedToolCatalogTests
     public async Task TypedTodoCreateWritesItsWorksiteRelationOnce()
     {
         using var server = new FakeHomeAnytypeServer();
-        server.SetObjects(FakeHomeAnytypeServer.Worksite("site-1", "Fictional worksite"));
+        server.SetObjects(FakeHomeAnytypeServer.Worksite("bafyreisitebaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa", "Fictional worksite"));
         ToolDescriptor tool = HomeTypedToolCatalog.Build(() => Gestures(server))
             .Single(value => value.Name == "todo_create");
 
@@ -179,7 +179,7 @@ public sealed class HomeTypedToolCatalogTests
         JsonArray references = Assert.IsType<JsonArray>(
             Entry(Assert.IsType<JsonArray>(body["properties"]), HomeSchema.WirePropertyKey("worksite"))["objects"]);
         Assert.Single(references);
-        Assert.Equal("site-1", references[0]!.GetValue<string>());
+        Assert.Equal("bafyreisitebaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa", references[0]!.GetValue<string>());
     }
 
     [Fact]
@@ -188,7 +188,7 @@ public sealed class HomeTypedToolCatalogTests
         using var server = new FakeHomeAnytypeServer();
         server.SetObjects(new JsonObject
         {
-            ["id"] = "device-1",
+            ["id"] = "bafyreidevicebaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
             ["name"] = "Fictional device",
             ["type"] = new JsonObject { ["key"] = HomeSchema.Types.Device },
             ["properties"] = new JsonArray(),

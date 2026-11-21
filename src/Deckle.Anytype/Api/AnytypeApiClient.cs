@@ -89,7 +89,7 @@ public sealed partial class AnytypeApiClient : IDisposable
         // Still /v1 on purpose: the 0.5.0 backend's root document only lists v2,
         // but /v1/* keeps answering, and only an --all-spaces --read-write key
         // is accepted there (see AnytypeCredentials.Resolve).
-        _spacePath = $"/v1/spaces/{credentials.SpaceId}";
+        _spacePath = $"/v1/spaces/{AnytypeObjectId.Escape(credentials.SpaceId, nameof(credentials.SpaceId))}";
 
         _http = handler is null ? new HttpClient() : new HttpClient(handler);
         _http.BaseAddress = new Uri(credentials.ApiUrl);
@@ -136,7 +136,7 @@ public sealed partial class AnytypeApiClient : IDisposable
         ArgumentException.ThrowIfNullOrWhiteSpace(id);
 
         JsonObject root = await SendAsync(
-                HttpMethod.Get, $"{SpacePath(spaceId)}/objects/{id}", null, ct,
+                HttpMethod.Get, $"{SpacePath(spaceId)}/objects/{AnytypeObjectId.Segment(id, nameof(id))}", null, ct,
                 replaySafety: RequestReplaySafety.Safe)
             .ConfigureAwait(false);
         return Inner(root, "object");
@@ -228,7 +228,7 @@ public sealed partial class AnytypeApiClient : IDisposable
         ArgumentException.ThrowIfNullOrWhiteSpace(id);
         ArgumentNullException.ThrowIfNull(payload);
         JsonObject root = await SendAsync(
-                HttpMethod.Patch, $"{SpacePath(spaceId)}/objects/{id}", payload, ct,
+                HttpMethod.Patch, $"{SpacePath(spaceId)}/objects/{AnytypeObjectId.Segment(id, nameof(id))}", payload, ct,
                 replaySafety: RequestReplaySafety.Safe)
             .ConfigureAwait(false);
         return Inner(root, "object");
@@ -245,7 +245,7 @@ public sealed partial class AnytypeApiClient : IDisposable
         ArgumentException.ThrowIfNullOrWhiteSpace(spaceId);
         ArgumentException.ThrowIfNullOrWhiteSpace(id);
         JsonObject root = await SendAsync(
-                HttpMethod.Delete, $"{SpacePath(spaceId)}/objects/{id}", null, ct)
+                HttpMethod.Delete, $"{SpacePath(spaceId)}/objects/{AnytypeObjectId.Segment(id, nameof(id))}", null, ct)
             .ConfigureAwait(false);
         return root["object"] as JsonObject ?? root;
     }
@@ -264,7 +264,7 @@ public sealed partial class AnytypeApiClient : IDisposable
         string propertyId, int offset = 0, int limit = 100, CancellationToken ct = default)
     {
         ArgumentException.ThrowIfNullOrWhiteSpace(propertyId);
-        string path = $"{_spacePath}/properties/{propertyId}/tags?offset={offset}&limit={limit}";
+        string path = $"{_spacePath}/properties/{AnytypeObjectId.Escape(propertyId, nameof(propertyId))}/tags?offset={offset}&limit={limit}";
         return await SendAsync(
             HttpMethod.Get, path, null, ct, replaySafety: RequestReplaySafety.Safe).ConfigureAwait(false);
     }
@@ -299,7 +299,7 @@ public sealed partial class AnytypeApiClient : IDisposable
 
         await SendAsync(
             HttpMethod.Post,
-            $"{SpacePath(spaceId)}/lists/{collectionId}/objects",
+            $"{SpacePath(spaceId)}/lists/{AnytypeObjectId.Segment(collectionId, nameof(collectionId))}/objects",
             body,
             ct,
             parseBody: false).ConfigureAwait(false);
@@ -324,7 +324,7 @@ public sealed partial class AnytypeApiClient : IDisposable
 
         await SendAsync(
             HttpMethod.Delete,
-            $"{SpacePath(spaceId)}/lists/{collectionId}/objects/{objectId}",
+            $"{SpacePath(spaceId)}/lists/{AnytypeObjectId.Segment(collectionId, nameof(collectionId))}/objects/{AnytypeObjectId.Segment(objectId, nameof(objectId))}",
             null,
             ct,
             parseBody: false).ConfigureAwait(false);

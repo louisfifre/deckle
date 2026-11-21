@@ -14,7 +14,7 @@ namespace Deckle.Anytype.Tests;
 [Trait("Category", "integration")]
 public class LiveTagResolverTests
 {
-    const string TagPropId = "bafyreiTagPropaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa";
+    const string TagPropId = "bafyreitagpropaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa";
     static CancellationToken Ct => TestContext.Current.CancellationToken;
 
     static LiveTagResolver NewResolver(FakeAnytypeServer server) =>
@@ -43,7 +43,7 @@ public class LiveTagResolverTests
             data.Add(new JsonObject
             {
                 ["object"] = "tag",
-                ["id"] = $"bafyreiTagId{key}",
+                ["id"] = $"bafyreitagid{key}",
                 ["key"] = key,
                 ["name"] = name,
                 ["color"] = "grey",

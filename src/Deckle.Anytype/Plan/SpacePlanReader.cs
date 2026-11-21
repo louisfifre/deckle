@@ -153,7 +153,7 @@ internal sealed class SpacePlanReader(AnytypeApiClient api)
                 notes.Add($"modèle « {name} » ({forKey}) existe plusieurs fois ; le premier est lu");
                 continue;
             }
-            JsonObject doc = await v2.GetAsync($"objects/{id}", ct).ConfigureAwait(false);
+            JsonObject doc = await v2.GetAsync(PlanApi.ObjectPath(id), ct).ConfigureAwait(false);
             var template = new JsonObject { ["name"] = name, ["for"] = forKey };
             template["blocks"] = DropEmptyViews(PlanViews.BodyFromWire(doc["blocks"] as JsonArray, refs), $"modèle « {name} » ({forKey})", notes);
             templates.Add(template);
@@ -166,7 +166,7 @@ internal sealed class SpacePlanReader(AnytypeApiClient api)
             JsonObject type = TypeToPlan(key, doc, snapshot, liveTemplates, refs);
             // A type is also an object, and its own display settings are properties of
             // that object, absent from GET types/{key}.
-            JsonObject? asObject = await v2.TryGetAsync($"objects/{typeIds[key]}", ct).ConfigureAwait(false);
+            JsonObject? asObject = await v2.TryGetAsync(PlanApi.ObjectPath(typeIds[key]), ct).ConfigureAwait(false);
             if (asObject is not null)
                 type["display"] = PlanTypeDisplay.FromWire(asObject["properties"] as JsonObject).ToPlan();
             types.Add(type);
@@ -183,7 +183,7 @@ internal sealed class SpacePlanReader(AnytypeApiClient api)
             foreach (AnytypeV2SearchRow row in rows.Where(r => r.Type == kind).OrderBy(r => r.Name, StringComparer.Ordinal))
             {
                 refs.SetObject(kind, row.Name, row.Id);
-                JsonObject doc = await v2.GetAsync($"objects/{row.Id}", ct).ConfigureAwait(false);
+                JsonObject doc = await v2.GetAsync(PlanApi.ObjectPath(row.Id), ct).ConfigureAwait(false);
                 var item = new JsonObject { ["name"] = row.Name };
                 if (kind == "query")
                 {
@@ -219,7 +219,7 @@ internal sealed class SpacePlanReader(AnytypeApiClient api)
             AnytypeV2SearchRow? hit = hits.FirstOrDefault(r => r.Name == pageName);
             if (hit is null) continue;
             refs.SetObject(hit.Name, hit.Id);
-            JsonObject doc = await v2.GetAsync($"objects/{hit.Id}", ct).ConfigureAwait(false);
+            JsonObject doc = await v2.GetAsync(PlanApi.ObjectPath(hit.Id), ct).ConfigureAwait(false);
             pages.Add(new JsonObject
             {
                 ["name"] = pageName,
@@ -314,7 +314,7 @@ internal sealed class SpacePlanReader(AnytypeApiClient api)
     {
         JsonObject? doc = refs.TypeKey(targetId) is { } typeKey && typeDocs.TryGetValue(typeKey, out JsonObject? typeDoc)
             ? typeDoc
-            : await v2.TryGetAsync($"objects/{targetId}", ct).ConfigureAwait(false);
+            : await v2.TryGetAsync(PlanApi.ObjectPath(targetId), ct).ConfigureAwait(false);
         JsonObject? dataview = (doc?["blocks"] as JsonArray ?? []).OfType<JsonObject>()
             .FirstOrDefault(b => Str0(b, "type") == "dataview");
         JsonObject? view = (dataview?["views"] as JsonArray ?? []).OfType<JsonObject>()

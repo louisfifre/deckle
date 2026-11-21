@@ -27,7 +27,7 @@ public sealed class AnytypeV2Writer(AnytypeV2Client client)
         ArgumentException.ThrowIfNullOrWhiteSpace(objectId);
         return SendAsync(
             HttpMethod.Patch,
-            $"objects/{objectId}",
+            $"objects/{AnytypeObjectId.Segment(objectId, nameof(objectId))}",
             AnytypeV2OpBatch.ToBody(ops, AnytypeV2OpScope.Object),
             options,
             ct);
@@ -44,7 +44,7 @@ public sealed class AnytypeV2Writer(AnytypeV2Client client)
         ArgumentException.ThrowIfNullOrWhiteSpace(typeKey);
         return SendAsync(
             HttpMethod.Patch,
-            $"types/{typeKey}",
+            $"types/{AnytypeObjectId.Escape(typeKey, nameof(typeKey))}",
             AnytypeV2OpBatch.ToBody(ops, AnytypeV2OpScope.Type),
             options,
             ct);

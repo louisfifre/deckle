@@ -8,7 +8,7 @@ namespace Deckle.Anytype.Tests;
 [Trait("Category", "integration")]
 public class AnytypeApiClientReplayTests
 {
-    private const string ObjectId = "bafyreiReplayaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa";
+    private const string ObjectId = "bafyreireplayaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa";
 
     static CancellationToken Ct => TestContext.Current.CancellationToken;
 

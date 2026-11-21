@@ -12,6 +12,9 @@ internal sealed class PlanApi(AnytypeV2Client client, string spaceId)
 
     public string SpaceId => spaceId;
 
+    // The path of one object: the id is checked and escaped, never pasted.
+    public static string ObjectPath(string id) => $"objects/{AnytypeObjectId.Segment(id, nameof(id))}";
+
     public async Task<JsonObject?> TryGetAsync(string path, CancellationToken ct)
     {
         try

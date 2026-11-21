@@ -13,8 +13,8 @@ namespace Deckle.Anytype.Tests;
 [Trait("Category", "observability")]
 public sealed class BinLogTests
 {
-    const string ObjId = "bafyreiObjaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa";
-    const string OtherId = "bafyreiOthbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb";
+    const string ObjId = "bafyreiobjaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa";
+    const string OtherId = "bafyreiothbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb";
     static CancellationToken Ct => TestContext.Current.CancellationToken;
 
     sealed class FakeApproval(DeletionApprovalOutcome outcome) : IDeletionApproval

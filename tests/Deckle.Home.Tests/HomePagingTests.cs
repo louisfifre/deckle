@@ -31,11 +31,11 @@ public class HomePagingTests
         // inside the range a stride of 1000 would skip.
         var objects = new List<JsonObject>
         {
-            FakeHomeAnytypeServer.Room("room-zz", "ZZ", "Pièce fictive"),
-            FakeHomeAnytypeServer.Point("point-1", "ZZ-LC01", "Plafonnier fictif", "room-zz"),
+            FakeHomeAnytypeServer.Room("bafyreiroomzzaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa", "ZZ", "Pièce fictive"),
+            FakeHomeAnytypeServer.Point("bafyreipointbaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa", "ZZ-LC01", "Plafonnier fictif", "bafyreiroomzzaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"),
         };
         objects.AddRange(Plants(0, 148));
-        objects.Add(FakeHomeAnytypeServer.Point("point-2", "ZZ-CS01", "Interrupteur fictif", "room-zz", "point-1"));
+        objects.Add(FakeHomeAnytypeServer.Point("bafyreipoint2aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa", "ZZ-CS01", "Interrupteur fictif", "bafyreiroomzzaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa", "bafyreipointbaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"));
         objects.AddRange(Plants(148, Fillers - 148));
         server.SetObjects([.. objects]);
 
@@ -52,7 +52,7 @@ public class HomePagingTests
         using var server = new FakeHomeAnytypeServer { PageCap = PageCap };
         var objects = new List<JsonObject>(Plants(0, 150))
         {
-            FakeHomeAnytypeServer.Circuit("circuit-1", "B1.7"),
+            FakeHomeAnytypeServer.Circuit("bafyreicircuitbaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa", "B1.7"),
         };
         objects.AddRange(Plants(150, Fillers - 150));
         server.SetObjects([.. objects]);

@@ -25,9 +25,9 @@ public class AnytypeV2PropertyMapTests
     [Fact]
     public void ObjectsAreBareIdsInServedOrder()
     {
-        AnytypeV2PropertyMap map = MapOf("""{"projects":["bafyA","bafyB"]}""");
+        AnytypeV2PropertyMap map = MapOf("""{"projects":["bafya","bafyb"]}""");
 
-        Assert.Equal(new[] { "bafyA", "bafyB" }, map.ObjectIds("projects"));
+        Assert.Equal(new[] { "bafya", "bafyb" }, map.ObjectIds("projects"));
         Assert.Equal(2, map.Count("projects"));
     }
 

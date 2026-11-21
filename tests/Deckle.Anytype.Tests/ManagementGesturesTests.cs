@@ -14,9 +14,9 @@ namespace Deckle.Anytype.Tests;
 [Trait("Category", "integration")]
 public class ManagementGesturesTests
 {
-    const string ObjId = "bafyreiObjaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa";
-    const string OtherId = "bafyreiOthbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb";
-    const string ThirdId = "bafyreiThrccccccccccccccccccccccccccccccccccccccccccccccc";
+    const string ObjId = "bafyreiobjaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa";
+    const string OtherId = "bafyreiothbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb";
+    const string ThirdId = "bafyreithrccccccccccccccccccccccccccccccccccccccccccccccc";
     static CancellationToken Ct => TestContext.Current.CancellationToken;
 
     sealed class FakeApproval(DeletionApprovalOutcome outcome) : IDeletionApproval

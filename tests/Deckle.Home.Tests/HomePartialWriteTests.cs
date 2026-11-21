@@ -27,8 +27,8 @@ public class HomePartialWriteTests
     {
         var server = new FakeHomeAnytypeServer();
         server.SetObjects(
-            FakeHomeAnytypeServer.Room("room-zz", "ZZ", "Pièce fictive"),
-            FakeHomeAnytypeServer.Collection("floor-1", "Niveau fictif"));
+            FakeHomeAnytypeServer.Room("bafyreiroomzzaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa", "ZZ", "Pièce fictive"),
+            FakeHomeAnytypeServer.Collection("bafyreifloorbaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa", "Niveau fictif"));
         return server;
     }
 
@@ -76,7 +76,7 @@ public class HomePartialWriteTests
                 Ct));
 
         FakeHomeAnytypeServer.Received membership = Assert.Single(server.Requests, IsMembership);
-        Assert.Contains("created-1", membership.Body);
+        Assert.Contains("bafyreicreatedbaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa", membership.Body);
         Assert.Contains("appliquée", error.Message);
     }
 
@@ -118,19 +118,19 @@ public class HomePartialWriteTests
     {
         using var server = new FakeHomeAnytypeServer();
         server.SetObjects(
-            FakeHomeAnytypeServer.Room("room-zz", "ZZ", "Pièce fictive"),
-            FakeHomeAnytypeServer.Plant("plant-1", "Ficus fictif"),
-            FakeHomeAnytypeServer.Plant("plant-2", "Cactus fictif"),
-            FakeHomeAnytypeServer.Plant("plant-3", "Lierre fictif"));
+            FakeHomeAnytypeServer.Room("bafyreiroomzzaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa", "ZZ", "Pièce fictive"),
+            FakeHomeAnytypeServer.Plant("bafyreiplantbaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa", "Ficus fictif"),
+            FakeHomeAnytypeServer.Plant("bafyreiplant2aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa", "Cactus fictif"),
+            FakeHomeAnytypeServer.Plant("bafyreiplant3aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa", "Lierre fictif"));
         int patches = 0;
         server.FailNext(request => request.Method == "PATCH" && ++patches == 2);
 
         HomePartialWriteException error = await Assert.ThrowsAsync<HomePartialWriteException>(() =>
             Gestures(server).UpdateAsync(
                 [
-                    new HomeUpdateItem("plant-1", "Ficus renommé", null),
-                    new HomeUpdateItem("plant-2", "Cactus renommé", null),
-                    new HomeUpdateItem("plant-3", "Lierre renommé", null),
+                    new HomeUpdateItem("bafyreiplantbaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa", "Ficus renommé", null),
+                    new HomeUpdateItem("bafyreiplant2aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa", "Cactus renommé", null),
+                    new HomeUpdateItem("bafyreiplant3aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa", "Lierre renommé", null),
                 ],
                 Ct));
 
@@ -146,13 +146,13 @@ public class HomePartialWriteTests
     {
         using var server = new FakeHomeAnytypeServer();
         server.SetObjects(
-            FakeHomeAnytypeServer.Collection("floor-1", "Niveau fictif"),
-            FakeHomeAnytypeServer.Plant("plant-1", "Ficus fictif"));
+            FakeHomeAnytypeServer.Collection("bafyreifloorbaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa", "Niveau fictif"),
+            FakeHomeAnytypeServer.Plant("bafyreiplantbaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa", "Ficus fictif"));
         server.FailNext(IsMembership);
 
         HomePartialWriteException error = await Assert.ThrowsAsync<HomePartialWriteException>(() =>
             Gestures(server).UpdateAsync(
-                [new HomeUpdateItem("plant-1", "Ficus renommé", null, AddToCollections: ["Niveau fictif"])],
+                [new HomeUpdateItem("bafyreiplantbaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa", "Ficus renommé", null, AddToCollections: ["Niveau fictif"])],
                 Ct));
 
         Assert.Empty(error.Applied);
@@ -166,11 +166,11 @@ public class HomePartialWriteTests
     public async Task UpdateRethrowsTheOriginalFailureWhenNothingWasWritten()
     {
         using var server = new FakeHomeAnytypeServer();
-        server.SetObjects(FakeHomeAnytypeServer.Plant("plant-1", "Ficus fictif"));
+        server.SetObjects(FakeHomeAnytypeServer.Plant("bafyreiplantbaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa", "Ficus fictif"));
         server.FailNext(request => request.Method == "PATCH");
 
         Exception error = await Assert.ThrowsAnyAsync<Exception>(() =>
-            Gestures(server).UpdateAsync([new HomeUpdateItem("plant-1", "Ficus renommé", null)], Ct));
+            Gestures(server).UpdateAsync([new HomeUpdateItem("bafyreiplantbaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa", "Ficus renommé", null)], Ct));
 
         Assert.IsNotType<HomePartialWriteException>(error);
     }
