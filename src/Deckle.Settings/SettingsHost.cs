@@ -34,6 +34,13 @@ public static class SettingsHost
     // can't see the Whisper child module. Callers treat "unwired" as provisioned.
     public static Func<bool>? IsSpeechProvisioned;
 
+    // What a Parakeet model folder holds, for the speech engine card of the
+    // Transcription page. The argument is the folder as configured, empty for
+    // the default one. Answered by the App, which composes the Parakeet child
+    // module that knows the folder's layout; Deckle.Transcription.Views must
+    // not reference that module. Unwired (null) shows no state at all.
+    public static Func<string, ParakeetModelFolderState>? InspectParakeetModelFolder;
+
     // The update knowledge lives in Deckle.Setup (UpdateService), which this
     // module must not reference. GetAvailableUpdateVersion is the newer release
     // the silent check parked (null = none known).
@@ -64,6 +71,11 @@ public static class SettingsHost
     // when developer mode is off. Unwired (null) hides the capture card.
     public static Func<Task<InterfaceCaptureOutcome?>>? CaptureInterface;
 }
+
+// A Parakeet model folder as the App found it: the folder it resolved (the
+// default one when none is configured), whether it holds every file the default
+// FP32 configuration needs, and whether the optional FP16 encoder is there too.
+public sealed record ParakeetModelFolderState(string Folder, bool IsComplete, bool HasFp16Encoder);
 
 public sealed record ProfileHotkey(string ProfileName, Deckle.Core.HotkeyChord Chord);
 
