@@ -8,32 +8,45 @@ using Deckle.Transcription.Whisper;
 namespace Deckle.Benchmark.CaptureTail;
 
 // Word-level view of the tail: replays each raw take through the production
-// WhisperBackend with the tail cut to 200, 300 and 400 ms (the recorded one) and
-// counts the words that change. Nothing but counts and milliseconds is printed.
+// WhisperBackend with the tail cut to 300 and 200 ms (the recorded one is 400)
+// and counts the words that change at the END of the text. Nothing but counts and
+// milliseconds is printed.
 //
 // Variants, built from the recorded take (which ends RecordedTailMs after the press):
 //   400      the file as recorded: the reference.
-//   400 again  a second run of the same audio: the noise floor of the comparison
-//              (whisper is not guaranteed to repeat itself on the GPU).
+//   400 again  a second run of the same audio. Whisper does not repeat itself
+//              exactly on the GPU, so this is the noise floor: a variant only
+//              means something by what it adds over this control.
 //   300, 200 the file cut by 100 and 200 ms: what a shorter tail would have heard.
 //   600      NOT replayable: no audio exists past the recorded 400 ms. The
-//            variant appends 200 ms of digital silence, which is what a 600 ms
-//            tail would add in a take whose speech ended before the press and
-//            nothing more. It bounds the cost (words changed by silence alone),
-//            never the gain.
+//            variant appends 200 ms of digital silence, which is all a 600 ms
+//            tail adds in a take whose speech ended before the press. It shows
+//            what extra silence costs, never what extra audio would gain.
+//
+// Metrics are taken on the last FinalWords words only, because a difference in
+// the middle of a 20 s take says nothing about the tail:
+//   - final words missing: of the reference's last FinalWords words, those not
+//     found among the variant's last FinalWords + 2 words.
+//   - last word differs: the reference's last word is not the variant's last word.
+// They are printed for all takes and for the takes whose cut region holds sound
+// (energy above AudibleDbfs in the cut 100 or 200 ms), the only ones where the
+// variant hears something different from the reference.
 // The reference is not a ground truth: a word the 400 ms tail itself cut is
-// invisible here. That is why the share of takes with sound up to the end of the
-// file is printed next to it.
+// invisible here.
 internal static class TailReplay
 {
-    private sealed record Variant(string Label, int TailMs, Func<float[], float[]> Build);
+    private const int FinalWords = 4;
+    private const double AudibleDbfs = -45;
+    private const int FrameMs = 20;
+
+    private sealed record Variant(string Label, int TailMs, int CutMs, Func<float[], float[]> Build);
 
     private static readonly Variant[] Variants =
     [
-        new("400 again", 400, s => s),
-        new("300", 300, s => Cut(s, 100)),
-        new("200", 200, s => Cut(s, 200)),
-        new("600 (silence added)", 600, s => Pad(s, 200)),
+        new("400 again", 400, 0, s => s),
+        new("300", 300, 100, s => Cut(s, 100)),
+        new("200", 200, 200, s => Cut(s, 200)),
+        new("600 (silence added)", 600, 0, s => Pad(s, 200)),
     ];
 
     private static float[] Cut(float[] s, int ms) =>
@@ -64,7 +77,8 @@ internal static class TailReplay
         }
         Stats.Result($"replay: model {host.Transcription.Engine.Model}, accelerator {backend.DetectedAccelerator}, language {host.Transcription.Engine.Language}, shipped defaults otherwise");
 
-        var perVariant = Variants.ToDictionary(v => v, _ => new Tally());
+        var all = Variants.ToDictionary(v => v, _ => new Tally());
+        var audible = Variants.ToDictionary(v => v, _ => new Tally());
         var reference = new Tally();
         int takes = 0, emptyReference = 0, aborted = 0;
 
@@ -80,25 +94,43 @@ internal static class TailReplay
 
             takes++;
             reference.Add(refWords, refWords, baseline.TotalDurationMs, 400);
+            double trailingMs = TrailingMs(s);
             foreach (Variant v in Variants)
             {
                 TranscriptionResult r = await Transcribe(backend, v.Build(s));
                 string[] words = WordMetrics.Words(r.FullText);
-                perVariant[v].Add(refWords, words, r.TotalDurationMs, v.TailMs);
+                all[v].Add(refWords, words, r.TotalDurationMs, v.TailMs);
+                if (v.CutMs > 0 && trailingMs < v.CutMs)
+                    audible[v].Add(refWords, words, r.TotalDurationMs, v.TailMs);
             }
-            if (takes % 20 == 0) Console.Error.WriteLine($"{takes} takes replayed");
+            if (takes % 10 == 0) Console.Error.WriteLine($"{takes} takes replayed");
         }
 
-        Stats.Result($"replay: takes compared {takes}, skipped (empty reference text) {emptyReference}, skipped (aborted) {aborted}");
+        Stats.Result($"replay: takes compared {takes}, skipped (empty reference text) {emptyReference}, skipped (aborted) {aborted}; final words = last {FinalWords}");
         Stats.Result($"replay: reference words total {reference.RefWords}, whisper ms p50 {Stats.Percentile(reference.WhisperMs, 50):F0}, p90 {Stats.Percentile(reference.WhisperMs, 90):F0}");
         foreach (Variant v in Variants)
         {
-            Tally t = perVariant[v];
-            Stats.Result($"tail {v.Label}: takes whose words differ from the 400 ms reference {Stats.Share(t.Differ, takes)}");
-            Stats.Result($"tail {v.Label}: takes with final words lost or changed {Stats.Share(t.FinalAffectedTakes, takes)}; final words affected {t.FinalAffectedWords} of {t.RefWords} ({100.0 * t.FinalAffectedWords / Math.Max(1, t.RefWords):F2}%)");
-            Stats.Result($"tail {v.Label}: takes with fewer words {Stats.Share(t.FewerTakes, takes)}; words lost net {t.WordsLost}; word edit distance {t.Edits} ({100.0 * t.Edits / Math.Max(1, t.RefWords):F2}% of reference words)");
-            Stats.Result($"tail {v.Label}: Stop to text ms (tail + whisper) p50 {Stats.Percentile(t.StopToText, 50):F0}, p90 {Stats.Percentile(t.StopToText, 90):F0}; whisper alone p50 {Stats.Percentile(t.WhisperMs, 50):F0}");
+            Print($"tail {v.Label}, all takes", all[v], takes);
+            if (v.CutMs > 0)
+                Print($"tail {v.Label}, takes with sound in the cut {v.CutMs} ms", audible[v], audible[v].Takes);
         }
+    }
+
+    private static void Print(string label, Tally t, int takes)
+    {
+        Stats.Result($"{label}: takes {t.Takes}");
+        if (t.Takes == 0) return;
+        Stats.Result($"{label}: last word differs {Stats.Share(t.LastWordDiffers, takes)}; takes with a final word missing {Stats.Share(t.FinalMissingTakes, takes)}; final words missing {t.FinalMissing} of {takes * FinalWords}");
+        Stats.Result($"{label}: whole-text words differ {Stats.Share(t.Differ, takes)}; word edit distance {100.0 * t.Edits / Math.Max(1, t.RefWords):F2}% of reference words; fewer words in {Stats.Share(t.FewerTakes, takes)}");
+        Stats.Result($"{label}: Stop to text ms (tail + whisper) p50 {Stats.Percentile(t.StopToText, 50):F0}, p90 {Stats.Percentile(t.StopToText, 90):F0}; whisper alone p50 {Stats.Percentile(t.WhisperMs, 50):F0}");
+    }
+
+    // Milliseconds from the last audible frame to the end of the take.
+    private static double TrailingMs(float[] s)
+    {
+        double[] db = WavSamples.FrameDb(s, FrameMs);
+        int last = Array.FindLastIndex(db, d => d >= AudibleDbfs);
+        return last < 0 ? double.PositiveInfinity : s.Length * 1000.0 / WavSamples.SampleRate - (last + 1) * FrameMs;
     }
 
     private static Task<TranscriptionResult> Transcribe(WhisperBackend backend, float[] pcm) =>
@@ -107,21 +139,24 @@ internal static class TailReplay
 
     private sealed class Tally
     {
-        public int Differ, FinalAffectedTakes, FinalAffectedWords, FewerTakes, WordsLost, Edits, RefWords;
+        public int Takes, Differ, FewerTakes, Edits, RefWords, LastWordDiffers, FinalMissing, FinalMissingTakes;
         public List<double> WhisperMs { get; } = [];
         public List<double> StopToText { get; } = [];
 
         public void Add(string[] reference, string[] words, long whisperMs, int tailMs)
         {
+            Takes++;
             RefWords += reference.Length;
             WhisperMs.Add(whisperMs);
             StopToText.Add(tailMs + whisperMs);
             int edits = WordMetrics.EditDistance(reference, words);
             Edits += edits;
             if (edits > 0) Differ++;
-            int affected = WordMetrics.FinalWordsAffected(reference, words);
-            if (affected > 0) { FinalAffectedTakes++; FinalAffectedWords += affected; }
-            if (words.Length < reference.Length) { FewerTakes++; WordsLost += reference.Length - words.Length; }
+            if (words.Length < reference.Length) FewerTakes++;
+            if (words.Length == 0 || words[^1] != reference[^1]) LastWordDiffers++;
+            int missing = WordMetrics.FinalWordsMissing(reference, words, FinalWords);
+            FinalMissing += missing;
+            if (missing > 0) FinalMissingTakes++;
         }
     }
 

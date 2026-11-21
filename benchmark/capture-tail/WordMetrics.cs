@@ -19,16 +19,18 @@ internal static class WordMetrics
         return sb.ToString().Split(' ', StringSplitOptions.RemoveEmptyEntries);
     }
 
-    // Reference words that the hypothesis does not reproduce from its first
-    // divergence on: the final words lost or changed. 0 when the hypothesis
-    // keeps the whole reference as its prefix.
-    public static int FinalWordsAffected(string[] reference, string[] hypothesis)
+    // Of the reference's last `count` words, how many are not found (each word
+    // used once) among the hypothesis's last `count` + 2 words. A tail that cut
+    // the end of the speech shows here; a difference earlier in the text does not.
+    public static int FinalWordsMissing(string[] reference, string[] hypothesis, int count)
     {
-        int common = 0;
-        while (common < reference.Length && common < hypothesis.Length
-               && reference[common] == hypothesis[common])
-            common++;
-        return reference.Length - common;
+        var pool = hypothesis.Skip(Math.Max(0, hypothesis.Length - (count + 2))).ToList();
+        int missing = 0;
+        foreach (string w in reference.Skip(Math.Max(0, reference.Length - count)))
+        {
+            if (!pool.Remove(w)) missing++;
+        }
+        return missing;
     }
 
     public static int EditDistance(string[] a, string[] b)
