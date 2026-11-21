@@ -22,6 +22,9 @@ internal sealed class TaskbarPipeServer : IAsyncDisposable
     private readonly SemaphoreSlim _writeLock = new(1, 1);
     private volatile Stream? _client;
     private int _connections;
+    private readonly Func<NamedPipeServerStream> _createPipe;
+    private readonly TimeSpan _firstRetry;
+    private readonly TimeSpan _retryCeiling;
 
     /// <param name="pipeName">The pipe's name without the \\.\pipe\ prefix.</param>
     /// <param name="allowPackagedClients">
@@ -29,9 +32,18 @@ internal sealed class TaskbarPipeServer : IAsyncDisposable
     /// such as StartMenuExperienceHost, which a plain user ACL does not admit.
     /// </param>
     public TaskbarPipeServer(string pipeName, bool allowPackagedClients = false)
+        : this(pipeName, allowPackagedClients, createPipe: null, firstRetry: null) { }
+
+    /// <param name="createPipe">Makes the pipe instance to serve; null builds the real, access-controlled one. The tests pass one that fails.</param>
+    /// <param name="firstRetry">The wait after a first failure; null is one second. It doubles up to thirty seconds.</param>
+    internal TaskbarPipeServer(string pipeName, bool allowPackagedClients,
+        Func<NamedPipeServerStream>? createPipe, TimeSpan? firstRetry)
     {
         _pipeName = pipeName;
         _allowPackagedClients = allowPackagedClients;
+        _createPipe = createPipe ?? CreatePipe;
+        _firstRetry = firstRetry ?? TimeSpan.FromSeconds(1);
+        _retryCeiling = TimeSpan.FromSeconds(30) > _firstRetry ? TimeSpan.FromSeconds(30) : _firstRetry;
     }
 
     // The name the DLL computes in util.cpp: one pipe per terminal session and
@@ -55,42 +67,94 @@ internal sealed class TaskbarPipeServer : IAsyncDisposable
     public event Action? ClientConnected;
     public event Action? ClientDisconnected;
 
+    // The loop outlives what goes wrong in it: it is the DLL's only way to reach
+    // Deckle, and nobody awaits its task before shutdown, so an exception that
+    // escaped would end it in silence and leave the engine without a channel
+    // until the next start. A failure is logged once per incident, the loop
+    // waits (doubling from FirstRetry up to RetryCeiling) and serves again.
     public async Task RunAsync(CancellationToken cancellation)
     {
+        TimeSpan retry = _firstRetry;
+        bool failing = false;
         while (!cancellation.IsCancellationRequested)
         {
-            NamedPipeServerStream pipe = CreatePipe();
             try
             {
-                await pipe.WaitForConnectionAsync(cancellation).ConfigureAwait(false);
-
-                Interlocked.Increment(ref _connections);
-                _client = pipe;
-                ClientConnected?.Invoke();
-                try
+                await ServeOneClientAsync(cancellation, onPipeReady: () =>
                 {
-                    using var reader = new StreamReader(pipe, JsonLineFraming.Utf8, false, 4096, leaveOpen: true);
-                    while (await reader.ReadLineAsync(cancellation).ConfigureAwait(false) is { } line)
-                    {
-                        if (line.Length == 0) continue;
-                        MessageReceived?.Invoke(NativeMessage.Parse(line));
-                    }
-                }
-                catch (IOException) { }   // the client went away mid-read
-                finally
-                {
-                    _client = null;
-                    ClientDisconnected?.Invoke();
-                }
+                    if (!failing) return;
+                    failing = false;
+                    retry = _firstRetry;
+                    DeckleShellTaskbarSource.Log.TaskbarPipeServerRecovered();
+                }).ConfigureAwait(false);
+                retry = _firstRetry;
             }
             catch (OperationCanceledException)
             {
                 return;
             }
+            catch (Exception exception)
+            {
+                // The server stays up for the whole run, so the first failure is the
+                // incident and the ones that repeat are not written again.
+                if (!failing)
+                {
+                    failing = true;
+                    DeckleShellTaskbarSource.Log.TaskbarPipeServerFailed(exception.GetType().Name, (int)retry.TotalSeconds);
+                }
+                try { await Task.Delay(retry, cancellation).ConfigureAwait(false); }
+                catch (OperationCanceledException) { return; }
+                retry = TimeSpan.FromTicks(Math.Min(retry.Ticks * 2, _retryCeiling.Ticks));
+            }
+        }
+    }
+
+    // One pipe instance: created, waited on, served until its client leaves,
+    // disposed. onPipeReady runs once the pipe exists, which is what shows the
+    // server can listen again after a failure.
+    private async Task ServeOneClientAsync(CancellationToken cancellation, Action onPipeReady)
+    {
+        NamedPipeServerStream pipe = _createPipe();
+        try
+        {
+            onPipeReady();
+            await pipe.WaitForConnectionAsync(cancellation).ConfigureAwait(false);
+
+            Interlocked.Increment(ref _connections);
+            _client = pipe;
+            ClientConnected?.Invoke();
+            try
+            {
+                using var reader = new StreamReader(pipe, JsonLineFraming.Utf8, false, 4096, leaveOpen: true);
+                bool handlerFailing = false;
+                while (await reader.ReadLineAsync(cancellation).ConfigureAwait(false) is { } line)
+                {
+                    if (line.Length == 0) continue;
+                    try
+                    {
+                        MessageReceived?.Invoke(NativeMessage.Parse(line));
+                        handlerFailing = false;
+                    }
+                    catch (Exception exception) when (exception is not OperationCanceledException)
+                    {
+                        // A handler that throws on one line must not cut the client off:
+                        // the line is dropped, the next ones still arrive.
+                        if (handlerFailing) continue;
+                        handlerFailing = true;
+                        DeckleShellTaskbarSource.Log.TaskbarPipeLineFailed(exception.GetType().Name);
+                    }
+                }
+            }
+            catch (IOException) { }   // the client went away mid-read
             finally
             {
-                await pipe.DisposeAsync().ConfigureAwait(false);
+                _client = null;
+                ClientDisconnected?.Invoke();
             }
+        }
+        finally
+        {
+            await pipe.DisposeAsync().ConfigureAwait(false);
         }
     }
 

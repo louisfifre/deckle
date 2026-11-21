@@ -2518,6 +2518,7 @@ _Generated from `git ls-files` — do not edit by hand._
 │   │   │   ├── WhisperViewModel.DictationExperience.cs
 │   │   │   ├── WhisperViewModel.Engine.cs
 │   │   │   ├── WhisperViewModel.Settings.cs
+│   │   │   ├── WhisperViewModel.SpeechEngine.cs
 │   │   │   └── WhisperViewModel.Streaming.cs
 │   │   ├── Deckle.Transcription.Views.csproj
 │   │   ├── DecodingPage.xaml
@@ -3360,6 +3361,7 @@ _Generated from `git ls-files` — do not edit by hand._
 │   │   │   ├── TaskbarCustomizerTests.cs
 │   │   │   ├── TaskbarDocumentBuilderTests.cs
 │   │   │   ├── TaskbarEngineHostStopTests.cs
+│   │   │   ├── TaskbarPipeServerResilienceTests.cs
 │   │   │   ├── TaskbarPipeServerTests.cs
 │   │   │   ├── TaskbarProblemReaderTests.cs
 │   │   │   ├── ThumbnailBoxTests.cs
@@ -3464,6 +3466,7 @@ _Generated from `git ls-files` — do not edit by hand._
 │   │   ├── DictationRecoveryStoreTests.cs
 │   │   ├── DictationTableTemplateTests.cs
 │   │   ├── EnergySegmenterTests.cs
+│   │   ├── EngineChoiceSettingsTests.cs
 │   │   ├── FileBatchLifecycleTests.cs
 │   │   ├── FileToTextTests.cs
 │   │   ├── FileTranscriptionQueueTests.cs
