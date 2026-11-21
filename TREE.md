@@ -58,6 +58,16 @@ _Generated from `git ls-files` — do not edit by hand._
 │   └── workflows/
 │       └── update-readme-stats.yml
 ├── benchmark/
+│   ├── capture-tail/
+│   │   ├── .gitignore
+│   │   ├── CaptureTail.csproj
+│   │   ├── EnergyProfile.cs
+│   │   ├── Program.cs
+│   │   ├── RawTakeCatalog.cs
+│   │   ├── Stats.cs
+│   │   ├── TailReplay.cs
+│   │   ├── WavSamples.cs
+│   │   └── WordMetrics.cs
 │   ├── rewrite/
 │   │   ├── model-compare/
 │   │   │   ├── campaigns/
@@ -203,6 +213,7 @@ _Generated from `git ls-files` — do not edit by hand._
 │   │   ├── research--cerveau-llm--2026-10-13.md  — Cadrage vérifié (2026-10-13) — un cerveau LLM dans Deckle.Llm : les crédits API…
 │   │   ├── research--courbe-manipulation-directe--2026-11-07.md  — Note de conception du changement 7 de la revue de cohérence des pages audio (20…
 │   │   ├── research--cout-de-capture--2026-11-07.md  — Mesure (2026-11-07) : ce que coûte la capture Ambient à 60 Hz et au-delà sur l'…
+│   │   ├── research--fin-de-prise--2026-11-21.md  — Mesure (2026-11-21) du délai de fin de prise de 400 ms : Whisper rejoué sur 196…
 │   │   ├── research--prompts-de-reecriture--2026-11-07.md  — Ce que la boucle d'optimisation des prompts de réécriture et la campagne « prom…
 │   │   ├── research--settings-ux--2026-10-13.md  — Recherche vérifiée (2026-10-13), la direction Settings de Louis passée au cribl…
 │   │   ├── research--seuils-voix--2026-11-06.md  — Cadrage vérifié (2026-11-06) — les seuils de niveau et de détection de voix dup…

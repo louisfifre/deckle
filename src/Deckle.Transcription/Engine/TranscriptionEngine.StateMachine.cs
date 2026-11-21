@@ -23,6 +23,13 @@ public sealed partial class TranscriptionEngine
     // "transcribing" on the press, so the tail is hidden behind that transition.
     // 400 ms: long enough to cover the end of a word and a breath, short enough
     // that the added wait stays under the threshold where a stop feels laggy.
+    // Measured 2026-11-21 (docs/research/research--fin-de-prise--2026-11-21.md,
+    // tool benchmark/capture-tail): Whisper replayed on 196 raw corpus takes cut
+    // to 300 and 200 ms. The last word changed no more often than between two
+    // runs of the same audio at 300 ms, and slightly more at 200 ms, within a
+    // noise of about 10 points. A shorter tail saves 100 to 200 ms; the data
+    // cannot rule out a small loss of final words at 200 ms, and says nothing
+    // about a longer tail (no audio exists past 400 ms). Not proven: kept.
     // Not a setting: nobody should tune it per take. Only tests pass another
     // value, through the internal constructor, so that the suites do not wait
     // 400 ms after every stop press (_captureTail).
