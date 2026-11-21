@@ -1,3 +1,4 @@
+using static Deckle.Hosting.SelfCheck.SelfCheckCapture;
 using System.Diagnostics;
 using Deckle.App.SelfCheck;
 using Deckle.Hosting.SelfCheck;

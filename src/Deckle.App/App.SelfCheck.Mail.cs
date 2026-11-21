@@ -1,3 +1,4 @@
+using static Deckle.Hosting.SelfCheck.SelfCheckCapture;
 using Deckle.App.SelfCheck;
 using Deckle.Hosting.SelfCheck;
 using Deckle.Mail.Hub;

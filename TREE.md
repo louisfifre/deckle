@@ -1378,11 +1378,14 @@ _Generated from `git ls-files` — do not edit by hand._
 │   │   ├── SelfCheck/
 │   │   │   ├── ElementImage.cs
 │   │   │   ├── OffscreenWindow.cs
+│   │   │   ├── SelfCheckCapture.cs
 │   │   │   ├── SelfCheckDataRootGate.cs
+│   │   │   ├── SelfCheckProcess.cs
 │   │   │   ├── SelfCheckReport.cs
 │   │   │   └── SelfCheckTarget.cs
 │   │   ├── Deckle.Hosting.csproj
 │   │   ├── DiagnosticsHost.cs
+│   │   ├── ProcessVersion.cs
 │   │   ├── ResidentInstance.cs
 │   │   ├── WindowLifecycle.cs
 │   │   ├── WindowPlacement.cs
@@ -3067,6 +3070,7 @@ _Generated from `git ls-files` — do not edit by hand._
 │   │   └── MessageTemplateDoctrineTests.cs
 │   ├── Deckle.Hosting.Tests/
 │   │   ├── Deckle.Hosting.Tests.csproj
+│   │   ├── ProcessVersionTests.cs
 │   │   ├── SelfCheckTests.cs
 │   │   └── WindowThemeTests.cs
 │   ├── Deckle.Hud.Tests/
