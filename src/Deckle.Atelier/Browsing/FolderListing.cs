@@ -1,5 +1,5 @@
 using System.Diagnostics;
-using System.Globalization;
+using Deckle.Core;
 
 namespace Deckle.Atelier;
 
@@ -40,11 +40,6 @@ public static class FolderListing
         AttributesToSkip = FileAttributes.Hidden | FileAttributes.System,
     };
 
-    // Explorer's order: CompareOptions.NumericOrdering (.NET 10) compares runs
-    // of digits as numbers, like StrCmpLogicalW.
-    public static readonly IComparer<string> NameOrder = Comparer<string>.Create((a, b) =>
-        CultureInfo.CurrentCulture.CompareInfo.Compare(a, b, CompareOptions.IgnoreCase | CompareOptions.NumericOrdering));
-
     public static FolderListingResult List(string folder)
     {
         var clock = Stopwatch.StartNew();
@@ -80,7 +75,7 @@ public static class FolderListing
     private static int Order(FolderEntry a, FolderEntry b)
     {
         if (a.IsFolder != b.IsFolder) return a.IsFolder ? -1 : 1;
-        return NameOrder.Compare(a.Name, b.Name);
+        return FolderNameOrder.Comparer.Compare(a.Name, b.Name);
     }
 
     private static FolderListingResult Fail(FolderListingFailure failure)

@@ -1,5 +1,6 @@
 using Deckle.Atelier;
 using Deckle.Atelier.Views;
+using Deckle.Core;
 
 namespace Deckle.App;
 

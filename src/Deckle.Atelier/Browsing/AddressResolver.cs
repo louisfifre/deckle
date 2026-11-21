@@ -1,3 +1,5 @@
+using Deckle.Core;
+
 namespace Deckle.Atelier;
 
 public enum AddressFailure

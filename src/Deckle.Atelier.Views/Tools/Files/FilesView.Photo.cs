@@ -1,3 +1,5 @@
+using Deckle.Core;
+
 namespace Deckle.Atelier.Views;
 
 // The panel of a photo selected in the file list: the photo tool's own panel

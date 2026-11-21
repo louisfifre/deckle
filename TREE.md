@@ -735,9 +735,7 @@ _Generated from `git ls-files` — do not edit by hand._
 │   │   │   ├── AddressResolver.cs
 │   │   │   ├── DeckleAtelierSource.FileRecycling.cs
 │   │   │   ├── FolderListing.cs
-│   │   │   ├── FolderPaths.cs
-│   │   │   ├── FolderPlace.cs
-│   │   │   └── NavigationHistory.cs
+│   │   │   └── FolderPlace.cs
 │   │   ├── Formatting/
 │   │   │   ├── EntryFormat.cs
 │   │   │   └── SelectionSummary.cs
@@ -758,26 +756,8 @@ _Generated from `git ls-files` — do not edit by hand._
 │   │   │   ├── DeckleAtelierSource.Launching.cs
 │   │   │   ├── FileLauncher.cs
 │   │   │   └── ShellFileLauncher.cs
-│   │   ├── Map/
-│   │   │   ├── DeckleAtelierSource.MapGraph.cs
-│   │   │   ├── FrontMatter.cs
-│   │   │   ├── MapConventions.cs
-│   │   │   ├── MapFileFacts.cs
-│   │   │   ├── MapFolderWalk.cs
-│   │   │   ├── MapGraphLayout.cs
-│   │   │   ├── MapInventory.cs
-│   │   │   ├── MapInventoryBuilder.cs
-│   │   │   ├── MapItem.cs
-│   │   │   ├── MapItemKind.cs
-│   │   │   ├── MapLink.cs
-│   │   │   ├── MapLinkReader.cs
-│   │   │   ├── MapListFilter.cs
-│   │   │   ├── MapListOrder.cs
-│   │   │   ├── MapNeighbourhood.cs
-│   │   │   ├── MapSection.cs
-│   │   │   ├── MapSkip.cs
-│   │   │   ├── McpDeclarations.cs
-│   │   │   └── TokenEstimate.cs
+│   │   ├── MapGraph/
+│   │   │   └── DeckleAtelierSource.MapGraph.cs
 │   │   ├── Photos/
 │   │   │   ├── CaptureData.cs
 │   │   │   ├── CaptureDataFormat.cs
@@ -1231,7 +1211,11 @@ _Generated from `git ls-files` — do not edit by hand._
 │   │   │   └── Win32Clipboard.cs
 │   │   ├── Io/
 │   │   │   ├── Downloader.cs
+│   │   │   ├── FolderNameOrder.cs
+│   │   │   ├── FolderPaths.cs
 │   │   │   └── ProvisioningResult.cs
+│   │   ├── Navigation/
+│   │   │   └── NavigationHistory.cs
 │   │   ├── Paths/
 │   │   │   ├── AppPaths.cs
 │   │   │   ├── DefaultDataRoot.cs
@@ -1320,6 +1304,27 @@ _Generated from `git ls-files` — do not edit by hand._
 │   │   ├── TelemetryListenerBootstrap.cs
 │   │   ├── TelemetrySettings.cs
 │   │   └── TelemetrySettingsService.cs
+│   ├── Deckle.FolderMap/
+│   │   ├── Deckle.FolderMap.csproj
+│   │   ├── DeckleFolderMapSource.cs
+│   │   ├── FrontMatter.cs
+│   │   ├── MapConventions.cs
+│   │   ├── MapFileFacts.cs
+│   │   ├── MapFolderWalk.cs
+│   │   ├── MapGraphLayout.cs
+│   │   ├── MapInventory.cs
+│   │   ├── MapInventoryBuilder.cs
+│   │   ├── MapItem.cs
+│   │   ├── MapItemKind.cs
+│   │   ├── MapLink.cs
+│   │   ├── MapLinkReader.cs
+│   │   ├── MapListFilter.cs
+│   │   ├── MapListOrder.cs
+│   │   ├── MapNeighbourhood.cs
+│   │   ├── MapSection.cs
+│   │   ├── MapSkip.cs
+│   │   ├── McpDeclarations.cs
+│   │   └── TokenEstimate.cs
 │   ├── Deckle.Home/
 │   │   ├── Schema/
 │   │   │   ├── README.md
@@ -2518,6 +2523,7 @@ _Generated from `git ls-files` — do not edit by hand._
 │   │   │   ├── WhisperViewModel.DictationExperience.cs
 │   │   │   ├── WhisperViewModel.Engine.cs
 │   │   │   ├── WhisperViewModel.Settings.cs
+│   │   │   ├── WhisperViewModel.SpeechEngine.cs
 │   │   │   └── WhisperViewModel.Streaming.cs
 │   │   ├── Deckle.Transcription.Views.csproj
 │   │   ├── DecodingPage.xaml
@@ -2773,16 +2779,8 @@ _Generated from `git ls-files` — do not edit by hand._
 │   │   ├── FolderListingTests.cs
 │   │   ├── FolderPaneBugNotes.md
 │   │   ├── HeaviestFilesTests.cs
-│   │   ├── MapGraphLayoutTests.cs
-│   │   ├── MapInventoryTests.cs
-│   │   ├── MapListFilterTests.cs
-│   │   ├── MapListOrderTests.cs
-│   │   ├── MapNeighbourhoodTests.cs
 │   │   ├── MapSampleFolderTests.cs
-│   │   ├── MapSampleRepository.cs
-│   │   ├── MapTextTests.cs
 │   │   ├── MessageTemplateDoctrineTests.cs
-│   │   ├── NavigationHistoryTests.cs
 │   │   ├── PathRulesTests.cs
 │   │   ├── ScratchFolder.cs
 │   │   ├── SelectionSummaryTests.cs
@@ -2917,10 +2915,13 @@ _Generated from `git ls-files` — do not edit by hand._
 │   ├── Deckle.Core.Tests/
 │   │   ├── Deckle.Core.Tests.csproj
 │   │   ├── DpiTests.cs
+│   │   ├── FolderNameOrderTests.cs
+│   │   ├── FolderPathsTests.cs
 │   │   ├── HotkeyChordTests.cs
 │   │   ├── JsonSettingsStoreBugNotes.md
 │   │   ├── JsonSettingsStoreTests.cs
 │   │   ├── ModuleDirectoryNameTests.cs
+│   │   ├── NavigationHistoryTests.cs
 │   │   └── SpacingTests.cs
 │   ├── Deckle.Diagnostics.Logging.Tests/
 │   │   ├── Deckle.Diagnostics.Logging.Tests.csproj
@@ -2984,6 +2985,19 @@ _Generated from `git ls-files` — do not edit by hand._
 │   │   ├── UserIncidentListenerFaultTests.cs
 │   │   ├── UserIncidentRegistryTests.cs
 │   │   └── WorkIdTests.cs
+│   ├── Deckle.FolderMap.Tests/
+│   │   ├── Deckle.FolderMap.Tests.csproj
+│   │   ├── DeckleFolderMapSourceEventIdTests.cs
+│   │   ├── MapEventsTests.cs
+│   │   ├── MapGraphLayoutTests.cs
+│   │   ├── MapInventoryTests.cs
+│   │   ├── MapListFilterTests.cs
+│   │   ├── MapListOrderTests.cs
+│   │   ├── MapNeighbourhoodTests.cs
+│   │   ├── MapSampleRepository.cs
+│   │   ├── MapTextTests.cs
+│   │   ├── MessageTemplateDoctrineTests.cs
+│   │   └── ScratchFolder.cs
 │   ├── Deckle.Home.Tests/
 │   │   ├── AssemblyInfo.cs
 │   │   ├── Deckle.Home.Tests.csproj
@@ -3464,6 +3478,7 @@ _Generated from `git ls-files` — do not edit by hand._
 │   │   ├── DictationRecoveryStoreTests.cs
 │   │   ├── DictationTableTemplateTests.cs
 │   │   ├── EnergySegmenterTests.cs
+│   │   ├── EngineChoiceSettingsTests.cs
 │   │   ├── FileBatchLifecycleTests.cs
 │   │   ├── FileToTextTests.cs
 │   │   ├── FileTranscriptionQueueTests.cs

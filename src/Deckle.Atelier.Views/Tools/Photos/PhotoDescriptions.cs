@@ -1,3 +1,5 @@
+using Deckle.Core;
+
 namespace Deckle.Atelier.Views;
 
 // What the photo tool and the file tool share of the descriptions: the one

@@ -83,9 +83,6 @@ internal static class AppModules
             Id = ModuleIds.Projects,
             Glyph = Glyphs.Folder,
             Order = 710,
-            // It reuses the Atelier's engine (the map's inventory and the
-            // folder paths), so that engine's DLLs must be on disk.
-            DependsOn = [ModuleIds.Atelier],
         });
     }
 }

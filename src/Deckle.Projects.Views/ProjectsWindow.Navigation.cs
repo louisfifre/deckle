@@ -1,9 +1,9 @@
 using System.Diagnostics;
-using Deckle.Atelier;
 using Microsoft.UI.Xaml;
 using Microsoft.UI.Xaml.Controls;
 using Microsoft.UI.Xaml.Media;
 using Microsoft.UI.Xaml.Media.Animation;
+using Deckle.Core;
 
 namespace Deckle.Projects.Views;
 

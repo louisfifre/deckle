@@ -1,5 +1,6 @@
 using Microsoft.UI.Xaml;
 using Microsoft.UI.Xaml.Input;
+using Deckle.Core;
 
 namespace Deckle.Atelier.Views;
 

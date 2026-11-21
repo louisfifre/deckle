@@ -1,3 +1,5 @@
+using Deckle.Core;
+
 namespace Deckle.Projects;
 
 // A place the window can show: Home, a category's page, a project's page. A

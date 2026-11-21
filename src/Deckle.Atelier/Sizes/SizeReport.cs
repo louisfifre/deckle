@@ -1,3 +1,5 @@
+using Deckle.Core;
+
 namespace Deckle.Atelier;
 
 // One sub-folder's row in the Sizes list (12.7). Bytes is null while the
@@ -131,6 +133,6 @@ public sealed class SizeReport
             if (b.Bytes is null) return -1;
             return b.Bytes.Value.CompareTo(a.Bytes.Value);
         }
-        return FolderListing.NameOrder.Compare(a.Name, b.Name);
+        return FolderNameOrder.Comparer.Compare(a.Name, b.Name);
     }
 }

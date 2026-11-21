@@ -1,3 +1,5 @@
+using Deckle.Core;
+
 namespace Deckle.Atelier;
 
 // Where the window stands: a folder inside one added folder. The address bar

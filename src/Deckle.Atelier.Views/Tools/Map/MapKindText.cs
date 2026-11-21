@@ -1,3 +1,5 @@
+using Deckle.FolderMap;
+
 namespace Deckle.Atelier.Views;
 
 // How the map names and draws each kind of item. The kinds are told apart at
