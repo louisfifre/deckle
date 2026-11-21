@@ -28,14 +28,26 @@
                                             x:Uid="DecodingPageHeader"
                                             ResetAllRequested="ResetAll_Click" />
 
+                <!-- Shown while Parakeet is the chosen speech engine: the four sections
+                     below are Whisper parameters Parakeet does not read, so the page
+                     hides them and says why (DecodingPage.ApplyEngineVisibility). -->
+                <InfoBar x:Name="WhisperOnlyInfoBar"
+                         x:Uid="DecodingPageWhisperOnlyInfoBar"
+                         Severity="Informational"
+                         IsClosable="False"
+                         IsOpen="False"
+                         catalog:InfoBarLayout.CollapseWhenClosed="True" />
+
                 <!-- ── Decoding ────────────────────────────────────────────── -->
-                <catalog:SettingsSection x:Uid="DecodingPageDecodingSection">
+                <catalog:SettingsSection x:Name="DecodingSection"
+                                         x:Uid="DecodingPageDecodingSection">
                     <StackPanel x:Name="DecodingHost"
                                 Spacing="{StaticResource SettingsCardSpacing}" />
                 </catalog:SettingsSection>
 
                 <!-- ── Confidence ──────────────────────────────────────────── -->
-                <catalog:SettingsSection x:Uid="DecodingPageConfidenceSection">
+                <catalog:SettingsSection x:Name="ConfidenceSection"
+                                         x:Uid="DecodingPageConfidenceSection">
                     <StackPanel x:Name="ConfidenceHost"
                                 Spacing="{StaticResource SettingsCardSpacing}" />
                 </catalog:SettingsSection>
@@ -51,13 +63,15 @@
                             Spacing="{StaticResource SettingsCardSpacing}" />
 
                 <!-- ── Output filters ──────────────────────────────────────── -->
-                <catalog:SettingsSection x:Uid="WhisperPageOutputFiltersSection">
+                <catalog:SettingsSection x:Name="OutputFiltersSection"
+                                         x:Uid="WhisperPageOutputFiltersSection">
                     <StackPanel x:Name="OutputFiltersHost"
                                 Spacing="{StaticResource SettingsCardSpacing}" />
                 </catalog:SettingsSection>
 
                 <!-- ── Context ─────────────────────────────────────────────── -->
-                <catalog:SettingsSection x:Uid="WhisperPageContextSegmentationSection">
+                <catalog:SettingsSection x:Name="ContextSection"
+                                         x:Uid="WhisperPageContextSegmentationSection">
                     <StackPanel x:Name="ContextHost"
                                 Spacing="{StaticResource SettingsCardSpacing}" />
                 </catalog:SettingsSection>

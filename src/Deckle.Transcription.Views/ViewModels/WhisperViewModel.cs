@@ -21,6 +21,10 @@ public partial class WhisperViewModel : ObservableObject
         _isSyncing = true;
 
         ModelsDirectory = "";
+        var engine = new EngineSettings();
+        Backend = engine.Backend;
+        ParakeetModelDirectory = engine.ParakeetModelDirectory;
+        ParakeetEncoder = engine.ParakeetEncoder;
         Model = "ggml-base.bin";
         UseGpu = true;
         Language = "fr";
@@ -82,6 +86,9 @@ public partial class WhisperViewModel : ObservableObject
         {
             var s = TranscriptionSettingsService.Instance.Current;
             ModelsDirectory = s.ModelsDirectory;
+            Backend = s.Engine.Backend;
+            ParakeetModelDirectory = s.Engine.ParakeetModelDirectory;
+            ParakeetEncoder = s.Engine.ParakeetEncoder;
             Model = s.Engine.Model;
             UseGpu = s.Engine.UseGpu;
             Language = s.Engine.Language;
@@ -132,6 +139,9 @@ public partial class WhisperViewModel : ObservableObject
         var s = TranscriptionSettingsService.Instance.Current;
 
         s.ModelsDirectory = ModelsDirectory;
+        s.Engine.Backend = Backend;
+        s.Engine.ParakeetModelDirectory = ParakeetModelDirectory;
+        s.Engine.ParakeetEncoder = ParakeetEncoder;
         s.Engine.Model = Model;
         s.Engine.UseGpu = UseGpu;
         s.Engine.Language = Language;

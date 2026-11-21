@@ -75,6 +75,15 @@ public partial class App
         Settings.SettingsHost.IsSpeechProvisioned =
             () => NativeRuntime.IsUsable() && SpeechModels.IsAnyModelInstalled();
 
+        // Same reason for the Parakeet model folder: the layout lives in the
+        // Parakeet child module, which only the App references.
+        Settings.SettingsHost.InspectParakeetModelFolder = configured =>
+        {
+            var files = Deckle.Transcription.Parakeet.ParakeetModelFiles.Resolve(
+                configured, TranscriptionSettingsService.Instance.ResolveModelsDirectory());
+            return new Settings.ParakeetModelFolderState(files.Directory, files.IsComplete, files.HasFp16Encoder);
+        };
+
         WireUpdaterHooks();
 
         // The live app cannot copy its own data root, so it restarts into
