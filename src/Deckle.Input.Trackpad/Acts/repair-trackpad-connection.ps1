@@ -19,8 +19,10 @@
     module. It is safe to re-run: each step detects the current state.
 
 .PARAMETER BackupDir
-    Where the driver backup is exported. Defaults to the Deckle trackpad module
-    directory under %LOCALAPPDATA% (or $env:DECKLE_DATA_ROOT when set).
+    Where the driver backup is exported. Defaults to a folder under
+    %ProgramData% that only administrators and SYSTEM can write, because the
+    backup is reinstalled as administrator. The folder is locked down on each
+    run, including a custom one passed here.
 #>
 
 [CmdletBinding()]
@@ -126,13 +128,30 @@ if (-not (Test-Admin)) {
 
 # ── Resolve backup directory ──────────────────────────────────────────────────
 
-if (-not $BackupDir) {
-    if ($env:DECKLE_DATA_ROOT) {
-        $BackupDir = Join-Path $env:DECKLE_DATA_ROOT 'modules\trackpad\driver-backup'
-    } else {
-        $BackupDir = Join-Path $env:LOCALAPPDATA 'Deckle\modules\trackpad\driver-backup'
+# The backup is reinstalled as administrator, so it must live where only
+# administrators can write: under %ProgramData%, never under the user's profile
+# (nor under DECKLE_DATA_ROOT, which the user controls). The folder is locked
+# down each run, so a folder that already exists with looser rights is fixed.
+function Protect-BackupDir {
+    param([string]$Dir)
+    New-Item -ItemType Directory -Path $Dir -Force | Out-Null
+    $admins = New-Object Security.Principal.SecurityIdentifier('S-1-5-32-544')
+    $system = New-Object Security.Principal.SecurityIdentifier('S-1-5-18')
+    $inherit = [Security.AccessControl.InheritanceFlags]'ContainerInherit, ObjectInherit'
+    $acl = New-Object Security.AccessControl.DirectorySecurity
+    $acl.SetOwner($admins)
+    $acl.SetAccessRuleProtection($true, $false)
+    foreach ($sid in @($admins, $system)) {
+        $acl.AddAccessRule((New-Object Security.AccessControl.FileSystemAccessRule(
+            $sid, 'FullControl', $inherit, 'None', 'Allow')))
     }
+    Set-Acl -Path $Dir -AclObject $acl
 }
+
+if (-not $BackupDir) {
+    $BackupDir = Join-Path $env:ProgramData 'Deckle\trackpad-driver-backup'
+}
+Protect-BackupDir $BackupDir
 
 Write-Section 'Apple Magic Trackpad 2 — connection repair'
 Write-Info "Driver INF       : $InfOriginalName"
@@ -164,7 +183,8 @@ else {
         Write-Info 'The removal already happened on a previous run — continuing.'
     }
     else {
-        Write-Err 'Driver not found in the store and no backup exists.'
+        Write-Err 'Driver not found in the store and no trusted backup exists.'
+        Write-Host '  (A backup left by an older version under the user profile is not trusted.)' -ForegroundColor Red
         Write-Host '  The Apple trackpad driver does not appear to be installed.' -ForegroundColor Red
         Write-Host '  Pair the trackpad once (Windows will install the driver),' -ForegroundColor Red
         Write-Host '  then re-run this script.' -ForegroundColor Red

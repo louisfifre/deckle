@@ -251,7 +251,9 @@ public sealed class DeckleTrackpadSource : DeckleEventSource
         if (IsEnabled()) WriteEvent(EvtRepairCompleted, exit_code);
     }
 
-    // reason: script_failed (the script's own exit 1 after a failed step) or
+    // reason: script_failed (the script's own exit 1 after a failed step),
+    // script_modified (exit 3: the extracted file did not match the embedded
+    // script's SHA-256, so it was refused), script_unreadable (exit 4) or
     // script_interrupted (any other code, typically the console closed).
     [Event(EvtRepairFailed,
            Level = EventLevel.Warning,
