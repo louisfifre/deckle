@@ -23,6 +23,11 @@ public sealed partial class TranscriptionEngine
     // "transcribing" on the press, so the tail is hidden behind that transition.
     // 400 ms: long enough to cover the end of a word and a breath, short enough
     // that the added wait stays under the threshold where a stop feels laggy.
+    // Measured 2026-11-21 on 113 raw corpus takes (docs/research/
+    // research--fin-de-prise--2026-11-21.md, tool benchmark/capture-tail): at
+    // -50 dBFS, 26 % of takes still had sound at the press; a 300 ms tail would
+    // have cut sound in 12 % and 200 ms in 22 %; only 2 takes ran to the end of
+    // the 400 ms. So lower is worse and higher gains almost nothing: kept.
     // Not a setting: nobody should tune it per take. Only tests pass another
     // value, through the internal constructor, so that the suites do not wait
     // 400 ms after every stop press (_captureTail).
