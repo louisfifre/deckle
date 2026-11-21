@@ -10,10 +10,6 @@ public sealed partial class DeckleWhispSource
     // The DSP stage lives in Deckle.Audio but the orchestrator invokes it just
     // before the ASR backend, so its events go on the orchestrator's provider:
     // the pipeline's observability stays under one provider and one filter.
-    //
-    // PreprocessedTelemetryRecorded is the post-DSP mirror of DeckleAudioSource's
-    // raw MicrophoneTelemetryRecorded, on Heartbeat like it, so the two
-    // distributions read before/after term for term.
 
     [Event(EvtTranscriptionPreprocessed,
            Level = EventLevel.Verbose,
@@ -24,33 +20,5 @@ public sealed partial class DeckleWhispSource
         // Once per utterance on the streaming path.
         if (IsTakeDetailEnabled((EventKeywords)Keywords.Pipeline))
             WriteEvent(EvtTranscriptionPreprocessed, input_dbfs, output_dbfs, makeup_db, output_peak);
-    }
-
-    [Event(EvtPreprocessedTelemetryRecorded,
-           Level = EventLevel.Verbose,
-           Tags = ObservationTags.Dataset,
-           Keywords = (EventKeywords)Keywords.Heartbeat,
-           Message = "duration_seconds={0:F1} | samples={1} | min_dbfs={2:F1} | p10_dbfs={3:F1} | p25_dbfs={4:F1} | p50_dbfs={5:F1} | p75_dbfs={6:F1} | p90_dbfs={7:F1} | max_dbfs={8:F1} | mean_rms={9:F4} | mean_dbfs={10:F1}")]
-    public void PreprocessedTelemetryRecorded(
-        double duration_seconds,
-        int    samples,
-        double min_dbfs,
-        double p10_dbfs,
-        double p25_dbfs,
-        double p50_dbfs,
-        double p75_dbfs,
-        double p90_dbfs,
-        double max_dbfs,
-        double mean_rms,
-        double mean_dbfs,
-        double tail_rms,
-        double tail_dbfs,
-        string tail_state)
-    {
-        if (!base.IsEnabled(EventLevel.Verbose, (EventKeywords)Keywords.Heartbeat)) return;
-        WriteEvent(EvtPreprocessedTelemetryRecorded,
-            duration_seconds, samples,
-            min_dbfs, p10_dbfs, p25_dbfs, p50_dbfs, p75_dbfs, p90_dbfs, max_dbfs,
-            mean_rms, mean_dbfs, tail_rms, tail_dbfs, tail_state);
     }
 }

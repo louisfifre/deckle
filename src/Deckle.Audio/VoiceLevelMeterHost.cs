@@ -11,7 +11,6 @@ internal sealed class VoiceLevelMeterHost(string endpointId, double voiceLevelDb
 
     public string AudioInputEndpointId => endpointId;
     public int MaxRecordingDurationSeconds => 0;
-    public bool MicrophoneTelemetryEnabled => false;
     public double VoiceLevelDbfs => voiceLevelDbfs;
     public string RecordingPurpose => Purpose;
     public bool RetainsAudio => false;

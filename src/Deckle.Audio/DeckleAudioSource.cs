@@ -26,9 +26,9 @@ public sealed class DeckleAudioSource : DeckleEventSource
     // 7 retired.
     // 8 retired.
     public const int EvtCaptureCompleted          = 9;
-    public const int EvtMicrophoneTelemetryEmpty  = 10;
+    public const int EvtRecordingTooShortToMeasure  = 10;
     // 11 retired: the tail headline, folded into RecordingTailSummaryDetail's tail_state.
-    public const int EvtMicrophoneTelemetryRecorded = 12;
+    // 12 retired: the per-recording microphone level dataset (microphone.jsonl), removed with its setting.
     public const int EvtSettingsLoaded            = 13;
     public const int EvtSettingsLoadComplete      = 14;
     public const int EvtSettingsLoadWarning       = 15;
@@ -552,49 +552,16 @@ public sealed class DeckleAudioSource : DeckleEventSource
 
     // A short take with no complete RMS window is ordinary per-take detail, not
     // a durable microphone incident.
-    [Event(EvtMicrophoneTelemetryEmpty,
+    [Event(EvtRecordingTooShortToMeasure,
            Level = EventLevel.Informational,
            Keywords = (EventKeywords)Keywords.Heartbeat,
            Message = "The recording was too short to measure microphone levels")]
-    public void MicrophoneTelemetryEmpty()
+    public void RecordingTooShortToMeasure()
     {
         if (OperationalLogAdmission.IsScopedDetailEnabled(
                 OperationalLogActivity.Transcription, this,
                 EventLevel.Verbose, (EventKeywords)Keywords.Heartbeat))
-            WriteEvent(EvtMicrophoneTelemetryEmpty);
-    }
-
-    // ── Structured Heartbeat: Microphone Telemetry Payload ──────────────
-    //
-    // EventSource does not accept complex types in signatures, so the
-    // MicrophoneTelemetryPayload is flattened into primitive parameters.
-
-    [Event(EvtMicrophoneTelemetryRecorded,
-           Level = EventLevel.Verbose,
-           Tags = ObservationTags.Dataset,
-           Keywords = (EventKeywords)Keywords.Heartbeat,
-           Message = "duration_seconds={0:F1} | samples={1} | min_dbfs={2:F1} | p10_dbfs={3:F1} | p25_dbfs={4:F1} | p50_dbfs={5:F1} | p75_dbfs={6:F1} | p90_dbfs={7:F1} | max_dbfs={8:F1} | mean_rms={9:F4} | mean_dbfs={10:F1}")]
-    public void MicrophoneTelemetryRecorded(
-        double duration_seconds,
-        int    samples,
-        double min_dbfs,
-        double p10_dbfs,
-        double p25_dbfs,
-        double p50_dbfs,
-        double p75_dbfs,
-        double p90_dbfs,
-        double max_dbfs,
-        double mean_rms,
-        double mean_dbfs,
-        double tail_rms,
-        double tail_dbfs,
-        string tail_state)
-    {
-        if (!IsEnabled(EventLevel.Verbose, (EventKeywords)Keywords.Heartbeat)) return;
-        WriteEvent(EvtMicrophoneTelemetryRecorded,
-            duration_seconds, samples,
-            min_dbfs, p10_dbfs, p25_dbfs, p50_dbfs, p75_dbfs, p90_dbfs, max_dbfs,
-            mean_rms, mean_dbfs, tail_rms, tail_dbfs, tail_state);
+            WriteEvent(EvtRecordingTooShortToMeasure);
     }
 
     // ── Module Settings Persistence ─────────────────────────────────────

@@ -27,7 +27,7 @@ public sealed class DeckleAudioSourceTests : IDisposable
         using var listener = new TestEventListener("Deckle-Audio");
 
         DeckleAudioSource.Log.RecordingTailSummaryDetail(600, -42, "active");
-        DeckleAudioSource.Log.MicrophoneTelemetryEmpty();
+        DeckleAudioSource.Log.RecordingTooShortToMeasure();
 
         Assert.Empty(listener.Events);
     }
@@ -40,7 +40,7 @@ public sealed class DeckleAudioSourceTests : IDisposable
         using var listener = new TestEventListener("Deckle-Audio");
 
         DeckleAudioSource.Log.RecordingTailSummaryDetail(600, -42, "active");
-        DeckleAudioSource.Log.MicrophoneTelemetryEmpty();
+        DeckleAudioSource.Log.RecordingTooShortToMeasure();
 
         Assert.Collection(
             listener.Events,
@@ -49,7 +49,7 @@ public sealed class DeckleAudioSourceTests : IDisposable
                 Assert.Equal(DeckleAudioSource.EvtRecordingTailSummaryDetail, e.EventId);
                 Assert.Equal("active", PayloadOf(e, "tail_state"));
             },
-            e => Assert.Equal(DeckleAudioSource.EvtMicrophoneTelemetryEmpty, e.EventId));
+            e => Assert.Equal(DeckleAudioSource.EvtRecordingTooShortToMeasure, e.EventId));
     }
 
     [Fact]

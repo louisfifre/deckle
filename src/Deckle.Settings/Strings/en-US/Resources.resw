@@ -232,20 +232,6 @@
     <value>Voice recordings are biometric-adjacent and the files can be replayed verbatim. Review and purge the folder regularly, and exclude it from any backup target you don't control.</value>
   </data>
 
-  <!-- Microphone telemetry consent — per-recording dBFS distribution row. -->
-  <data name="MicrophoneTelemetryConsent_Title" xml:space="preserve">
-    <value>Enable microphone telemetry</value>
-  </data>
-  <data name="MicrophoneTelemetryConsent_Body_Intro" xml:space="preserve">
-    <value>Deckle will log your microphone level distribution after every recording, so you can calibrate the HUD level window against the dBFS range your microphone actually produces.</value>
-  </data>
-  <data name="MicrophoneTelemetryConsent_Body_What" xml:space="preserve">
-    <value>Only level statistics in dBFS, namely minimum, percentiles (p10, p25, p50, p75, p90), maximum, and mean RMS. No audio. No transcription. No words. Nothing is sent over the network.</value>
-  </data>
-  <data name="MicrophoneTelemetryConsent_Body_Remind" xml:space="preserve">
-    <value>One short JSON line per recording. Small file. Useful when calibrating, then turn it off. The same data also appears in the log window under Audio for live inspection.</value>
-  </data>
-
   <!-- ─── Engine status ──────────────────────────────────────────────
        One-shot status strings raised by TranscriptionEngine.RaiseStatus(...).
        Surfaced in the tray tooltip (capped to 127 chars by Shell) and

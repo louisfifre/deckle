@@ -273,8 +273,6 @@ public sealed partial class TranscriptionEngine
         float[] raw = capture.Pcm;
         float[] backendAudio = consumed.BackendAudio ?? raw;
 
-        if (consumed.BackendAudio is not null) EmitPreprocessedTelemetry(consumed.BackendAudio);
-
         // Sends the last open block now rather than at Assemble, so its
         // request runs while the finalize copies the text. Only here, on the
         // path that finalizes, and only when the take reached a step: an

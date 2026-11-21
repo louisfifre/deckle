@@ -958,9 +958,6 @@ _Generated from `git ls-files` — do not edit by hand._
 │   │   │   ├── NoiseGate.cs
 │   │   │   ├── PreprocessingSettings.cs
 │   │   │   └── TranscriptionPreprocessor.cs
-│   │   ├── Telemetry/
-│   │   │   ├── MicrophoneTelemetryCalculator.cs
-│   │   │   └── MicrophoneTelemetryPayload.cs
 │   │   ├── AudioFileDecoder.cs
 │   │   ├── AudioFileDecodeResult.cs
 │   │   ├── AudioLevelMapper.cs
@@ -982,6 +979,7 @@ _Generated from `git ls-files` — do not edit by hand._
 │   │   ├── MicrophoneLevelFeed.cs
 │   │   ├── MicrophoneLevelFeedFailure.cs
 │   │   ├── ProbeResult.cs
+│   │   ├── RecordingTailCalculator.cs
 │   │   ├── SpeakerOutput.cs
 │   │   ├── VoiceDetector.cs
 │   │   ├── VoiceLevelMeterHost.cs
@@ -2155,8 +2153,7 @@ _Generated from `git ls-files` — do not edit by hand._
 │   │   │   ├── AudioCorpusConsentDialog.cs
 │   │   │   ├── AutocorrectDecisionsConsentDialog.cs
 │   │   │   ├── AutocorrectTextConsentDialog.cs
-│   │   │   ├── CorpusConsentDialog.cs
-│   │   │   └── MicrophoneTelemetryConsentDialog.cs
+│   │   │   └── CorpusConsentDialog.cs
 │   │   ├── Modules/
 │   │   │   └── SettingsModuleRegistry.cs
 │   │   ├── Pages/
@@ -2441,7 +2438,6 @@ _Generated from `git ls-files` — do not edit by hand._
 │   │   │   ├── TranscriptionEngine.StreamingPipeline.cs
 │   │   │   ├── TranscriptionEngine.Take.cs
 │   │   │   ├── TranscriptionEngine.TakeAudio.cs
-│   │   │   ├── TranscriptionEngine.Telemetry.cs
 │   │   │   └── TranscriptionEngine.Utterances.cs
 │   │   ├── Recovery/
 │   │   │   ├── DictationRecoveryStore.cs
@@ -2518,6 +2514,7 @@ _Generated from `git ls-files` — do not edit by hand._
 │   │   │   ├── WhisperViewModel.DictationExperience.cs
 │   │   │   ├── WhisperViewModel.Engine.cs
 │   │   │   ├── WhisperViewModel.Settings.cs
+│   │   │   ├── WhisperViewModel.SpeechEngine.cs
 │   │   │   └── WhisperViewModel.Streaming.cs
 │   │   ├── Deckle.Transcription.Views.csproj
 │   │   ├── DecodingPage.xaml
@@ -2814,7 +2811,6 @@ _Generated from `git ls-files` — do not edit by hand._
 │   │   ├── MicrophoneCaptureTests.cs
 │   │   ├── MicrophoneErrorClassificationTests.cs
 │   │   ├── MicrophoneLevelFeedTests.cs
-│   │   ├── MicrophoneTelemetryCalculatorTests.cs
 │   │   ├── MilestoneClosersTests.cs
 │   │   ├── MonoConverterTests.cs
 │   │   ├── OperationalObservabilityCollection.cs
@@ -2824,6 +2820,7 @@ _Generated from `git ls-files` — do not edit by hand._
 │   │   ├── PortAudioDeploymentBugNotes.md
 │   │   ├── PortAudioDeploymentTests.cs
 │   │   ├── PortAudioInteropTests.cs
+│   │   ├── RecordingTailCalculatorTests.cs
 │   │   ├── StreamingResamplerTests.cs
 │   │   ├── SubWindowAssemblerTests.cs
 │   │   ├── SummaryTagTests.cs
@@ -3464,6 +3461,7 @@ _Generated from `git ls-files` — do not edit by hand._
 │   │   ├── DictationRecoveryStoreTests.cs
 │   │   ├── DictationTableTemplateTests.cs
 │   │   ├── EnergySegmenterTests.cs
+│   │   ├── EngineChoiceSettingsTests.cs
 │   │   ├── FileBatchLifecycleTests.cs
 │   │   ├── FileToTextTests.cs
 │   │   ├── FileTranscriptionQueueTests.cs

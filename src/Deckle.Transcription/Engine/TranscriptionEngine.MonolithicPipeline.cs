@@ -120,7 +120,6 @@ public sealed partial class TranscriptionEngine
             backendAudio = processed.Pcm;
             DeckleWhispSource.Log.TranscriptionPreprocessed(
                 processed.InputRmsDbfs, processed.OutputRmsDbfs, processed.MakeupGainDb, processed.OutputPeak);
-            EmitPreprocessedTelemetry(backendAudio);
         }
 
         // The Silero trim, at the edges only: the leading and trailing silence

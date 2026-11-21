@@ -10,7 +10,6 @@ public static class TelemetryConsentWiring
     public static void Wire()
     {
         Catalog.TelemetryConsent.ApplicationLog       = ApplicationLogConsentDialog.ShowAsync;
-        Catalog.TelemetryConsent.Microphone           = MicrophoneTelemetryConsentDialog.ShowAsync;
         Catalog.TelemetryConsent.Corpus               = CorpusConsentDialog.ShowAsync;
         Catalog.TelemetryConsent.AudioCorpus          = AudioCorpusConsentDialog.ShowAsync;
         Catalog.TelemetryConsent.AutocorrectDecisions = AutocorrectDecisionsConsentDialog.ShowAsync;
