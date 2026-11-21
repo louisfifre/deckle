@@ -48,7 +48,11 @@
   <data name="Folders_Item_Format" xml:space="preserve"><value>{0}, {1}</value></data>
   <data name="Folders_Item_NotFound_Format" xml:space="preserve"><value>{0}, not found: {1}</value></data>
   <data name="Folders_Item_Unreadable_Format" xml:space="preserve"><value>{0}, can't be read: {1}</value></data>
+  <data name="Folders_More" xml:space="preserve"><value>More options</value></data>
+  <data name="Folders_ShowInExplorer" xml:space="preserve"><value>Open in File Explorer</value></data>
+  <data name="Folders_ChangeIcon" xml:space="preserve"><value>Change icon…</value></data>
   <data name="Folders_Remove" xml:space="preserve"><value>Remove from Deckle Folders</value></data>
+  <data name="Folders_RemoveHint" xml:space="preserve"><value>The folder stays on the disk</value></data>
   <data name="Folders_NotFound_Title" xml:space="preserve"><value>This folder can't be found</value></data>
   <data name="Folders_NotFound_Body_Format" xml:space="preserve"><value>Deckle Folders can no longer find {0}. The folder may have been moved, renamed or deleted, or its drive isn't connected. Once it's back, refresh.</value></data>
   <data name="Folders_Unreadable_Title" xml:space="preserve"><value>This folder can't be read</value></data>
@@ -328,6 +332,18 @@
   <data name="IconPicker_Symbol_Home" xml:space="preserve"><value>Home</value></data>
   <data name="IconPicker_Symbol_People" xml:space="preserve"><value>People</value></data>
   <data name="IconPicker_Symbol_Favorite" xml:space="preserve"><value>Favorite</value></data>
+  <data name="IconPicker_Symbol_Instructions" xml:space="preserve"><value>Instructions</value></data>
+  <data name="IconPicker_Symbol_Intelligence" xml:space="preserve"><value>AI</value></data>
+  <data name="IconPicker_Symbol_Terminal" xml:space="preserve"><value>Terminal</value></data>
+  <data name="IconPicker_Symbol_Settings" xml:space="preserve"><value>Settings</value></data>
+  <data name="IconPicker_Symbol_Bug" xml:space="preserve"><value>Bug</value></data>
+  <data name="IconPicker_Symbol_Test" xml:space="preserve"><value>Tests</value></data>
+  <data name="IconPicker_Symbol_Important" xml:space="preserve"><value>Important</value></data>
+  <data name="IconPicker_Symbol_Flag" xml:space="preserve"><value>Flag</value></data>
+  <data name="IconPicker_Symbol_Tag" xml:space="preserve"><value>Tag</value></data>
+  <data name="IconPicker_Symbol_Idea" xml:space="preserve"><value>Ideas</value></data>
+  <data name="IconPicker_Symbol_Private" xml:space="preserve"><value>Private</value></data>
+  <data name="IconPicker_Symbol_Cloud" xml:space="preserve"><value>Cloud</value></data>
   <data name="IconPicker_Tint_Accent" xml:space="preserve"><value>Windows accent color</value></data>
   <data name="IconPicker_Tint_Red" xml:space="preserve"><value>Red</value></data>
   <data name="IconPicker_Tint_Orange" xml:space="preserve"><value>Orange</value></data>

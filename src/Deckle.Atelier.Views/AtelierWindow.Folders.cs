@@ -2,6 +2,7 @@ using Deckle.Catalog;
 using Microsoft.UI.Xaml;
 using Microsoft.UI.Xaml.Automation;
 using Microsoft.UI.Xaml.Controls;
+using Microsoft.UI.Xaml.Controls.Primitives;
 using Microsoft.UI.Xaml.Input;
 using Microsoft.UI.Xaml.Media;
 using Windows.ApplicationModel.DataTransfer;
@@ -9,18 +10,19 @@ using Windows.Storage;
 
 namespace Deckle.Atelier.Views;
 
-// The added folders: the pane that lists them, the ways to add one, the
-// button that removes one, and what the window shows of a folder that is no
-// longer there.
+// The added folders: the pane that lists them, the ways to add one, the menu
+// of one, and what the window shows of a folder that is no longer there.
 public sealed partial class AtelierWindow
 {
-    // Segoe Fluent Icons "Cancel", the small cross Windows puts on an entry
-    // that a list forgets without deleting anything.
-    private const string RemoveGlyph = "";
+    // Segoe Fluent Icons code points of the item's menu.
+    private const string MoreGlyph = "";           // More, the "..."
+    private const string ShowInExplorerGlyph = ""; // FolderOpen
+    private const string ChangeIconGlyph = "";     // Edit, the pencil
+    private const string RemoveGlyph = "";         // Remove, the minus
 
-    // The remove button's slot at the end of an item, the same on every
-    // item, shown or not, so no name shifts when the button appears.
-    private const double RemoveSlotWidth = 32;
+    // The "..." button's slot at the end of an item, the same on every item,
+    // shown or not, so no name shifts when the button appears.
+    private const double MoreSlotWidth = 32;
 
 
     private readonly AddedFolderStore _folders;
@@ -46,7 +48,7 @@ public sealed partial class AtelierWindow
     // One item per added folder, in the order they were added. Reduced to
     // the icon, an item says its name and path on hover and to a screen
     // reader; opened, it shows them on two lines (12.2, Open 14), and the
-    // remove button at its end while the pointer is over it or the keyboard
+    // "..." button at its end while the pointer is over it or the keyboard
     // is on it. The icon is the folder's own, in its colour (spec, Window),
     // drawn by the item's content (AtelierWindow.FolderIcon.cs).
     //
@@ -104,7 +106,8 @@ public sealed partial class AtelierWindow
 
     // One item and what it shows, empty until Show gives it a folder. The
     // pointer and the focus are heard by the pane for all its items
-    // (HookPaneInputOnce); the item itself carries the button's click only.
+    // (HookPaneInputOnce); the item itself carries the button's click and its
+    // context request.
     private FolderItem NewFolderItem()
     {
         // One line each, trimmed: CaptionTextBlockStyle wraps, and in the
@@ -126,28 +129,34 @@ public sealed partial class AtelierWindow
         text.Children.Add(name);
         text.Children.Add(path);
 
-        Button remove = RemoveButton();
+        Button more = MoreButton();
         Grid content = FolderItemContent(out IconChoiceView icon, text);
-        content.ColumnDefinitions.Add(new ColumnDefinition { Width = new GridLength(RemoveSlotWidth) });
-        Grid.SetColumn(remove, 2);
-        content.Children.Add(remove);
+        content.ColumnDefinitions.Add(new ColumnDefinition { Width = new GridLength(MoreSlotWidth) });
+        Grid.SetColumn(more, 2);
+        content.Children.Add(more);
 
         var item = new NavigationViewItem
         {
             Content = content,
             HorizontalContentAlignment = HorizontalAlignment.Stretch,
         };
-        var parts = new FolderItem(item, name, path, icon, remove);
-        remove.Click += (_, _) => _ = RemoveFolderAsync(parts.Folder.Path);
+        var parts = new FolderItem(item, name, path, icon, more);
+        more.Click += (_, _) => ShowFolderMenu(parts, more, null);
+        item.ContextRequested += (_, args) =>
+        {
+            args.Handled = true;
+            // A right click opens the menu where the pointer is, in the rail
+            // as in the opened pane; the menu key and Shift+F10 give no
+            // position, and the menu opens under the item.
+            if (args.TryGetPosition(item, out Windows.Foundation.Point at)) ShowFolderMenu(parts, item, at);
+            else ShowFolderMenu(parts, item, null);
+        };
         return parts;
     }
 
-    // "Retirer de Deckle Folders": not drawn; the spec keeps the right-click
-    // free ("never by a right-click", of the icon), so the removal is a
-    // button in sight, as File Explorer's own lists put a cross on an entry.
-    // No confirmation: nothing on the disk changes, and adding the folder
-    // again undoes it.
-    private static Button RemoveButton()
+    // "...": the item's only button, hidden until the pointer or the keyboard
+    // is on the item, as a project card's "..." is.
+    private static Button MoreButton()
     {
         var button = new Button
         {
@@ -157,13 +166,85 @@ public sealed partial class AtelierWindow
             Padding = new Thickness(0),
             HorizontalAlignment = HorizontalAlignment.Right,
             VerticalAlignment = VerticalAlignment.Center,
-            Content = new FontIcon { Glyph = RemoveGlyph, FontSize = 12 },
+            Content = new FontIcon { Glyph = MoreGlyph, FontSize = 14 },
             Opacity = 0,
         };
-        string label = AtelierText.Get("Folders_Remove");
+        string label = AtelierText.Get("Folders_More");
         ToolTipService.SetToolTip(button, label);
         AutomationProperties.SetName(button, label);
         return button;
+    }
+
+    // The menu of an added folder, the same under "..." and at a right click
+    // (Louis, 2026-11-21: the cross became "...", and the right click works
+    // on the reduced pane too, where "..." has no room). Built each time it
+    // opens, for the folder the item shows then.
+    //
+    //   Open in File Explorer
+    //   Change icon…
+    //   ─────────
+    //   Remove from Deckle Folders    tooltip "The folder stays on the disk"
+    //
+    // There is no "Open": a click on the item does that, as on a project card.
+    // Removing asks nothing: nothing on the disk changes, and adding the
+    // folder again undoes it.
+    private MenuFlyout BuildFolderMenu(FolderItem parts)
+    {
+        string folderPath = parts.Folder.Path;
+        var menu = new MenuFlyout();
+        menu.Items.Add(MenuItem(AtelierText.Get("Folders_ShowInExplorer"), ShowInExplorerGlyph,
+            () => _ = OpenFolderInExplorerAsync(folderPath)));
+        menu.Items.Add(MenuItem(AtelierText.Get("Folders_ChangeIcon"), ChangeIconGlyph,
+            () => OpenFolderIconPicker(parts)));
+        menu.Items.Add(new MenuFlyoutSeparator());
+        MenuFlyoutItem remove = MenuItem(AtelierText.Get("Folders_Remove"), RemoveGlyph,
+            () => _ = RemoveFolderAsync(folderPath));
+        string hint = AtelierText.Get("Folders_RemoveHint");
+        ToolTipService.SetToolTip(remove, hint);
+        AutomationProperties.SetHelpText(remove, hint);
+        menu.Items.Add(remove);
+        return menu;
+    }
+
+    private static MenuFlyoutItem MenuItem(string text, string glyph, Action invoke)
+    {
+        var item = new MenuFlyoutItem { Text = text, Icon = new FontIcon { Glyph = glyph } };
+        item.Click += (_, _) => invoke();
+        return item;
+    }
+
+    private void ShowFolderMenu(FolderItem parts, FrameworkElement anchor, Windows.Foundation.Point? at)
+    {
+        if (_folders.Find(parts.Folder.Path) is null) return;
+        MenuFlyout menu = BuildFolderMenu(parts);
+        if (at is { } position) menu.ShowAt(anchor, new FlyoutShowOptions { Position = position });
+        else
+        {
+            // Under the anchor and flush with its right edge, as a project
+            // card's menu opens; the system flips it above when there is no
+            // room below.
+            menu.ShowAt(anchor, new FlyoutShowOptions { Placement = FlyoutPlacementMode.BottomEdgeAlignedRight });
+        }
+    }
+
+    // File Explorer opens on the added folder itself, not on its parent. The
+    // shell blocks, so it runs off the UI thread; a folder found missing
+    // takes its mark in the pane.
+    private async Task OpenFolderInExplorerAsync(string folderPath)
+    {
+        LaunchOutcome outcome = await Task.Run(() => new ShellFileLauncher().Open(folderPath));
+        if (outcome.Status == LaunchStatus.Missing) NoteReach(folderPath, AddedFolderReachability.NotFound);
+    }
+
+    // The icon picker opened from the menu, beside the item's own icon; the
+    // choice applies at once, as from the address bar.
+    private void OpenFolderIconPicker(FolderItem parts)
+    {
+        string rootPath = parts.Folder.Path;
+        if (_folders.Find(rootPath) is not { } folder) return;
+        Flyout picker = IconPicker.CreateFlyout(folder.Icon, AtelierText.Get, choice => OnFolderIconChosen(rootPath, choice));
+        picker.Placement = FlyoutPlacementMode.RightEdgeAlignedTop;
+        picker.ShowAt(parts.Item);
     }
 
     // The pane's input, heard once for all its items. The pointer over an
@@ -450,22 +531,53 @@ public sealed partial class AtelierWindow
 
     // ── What the self-check drives ───────────────────────────────────────
 
-    // The remove button of this folder's item as the pointer over it shows
-    // it; true when it is shown.
-    public bool ShowRemoveButtonForReview(string path)
+    // The "..." button of this folder's item as the pointer over it shows it;
+    // true when it is shown.
+    public bool ShowMoreButtonForReview(string path)
     {
-        if (_folderItems.FirstOrDefault(p => FolderPaths.Comparer.Equals(p.Folder.Path, FolderPaths.Normalize(path))) is not { } parts)
-            return false;
+        if (FindFolderItem(path) is not { } parts) return false;
         parts.SetPointerOver(true);
-        return parts.RemoveShown;
+        return parts.MoreShown;
     }
 
-    public void HideRemoveButtonsForReview()
+    public void HideMoreButtonsForReview()
     {
         foreach (FolderItem parts in _folderItems) parts.SetPointerOver(false);
     }
 
+    // Opens this folder's menu under its "...", as a click does, kept inside
+    // the window so a capture of the window sees it (a menu a person opens
+    // may leave the window's edge, in a window of its own). Inside the window
+    // the menu's acrylic has nothing to blur, so the review's menu takes the
+    // solid fill acrylic falls back to, as a project card's review menu does.
+    // Answers the menu's labels, separators left out.
+    public IReadOnlyList<string> ShowFolderMenuForReview(string path)
+    {
+        if (FindFolderItem(path) is not { } parts) return [];
+        _reviewMenu?.Hide();
+        MenuFlyout menu = BuildFolderMenu(parts);
+        menu.ShouldConstrainToRootBounds = true;
+        menu.MenuFlyoutPresenterStyle = (Style)Microsoft.UI.Xaml.Markup.XamlReader.Load(
+            "<Style xmlns=\"http://schemas.microsoft.com/winfx/2006/xaml/presentation\" TargetType=\"MenuFlyoutPresenter\" "
+            + "BasedOn=\"{StaticResource DefaultMenuFlyoutPresenterStyle}\">"
+            + "<Setter Property=\"Background\" Value=\"{ThemeResource SolidBackgroundFillColorQuarternaryBrush}\" /></Style>");
+        menu.ShowAt(parts.Item);
+        _reviewMenu = menu;
+        return [.. menu.Items.OfType<MenuFlyoutItem>().Select(i => i.Text)];
+    }
+
+    public void HideFolderMenuForReview()
+    {
+        _reviewMenu?.Hide();
+        _reviewMenu = null;
+    }
+
+    private MenuFlyout? _reviewMenu;
+
     public Task RemoveFolderForReviewAsync(string path) => RemoveFolderAsync(FolderPaths.Normalize(path));
+
+    private FolderItem? FindFolderItem(string path) =>
+        _folderItems.FirstOrDefault(p => FolderPaths.Comparer.Equals(p.Folder.Path, FolderPaths.Normalize(path)));
 
     // Waits for the pane's check of the added folders, so an image shows the
     // marks settled; true when this folder is marked as unreachable.
@@ -478,11 +590,11 @@ public sealed partial class AtelierWindow
     public bool ShowsUnreachableForReview(string path) =>
         _unreachableShown is { } shown && FolderPaths.Comparer.Equals(shown, FolderPaths.Normalize(path));
 
-    // One item of the pane, the folder it shows and its remove button. The
+    // One item of the pane, the folder it shows and its "..." button. The
     // button shows while the pointer is over the item or the keyboard is on
     // it, and only in the opened pane; hidden, it keeps its slot transparent.
     private sealed class FolderItem(
-        NavigationViewItem item, TextBlock name, TextBlock path, IconChoiceView icon, Button remove)
+        NavigationViewItem item, TextBlock name, TextBlock path, IconChoiceView icon, Button more)
     {
         private bool _pointerOver;
         private bool _keyboardFocus;
@@ -493,7 +605,7 @@ public sealed partial class AtelierWindow
         // The folder shown; a spare item keeps its last one until Show.
         public AddedFolder Folder { get; private set; } = null!;
 
-        public bool RemoveShown => _paneOpen && remove.Opacity > 0;
+        public bool MoreShown => _paneOpen && more.Opacity > 0;
 
         public void Show(AddedFolder folder)
         {
@@ -509,19 +621,19 @@ public sealed partial class AtelierWindow
         {
             _pointerOver = false;
             _keyboardFocus = false;
-            ShowRemove();
+            ShowMore();
         }
 
-        public void SetPointerOver(bool over) { _pointerOver = over; ShowRemove(); }
-        public void SetKeyboardFocus(bool focus) { _keyboardFocus = focus; ShowRemove(); }
+        public void SetPointerOver(bool over) { _pointerOver = over; ShowMore(); }
+        public void SetKeyboardFocus(bool focus) { _keyboardFocus = focus; ShowMore(); }
 
         public void SetPaneOpen(bool open)
         {
             _paneOpen = open;
-            remove.Visibility = open ? Visibility.Visible : Visibility.Collapsed;
-            ShowRemove();
+            more.Visibility = open ? Visibility.Visible : Visibility.Collapsed;
+            ShowMore();
         }
 
-        private void ShowRemove() => remove.Opacity = _pointerOver || _keyboardFocus ? 1 : 0;
+        private void ShowMore() => more.Opacity = _pointerOver || _keyboardFocus ? 1 : 0;
     }
 }

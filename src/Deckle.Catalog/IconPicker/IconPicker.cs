@@ -25,7 +25,7 @@ namespace Deckle.Catalog;
 // member.
 //
 // Three rows of tiles, each a GridView in single selection: the symbols, in
-// two rows of six, each drawn in the current colour; the five colours,
+// four rows of six, each drawn in the current colour; the five colours,
 // Windows' accent first; then the background option as two tiles, the symbol
 // alone and the symbol on its square. A tile row is one Tab stop and the
 // arrow keys move inside it, and every tile says its name to a screen reader.
