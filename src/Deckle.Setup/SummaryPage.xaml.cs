@@ -2,7 +2,6 @@ using System;
 using System.Diagnostics;
 using System.IO;
 using System.Linq;
-using System.Security.Cryptography;
 using System.Threading.Tasks;
 using Microsoft.UI.Xaml;
 using Microsoft.UI.Xaml.Controls;
@@ -261,18 +260,9 @@ public sealed partial class SummaryPage : Page
                 string src = file.Path;
                 string? expected = model.Sha256;
 
-                bool ok = await Task.Run(() =>
-                {
-                    Directory.CreateDirectory(AppPaths.ModelsDirectory);
-                    File.Copy(src, dest, overwrite: true);
-                    if (string.IsNullOrWhiteSpace(expected)) return true;
-                    if (!string.Equals(ComputeSha256(dest), expected, StringComparison.OrdinalIgnoreCase))
-                    {
-                        TryDelete(dest);
-                        return false;
-                    }
-                    return true;
-                });
+                // Copied beside dest, verified there, then moved over it: a wrong
+                // hash or an interrupted copy never touches an installed model.
+                bool ok = await Task.Run(() => ModelFileImport.Install(src, dest, expected));
 
                 if (!ok)
                 {
@@ -343,23 +333,6 @@ public sealed partial class SummaryPage : Page
                 _context.Results[i] = new InstallResult(itemId, displayName, true, null, bytes);
                 return;
             }
-        }
-    }
-
-    private static string ComputeSha256(string path)
-    {
-        using var stream = File.OpenRead(path);
-        using var sha = SHA256.Create();
-        return Convert.ToHexString(sha.ComputeHash(stream)).ToLowerInvariant();
-    }
-
-    private static void TryDelete(string path)
-    {
-        try { if (File.Exists(path)) File.Delete(path); }
-        catch (Exception ex)
-        {
-            // Best-effort: the next import overwrites the rejected copy anyway.
-            DeckleSetupSource.Log.BestEffortFailedDetail("delete_rejected_import", path, ex.GetType().Name, ex.Message);
         }
     }
 

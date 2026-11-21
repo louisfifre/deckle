@@ -2230,6 +2230,7 @@ _Generated from `git ls-files` — do not edit by hand._
 │   │   ├── InstallingPage.xaml.cs
 │   │   ├── InstallItem.cs
 │   │   ├── InstallPlan.cs
+│   │   ├── ModelFileImport.cs
 │   │   ├── ModulesPage.xaml
 │   │   ├── ModulesPage.xaml.cs
 │   │   ├── RelocatePage.xaml
@@ -2518,6 +2519,7 @@ _Generated from `git ls-files` — do not edit by hand._
 │   │   │   ├── WhisperViewModel.DictationExperience.cs
 │   │   │   ├── WhisperViewModel.Engine.cs
 │   │   │   ├── WhisperViewModel.Settings.cs
+│   │   │   ├── WhisperViewModel.SpeechEngine.cs
 │   │   │   └── WhisperViewModel.Streaming.cs
 │   │   ├── Deckle.Transcription.Views.csproj
 │   │   ├── DecodingPage.xaml
@@ -3326,6 +3328,7 @@ _Generated from `git ls-files` — do not edit by hand._
 │   │   ├── DeckleSetupSourceTests.cs
 │   │   ├── LocMirrorBugNotes.md
 │   │   ├── MessageTemplateDoctrineTests.cs
+│   │   ├── ModelFileImportTests.cs
 │   │   ├── PayloadDeploymentTests.cs
 │   │   ├── SetupCancellationLogTests.cs
 │   │   ├── SetupPathRedactionTests.cs
@@ -3464,6 +3467,7 @@ _Generated from `git ls-files` — do not edit by hand._
 │   │   ├── DictationRecoveryStoreTests.cs
 │   │   ├── DictationTableTemplateTests.cs
 │   │   ├── EnergySegmenterTests.cs
+│   │   ├── EngineChoiceSettingsTests.cs
 │   │   ├── FileBatchLifecycleTests.cs
 │   │   ├── FileToTextTests.cs
 │   │   ├── FileTranscriptionQueueTests.cs
