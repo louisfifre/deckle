@@ -273,6 +273,8 @@ public sealed partial class DeckleWhispSource : DeckleEventSource
     public const int EvtTakeAudioRecoverySkipped         = 254;
     public const int EvtTakeAudioAttemptExpired          = 258;
     public const int EvtCorpusRecordSkipped              = 259;
+    public const int EvtFileDecodeFailedDetail           = 260;
+    public const int EvtFileTranscriptionEmptyDetail     = 261;
 
     // ── Per-provider keywords ───────────────────────────────────────────
     // Bits 0x400+ are provider-local (Deckle.Diagnostics.Keywords). No live
