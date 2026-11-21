@@ -2778,6 +2778,7 @@ _Generated from `git ls-files` — do not edit by hand._
 │   │   ├── MilestoneClosersTests.cs
 │   │   ├── ProdApplyUpdateTests.cs
 │   │   ├── ProdUpdateTests.cs
+│   │   ├── PublishedClosureTests.cs
 │   │   ├── ReswMirrorTests.cs
 │   │   ├── SelfCheckBugNotes.md
 │   │   ├── SelfCheckTests.cs
