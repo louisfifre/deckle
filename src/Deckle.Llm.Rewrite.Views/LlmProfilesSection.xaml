@@ -8,13 +8,10 @@
     x:Name="Root">
 
     <!-- Tag is the search index's scroll-to handle (LabelKey "LlmProfilesSection").
-         The reset is a command with its own confirmation, not a dirty-tracked
-         value, so the wheel stays enabled. -->
+         No reset: the profiles are the person's own prompts and Deckle ships
+         none to go back to. -->
     <catalog:SettingsSection x:Uid="LlmProfilesBlock"
-                             Tag="LlmProfilesSection"
-                             HasReset="True"
-                             IsResetEnabled="True"
-                             ResetRequested="ResetSection_Click">
+                             Tag="LlmProfilesSection">
     <StackPanel Spacing="{StaticResource SettingsCardSpacing}">
 
         <ItemsRepeater ItemsSource="{x:Bind Profiles}">

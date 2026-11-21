@@ -17,11 +17,20 @@ public partial class App
 {
     // The spec's example: a first step from 1,000 in blocks of 600, a second
     // from 4,000 in blocks of 2,000, a third from 12,000 in blocks of 6,000,
-    // on the profiles a fresh root ships (the first, the second, the first).
+    // on two sample profiles (the first, the second, the first). Deckle ships
+    // no profile, so the run writes its own two into its root: placeholders
+    // with a one-line prompt, never a prompt meant for real use.
     private static void SeedRewritingSample(bool whileSpeaking)
     {
         LlmSettings llm = LlmSettingsService.Instance.Current;
-        if (llm.Profiles.Count < 2) return;
+        if (llm.Profiles.Count < 2)
+        {
+            llm.Profiles =
+            [
+                new RewriteProfile { Id = "sample-light", Name = "Light", ProviderId = "claude", Model = "claude-haiku-5-5", SystemPrompt = "Sample prompt." },
+                new RewriteProfile { Id = "sample-structured", Name = "Structured", ProviderId = "claude", Model = "claude-sonnet-5-5", SystemPrompt = "Sample prompt." },
+            ];
+        }
         string light = llm.Profiles[0].Id, heavy = llm.Profiles[1].Id;
 
         llm.Dictation.Enabled = true;

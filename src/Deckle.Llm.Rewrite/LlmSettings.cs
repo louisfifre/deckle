@@ -35,7 +35,7 @@ public sealed class RewriteProfile
 {
     // Stable across renames: references and corpus telemetry join on it, never
     // on Name. LlmSettingsNormalizer.RepairProfileReferences fills it when
-    // missing (the built-in defaults carry none).
+    // missing (a profile written by hand in the file may carry none).
     public string Id { get; set; } = "";
 
     public string Name { get; set; } = "";
@@ -254,58 +254,8 @@ public sealed class LlmSettings
     [JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)]
     public string? ActiveProfileName { get; set; }
 
-    // Two depths of intervention, decided with Louis on 2026-10-15. The quick
-    // correction (a misheard word, an accent) is the ASR's job, so no profile
-    // for it. Lissage keeps the prose as spoken and removes what writing does
-    // not carry; Réécriture restructures a dictation into a text its reader
-    // takes in at once. Both keep the speaker's words and both keep the two
-    // moments of a change of mind, since the first one is a nuance, not a
-    // slip. Both write in French because the dictations are French.
-    //
-    // They send to the Claude provider on Sonnet, the first model Louis wants
-    // to judge the task on; Haiku is the next candidate. No sampling hints:
-    // a hosted model rejects them. Reset Profiles restores exactly these.
-    public List<RewriteProfile> Profiles { get; set; } = new()
-    {
-        new()
-        {
-            Name = "Lissage",
-            ProviderId = "claude",
-            Model = "claude-sonnet-5-5",
-            SystemPrompt =
-                """
-                Tu reçois la transcription brute d'une dictée en français. Tu la rends en prose écrite propre, dans les mots du locuteur, sans rien résumer et sans rien ajouter.
-
-                Ce que tu enlèves : les hésitations (euh, hum, ben), les tics (du coup, en fait, tu vois, voilà), les faux départs aussitôt repris, les mots doublés par le débit oral, et les erreurs que la reconnaissance vocale a laissées (mot entendu de travers, accord, ponctuation).
-
-                Ce que tu condenses : une même idée redite à plusieurs endroits avec les mêmes mots se dit une seule fois, à sa première place, avec les précisions que les autres mentions apportaient.
-
-                Ce que tu gardes : chaque idée, exemple, chiffre, nom, terme technique, intention, et chaque nuance d'incertitude (peut-être, je crois, il me semble). Quand le locuteur change d'avis, tu gardes les deux temps dans l'ordre : le premier formulé comme ce qu'il pensait d'abord, le second comme ce qu'il retient. Tu ne déplaces rien : l'ordre du discours est l'ordre de la sortie.
-
-                Registre : les mots du locuteur, sans synonyme, sans montée en registre. Les termes anglais restent tels quels.
-
-                Forme : de la prose, en paragraphes séparés d'une ligne vide au rythme des changements d'idée. Pas de markdown, pas de liste, pas de titre. Tu commences par le premier mot du contenu et tu finis par le dernier : aucune introduction, aucune conclusion, aucun commentaire. La sortie n'est jamais plus longue que l'entrée.
-                """
-        },
-        new()
-        {
-            Name = "Réécriture",
-            ProviderId = "claude",
-            Model = "claude-sonnet-5-5",
-            SystemPrompt =
-                """
-                Tu reçois la transcription brute d'une dictée en français : une pensée à voix haute, avec ses détours. Tu la réécris en un texte structuré que son destinataire lit d'un trait, avec les mots et les intentions du locuteur, sans rien résumer et sans rien ajouter.
-
-                Structure : tu repères les sujets que le discours traverse et tu regroupes sous chacun tout ce qui le concerne, même dit à plusieurs endroits. Chaque sujet devient une section avec un titre court, suivie de paragraphes, ou d'une liste quand le locuteur énumère. Les demandes, les décisions et les questions ouvertes ressortent clairement, chacune à sa place.
-
-                Flou : un référent vague (ça, le truc, ce machin, là-bas) est remplacé par ce qu'il désigne quand le contexte le dit. Quand le contexte ne le dit pas, tu le laisses et tu le signales entre crochets : [référent à préciser]. Tu n'inventes jamais ce que le locuteur n'a pas dit.
-
-                Changements d'avis : tu gardes les deux temps. Le premier est noté comme une piste écartée, le second comme ce que le locuteur retient. Une idée redite se dit une seule fois, avec toutes les précisions que ses répétitions apportaient. Les nuances d'incertitude (peut-être, je crois, il me semble) restent.
-
-                Registre : les mots du locuteur, sans synonyme, sans montée en registre, sans ton corporate. Les termes anglais restent tels quels. La première personne est conservée.
-
-                Forme : markdown léger, titres de niveau 2, listes à puces seulement pour les énumérations. Tu commences par le premier titre et tu finis par le dernier mot du contenu : aucune introduction, aucune conclusion, aucun commentaire sur le texte.
-                """
-        }
-    };
+    // Deckle ships no profile: a profile is the person's own prompt, written
+    // on the Rewriting page (decided with Louis on 2026-11-21). A fresh data
+    // root starts with none, and no reset brings one back.
+    public List<RewriteProfile> Profiles { get; set; } = new();
 }
