@@ -1,9 +1,11 @@
 namespace Deckle.Transcription.Parakeet;
 
-// The Parakeet encoder handles about 30-35 s of audio per call, while Deckle's segmenter puts no
-// ceiling on an utterance. This chunker bridges the two: it cuts a long buffer into pieces the
-// encoder accepts. A cut in the middle of a word costs accuracy, so each cut is placed in the
-// quietest 200 ms found in the last 10 s before the limit (lowest RMS = most likely a pause).
+// Deckle's segmenter puts no ceiling on an utterance, but one encoder pass over very long audio
+// costs memory that grows with its length (see MaxChunkSamples). This chunker bridges the two: audio up
+// to the cap goes through the encoder in one pass, as onnx-asr does, and only longer audio is cut into
+// pieces. A cut in the middle of a word costs accuracy, and the decoder starts again from zero at each
+// one, so each cut is placed in the quietest 200 ms found in the last 10 s before the limit (lowest RMS
+// = most likely a pause).
 // Chunks neither overlap nor leave gaps: concatenated, they are exactly the input, so no text is
 // lost or repeated at a seam. Pure code, no model and no I/O.
 
@@ -12,8 +14,14 @@ internal static class LongAudioChunker
 {
     public const int SampleRate = 16_000;
 
-    /// <summary>Longest chunk, 30 s: inside the encoder's comfortable range with margin.</summary>
-    public const int MaxChunkSamples = 30 * SampleRate;
+    // Measured 2026-11-21 on one encoder pass (FP32) over a synthetic signal, peak private memory of the
+    // process with the model loaded (about 2.1 to 2.5 GB at rest): DirectML on the RX 7900 XT, 120 s ->
+    // 5.0 GB (4.7 GB of dedicated video memory), 240 s -> 8.7 GB (8.3), 480 s -> 15.6 GB (15.0); CPU,
+    // 120 s -> 4.3 GB, 240 s -> 5.5 GB, 480 s -> 13.1 GB. 120 s is the largest length that stays under
+    // about 6 GB on both. Why a cap at all rather than 30 s: cutting alone moved the transcript away from
+    // the onnx-asr reference on 48 of 57 dictations of 30 s or more, and a single pass did not.
+    /// <summary>Longest audio the encoder takes in one pass, and so the longest chunk: 120 s.</summary>
+    public const int MaxChunkSamples = 120 * SampleRate;
 
     /// <summary>How far back from the limit a quiet cut point is looked for, 10 s.</summary>
     public const int SearchSamples = 10 * SampleRate;
@@ -26,7 +34,7 @@ internal static class LongAudioChunker
 
     /// <summary>
     /// Returns the chunks covering <paramref name="samples"/> exactly once, in order.
-    /// A buffer of at most 30 s comes back as a single chunk; an empty one as no chunk.
+    /// A buffer of at most MaxChunkSamples (120 s) comes back as a single chunk; an empty one as no chunk.
     /// </summary>
     public static IReadOnlyList<AudioChunk> Split(ReadOnlySpan<float> samples)
     {

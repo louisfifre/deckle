@@ -16,6 +16,12 @@ Deckle depends on the following third-party components and data sources. This fi
 - License : MIT-style, Copyright (c) 1999-2006 Ross Bencina and Phil Burk. Read from the upstream `LICENSE.txt`, which the build script copies beside the DLL as `portaudio.LICENSE.txt` and which ships with it.
 - Used as : `portaudio.dll`, the microphone capture's native backend, called through `src/Deckle.Audio/Internal/PortAudioInterop.cs`. Built from a pinned upstream commit, with the WASAPI host API only and the C runtime linked statically, by `scripts/setup/build-portaudio.ps1`, and committed in `src/Deckle.Audio/Native/win-x64` with its provenance (the `README.md` there gives the commit, the CMake options and the SHA256). The ASIO host API is not compiled in: the ASIO SDK's license is a pending product decision.
 
+### onnx-asr (mel front end of the Parakeet backend)
+
+- Repository : https://github.com/istupakov/onnx-asr
+- License : MIT, Copyright (c) 2025 Ilya Stupakov. The license text ships beside the file, as `parakeet-onnx-asr.LICENSE.txt`.
+- Used as : `nemo128.onnx`, the mel-spectrogram graph bundled in onnx-asr 0.12.0, copied unchanged from the package (138,824 bytes, SHA-256 `5B4A84C52EEAA615DC46D781CC7E4598F9B432184831D57493C48ADCD01371A9`) into `src/Deckle.Transcription.Parakeet/MelFrontEnd` and run as the Parakeet backend's front end, so that its features match the reference implementation the backend is measured against.
+
 ### Microsoft Visual C++ Redistributable
 
 - Project : https://learn.microsoft.com/cpp/windows/latest-supported-vc-redist

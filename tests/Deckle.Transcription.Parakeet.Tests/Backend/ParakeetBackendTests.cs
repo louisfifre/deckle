@@ -179,11 +179,23 @@ public sealed class ParakeetBackendTests
     }
 
     [Fact]
-    public async Task LongAudioIsEncodedInChunksOnOneTimeline()
+    public async Task AudioUpToTheCapIsEncodedInOnePass()
     {
         var encoder = new FakeEncoder();
         using var backend = await LoadedAsync(FakeLoader.Succeeding(encoder));
-        float[] audio = Audio(70);
+
+        TranscriptionResult result = await backend.TranscribeAsync(Audio(120), null, Ct);
+
+        Assert.Equal(1, encoder.Calls);
+        Assert.Equal("hello world.", result.FullText);
+    }
+
+    [Fact]
+    public async Task AudioBeyondTheCapIsEncodedInChunksOnOneTimeline()
+    {
+        var encoder = new FakeEncoder();
+        using var backend = await LoadedAsync(FakeLoader.Succeeding(encoder));
+        float[] audio = Audio(300);
         IReadOnlyList<AudioChunk> chunks = LongAudioChunker.Split(audio);
 
         TranscriptionResult result = await backend.TranscribeAsync(audio, null, Ct);
@@ -230,7 +242,7 @@ public sealed class ParakeetBackendTests
         var encoder = new FakeEncoder { OnEncode = call => { if (call == 2) cts.Cancel(); } };
         using var backend = await LoadedAsync(FakeLoader.Succeeding(encoder));
 
-        TranscriptionResult result = await backend.TranscribeAsync(Audio(70), null, cts.Token);
+        TranscriptionResult result = await backend.TranscribeAsync(Audio(300), null, cts.Token);
 
         Assert.True(result.Aborted);
         Assert.Equal(0, result.ResultCode);

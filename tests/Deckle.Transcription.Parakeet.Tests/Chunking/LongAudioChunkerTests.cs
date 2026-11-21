@@ -26,6 +26,7 @@ public sealed class LongAudioChunkerTests
     [InlineData(1)]
     [InlineData(5 * Rate)]
     [InlineData(30 * Rate)]
+    [InlineData(LongAudioChunker.MaxChunkSamples)]
     public void Split_InputUpToLimit_PassesThroughAsOneChunk(int length)
     {
         var chunks = LongAudioChunker.Split(Noise(length));
@@ -36,9 +37,9 @@ public sealed class LongAudioChunkerTests
     [Fact]
     public void Split_PauseInSearchWindow_CutsInsideThePause()
     {
-        float[] audio = Noise(45 * Rate);
-        // 400 ms of silence at 22.0-22.4 s: inside the 20-30 s search window.
-        int silenceStart = (int)(22.0 * Rate);
+        float[] audio = Noise(135 * Rate);
+        // 400 ms of silence at 112.0-112.4 s: inside the 110-120 s search window.
+        int silenceStart = (int)(112.0 * Rate);
         Array.Clear(audio, silenceStart, (int)(0.4 * Rate));
 
         var chunks = LongAudioChunker.Split(audio);
@@ -51,16 +52,16 @@ public sealed class LongAudioChunkerTests
     [Fact]
     public void Split_NoPauseAnywhere_StillRespectsTheLimit()
     {
-        var chunks = LongAudioChunker.Split(Noise(75 * Rate));
+        var chunks = LongAudioChunker.Split(Noise(300 * Rate));
 
         Assert.All(chunks, c => Assert.InRange(c.Length, 1, LongAudioChunker.MaxChunkSamples));
         Assert.True(chunks.Count >= 3);
     }
 
     [Theory]
-    [InlineData(30 * Rate + 1)]
-    [InlineData(61 * Rate)]
-    [InlineData(95 * Rate + 123)]
+    [InlineData(LongAudioChunker.MaxChunkSamples + 1)]
+    [InlineData(241 * Rate)]
+    [InlineData(335 * Rate + 123)]
     public void Split_LongInput_ConservesEverySampleExactlyOnce(int length)
     {
         var chunks = LongAudioChunker.Split(Noise(length, seed: length));
@@ -78,12 +79,12 @@ public sealed class LongAudioChunkerTests
     [Fact]
     public void Split_PauseBeforeSearchWindow_IsIgnored()
     {
-        float[] audio = Noise(40 * Rate);
-        // Silence at 10 s, outside the last 10 s before the 30 s limit: the cut must not go there.
-        Array.Clear(audio, 10 * Rate, Rate);
+        float[] audio = Noise(150 * Rate);
+        // Silence at 60 s, outside the last 10 s before the 120 s limit: the cut must not go there.
+        Array.Clear(audio, 60 * Rate, Rate);
 
         var chunks = LongAudioChunker.Split(audio);
 
-        Assert.True(chunks[0].End >= 20 * Rate);
+        Assert.True(chunks[0].End >= 110 * Rate);
     }
 }

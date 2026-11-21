@@ -2493,6 +2493,9 @@ _Generated from `git ls-files` — do not edit by hand._
 │   │   │   ├── OnnxParakeetModelLoader.cs
 │   │   │   ├── OnnxTdtJoint.cs
 │   │   │   └── ParakeetLoadedModel.cs
+│   │   ├── MelFrontEnd/
+│   │   │   ├── nemo128.onnx
+│   │   │   └── onnx-asr.LICENSE.txt
 │   │   ├── Segments/
 │   │   │   ├── DecodedToken.cs
 │   │   │   └── SegmentBuilder.cs

@@ -82,7 +82,7 @@ public sealed class EngineSettings
     // offers it): Whisper stays the default until Parakeet has earned the place.
     public AsrBackendKind Backend { get; set; } = AsrBackendKind.Whisper;
 
-    // Parakeet only: folder holding the model (vocab.txt, nemo128.onnx, fp32/, fp16/).
+    // Parakeet only: folder holding the model (vocab.txt, fp32/, fp16/).
     // Empty = "parakeet-tdt-0.6b-v3-ultra" inside the speech model directory.
     public string ParakeetModelDirectory { get; set; } = "";
 
