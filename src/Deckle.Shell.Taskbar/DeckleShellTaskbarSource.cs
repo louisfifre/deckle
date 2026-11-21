@@ -36,7 +36,7 @@ public sealed class DeckleShellTaskbarSource : DeckleEventSource
     public const int EvtNativeEngineDisconnected     = 20;
     public const int EvtNativeEngineUnavailable      = 21;
     public const int EvtNativeEngineNote             = 22;
-    public const int EvtNativeEngineDetail           = 23;
+    // 23 retired: NativeEngineDetail (the DLL's Verbose trace, 2026-11-21).
     public const int EvtNativeEngineWarning          = 24;
     public const int EvtNativeEngineError            = 25;
     public const int EvtTaskbarPartsChanged          = 26;
@@ -271,16 +271,6 @@ public sealed class DeckleShellTaskbarSource : DeckleEventSource
     public void NativeEngineNote(string name, string fields)
     {
         if (IsEnabled()) WriteEvent(EvtNativeEngineNote, name, fields);
-    }
-
-    [Event(EvtNativeEngineDetail,
-           Level = EventLevel.Verbose,
-           Keywords = (EventKeywords)Keywords.Lifecycle,
-           Message = "name={0} | fields={1}")]
-    public void NativeEngineDetail(string name, string fields)
-    {
-        if (!IsEnabled(EventLevel.Verbose, (EventKeywords)Keywords.Lifecycle)) return;
-        WriteEvent(EvtNativeEngineDetail, name, fields);
     }
 
     [Event(EvtNativeEngineWarning,
