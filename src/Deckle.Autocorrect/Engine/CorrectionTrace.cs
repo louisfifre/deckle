@@ -6,15 +6,15 @@ namespace Deckle.Autocorrect;
 // The optional decision ledger threaded through the synchronous correction chain.
 // Each policy stage, handed a non-null trace, records why it acted or stood aside
 // — its guard exit, the candidate pool it weighed, and the safety gauges it
-// compared against their thresholds — so the engine can emit one structured
-// telemetry record per committed word: the full "why did (n't) it correct?".
+// compared against their thresholds — so a caller can read the full
+// "why did (n't) it correct?" of a word.
 //
-// Null trace = the chain runs untouched at zero cost; the engine allocates one
-// only when the decision-telemetry toggle is on. This is observation, never
-// behaviour: a stage's decision must never read back from the trace. Text lives
-// here by design (a candidate form IS a word), and leaves solely through the
-// dedicated, opt-in autocorrect.decisions telemetry — never through stage logic,
-// never onto the module's count-only EventSource path.
+// Null trace = the chain runs untouched at zero cost; the engine allocates none
+// (only tests and tools do). This is observation, never behaviour: a stage's
+// decision must never read back from the trace. Text lives here by design (a
+// candidate form IS a word), so it never reaches the module's count-only
+// EventSource path; the dataset that once carried it (autocorrect.decisions) is
+// removed.
 //
 // Vocabularies (stage names, exit reasons, candidate sources) are closed and live
 // here, one spelling in one place, so a grep on a reason finds every occurrence

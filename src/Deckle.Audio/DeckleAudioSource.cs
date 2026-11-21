@@ -4,7 +4,7 @@ using Deckle.Diagnostics;
 namespace Deckle.Audio;
 
 // Audio module provider: microphone capture, speaker render, audio-file
-// decode, per-recording microphone telemetry and module settings persistence.
+// decode and module settings persistence.
 //
 // snake_case parameter names directly become JSON keys in the payload emitted
 // by JsonlSink.
