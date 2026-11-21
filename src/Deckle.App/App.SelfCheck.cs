@@ -141,6 +141,10 @@ public partial class App
             Composed = [.. ComposedBySelfCheck],
             LeftOut = [.. LeftOutOfSelfCheck],
             Only = target?.Name,
+            // What a full run must have walked, and the probe it must have made:
+            // without them the verdict could not tell a short run from a whole one.
+            RequiredWindows = SelfCheckWindowCatalog.Published.Windows,
+            RequiresMicrophone = true,
         };
 
         int code;
