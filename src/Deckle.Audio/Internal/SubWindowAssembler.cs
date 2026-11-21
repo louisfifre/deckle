@@ -1,7 +1,7 @@
 namespace Deckle.Audio.Internal;
 
 // Cuts the 16 kHz mono stream into the 50 ms sub-windows that the segmenter,
-// the low-audio warning, the telemetry and the HUD all read: 800 samples, one
+// the low-audio warning and the HUD all read: 800 samples, one
 // linear RMS each. The cut is continuous across packets, so the window length
 // does not depend on how the device chunks its audio (a 10 ms period gives
 // five packets per window, a 3 ms period seventeen).

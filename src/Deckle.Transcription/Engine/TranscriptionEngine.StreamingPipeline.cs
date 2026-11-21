@@ -68,8 +68,7 @@ public sealed partial class TranscriptionEngine
         // The level fields summarise the 20 frames of the tick rather than
         // sample the last one, which could fall between two words: the energy
         // mean (squares summed, then re-rooted, the way RMS values combine)
-        // and the loudest frame. The frame-by-frame curve belongs to the
-        // microphone telemetry dataset, never to the log.
+        // and the loudest frame. The frame-by-frame curve is not logged.
         double hbSumSquares = 0;
         float hbMaxRms = 0f;
         int hbLevelFrames = 0;

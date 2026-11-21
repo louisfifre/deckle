@@ -89,8 +89,7 @@ internal sealed class CapturePipeline
     }
 
     // The sub-window walker: the RMS is appended to the log unconditionally, so
-    // the Stop-time microphone telemetry covers the whole session even when
-    // nothing else listens. The frame's samples are a fresh array, never an
+    // the RMS log covers the whole session even when nothing else listens. The frame's samples are a fresh array, never an
     // alias of the assembler's, so a subscriber may keep them.
     private void OnWindow(ReadOnlySpan<float> window, float rms)
     {

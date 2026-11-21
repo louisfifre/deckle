@@ -29,7 +29,7 @@ public sealed record CorrectionDecision(string Original, string Replacement, Cor
 // Returns null to leave the literal untouched — the conservative default.
 //
 // trace is an optional decision ledger: when non-null the policy records its exit
-// reason, candidate pool and safety gauges into it for the decision telemetry. It
+// reason, candidate pool and safety gauges into it. It
 // is observation only — the decision must never read back from it — and null by
 // default, so the live chain runs untouched and the tests stay terse.
 public interface ICorrectionPolicy

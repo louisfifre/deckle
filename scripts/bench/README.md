@@ -16,7 +16,7 @@ The pass runs `scripts/self-check.ps1` underneath: the built `Deckle.exe` of the
 |---|---|
 | `startup.ready_ms` | process start to the end of the self-check's wiring (settings surface up). Not the resident boot, which the self-check leaves out: compare it with itself only |
 | `window.<name>.create_ms` | the `WindowLoadComplete` event, a window's first-open cost, read from the run's `log.jsonl` |
-| `page.<window>/<page>.load_ms` | the load time the self-check's walk already measures for each Settings and Mail page |
+| `page.<window>/<page>.load_ms` | the load time the self-check's walk already measures for each Settings page |
 | `memory.*`, `process.*` | working set, private working set, private bytes, handles and threads, taken once the walk has opened every window |
 | `dictation.*` | one take through the real engine, on a test audio: wall time, real-time factor, and the engine's own `PipelineTimings` phases (model load, ASR init, ASR) |
 | `memory_after_dictation.*` | the footprint after the take and the engine's release, a leak check |
