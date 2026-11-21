@@ -632,6 +632,7 @@ _Generated from `git ls-files` — do not edit by hand._
 │   │   │   ├── IconImage.cs
 │   │   │   ├── OffscreenWindow.cs
 │   │   │   ├── SelfCheckDataRootGate.cs
+│   │   │   ├── SelfCheckPerf.cs
 │   │   │   ├── SelfCheckReport.cs
 │   │   │   └── SelfCheckTarget.cs
 │   │   ├── Strings/
@@ -671,6 +672,7 @@ _Generated from `git ls-files` — do not edit by hand._
 │   │   ├── App.SelfCheck.cs
 │   │   ├── App.SelfCheck.Diagnostics.cs
 │   │   ├── App.SelfCheck.Icons.cs
+│   │   ├── App.SelfCheck.Perf.cs
 │   │   ├── App.SelfCheck.Projects.Category.cs
 │   │   ├── App.SelfCheck.Projects.cs
 │   │   ├── App.SelfCheck.Projects.Home.cs
@@ -2518,6 +2520,7 @@ _Generated from `git ls-files` — do not edit by hand._
 │   │   │   ├── WhisperViewModel.DictationExperience.cs
 │   │   │   ├── WhisperViewModel.Engine.cs
 │   │   │   ├── WhisperViewModel.Settings.cs
+│   │   │   ├── WhisperViewModel.SpeechEngine.cs
 │   │   │   └── WhisperViewModel.Streaming.cs
 │   │   ├── Deckle.Transcription.Views.csproj
 │   │   ├── DecodingPage.xaml
@@ -3464,6 +3467,7 @@ _Generated from `git ls-files` — do not edit by hand._
 │   │   ├── DictationRecoveryStoreTests.cs
 │   │   ├── DictationTableTemplateTests.cs
 │   │   ├── EnergySegmenterTests.cs
+│   │   ├── EngineChoiceSettingsTests.cs
 │   │   ├── FileBatchLifecycleTests.cs
 │   │   ├── FileToTextTests.cs
 │   │   ├── FileTranscriptionQueueTests.cs
