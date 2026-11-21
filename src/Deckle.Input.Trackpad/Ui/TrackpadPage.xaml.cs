@@ -12,9 +12,8 @@ namespace Deckle.Input.Trackpad;
 // Settings page for the Trackpad module. Resolved by the Settings NavigationView
 // via the item Tag "Deckle.Input.Trackpad.TrackpadPage, Deckle.Input.Trackpad".
 //
-// The Windows-integration acts (neutralize / restore gestures, repair the
-// Bluetooth pairing bug) can fail or be UAC-cancelled, so the page never
-// assumes success: each handler guards against exceptions, disables its
+// The Windows-integration act (neutralize / restore gestures) can fail, so the
+// page never assumes success: its handler guards against exceptions, disables its
 // control for the duration of the call, then re-reads the real state back
 // into the UI. The elevated logon task lives on Settings > General
 // (GeneralViewModel.StartupSettings): it starts the whole app, not the drag.
@@ -142,29 +141,6 @@ public sealed partial class TrackpadPage : Page
         finally
         {
             RefreshGesturesLabel();
-        }
-    }
-
-    // ── Repair Bluetooth connection ─────────────────────────────────────────
-
-    private void RepairButton_Click(object sender, RoutedEventArgs e)
-    {
-        RepairButton.IsEnabled = false;
-        try
-        {
-            // Nothing to read back: the work happens in the separate elevated
-            // console the user drives.
-            ConnectionRepair.TryLaunch();
-        }
-        catch (Exception ex)
-        {
-            // Swallow : a launch failure (UAC declined, script missing)
-            // leaves the page untouched.
-            DeckleTrackpadSource.Log.ActFailed("repair", ex.GetType().Name, ex.Message);
-        }
-        finally
-        {
-            RepairButton.IsEnabled = true;
         }
     }
 

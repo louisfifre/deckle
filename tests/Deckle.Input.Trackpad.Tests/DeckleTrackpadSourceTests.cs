@@ -47,16 +47,14 @@ public sealed class DeckleTrackpadSourceTests : IDisposable
 
     [Fact]
     [Trait("Category", "regression")]
-    public void ASystemSettingChangeAndTheRepairScriptReachTheLogOnSuccessToo()
+    public void ASystemSettingChangeReachesTheLogOnSuccessToo()
     {
         using var listener = new TestEventListener("Deckle-Trackpad");
 
         DeckleTrackpadSource.Log.GesturesNeutralized();
         DeckleTrackpadSource.Log.GesturesRestored();
-        DeckleTrackpadSource.Log.RepairLaunched();
-        DeckleTrackpadSource.Log.RepairCompleted(0);
 
-        Assert.Equal(4, listener.Events.Count);
+        Assert.Equal(2, listener.Events.Count);
         Assert.All(listener.Events, e => Assert.Equal(ObservationTags.Milestone, e.Tags & ObservationTags.Milestone));
     }
 

@@ -52,13 +52,6 @@
                             </Button>
                         </controls:SettingsCard>
 
-                        <controls:SettingsCard x:Uid="TrackpadPage_RepairCard"
-                                               Tag="TrackpadPage_RepairCard">
-                            <Button x:Name="RepairButton"
-                                    x:Uid="TrackpadPage_RepairButton"
-                                    Click="RepairButton_Click" />
-                        </controls:SettingsCard>
-
                         <!-- "Start elevated" sits on Settings > General, under
                              "Start with Windows": a logon task for the whole
                              app, not a trackpad setting (2026-10-15). -->

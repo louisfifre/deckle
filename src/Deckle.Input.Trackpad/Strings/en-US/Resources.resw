@@ -177,15 +177,6 @@
   <data name="TrackpadPage_GesturesButton_AlreadyOff" xml:space="preserve">
     <value>Already off</value>
   </data>
-  <data name="TrackpadPage_RepairCard.Header" xml:space="preserve">
-    <value>Repair Bluetooth connection</value>
-  </data>
-  <data name="TrackpadPage_RepairCard.Description" xml:space="preserve">
-    <value>Fixes the Apple driver pairing bug by re-pairing the trackpad. Asks for administrator approval.</value>
-  </data>
-  <data name="TrackpadPage_RepairButton.Content" xml:space="preserve">
-    <value>Repair…</value>
-  </data>
 
   <data name="SettingsModuleNavLabel" xml:space="preserve">
     <value>Trackpad</value>

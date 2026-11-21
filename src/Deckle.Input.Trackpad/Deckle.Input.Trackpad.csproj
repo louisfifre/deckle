@@ -27,10 +27,6 @@
     <ProjectReference Include="..\Deckle.Diagnostics\Deckle.Diagnostics.csproj" />
   </ItemGroup>
 
-  <ItemGroup>
-    <EmbeddedResource Include="Acts\repair-trackpad-connection.ps1" />
-  </ItemGroup>
-
   <PropertyGroup>
     <!-- EventSource [Event] parameters use snake_case so the ETW
          payload keys land directly in the JSONL output and must
