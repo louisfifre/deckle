@@ -11,6 +11,19 @@ public sealed partial class ContributionHost
     public IEnumerable<Window> OpenWindows =>
         _slots.Values.Select(s => s.Open).OfType<Window>().ToList();
 
+    // The windows alive now by their logical name: what the interface capture
+    // names its images after.
+    public IReadOnlyList<KeyValuePair<string, Window>> OpenNamedWindows =>
+        _slots.Where(s => s.Value.Open is not null)
+            .Select(s => new KeyValuePair<string, Window>(s.Key, s.Value.Open!))
+            .ToList();
+
+    // The open windows that exist only while Developer mode is on: the
+    // application closes them when the mode goes off, their entry point being
+    // gone.
+    public IReadOnlyList<Window> DeveloperOnlyOpenWindows =>
+        _slots.Values.Where(s => s.Definition.DeveloperOnly).Select(s => s.Open).OfType<Window>().ToList();
+
     public bool IsOpen(string windowName) =>
         _slots.TryGetValue(windowName, out WindowSlot? slot) && slot.Open is not null;
 

@@ -150,6 +150,38 @@ public sealed class ContributionWindowTests
     }
 
     [Fact]
+    public void OpenWindowsAreListedByTheirLogicalName()
+    {
+        ContributionHost host = Host();
+        Assert.Empty(host.OpenNamedWindows);
+
+        host.Open("mail");
+
+        KeyValuePair<string, Window> named = Assert.Single(host.OpenNamedWindows);
+        Assert.Equal("mail", named.Key);
+        Assert.Same(_probe.Built[0], named.Value);
+    }
+
+    [Fact]
+    public void OnlyTheOpenDeveloperOnlyWindowsAreOfferedForClosing()
+    {
+        ContributionHost plain = Host();
+        plain.Open("mail");
+        Assert.Empty(plain.DeveloperOnlyOpenWindows);
+
+        _services.DeveloperModeEnabled = true;
+        var probe = new Probe();
+        var host = new ContributionHost(
+            [new FakeContribution { Id = "mail", Windows = [probe.Window("mail", developerOnly: true)] }],
+            _services);
+        Assert.Empty(host.DeveloperOnlyOpenWindows);
+
+        host.Open("mail");
+
+        AssertSame([probe.Built[0]], host.DeveloperOnlyOpenWindows);
+    }
+
+    [Fact]
     public void AWindowWithoutARecordingStateHookIsLeftAlone()
     {
         ContributionHost host = Host(withRecordingState: false);

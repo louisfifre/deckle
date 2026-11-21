@@ -48,6 +48,27 @@ public sealed class ContributionTrayTests
     }
 
     [Fact]
+    public void TheDeveloperMenuListsADeveloperOnlyEntryWhateverTheModeIsAtCompose()
+    {
+        _services.DeveloperModeEnabled = false;
+        ContributionHost host = Host();
+
+        IReadOnlyList<ContributionTrayEntry> entries = host.TrayEntries(forDeveloperMenu: true);
+
+        Assert.Equal(["atelier", "mail"], entries.Select(e => e.Id));
+        entries.Single(e => e.Id == "mail").Open();
+        Assert.False(host.IsOpen("mail"));
+    }
+
+    [Fact]
+    public void TheDeveloperMenuStillSkipsAnAbsentModule()
+    {
+        _services.AbsentModules.Add("atelier");
+
+        Assert.Equal(["mail"], Host().TrayEntries(forDeveloperMenu: true).Select(e => e.Id));
+    }
+
+    [Fact]
     public void AnEntryOfAnAbsentModuleIsHidden()
     {
         _services.DeveloperModeEnabled = true;

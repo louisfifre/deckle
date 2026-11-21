@@ -1,3 +1,5 @@
+using static Deckle.Contributions.DeckleContributionsSource;
+
 namespace Deckle.Contributions;
 
 public sealed partial class ContributionHost
@@ -7,7 +9,11 @@ public sealed partial class ContributionHost
     // window has one only while Developer mode is on; a window of a module the
     // person did not install has none. Each line opens its window through Open,
     // so the gates hold when the line is clicked as well.
-    public IReadOnlyList<ContributionTrayEntry> TrayEntries()
+    //
+    // forDeveloperMenu: the menu is itself the developer door and is composed
+    // once, whatever Developer mode says at that moment, so a developer-only
+    // window is listed; its click still refuses while the mode is off.
+    public IReadOnlyList<ContributionTrayEntry> TrayEntries(bool forDeveloperMenu = false)
     {
         var entries = new List<ContributionTrayEntry>();
         foreach (IContribution contribution in _contributions)
@@ -15,7 +21,10 @@ public sealed partial class ContributionHost
             foreach (ContributedWindow window in contribution.Windows)
             {
                 if (window.TrayLabelKey is null) continue;
-                if (Refusal(window.Name) is not null) continue;
+                string? refusal = Refusal(window.Name);
+                if (refusal is not null
+                    && !(forDeveloperMenu && refusal == WindowRefusals.DeveloperModeOff))
+                    continue;
 
                 string name = window.Name;
                 entries.Add(new ContributionTrayEntry(name, window.TrayLabelKey, () => Open(name)));

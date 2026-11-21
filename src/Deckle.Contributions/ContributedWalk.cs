@@ -13,6 +13,13 @@ public sealed record ContributedWalk
     // ("mail/activity"); empty for a window of one view.
     public IReadOnlyList<string> Views { get; init; } = [];
 
+    // True for a window whose views are only known once the walk runs (the
+    // states it reaches depend on the data of the run): `window/<view>` is then
+    // a valid target although Views lists none.
+    public bool ShowsViewsAtRun { get; init; }
+
+    public bool HasViews => ShowsViewsAtRun || Views.Count > 0;
+
     public required Func<IContributionWalkContext, Task> Run { get; init; }
 }
 
