@@ -19,7 +19,7 @@ public class HomeGesturesTests
     public async Task CreatePointDerivesRoomAndCategoryAndStoresTheCodeProperty()
     {
         using var server = new FakeHomeAnytypeServer();
-        server.SetObjects(FakeHomeAnytypeServer.Room("room-zz", "ZZ", "Pièce fictive"));
+        server.SetObjects(FakeHomeAnytypeServer.Room("bafyreiroomzzaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa", "ZZ", "Pièce fictive"));
 
         string digest = await Gestures(server).CreateAsync(
             HomeSchema.Types.Point,
@@ -34,7 +34,7 @@ public class HomeGesturesTests
         Assert.Equal("ZZ-PS01", Entry(properties, HomeSchema.Properties.Code)["text"]!.GetValue<string>());
         JsonNode roomReference = Assert.Single(Assert.IsType<JsonArray>(
             Entry(properties, HomeSchema.Properties.InstalledIn)["objects"]))!;
-        Assert.Equal("room-zz", roomReference.GetValue<string>());
+        Assert.Equal("bafyreiroomzzaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa", roomReference.GetValue<string>());
         Assert.Equal("tag-category-ps", Entry(properties, HomeSchema.Properties.Category)["select"]!.GetValue<string>());
         Assert.DoesNotContain(properties.OfType<JsonObject>(), entry =>
             entry["key"]?.GetValue<string>() == "existence");
@@ -44,7 +44,7 @@ public class HomeGesturesTests
     public async Task CreatePointRequiresAHumanName()
     {
         using var server = new FakeHomeAnytypeServer();
-        server.SetObjects(FakeHomeAnytypeServer.Room("room-zz", "ZZ", "Pièce fictive"));
+        server.SetObjects(FakeHomeAnytypeServer.Room("bafyreiroomzzaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa", "ZZ", "Pièce fictive"));
 
         ArgumentException error = await Assert.ThrowsAsync<ArgumentException>(() =>
             Gestures(server).CreateAsync(
@@ -76,7 +76,7 @@ public class HomeGesturesTests
     public async Task CreateAddsTheCreatedObjectToCollectionsOutsideItsProperties()
     {
         using var server = new FakeHomeAnytypeServer();
-        server.SetObjects(FakeHomeAnytypeServer.Collection("floor-1", "Niveau fictif"));
+        server.SetObjects(FakeHomeAnytypeServer.Collection("bafyreifloorbaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa", "Niveau fictif"));
 
         await Gestures(server).CreateAsync(
             HomeSchema.Types.Room,
@@ -84,9 +84,9 @@ public class HomeGesturesTests
             Ct);
 
         FakeHomeAnytypeServer.Received membership = server.Requests.Single(request =>
-            request.Method == "POST" && request.Path.EndsWith("/lists/floor-1/objects", StringComparison.Ordinal));
+            request.Method == "POST" && request.Path.EndsWith("/lists/bafyreifloorbaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa/objects", StringComparison.Ordinal));
         JsonObject body = (JsonObject)JsonNode.Parse(membership.Body)!;
-        Assert.Equal("created-1", Assert.Single(Assert.IsType<JsonArray>(body["objects"]))!.GetValue<string>());
+        Assert.Equal("bafyreicreatedbaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa", Assert.Single(Assert.IsType<JsonArray>(body["objects"]))!.GetValue<string>());
 
         JsonObject create = (JsonObject)JsonNode.Parse(server.Requests.Single(request =>
             request.Method == "POST" && request.Path.EndsWith("/objects", StringComparison.Ordinal)
@@ -99,9 +99,9 @@ public class HomeGesturesTests
     {
         using var server = new FakeHomeAnytypeServer();
         server.SetObjects(
-            FakeHomeAnytypeServer.Room("room-zz", "ZZ", "Pièce fictive"),
-            FakeHomeAnytypeServer.Collection("floor-add", "Niveau ajouté"),
-            FakeHomeAnytypeServer.Collection("floor-remove", "Niveau retiré"));
+            FakeHomeAnytypeServer.Room("bafyreiroomzzaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa", "ZZ", "Pièce fictive"),
+            FakeHomeAnytypeServer.Collection("bafyreiflooraddaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa", "Niveau ajouté"),
+            FakeHomeAnytypeServer.Collection("bafyreifloorremoveaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa", "Niveau retiré"));
 
         await Gestures(server).UpdateAsync(
             [new HomeUpdateItem(
@@ -114,10 +114,10 @@ public class HomeGesturesTests
 
         Assert.Contains(server.Requests, request =>
             request.Method == "POST"
-            && request.Path.EndsWith("/lists/floor-add/objects", StringComparison.Ordinal));
+            && request.Path.EndsWith("/lists/bafyreiflooraddaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa/objects", StringComparison.Ordinal));
         Assert.Contains(server.Requests, request =>
             request.Method == "DELETE"
-            && request.Path.EndsWith("/lists/floor-remove/objects/room-zz", StringComparison.Ordinal));
+            && request.Path.EndsWith("/lists/bafyreifloorremoveaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa/objects/bafyreiroomzzaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa", StringComparison.Ordinal));
         Assert.DoesNotContain(server.Requests, request => request.Method == "PATCH");
     }
 
@@ -125,7 +125,7 @@ public class HomeGesturesTests
     public async Task CollectionMembershipRejectsAnOrdinaryObjectBeforeWriting()
     {
         using var server = new FakeHomeAnytypeServer();
-        server.SetObjects(FakeHomeAnytypeServer.Room("room-zz", "ZZ", "Pièce fictive"));
+        server.SetObjects(FakeHomeAnytypeServer.Room("bafyreiroomzzaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa", "ZZ", "Pièce fictive"));
 
         InvalidOperationException error = await Assert.ThrowsAsync<InvalidOperationException>(() =>
             Gestures(server).UpdateAsync(
@@ -139,7 +139,7 @@ public class HomeGesturesTests
     public async Task CreateRejectsAValidCodeWhoseRoomIsAbsent()
     {
         using var server = new FakeHomeAnytypeServer();
-        server.SetObjects(FakeHomeAnytypeServer.Room("room-zz", "ZZ", "Pièce fictive"));
+        server.SetObjects(FakeHomeAnytypeServer.Room("bafyreiroomzzaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa", "ZZ", "Pièce fictive"));
 
         InvalidOperationException error = await Assert.ThrowsAsync<InvalidOperationException>(() =>
             Gestures(server).CreateAsync(
@@ -204,8 +204,8 @@ public class HomeGesturesTests
     {
         using var server = new FakeHomeAnytypeServer();
         server.SetObjects(
-            FakeHomeAnytypeServer.Room("room-zz", "ZZ", "Pièce fictive"),
-            FakeHomeAnytypeServer.Point("point-1", "ZZ-PS01", "Prise fictive", "room-zz"));
+            FakeHomeAnytypeServer.Room("bafyreiroomzzaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa", "ZZ", "Pièce fictive"),
+            FakeHomeAnytypeServer.Point("bafyreipointbaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa", "ZZ-PS01", "Prise fictive", "bafyreiroomzzaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"));
 
         InvalidOperationException error = await Assert.ThrowsAsync<InvalidOperationException>(() =>
             Gestures(server).CreateAsync(
@@ -221,8 +221,8 @@ public class HomeGesturesTests
     {
         using var server = new FakeHomeAnytypeServer();
         server.SetObjects(
-            FakeHomeAnytypeServer.Room("room-zz", "ZZ", "Pièce fictive"),
-            FakeHomeAnytypeServer.Point("point-1", "ZZ-PS01", "Prise fictive", "room-zz"));
+            FakeHomeAnytypeServer.Room("bafyreiroomzzaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa", "ZZ", "Pièce fictive"),
+            FakeHomeAnytypeServer.Point("bafyreipointbaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa", "ZZ-PS01", "Prise fictive", "bafyreiroomzzaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"));
 
         InvalidOperationException error = await Assert.ThrowsAsync<InvalidOperationException>(() =>
             Gestures(server).UpdateAsync(
@@ -237,9 +237,9 @@ public class HomeGesturesTests
     {
         using var server = new FakeHomeAnytypeServer();
         server.SetObjects(
-            FakeHomeAnytypeServer.Room("room-zz", "ZZ", "Pièce fictive"),
-            FakeHomeAnytypeServer.Point("point-1", "ZZ-LC01", "Plafonnier fictif", "room-zz"),
-            FakeHomeAnytypeServer.Point("point-2", "ZZ-CS01", "Interrupteur fictif", "room-zz", "point-1"));
+            FakeHomeAnytypeServer.Room("bafyreiroomzzaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa", "ZZ", "Pièce fictive"),
+            FakeHomeAnytypeServer.Point("bafyreipointbaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa", "ZZ-LC01", "Plafonnier fictif", "bafyreiroomzzaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"),
+            FakeHomeAnytypeServer.Point("bafyreipoint2aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa", "ZZ-CS01", "Interrupteur fictif", "bafyreiroomzzaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa", "bafyreipointbaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"));
 
         InvalidOperationException error = await Assert.ThrowsAsync<InvalidOperationException>(() =>
             Gestures(server).DeleteAsync("ZZ-LC01", confirm: false, Ct));
@@ -253,13 +253,13 @@ public class HomeGesturesTests
     {
         using var server = new FakeHomeAnytypeServer();
         server.SetObjects(
-            FakeHomeAnytypeServer.Room("room-zz", "ZZ", "Pièce fictive"),
-            FakeHomeAnytypeServer.Point("point-1", "ZZ-PS01", "Prise saisie par erreur", "room-zz"));
+            FakeHomeAnytypeServer.Room("bafyreiroomzzaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa", "ZZ", "Pièce fictive"),
+            FakeHomeAnytypeServer.Point("bafyreipointbaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa", "ZZ-PS01", "Prise saisie par erreur", "bafyreiroomzzaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"));
 
         string preview = await Gestures(server).DeleteAsync("ZZ-PS01", confirm: false, Ct);
-        Assert.Contains("point-1", preview);
+        Assert.Contains("bafyreipointbaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa", preview);
 
-        string result = await Gestures(server, Approving()).DeleteAsync("point-1", confirm: true, Ct);
+        string result = await Gestures(server, Approving()).DeleteAsync("bafyreipointbaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa", confirm: true, Ct);
         Assert.Contains("corbeille", result);
         Assert.Contains(server.Requests, request => request.Method == "DELETE");
     }
@@ -281,7 +281,7 @@ public class HomeGesturesTests
     public async Task ComponentCreationRequiresAnExistingSystem()
     {
         using var server = new FakeHomeAnytypeServer();
-        server.SetObjects(FakeHomeAnytypeServer.EquipmentSystem("system-1", "PC fictif"));
+        server.SetObjects(FakeHomeAnytypeServer.EquipmentSystem("bafyreisystembaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa", "PC fictif"));
 
         InvalidOperationException error = await Assert.ThrowsAsync<InvalidOperationException>(() =>
             Gestures(server).CreateAsync(
@@ -296,7 +296,7 @@ public class HomeGesturesTests
         Assert.Equal(HomeSchema.Types.Component, body["type_key"]!.GetValue<string>());
         JsonNode reference = Assert.Single(Assert.IsType<JsonArray>(
             Entry(Assert.IsType<JsonArray>(body["properties"]), HomeSchema.Properties.PartOf)["objects"]))!;
-        Assert.Equal("system-1", reference.GetValue<string>());
+        Assert.Equal("bafyreisystembaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa", reference.GetValue<string>());
     }
 
     [Fact]
@@ -304,8 +304,8 @@ public class HomeGesturesTests
     {
         using var server = new FakeHomeAnytypeServer();
         server.SetObjects(
-            FakeHomeAnytypeServer.EquipmentSystem("system-1", "PC fictif"),
-            FakeHomeAnytypeServer.Component("component-1", "GPU fictif", "system-1"));
+            FakeHomeAnytypeServer.EquipmentSystem("bafyreisystembaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa", "PC fictif"),
+            FakeHomeAnytypeServer.Component("bafyreicomponentbaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa", "GPU fictif", "bafyreisystembaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"));
 
         InvalidOperationException error = await Assert.ThrowsAsync<InvalidOperationException>(() =>
             Gestures(server).UpdateAsync(
@@ -323,8 +323,8 @@ public class HomeGesturesTests
     {
         using var server = new FakeHomeAnytypeServer();
         server.SetObjects(
-            FakeHomeAnytypeServer.EquipmentSystem("system-1", "HiFi fictive"),
-            FakeHomeAnytypeServer.Plant("plant-1", "Ficus fictif"));
+            FakeHomeAnytypeServer.EquipmentSystem("bafyreisystembaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa", "HiFi fictive"),
+            FakeHomeAnytypeServer.Plant("bafyreiplantbaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa", "Ficus fictif"));
 
         InvalidOperationException error = await Assert.ThrowsAsync<InvalidOperationException>(() =>
             Gestures(server).CreateComponentAsync("Ampli fictif", "Ficus fictif", null, Ct));
@@ -337,7 +337,7 @@ public class HomeGesturesTests
     public async Task PlantCreateAnchorsTheRoom()
     {
         using var server = new FakeHomeAnytypeServer();
-        server.SetObjects(FakeHomeAnytypeServer.Room("room-zz", "ZZ", "Pièce fictive"));
+        server.SetObjects(FakeHomeAnytypeServer.Room("bafyreiroomzzaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa", "ZZ", "Pièce fictive"));
 
         await Gestures(server).CreatePlantAsync("Ficus fictif", "ZZ", null, Ct);
 
@@ -345,7 +345,7 @@ public class HomeGesturesTests
         Assert.Equal(HomeSchema.Types.Plant, create["type_key"]!.GetValue<string>());
         JsonNode room = Assert.Single(Assert.IsType<JsonArray>(
             Entry(Assert.IsType<JsonArray>(create["properties"]), HomeSchema.Properties.InstalledIn)["objects"]))!;
-        Assert.Equal("room-zz", room.GetValue<string>());
+        Assert.Equal("bafyreiroomzzaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa", room.GetValue<string>());
     }
 
     [Fact]
@@ -353,8 +353,8 @@ public class HomeGesturesTests
     {
         using var server = new FakeHomeAnytypeServer();
         server.SetObjects(
-            FakeHomeAnytypeServer.Room("room-zz", "ZZ", "Pièce fictive"),
-            FakeHomeAnytypeServer.Collection("floor-1", "Rez fictif"));
+            FakeHomeAnytypeServer.Room("bafyreiroomzzaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa", "ZZ", "Pièce fictive"),
+            FakeHomeAnytypeServer.Collection("bafyreifloorbaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa", "Rez fictif"));
 
         InvalidOperationException error = await Assert.ThrowsAsync<InvalidOperationException>(() =>
             Gestures(server).UpdateAsync(
@@ -370,9 +370,9 @@ public class HomeGesturesTests
         using var server = new FakeHomeAnytypeServer();
         server.AddSchemaType(HomeSchema.Types.Floor, "Zone", "Zones", "collection");
         server.SetObjects(
-            FakeHomeAnytypeServer.Room("room-zz", "ZZ", "Pièce fictive"),
-            FakeHomeAnytypeServer.Collection("floor-1", "Rez fictif", HomeSchema.Types.Floor),
-            FakeHomeAnytypeServer.Collection("section-1", "Section fictive"));
+            FakeHomeAnytypeServer.Room("bafyreiroomzzaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa", "ZZ", "Pièce fictive"),
+            FakeHomeAnytypeServer.Collection("bafyreifloorbaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa", "Rez fictif", HomeSchema.Types.Floor),
+            FakeHomeAnytypeServer.Collection("bafyreisectionbaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa", "Section fictive"));
 
         InvalidOperationException wrongCollection = await Assert.ThrowsAsync<InvalidOperationException>(() =>
             Gestures(server).UpdateAsync(
@@ -385,7 +385,7 @@ public class HomeGesturesTests
         JsonObject patch = (JsonObject)JsonNode.Parse(server.Requests.Single(r => r.Method == "PATCH").Body)!;
         JsonNode floor = Assert.Single(Assert.IsType<JsonArray>(
             Entry(Assert.IsType<JsonArray>(patch["properties"]), HomeSchema.Properties.Floor)["objects"]))!;
-        Assert.Equal("floor-1", floor.GetValue<string>());
+        Assert.Equal("bafyreifloorbaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa", floor.GetValue<string>());
     }
 
     [Fact]
@@ -522,8 +522,8 @@ public class HomeGesturesTests
     {
         using var server = new FakeHomeAnytypeServer();
         server.SetObjects(
-            FakeHomeAnytypeServer.Idea("idea-1", "Tester une idée fictive"),
-            FakeHomeAnytypeServer.Errand("errand-1", "Vis fictives", done: false));
+            FakeHomeAnytypeServer.Idea("bafyreiideabaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa", "Tester une idée fictive"),
+            FakeHomeAnytypeServer.Errand("bafyreierrandbaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa", "Vis fictives", done: false));
 
         InvalidOperationException error = await Assert.ThrowsAsync<InvalidOperationException>(() =>
             Gestures(server).UpdateAsync(
@@ -543,8 +543,8 @@ public class HomeGesturesTests
     {
         using var server = new FakeHomeAnytypeServer();
         server.SetObjects(
-            FakeHomeAnytypeServer.Errand("errand-1", "Vis fictives", done: false),
-            FakeHomeAnytypeServer.Errand("errand-2", "Sacs fictifs", done: true));
+            FakeHomeAnytypeServer.Errand("bafyreierrandbaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa", "Vis fictives", done: false),
+            FakeHomeAnytypeServer.Errand("bafyreierrand2aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa", "Sacs fictifs", done: true));
 
         string remaining = await Gestures(server).SearchAsync(
             new HomeSearchFilter(null, HomeSchema.Types.Errand, null, null, null, null, Done: false), Ct);
@@ -558,9 +558,9 @@ public class HomeGesturesTests
     {
         using var server = new FakeHomeAnytypeServer();
         server.SetObjects(
-            FakeHomeAnytypeServer.EquipmentSystem("system-1", "PC fictif"),
-            FakeHomeAnytypeServer.Component("component-1", "GPU fictif", "system-1"),
-            FakeHomeAnytypeServer.Plant("plant-1", "Ficus fictif"));
+            FakeHomeAnytypeServer.EquipmentSystem("bafyreisystembaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa", "PC fictif"),
+            FakeHomeAnytypeServer.Component("bafyreicomponentbaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa", "GPU fictif", "bafyreisystembaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"),
+            FakeHomeAnytypeServer.Plant("bafyreiplantbaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa", "Ficus fictif"));
 
         string members = await Gestures(server).SearchAsync(
             new HomeSearchFilter(null, null, null, null, null, null, System: "PC fictif"), Ct);
@@ -610,7 +610,7 @@ public class HomeGesturesTests
         Assert.Equal(HomeSchema.Types.Todo, todo["type_key"]!.GetValue<string>());
         JsonArray reference = Assert.IsType<JsonArray>(
             Entry(Assert.IsType<JsonArray>(todo["properties"]), HomeSchema.Properties.Worksite)["objects"]);
-        Assert.Equal("created-1", Assert.Single(reference)!.GetValue<string>());
+        Assert.Equal("bafyreicreatedbaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa", Assert.Single(reference)!.GetValue<string>());
     }
 
     [Fact]
@@ -641,7 +641,7 @@ public class HomeGesturesTests
     public async Task CompleteChecksTheNativeDoneBoxOfATodo()
     {
         using var server = new FakeHomeAnytypeServer();
-        server.SetObjects(FakeHomeAnytypeServer.Todo("todo-1", "Purger le radiateur fictif", null, done: false));
+        server.SetObjects(FakeHomeAnytypeServer.Todo("bafyreitodobaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa", "Purger le radiateur fictif", null, done: false));
 
         string digest = await Gestures(server).CompleteAsync("Purger le radiateur fictif", Ct);
 
@@ -656,9 +656,9 @@ public class HomeGesturesTests
     {
         using var server = new FakeHomeAnytypeServer();
         server.SetObjects(
-            FakeHomeAnytypeServer.Worksite("site-1", "Salle de bain fictive"),
-            FakeHomeAnytypeServer.Todo("todo-1", "Déposer le lavabo fictif", "site-1", done: false),
-            FakeHomeAnytypeServer.Todo("todo-2", "Choisir le carrelage fictif", "site-1", done: true));
+            FakeHomeAnytypeServer.Worksite("bafyreisitebaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa", "Salle de bain fictive"),
+            FakeHomeAnytypeServer.Todo("bafyreitodobaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa", "Déposer le lavabo fictif", "bafyreisitebaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa", done: false),
+            FakeHomeAnytypeServer.Todo("bafyreitodo2aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa", "Choisir le carrelage fictif", "bafyreisitebaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa", done: true));
 
         string digest = await Gestures(server).CompleteAsync("Salle de bain fictive", Ct);
 
@@ -674,7 +674,7 @@ public class HomeGesturesTests
     public async Task CompleteRefusesAnObjectThatDoesNotFinish()
     {
         using var server = new FakeHomeAnytypeServer();
-        server.SetObjects(FakeHomeAnytypeServer.Room("room-zz", "ZZ", "Pièce fictive"));
+        server.SetObjects(FakeHomeAnytypeServer.Room("bafyreiroomzzaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa", "ZZ", "Pièce fictive"));
 
         InvalidOperationException error = await Assert.ThrowsAsync<InvalidOperationException>(() =>
             Gestures(server).CompleteAsync("ZZ", Ct));
@@ -688,10 +688,10 @@ public class HomeGesturesTests
     {
         using var server = new FakeHomeAnytypeServer();
         server.SetObjects(
-            FakeHomeAnytypeServer.Worksite("site-1", "Salle de bain fictive"),
-            FakeHomeAnytypeServer.Todo("todo-1", "Déposer le lavabo fictif", "site-1", done: false),
-            FakeHomeAnytypeServer.Todo("todo-2", "Choisir le carrelage fictif", "site-1", done: true),
-            FakeHomeAnytypeServer.Todo("todo-3", "Corvée orpheline fictive", null, done: false));
+            FakeHomeAnytypeServer.Worksite("bafyreisitebaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa", "Salle de bain fictive"),
+            FakeHomeAnytypeServer.Todo("bafyreitodobaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa", "Déposer le lavabo fictif", "bafyreisitebaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa", done: false),
+            FakeHomeAnytypeServer.Todo("bafyreitodo2aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa", "Choisir le carrelage fictif", "bafyreisitebaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa", done: true),
+            FakeHomeAnytypeServer.Todo("bafyreitodo3aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa", "Corvée orpheline fictive", null, done: false));
 
         string overview = await Gestures(server).WorksiteOverviewAsync("Salle de bain fictive", Ct);
 
@@ -707,10 +707,10 @@ public class HomeGesturesTests
     {
         using var server = new FakeHomeAnytypeServer();
         server.SetObjects(
-            FakeHomeAnytypeServer.Worksite("site-1", "Salle de bain fictive"),
-            FakeHomeAnytypeServer.Worksite("site-2", "Terrasse fictive"),
-            FakeHomeAnytypeServer.Todo("todo-1", "Déposer le lavabo fictif", "site-1", done: false),
-            FakeHomeAnytypeServer.Todo("todo-2", "Corvée orpheline fictive", null, done: false));
+            FakeHomeAnytypeServer.Worksite("bafyreisitebaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa", "Salle de bain fictive"),
+            FakeHomeAnytypeServer.Worksite("bafyreisite2aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa", "Terrasse fictive"),
+            FakeHomeAnytypeServer.Todo("bafyreitodobaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa", "Déposer le lavabo fictif", "bafyreisitebaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa", done: false),
+            FakeHomeAnytypeServer.Todo("bafyreitodo2aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa", "Corvée orpheline fictive", null, done: false));
 
         string byWorksite = await Gestures(server).SearchAsync(
             new HomeSearchFilter(null, null, null, null, null, null, Worksite: "Salle de bain fictive"), Ct);
@@ -727,14 +727,14 @@ public class HomeGesturesTests
     {
         using var server = new FakeHomeAnytypeServer();
         server.SetObjects(
-            FakeHomeAnytypeServer.Worksite("site-1", "Salle de bain fictive", "todo-1"),
-            FakeHomeAnytypeServer.Todo("todo-1", "Déposer le lavabo fictif", "site-1", done: true));
+            FakeHomeAnytypeServer.Worksite("bafyreisitebaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa", "Salle de bain fictive", "bafyreitodobaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"),
+            FakeHomeAnytypeServer.Todo("bafyreitodobaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa", "Déposer le lavabo fictif", "bafyreisitebaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa", done: true));
 
         InvalidOperationException error = await Assert.ThrowsAsync<InvalidOperationException>(() =>
-            Gestures(server, Approving()).DeleteAsync("site-1", confirm: true, Ct));
+            Gestures(server, Approving()).DeleteAsync("bafyreisitebaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa", confirm: true, Ct));
         Assert.Contains("encore référencé", error.Message);
 
-        string digest = await Gestures(server, Approving()).DeleteAsync("todo-1", confirm: true, Ct);
+        string digest = await Gestures(server, Approving()).DeleteAsync("bafyreitodobaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa", confirm: true, Ct);
         Assert.Contains("corbeille", digest);
     }
 

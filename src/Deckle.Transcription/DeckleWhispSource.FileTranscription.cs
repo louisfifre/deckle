@@ -87,23 +87,35 @@ public sealed partial class DeckleWhispSource
     // model is not loaded), transcription_unavailable (the test inference
     // failed twice, so the batch stopped on this file), incomplete (an
     // utterance could not be delivered), exception (the pipeline threw; ex_type
-    // and ex_message carry it). file is the file name without its folder.
+    // and ex_message carry it). The file is found by index: its name is the
+    // person's own, so it is only in FileTranscriptionStartedDetail (Verbose).
     [Event(EvtFileTranscriptionFailed,
            Level = EventLevel.Warning,
            Keywords = (EventKeywords)Keywords.Pipeline,
-           Message = "A file could not be transcribed\nindex={0} | files={1} | file={2} | reason={3} | ex_type={4} | ex_message={5}")]
-    public void FileTranscriptionFailed(int index, int files, string file, string reason, string ex_type, string ex_message)
+           Message = "A file could not be transcribed\nindex={0} | files={1} | reason={2} | ex_type={3} | ex_message={4}")]
+    public void FileTranscriptionFailed(int index, int files, string reason, string ex_type, string ex_message)
     {
-        if (IsEnabled()) WriteEvent(EvtFileTranscriptionFailed, index, files, file, reason, ex_type, ex_message);
+        if (IsEnabled()) WriteEvent(EvtFileTranscriptionFailed, index, files, reason, ex_type, ex_message);
     }
 
     [Event(EvtFileTranscriptionEmpty,
            Level = EventLevel.Warning,
            Keywords = (EventKeywords)Keywords.Pipeline,
-           Message = "A file had no audio to transcribe\nindex={0} | files={1} | file={2}")]
-    public void FileTranscriptionEmpty(int index, int files, string file)
+           Message = "A file had no audio to transcribe\nindex={0} | files={1}")]
+    public void FileTranscriptionEmpty(int index, int files)
     {
-        if (IsEnabled()) WriteEvent(EvtFileTranscriptionEmpty, index, files, file);
+        if (IsEnabled()) WriteEvent(EvtFileTranscriptionEmpty, index, files);
+    }
+
+    // The name of the file FileTranscriptionEmpty counted, at Verbose only.
+    [Event(EvtFileTranscriptionEmptyDetail,
+           Level = EventLevel.Verbose,
+           Keywords = (EventKeywords)Keywords.Pipeline,
+           Message = "index={0} | file={1}")]
+    public void FileTranscriptionEmptyDetail(int index, string file)
+    {
+        if (!IsTakeDetailEnabled((EventKeywords)Keywords.Pipeline)) return;
+        WriteEvent(EvtFileTranscriptionEmptyDetail, index, file);
     }
 
     // action (closed vocabulary): enqueued (a selection joined the queue),
@@ -141,14 +153,27 @@ public sealed partial class DeckleWhispSource
     }
 
     // status is the decoder's AudioFileDecodeStatus, or ReadError when the
-    // decoder threw; ex_type and ex_message are empty unless it threw.
+    // decoder threw; ex_type and ex_message are empty unless it threw. The file
+    // name is the person's own (it can name who they are or what they discuss),
+    // so it never rides a default-level line: FileDecodeFailedDetail carries it
+    // at Verbose only.
     [Event(EvtFileDecodeFailed,
            Level = EventLevel.Warning,
            Keywords = (EventKeywords)Keywords.Pipeline,
-           Message = "The audio file could not be decoded\nfile={0} | status={1} | ex_type={2} | ex_message={3}")]
-    public void FileDecodeFailed(string file, string status, string ex_type, string ex_message)
+           Message = "The audio file could not be decoded\nstatus={0} | ex_type={1} | ex_message={2}")]
+    public void FileDecodeFailed(string status, string ex_type, string ex_message)
     {
-        if (IsEnabled()) WriteEvent(EvtFileDecodeFailed, file, status, ex_type, ex_message);
+        if (IsEnabled()) WriteEvent(EvtFileDecodeFailed, status, ex_type, ex_message);
+    }
+
+    [Event(EvtFileDecodeFailedDetail,
+           Level = EventLevel.Verbose,
+           Keywords = (EventKeywords)Keywords.Pipeline,
+           Message = "file={0}")]
+    public void FileDecodeFailedDetail(string file)
+    {
+        if (!IsTakeDetailEnabled((EventKeywords)Keywords.Pipeline)) return;
+        WriteEvent(EvtFileDecodeFailedDetail, file);
     }
 
     [Event(EvtFileTranscriptionWriteFailed,

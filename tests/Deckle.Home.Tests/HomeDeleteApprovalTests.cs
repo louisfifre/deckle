@@ -21,8 +21,8 @@ public sealed class HomeDeleteApprovalTests
     {
         var server = new FakeHomeAnytypeServer();
         server.SetObjects(
-            FakeHomeAnytypeServer.Room("room-zz", "ZZ", "Pièce fictive"),
-            FakeHomeAnytypeServer.Point("point-1", "ZZ-PS01", "Prise saisie par erreur", "room-zz"));
+            FakeHomeAnytypeServer.Room("bafyreiroomzzaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa", "ZZ", "Pièce fictive"),
+            FakeHomeAnytypeServer.Point("bafyreipointbaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa", "ZZ-PS01", "Prise saisie par erreur", "bafyreiroomzzaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"));
         return server;
     }
 
@@ -38,11 +38,11 @@ public sealed class HomeDeleteApprovalTests
         using var server = ServerWithAFreePoint();
         var approval = new FakeDeletionApproval(DeletionApprovalOutcome.Approved);
 
-        string result = await Gestures(server, approval).DeleteAsync("point-1", confirm: true, Ct);
+        string result = await Gestures(server, approval).DeleteAsync("bafyreipointbaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa", confirm: true, Ct);
 
         Assert.Contains("corbeille", result);
         DeletionCandidate asked = Assert.Single(approval.Asked);
-        Assert.Equal("point-1", asked.Id);
+        Assert.Equal("bafyreipointbaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa", asked.Id);
         Assert.Equal(HomeSchema.Types.Point, asked.TypeKey);
         Assert.Contains(server.Requests, request => request.Method == "DELETE");
     }
@@ -55,7 +55,7 @@ public sealed class HomeDeleteApprovalTests
 
         string preview = await Gestures(server, approval).DeleteAsync("ZZ-PS01", confirm: false, Ct);
 
-        Assert.Contains("point-1", preview);
+        Assert.Contains("bafyreipointbaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa", preview);
         Assert.Contains("notification Windows", preview);
         Assert.Empty(approval.Asked);
         Assert.DoesNotContain(server.Requests, request => request.Method == "DELETE");
@@ -72,7 +72,7 @@ public sealed class HomeDeleteApprovalTests
         using var server = ServerWithAFreePoint();
 
         InvalidOperationException error = await Assert.ThrowsAsync<InvalidOperationException>(() =>
-            Gestures(server, new FakeDeletionApproval(outcome)).DeleteAsync("point-1", confirm: true, Ct));
+            Gestures(server, new FakeDeletionApproval(outcome)).DeleteAsync("bafyreipointbaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa", confirm: true, Ct));
 
         Assert.Contains(expectedWording, error.Message);
         Assert.DoesNotContain(server.Requests, request => request.Method == "DELETE");
@@ -86,7 +86,7 @@ public sealed class HomeDeleteApprovalTests
         var approval = new FakeDeletionApproval(DeletionApprovalOutcome.Approved, neverAnswersInTime: true);
 
         InvalidOperationException error = await Assert.ThrowsAsync<InvalidOperationException>(() =>
-            Gestures(server, approval).DeleteAsync("point-1", confirm: true, Ct));
+            Gestures(server, approval).DeleteAsync("bafyreipointbaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa", confirm: true, Ct));
 
         Assert.Contains("pas de réponse", error.Message);
         Assert.DoesNotContain(server.Requests, request => request.Method == "DELETE");
@@ -101,7 +101,7 @@ public sealed class HomeDeleteApprovalTests
         // Built with no approval of its own, it takes the host's default, which
         // answers Unavailable until a host installs the Windows notification.
         InvalidOperationException error = await Assert.ThrowsAsync<InvalidOperationException>(() =>
-            Gestures(server, approval: null).DeleteAsync("point-1", confirm: true, Ct));
+            Gestures(server, approval: null).DeleteAsync("bafyreipointbaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa", confirm: true, Ct));
 
         Assert.Contains("ne peut pas demander", error.Message);
         Assert.DoesNotContain(server.Requests, request => request.Method == "DELETE");
@@ -114,12 +114,12 @@ public sealed class HomeDeleteApprovalTests
         var approval = new FakeDeletionApproval(
             DeletionApprovalOutcome.Approved,
             whileAsking: () => server.SetObjects(
-                FakeHomeAnytypeServer.Room("room-zz", "ZZ", "Pièce fictive"),
-                FakeHomeAnytypeServer.Point("point-1", "ZZ-PS01", "Prise saisie par erreur", "room-zz"),
-                FakeHomeAnytypeServer.Point("point-2", "ZZ-CS01", "Interrupteur fictif", "room-zz", "point-1")));
+                FakeHomeAnytypeServer.Room("bafyreiroomzzaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa", "ZZ", "Pièce fictive"),
+                FakeHomeAnytypeServer.Point("bafyreipointbaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa", "ZZ-PS01", "Prise saisie par erreur", "bafyreiroomzzaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"),
+                FakeHomeAnytypeServer.Point("bafyreipoint2aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa", "ZZ-CS01", "Interrupteur fictif", "bafyreiroomzzaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa", "bafyreipointbaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa")));
 
         InvalidOperationException error = await Assert.ThrowsAsync<InvalidOperationException>(() =>
-            Gestures(server, approval).DeleteAsync("point-1", confirm: true, Ct));
+            Gestures(server, approval).DeleteAsync("bafyreipointbaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa", confirm: true, Ct));
 
         Assert.Contains("référencé", error.Message);
         Assert.DoesNotContain(server.Requests, request => request.Method == "DELETE");
@@ -130,12 +130,12 @@ public sealed class HomeDeleteApprovalTests
     {
         using var server = new FakeHomeAnytypeServer();
         server.SetObjects(
-            FakeHomeAnytypeServer.Worksite("site-1", "Salle de bain fictive", "todo-1"),
-            FakeHomeAnytypeServer.Todo("todo-1", "Déposer le lavabo fictif", "site-1", done: true));
+            FakeHomeAnytypeServer.Worksite("bafyreisitebaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa", "Salle de bain fictive", "bafyreitodobaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"),
+            FakeHomeAnytypeServer.Todo("bafyreitodobaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa", "Déposer le lavabo fictif", "bafyreisitebaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa", done: true));
         var approval = new FakeDeletionApproval(DeletionApprovalOutcome.Approved);
 
         await Assert.ThrowsAsync<InvalidOperationException>(() =>
-            Gestures(server, approval).DeleteAsync("site-1", confirm: true, Ct));
+            Gestures(server, approval).DeleteAsync("bafyreisitebaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa", confirm: true, Ct));
 
         Assert.Empty(approval.Asked);
     }
@@ -149,7 +149,7 @@ public sealed class HomeDeleteApprovalTests
 
         await Assert.ThrowsAsync<InvalidOperationException>(() =>
             Gestures(server, new FakeDeletionApproval(DeletionApprovalOutcome.Declined))
-                .DeleteAsync("point-1", confirm: true, Ct));
+                .DeleteAsync("bafyreipointbaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa", confirm: true, Ct));
 
         EventWrittenEventArgs refused = Assert.Single(
             listener.Events.Where(TravelsInTheLog),
@@ -158,7 +158,7 @@ public sealed class HomeDeleteApprovalTests
         Assert.Equal(HomeSchema.Types.Point, Field(refused, "type_key"));
         Assert.DoesNotContain(listener.Events, e => e.Payload!.Any(p =>
             Convert.ToString(p) is { } text
-            && (text.Contains("Prise saisie par erreur") || text.Contains("ZZ-PS01") || text.Contains("point-1"))));
+            && (text.Contains("Prise saisie par erreur") || text.Contains("ZZ-PS01") || text.Contains("bafyreipointbaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"))));
     }
 
     [Fact]
@@ -169,7 +169,7 @@ public sealed class HomeDeleteApprovalTests
         using var server = ServerWithAFreePoint();
 
         await Gestures(server, new FakeDeletionApproval(DeletionApprovalOutcome.Approved))
-            .DeleteAsync("point-1", confirm: true, Ct);
+            .DeleteAsync("bafyreipointbaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa", confirm: true, Ct);
 
         EventWrittenEventArgs binned = Assert.Single(
             listener.Events.Where(TravelsInTheLog),
@@ -177,6 +177,6 @@ public sealed class HomeDeleteApprovalTests
         Assert.Equal(HomeSchema.Types.Point, Field(binned, "type_key"));
         Assert.DoesNotContain(listener.Events, e => e.Payload!.Any(p =>
             Convert.ToString(p) is { } text
-            && (text.Contains("Prise saisie par erreur") || text.Contains("ZZ-PS01") || text.Contains("point-1"))));
+            && (text.Contains("Prise saisie par erreur") || text.Contains("ZZ-PS01") || text.Contains("bafyreipointbaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"))));
     }
 }

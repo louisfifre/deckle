@@ -83,12 +83,12 @@ public partial class App : Application
 
         // One copy at a time. The copy turned away has no sink (the resident
         // one holds the log open), so it leaves a note beside it.
-        _resident = ResidentInstance.TryAcquire(AppIdentity.Current);
+        _resident = ResidentInstance.TryAcquire(AppIdentity.Current, out string? residentFailure);
         if (_resident is null)
         {
             NoteFile.Append(
                 Path.Combine(AppPaths.DiagnosticsDirectory, SecondInstanceFileName),
-                $"pid={Environment.ProcessId} | Deckle Atelier is already running, this copy exits",
+                $"pid={Environment.ProcessId} | {(residentFailure is null ? "Deckle Atelier is already running" : $"the resident gate could not be created ({residentFailure})")}, this copy exits",
                 DateTimeOffset.Now);
             Exit();
             return;

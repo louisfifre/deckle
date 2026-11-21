@@ -82,7 +82,7 @@ public sealed class AnytypeV2Client : IDisposable
         _ownsGate = gate is null;
 
         SpaceId = credentials.SpaceId;
-        _spacePath = $"/v2/spaces/{credentials.SpaceId}";
+        _spacePath = $"/v2/spaces/{AnytypeObjectId.Escape(credentials.SpaceId, nameof(credentials.SpaceId))}";
 
         _http = handler is null ? new HttpClient() : new HttpClient(handler);
         _http.BaseAddress = new Uri(credentials.ApiUrl);
@@ -95,7 +95,7 @@ public sealed class AnytypeV2Client : IDisposable
         AnytypeV2Request request, CancellationToken ct)
     {
         ArgumentNullException.ThrowIfNull(request);
-        string spacePath = request.SpaceId is null ? _spacePath : $"/v2/spaces/{request.SpaceId}";
+        string spacePath = request.SpaceId is null ? _spacePath : $"/v2/spaces/{AnytypeObjectId.Escape(request.SpaceId, nameof(request.SpaceId))}";
         string path = $"{spacePath}/{request.Path}{QueryString(request.Query)}";
         string method = request.Method.Method;
 

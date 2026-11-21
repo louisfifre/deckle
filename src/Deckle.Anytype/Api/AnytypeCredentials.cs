@@ -25,9 +25,34 @@ public sealed record AnytypeCredentials(string ApiUrl, string ApiVersion, string
 
     public const string ApiKeySecretName = "anytype-api-key";
 
+    // A record prints every member, so the key would show in any log line,
+    // exception message or debugger view that writes the object. The printed
+    // form keeps the other members and hides the key; the client still reads the
+    // real one from the property.
+    private bool PrintMembers(System.Text.StringBuilder builder)
+    {
+        builder.Append("ApiUrl = ").Append(ApiUrl)
+            .Append(", ApiVersion = ").Append(ApiVersion)
+            .Append(", ApiKey = ").Append(MaskedKey)
+            .Append(", SpaceId = ").Append(SpaceId);
+        return true;
+    }
+
+    internal const string MaskedKey = "***";
+
     // JSON keys are snake_case to match the on-disk file written by the
-    // provisioning step.
-    internal sealed record Dto(string? api_url, string? api_version, string? api_key, string? space_id);
+    // provisioning step. The key read from the file is hidden when printed too.
+    internal sealed record Dto(string? api_url, string? api_version, string? api_key, string? space_id)
+    {
+        private bool PrintMembers(System.Text.StringBuilder builder)
+        {
+            builder.Append("api_url = ").Append(api_url)
+                .Append(", api_version = ").Append(api_version)
+                .Append(", api_key = ").Append(api_key is null ? "null" : MaskedKey)
+                .Append(", space_id = ").Append(space_id);
+            return true;
+        }
+    }
 
     private static readonly JsonSerializerOptions JsonOptions = new()
     {

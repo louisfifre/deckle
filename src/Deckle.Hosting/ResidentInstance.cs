@@ -22,10 +22,32 @@ public sealed class ResidentInstance : IDisposable
     // The caller reports it once its log sinks exist.
     public bool Abandoned { get; }
 
-    // Null when another copy of the same app already holds it.
-    public static ResidentInstance? TryAcquire(AppIdentity identity)
+    // Null when this copy must not run: another copy of the same app holds the
+    // mutex (failure stays null), or the mutex could not be created or waited
+    // on at all (failure names the exception type). Both refuse the launch:
+    // closing is safe, while continuing could run two keyboard hooks.
+    public static ResidentInstance? TryAcquire(AppIdentity identity, out string? failure) =>
+        TryAcquire(() => new Mutex(initiallyOwned: false, identity.ResidentMutexName), out failure);
+
+    public static ResidentInstance? TryAcquire(AppIdentity identity) =>
+        TryAcquire(identity, out _);
+
+    // The factory is the seam the tests drive: the creation failures cannot be
+    // provoked on a real mutex name.
+    internal static ResidentInstance? TryAcquire(Func<Mutex> create, out string? failure)
     {
-        var mutex = new Mutex(initiallyOwned: false, identity.ResidentMutexName);
+        failure = null;
+
+        Mutex mutex;
+        try { mutex = create(); }
+        catch (Exception ex) when (ex is UnauthorizedAccessException
+                                       or IOException
+                                       or WaitHandleCannotBeOpenedException)
+        {
+            failure = ex.GetType().Name;
+            return null;
+        }
+
         try
         {
             if (!mutex.WaitOne(0))
@@ -37,10 +59,17 @@ public sealed class ResidentInstance : IDisposable
         }
         catch (AbandonedMutexException)
         {
+            // The previous process died without orderly teardown. Windows grants
+            // this thread ownership; recovery is safe because no old hook remains.
             return new ResidentInstance(mutex, abandoned: true);
         }
+        catch (Exception ex) when (ex is UnauthorizedAccessException or IOException)
+        {
+            mutex.Dispose();
+            failure = ex.GetType().Name;
+            return null;
+        }
     }
-
     // Returns the ApplicationException when this thread did not own the mutex
     // (a quit reached from another thread), so the caller can log it; the
     // handle closes either way. Null when released cleanly or already released.

@@ -37,6 +37,7 @@ $ErrorActionPreference = 'Stop'
 $ScriptDir = $PSScriptRoot
 $LibDir = Join-Path $ScriptDir 'lib'
 . (Join-Path $LibDir 'action-summary.ps1')
+Import-Module (Join-Path $LibDir 'download-integrity.psm1') -Force
 
 $Repo = Split-Path -Parent $PSScriptRoot
 
@@ -69,19 +70,48 @@ trap {
 
 function Get-SizeMB($path) { [math]::Round((Get-Item $path).Length / 1MB, 2) }
 
-# curl.exe ships with Windows and is fast on large files. $expectedMinBytes is
-# a coarse "present and roughly complete" gate.
-function Download($url, $dst, $expectedMinBytes) {
+# curl.exe ships with Windows and is fast on large files. Every URL is https.
+# With $expectedSha256 the file lands under a .part name and takes its place
+# only when its SHA-256 matches: a wrong download is deleted and never replaces
+# a good file, and a file already there counts as present only by that hash.
+# Without one (a file whose bytes are not pinned: a zip whose content is
+# checked after extraction, the rolling kaikki dumps) $expectedMinBytes is a
+# coarse "present and roughly complete" gate. $urls are tried in order.
+function Download([string[]]$urls, $dst, $expectedSha256, $expectedMinBytes = 0) {
     $name = Split-Path $dst -Leaf
-    if (-not $Force -and (Test-Path $dst) -and ((Get-Item $dst).Length -ge $expectedMinBytes)) {
-        Write-WorkflowMessage -Output $WorkflowOutput -Message "already present $name ($(Get-SizeMB $dst) MB)"
-        return $false
+    if (-not $Force -and (Test-Path $dst)) {
+        if ($expectedSha256) {
+            if (Test-DeckleFileSha256 -Path $dst -ExpectedSha256 $expectedSha256) {
+                Write-WorkflowMessage -Output $WorkflowOutput -Message "already present $name ($(Get-SizeMB $dst) MB, SHA-256 verified)"
+                return $false
+            }
+            Write-WorkflowMessage -Output $WorkflowOutput -Message "$name does not match its pinned SHA-256, downloading it again" -Role Warning
+        } elseif ((Get-Item $dst).Length -ge $expectedMinBytes) {
+            Write-WorkflowMessage -Output $WorkflowOutput -Message "already present $name ($(Get-SizeMB $dst) MB)"
+            return $false
+        }
     }
-    Write-WorkflowMessage -Output $WorkflowOutput -Message "downloading $name ..."
-    & curl.exe -L --fail --retry 3 --progress-bar -o $dst $url
-    if ($LASTEXITCODE -ne 0) { throw "curl failed for $url" }
-    Write-WorkflowMessage -Output $WorkflowOutput -Message "downloaded $name ($(Get-SizeMB $dst) MB)"
-    return $true
+    $part = "$dst.part"
+    $failures = @()
+    foreach ($url in $urls) {
+        if (Test-Path $part) { Remove-Item $part -Force }
+        Write-WorkflowMessage -Output $WorkflowOutput -Message "downloading $name from $url ..."
+        & curl.exe -L --fail --retry 3 --progress-bar -o $part $url
+        if ($LASTEXITCODE -ne 0) {
+            $failures += "curl failed for $url"
+        } elseif ($expectedSha256 -and -not (Test-DeckleFileSha256 -Path $part -ExpectedSha256 $expectedSha256)) {
+            $actual = (Get-FileHash -LiteralPath $part -Algorithm SHA256).Hash.ToLowerInvariant()
+            $failures += "SHA-256 mismatch for $url : expected $expectedSha256, got $actual"
+        } else {
+            Move-Item -LiteralPath $part -Destination $dst -Force
+            $verified = if ($expectedSha256) { ', SHA-256 verified' } else { '' }
+            Write-WorkflowMessage -Output $WorkflowOutput -Message "downloaded $name ($(Get-SizeMB $dst) MB$verified)"
+            return $true
+        }
+        Write-WorkflowMessage -Output $WorkflowOutput -Message $failures[-1] -Role Warning
+    }
+    if (Test-Path $part) { Remove-Item $part -Force }
+    throw "$name was not downloaded, the bad file was deleted. $($failures -join ' | ')"
 }
 
 # The next pipeline stage and most line-oriented tooling choke on a leading
@@ -101,30 +131,17 @@ if (-not (Test-Path $RawDir)) {
 
 # Lexique 3.83, CC BY-SA 4.0: its frequency-ranked French ortho column is the
 # backbone of the accented-form dictionary. Primary host is lexique.org over
-# http (the server only speaks http and serves the TSV as
-# application/octet-stream). Fallback is the openlexicon GitHub mirror, which
-# serves the same dataset over https raw.
+# https. Fallback is the openlexicon GitHub mirror, which serves the same
+# dataset over https raw. Both are held to the same SHA-256, pinned from the
+# primary host's file of 2026-11-21 (version 3.83 is frozen).
 Write-WorkflowStep -Output $WorkflowOutput -Message 'Lexique 3.83 (French inflected forms + frequencies)'
 $lexiqueDst = Join-Path $RawDir 'Lexique383.tsv'
-$lexiquePrimary  = 'http://www.lexique.org/databases/Lexique383/Lexique383.tsv'
-$lexiqueFallback = 'https://raw.githubusercontent.com/chrplr/openlexicon/master/datasets-info/Lexique383/Lexique383.tsv'
-# A complete Lexique383.tsv is ~24-26 MB; 20 MB is a safe "looks complete" floor.
-$lexiqueMinBytes = 20MB
-$lexiqueUrlUsed  = $lexiquePrimary
-
-if ($Force -or -not (Test-Path $lexiqueDst) -or ((Get-Item $lexiqueDst).Length -lt $lexiqueMinBytes)) {
-    Write-WorkflowMessage -Output $WorkflowOutput -Message "trying primary $lexiquePrimary"
-    & curl.exe -L --fail --retry 2 --progress-bar -o $lexiqueDst $lexiquePrimary
-    if ($LASTEXITCODE -ne 0 -or -not (Test-Path $lexiqueDst) -or ((Get-Item $lexiqueDst).Length -lt $lexiqueMinBytes)) {
-        Write-WorkflowMessage -Output $WorkflowOutput -Message "primary failed or short — falling back to openlexicon GitHub mirror" -Role Warning
-        & curl.exe -L --fail --retry 3 --progress-bar -o $lexiqueDst $lexiqueFallback
-        if ($LASTEXITCODE -ne 0) { throw "curl failed for both Lexique sources" }
-        $lexiqueUrlUsed = $lexiqueFallback
-    }
-    Write-WorkflowMessage -Output $WorkflowOutput -Message "downloaded Lexique383.tsv ($(Get-SizeMB $lexiqueDst) MB) from $lexiqueUrlUsed"
-} else {
-    Write-WorkflowMessage -Output $WorkflowOutput -Message "already present Lexique383.tsv ($(Get-SizeMB $lexiqueDst) MB)"
-}
+$lexiqueUrls = @(
+    'https://www.lexique.org/databases/Lexique383/Lexique383.tsv'
+    'https://raw.githubusercontent.com/chrplr/openlexicon/master/datasets-info/Lexique383/Lexique383.tsv'
+)
+$lexiqueSha256 = '637ba37a767a66679c48371d673ece50cbf541b49a4e40e598963d4f3fbce52b'
+Download $lexiqueUrls $lexiqueDst $lexiqueSha256 | Out-Null
 
 $lexiqueHeader = (Get-Content $lexiqueDst -First 1)
 $lexiqueCols   = $lexiqueHeader -split "`t"
@@ -146,14 +163,16 @@ Write-WorkflowMessage -Output $WorkflowOutput -Message "data rows: $lexiqueRows"
 Write-WorkflowStep -Output $WorkflowOutput -Message 'Morphalou 3.1 (French inflected-form coverage)'
 $morphalouCsv = Join-Path $RawDir 'Morphalou3.1_CSV.csv'
 $morphalouUrl = 'https://repository.ortolang.fr/api/content/morphalou/3/Morphalou3.1_formatCSV_toutEnUn.zip'
-# The extracted CSV is ~100 MB; 50 MB is a safe completeness floor.
-$morphalouMinBytes = 50MB
+# The pin is the SHA-256 of the extracted CSV (pinned from the 2026-11-21
+# archive), checked right after extraction; the zip itself carries no pin.
+$morphalouSha256 = '448d61c5d4d07fcf88bec23e7234e5bf7924179533b912ff90f7b32a7815659b'
 
-if ($Force -or -not (Test-Path $morphalouCsv) -or ((Get-Item $morphalouCsv).Length -lt $morphalouMinBytes)) {
+if ($Force -or -not (Test-DeckleFileSha256 -Path $morphalouCsv -ExpectedSha256 $morphalouSha256)) {
+    if (-not $Force -and (Test-Path $morphalouCsv)) {
+        Write-WorkflowMessage -Output $WorkflowOutput -Message "Morphalou3.1_CSV.csv does not match its pinned SHA-256, downloading it again" -Role Warning
+    }
     $morphalouZip = Join-Path $RawDir 'Morphalou3.1_CSV.zip'
-    Write-WorkflowMessage -Output $WorkflowOutput -Message "downloading Morphalou3.1 CSV archive (~38 MB) ..."
-    & curl.exe -L --fail --retry 3 --progress-bar -o $morphalouZip $morphalouUrl
-    if ($LASTEXITCODE -ne 0) { throw "curl failed for Morphalou" }
+    Download @($morphalouUrl) $morphalouZip $null 30MB | Out-Null
     Write-WorkflowMessage -Output $WorkflowOutput -Message "extracting Morphalou3.1_CSV.csv only ..."
     Add-Type -AssemblyName System.IO.Compression.FileSystem
     $zipArchive = [System.IO.Compression.ZipFile]::OpenRead($morphalouZip)
@@ -165,9 +184,14 @@ if ($Force -or -not (Test-Path $morphalouCsv) -or ((Get-Item $morphalouCsv).Leng
         $zipArchive.Dispose()
     }
     Remove-Item $morphalouZip -Force
-    Write-WorkflowMessage -Output $WorkflowOutput -Message "extracted Morphalou3.1_CSV.csv ($(Get-SizeMB $morphalouCsv) MB)"
+    if (-not (Test-DeckleFileSha256 -Path $morphalouCsv -ExpectedSha256 $morphalouSha256)) {
+        $actual = (Get-FileHash -LiteralPath $morphalouCsv -Algorithm SHA256).Hash.ToLowerInvariant()
+        Remove-Item $morphalouCsv -Force
+        throw "SHA-256 mismatch for Morphalou3.1_CSV.csv from $morphalouUrl : expected $morphalouSha256, got $actual. The file was deleted."
+    }
+    Write-WorkflowMessage -Output $WorkflowOutput -Message "extracted Morphalou3.1_CSV.csv ($(Get-SizeMB $morphalouCsv) MB, SHA-256 verified)"
 } else {
-    Write-WorkflowMessage -Output $WorkflowOutput -Message "already present Morphalou3.1_CSV.csv ($(Get-SizeMB $morphalouCsv) MB)"
+    Write-WorkflowMessage -Output $WorkflowOutput -Message "already present Morphalou3.1_CSV.csv ($(Get-SizeMB $morphalouCsv) MB, SHA-256 verified)"
 }
 
 # Norvig's English unigram counts tell English words (left untouched) from
@@ -175,8 +199,9 @@ if ($Force -or -not (Test-Path $morphalouCsv) -or ((Get-Item $morphalouCsv).Leng
 Write-WorkflowStep -Output $WorkflowOutput -Message 'Norvig count_1w.txt (English word counts)'
 $norvigDst = Join-Path $RawDir 'count_1w.txt'
 $norvigUrl = 'https://norvig.com/ngrams/count_1w.txt'
-# The file is ~4.7 MB / ~333k lines; 3 MB is a safe completeness floor.
-Download $norvigUrl $norvigDst 3MB | Out-Null
+# Pinned from the 2026-11-21 file (~4.7 MB, ~333k lines).
+$norvigSha256 = '51df159fd3de12b20e403c108f526e96dbd723d9cabdd5f17955cdc16059e690'
+Download @($norvigUrl) $norvigDst $norvigSha256 | Out-Null
 
 $norvigSample = Get-Content $norvigDst -First 3
 $norvigShapeOk = ($norvigSample | Where-Object { $_ -match '^\S+\t\d+$' }).Count -eq $norvigSample.Count
@@ -190,13 +215,16 @@ Write-WorkflowMessage -Output $WorkflowOutput -Message "rows: $norvigRows"
 # The restricted globish seed is built from the <Equivalent langue="en"> entries
 # of the official FranceTerme export. The canonical XML lives on the
 # culture.gouv.fr public export — the remote resource the data.gouv.fr dataset
-# points to — served over http as text/xml, ~9 MB, no auth. Licence Ouverte /
+# points to — served over https as text/xml, ~9 MB, no auth. Licence Ouverte /
 # Etalab (see NOTICE.md).
 Write-WorkflowStep -Output $WorkflowOutput -Message 'FranceTerme.xml (French terminology — English equivalents)'
 $franceTermeDst = Join-Path $RawDir 'FranceTerme.xml'
-$franceTermeUrl = 'http://www.franceterme.culture.gouv.fr/public/FranceTerme.xml'
-# The export is ~8.9 MB; 4 MB is a safe "looks complete" floor.
-Download $franceTermeUrl $franceTermeDst 4MB | Out-Null
+$franceTermeUrl = 'https://www.franceterme.culture.gouv.fr/public/FranceTerme.xml'
+# A live export that the ministry republishes: this pin is the 2026-11-21 file
+# (~9 MB). When a download is refused on this hash alone, read the new export,
+# judge it, and pin its SHA-256 here.
+$franceTermeSha256 = '845d2f58255c09b06f2a703c0636d21c0436a716e09e63e28711ee9303fb7bf3'
+Download @($franceTermeUrl) $franceTermeDst $franceTermeSha256 | Out-Null
 
 $franceTermeHead = (Get-Content $franceTermeDst -First 1)
 if ($franceTermeHead -notmatch '<\?xml') {
@@ -226,7 +254,8 @@ $KaikkiDumps = @(
 if ($IncludeKaikki) {
     foreach ($dump in $KaikkiDumps) {
         Write-WorkflowStep -Output $WorkflowOutput -Message "Kaikki raw extraction — $($dump.Label)"
-        Download $dump.Url (Join-Path $RawDir $dump.Name) $dump.MinBytes | Out-Null
+        # https, but no pin: kaikki rebuilds these dumps on a rolling basis.
+        Download @($dump.Url) (Join-Path $RawDir $dump.Name) $null $dump.MinBytes | Out-Null
     }
 }
 
@@ -242,7 +271,7 @@ $evalOk  = (Test-Path $evalDst)  -and ((Get-Item $evalDst).Length  -ge ($EvalMB 
 if (-not $Force -and $trainOk -and $evalOk) {
     Write-WorkflowMessage -Output $WorkflowOutput -Message "already present wiki-fr-train.txt ($(Get-SizeMB $trainDst) MB) + wiki-fr-eval.txt ($(Get-SizeMB $evalDst) MB)"
 } else {
-    $UA = 'Deckle-autocorrect-corpus/1.0 (contact: outils@louisfifre.com)'
+    $UA = 'Deckle-autocorrect-corpus/1.0 (+https://github.com/louisfifre/deckle)'
     $apiBase = 'https://fr.wikipedia.org/w/api.php'
     $headers = @{ 'User-Agent' = $UA }
 

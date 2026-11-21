@@ -17,7 +17,7 @@ public sealed class HomeNameMatchTests
     static FakeHomeAnytypeServer ServerWithOneTodo()
     {
         var server = new FakeHomeAnytypeServer();
-        server.SetObjects(FakeHomeAnytypeServer.Todo("todo-1", "Purger le radiateur fictif", null, done: false));
+        server.SetObjects(FakeHomeAnytypeServer.Todo("bafyreitodobaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa", "Purger le radiateur fictif", null, done: false));
         return server;
     }
 
@@ -30,7 +30,7 @@ public sealed class HomeNameMatchTests
         InvalidOperationException error = await Assert.ThrowsAsync<InvalidOperationException>(() =>
             Gestures(server).CompleteAsync("Purger", Ct));
 
-        Assert.Contains("todo-1", error.Message);
+        Assert.Contains("bafyreitodobaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa", error.Message);
         Assert.Contains("Purger le radiateur fictif", error.Message);
         Assert.DoesNotContain(server.Requests, request => request.Method is "PATCH" or "POST" or "DELETE");
     }
@@ -50,7 +50,7 @@ public sealed class HomeNameMatchTests
     {
         using var server = ServerWithOneTodo();
 
-        await Gestures(server).CompleteAsync("todo-1", Ct);
+        await Gestures(server).CompleteAsync("bafyreitodobaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa", Ct);
 
         Assert.Contains(server.Requests, request => request.Method == "PATCH");
     }
@@ -60,12 +60,12 @@ public sealed class HomeNameMatchTests
     public async Task APartOfANameDoesNotUpdateTheObjectItPointsTo()
     {
         using var server = new FakeHomeAnytypeServer();
-        server.SetObjects(FakeHomeAnytypeServer.Room("room-zz", "ZZ", "Pièce fictive"));
+        server.SetObjects(FakeHomeAnytypeServer.Room("bafyreiroomzzaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa", "ZZ", "Pièce fictive"));
 
         InvalidOperationException error = await Assert.ThrowsAsync<InvalidOperationException>(() =>
             Gestures(server).UpdateAsync([new HomeUpdateItem("Pièce", "Pièce renommée", null)], Ct));
 
-        Assert.Contains("room-zz", error.Message);
+        Assert.Contains("bafyreiroomzzaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa", error.Message);
         Assert.DoesNotContain(server.Requests, request => request.Method == "PATCH");
     }
 
@@ -74,12 +74,12 @@ public sealed class HomeNameMatchTests
     public async Task APartOfANameDoesNotPickTheTargetOfARelation()
     {
         using var server = new FakeHomeAnytypeServer();
-        server.SetObjects(FakeHomeAnytypeServer.EquipmentSystem("system-1", "PC fictif"));
+        server.SetObjects(FakeHomeAnytypeServer.EquipmentSystem("bafyreisystembaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa", "PC fictif"));
 
         InvalidOperationException error = await Assert.ThrowsAsync<InvalidOperationException>(() =>
             Gestures(server).CreateComponentAsync("GPU fictif", "PC", null, Ct));
 
-        Assert.Contains("system-1", error.Message);
+        Assert.Contains("bafyreisystembaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa", error.Message);
         Assert.DoesNotContain(server.Requests, request => request.Method == "POST");
     }
 
@@ -89,7 +89,7 @@ public sealed class HomeNameMatchTests
     {
         using var server = new FakeHomeAnytypeServer();
         server.SetObjects(
-            FakeHomeAnytypeServer.Room("room-zz", "ZZ", "Pièce fictive"),
+            FakeHomeAnytypeServer.Room("bafyreiroomzzaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa", "ZZ", "Pièce fictive"),
             FakeHomeAnytypeServer.Collection("floor-add", "Niveau ajouté"));
 
         InvalidOperationException error = await Assert.ThrowsAsync<InvalidOperationException>(() =>
@@ -109,7 +109,7 @@ public sealed class HomeNameMatchTests
         InvalidOperationException error = await Assert.ThrowsAsync<InvalidOperationException>(() =>
             Gestures(server).DeleteAsync("Purger", confirm: false, Ct));
 
-        Assert.Contains("todo-1", error.Message);
+        Assert.Contains("bafyreitodobaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa", error.Message);
     }
 
     [Fact]
@@ -117,9 +117,9 @@ public sealed class HomeNameMatchTests
     {
         using var server = new FakeHomeAnytypeServer();
         server.SetObjects(
-            FakeHomeAnytypeServer.Room("room-zz", "ZZ", "Pièce fictive"),
-            FakeHomeAnytypeServer.Point("point-1", "ZZ-PS01", "Prise fictive", "room-zz"),
-            FakeHomeAnytypeServer.Todo("todo-1", "Purger le radiateur fictif", null, done: false));
+            FakeHomeAnytypeServer.Room("bafyreiroomzzaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa", "ZZ", "Pièce fictive"),
+            FakeHomeAnytypeServer.Point("bafyreipointbaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa", "ZZ-PS01", "Prise fictive", "bafyreiroomzzaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"),
+            FakeHomeAnytypeServer.Todo("bafyreitodobaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa", "Purger le radiateur fictif", null, done: false));
 
         string detail = await Gestures(server).GetAsync("Purger", Ct);
         string search = await Gestures(server).SearchAsync(
@@ -135,15 +135,15 @@ public sealed class HomeNameMatchTests
     {
         using var server = new FakeHomeAnytypeServer();
         var objects = Enumerable.Range(1, 40)
-            .Select(n => FakeHomeAnytypeServer.Todo($"todo-{n}", $"Peindre le mur fictif {n}", null, done: false))
-            .Append(FakeHomeAnytypeServer.Todo("todo-exact", "Peindre", null, done: false))
+            .Select(n => FakeHomeAnytypeServer.Todo(FakeHomeAnytypeServer.Id("todo", n), $"Peindre le mur fictif {n}", null, done: false))
+            .Append(FakeHomeAnytypeServer.Todo("bafyreitodoexact".PadRight(56, 'a'), "Peindre", null, done: false))
             .ToArray();
         server.SetObjects(objects);
 
         await Gestures(server).CompleteAsync("Peindre", Ct);
 
         FakeHomeAnytypeServer.Received patch = server.Requests.Single(request => request.Method == "PATCH");
-        Assert.EndsWith("/objects/todo-exact", patch.Path);
+        Assert.EndsWith("/objects/" + "bafyreitodoexact".PadRight(56, 'a'), patch.Path);
     }
 
     [Fact]
@@ -151,12 +151,12 @@ public sealed class HomeNameMatchTests
     {
         using var server = new FakeHomeAnytypeServer();
         server.SetObjects(Enumerable.Range(1, 40)
-            .Select(n => FakeHomeAnytypeServer.Todo($"todo-{n}", $"Peindre le mur fictif {n}", null, done: false))
+            .Select(n => FakeHomeAnytypeServer.Todo(FakeHomeAnytypeServer.Id("todo", n), $"Peindre le mur fictif {n}", null, done: false))
             .ToArray());
 
         InvalidOperationException error = await Assert.ThrowsAsync<InvalidOperationException>(() =>
             Gestures(server).CompleteAsync("Peindre", Ct));
 
-        Assert.Equal(20, error.Message.Split('\n').Count(line => line.StartsWith("- todo-", StringComparison.Ordinal)));
+        Assert.Equal(20, error.Message.Split('\n').Count(line => line.StartsWith("- bafyreitodo", StringComparison.Ordinal)));
     }
 }

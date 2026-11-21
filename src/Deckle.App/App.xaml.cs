@@ -11,7 +11,6 @@ using Deckle.Shell;
 using Deckle.Shell.Foreground;
 using Deckle.Shell.TaskbarCover;
 using Deckle.Shell.TrayMenu;
-using Deckle.Speech;
 using Deckle.Transcription;
 using Deckle.Transcription.Whisper;
 
@@ -33,7 +32,6 @@ public partial class App : Microsoft.UI.Xaml.Application
     private TrayMenuHost? _trayDeveloperMenu;
     private TrayMenuHost? _trayActions;
     private TranscriptionEngine? _engine;
-    private SpeechEngine? _speechEngine;
     private AmbientEngine? _ambientEngine;
 
     // Null until the engine is composed; consumers render an empty state.

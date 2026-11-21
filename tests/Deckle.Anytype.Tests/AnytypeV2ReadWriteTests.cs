@@ -19,13 +19,13 @@ public class AnytypeV2ReadWriteTests
     [Fact]
     public async Task TheReaderTakesTheEtagFromTheHeader()
     {
-        var handler = new FakeV2Handler().Reply(HttpStatusCode.OK, """{"id":"o1"}""", ("ETag", "\"h1\""));
+        var handler = new FakeV2Handler().Reply(HttpStatusCode.OK, """{"id":"bafyreiobjectaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"}""", ("ETag", "\"h1\""));
         using AnytypeV2Client client = ClientOver(handler);
 
-        AnytypeV2ObjectDocument document = await new AnytypeV2ObjectReader(client).ReadAsync("o1", ct: Ct);
+        AnytypeV2ObjectDocument document = await new AnytypeV2ObjectReader(client).ReadAsync("bafyreiobjectaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa", ct: Ct);
 
         Assert.Equal("\"h1\"", document.ETag);
-        Assert.Equal("/v2/spaces/space-1/objects/o1", Assert.Single(handler.Requests).PathAndQuery);
+        Assert.Equal("/v2/spaces/space-1/objects/bafyreiobjectaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa", Assert.Single(handler.Requests).PathAndQuery);
     }
 
     [Fact]
@@ -37,8 +37,8 @@ public class AnytypeV2ReadWriteTests
         using AnytypeV2Client client = ClientOver(handler);
         var reader = new AnytypeV2ObjectReader(client);
 
-        Assert.Equal("\"b1\"", (await reader.ReadAsync("o1", ct: Ct)).ETag);
-        Assert.Equal("\"h2\"", (await reader.ReadAsync("o1", ct: Ct)).ETag);
+        Assert.Equal("\"b1\"", (await reader.ReadAsync("bafyreiobjectaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa", ct: Ct)).ETag);
+        Assert.Equal("\"h2\"", (await reader.ReadAsync("bafyreiobjectaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa", ct: Ct)).ETag);
     }
 
     [Fact]
@@ -51,12 +51,12 @@ public class AnytypeV2ReadWriteTests
         using AnytypeV2Client client = ClientOver(handler);
         var reader = new AnytypeV2ObjectReader(client);
 
-        await reader.ReadAsync("o1", new AnytypeV2ObjectReadOptions { Outline = true }, Ct);
-        await reader.ReadAsync("o1", new AnytypeV2ObjectReadOptions { Block = "b9", FullIds = true }, Ct);
+        await reader.ReadAsync("bafyreiobjectaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa", new AnytypeV2ObjectReadOptions { Outline = true }, Ct);
+        await reader.ReadAsync("bafyreiobjectaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa", new AnytypeV2ObjectReadOptions { Block = "b9", FullIds = true }, Ct);
         await reader.ReadAsync(
-            "o1", new AnytypeV2ObjectReadOptions { Parts = AnytypeV2ObjectParts.Properties | AnytypeV2ObjectParts.Blocks, Markdown = true }, Ct);
+            "bafyreiobjectaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa", new AnytypeV2ObjectReadOptions { Parts = AnytypeV2ObjectParts.Properties | AnytypeV2ObjectParts.Blocks, Markdown = true }, Ct);
 
-        Assert.EndsWith("objects/o1?outline=true", handler.Requests[0].PathAndQuery);
+        Assert.EndsWith("objects/bafyreiobjectaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa?outline=true", handler.Requests[0].PathAndQuery);
         Assert.Contains("block=b9", handler.Requests[1].PathAndQuery);
         Assert.Contains("ids=full", handler.Requests[1].PathAndQuery);
         Assert.Contains("include=properties%2Cblocks", handler.Requests[2].PathAndQuery);
@@ -71,7 +71,7 @@ public class AnytypeV2ReadWriteTests
 
         await Assert.ThrowsAsync<ArgumentException>(() =>
             new AnytypeV2ObjectReader(client).ReadAsync(
-                "o1", new AnytypeV2ObjectReadOptions { Outline = true, Block = "b1" }, Ct));
+                "bafyreiobjectaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa", new AnytypeV2ObjectReadOptions { Outline = true, Block = "b1" }, Ct));
 
         Assert.Empty(handler.Requests);
     }
@@ -83,7 +83,7 @@ public class AnytypeV2ReadWriteTests
         using AnytypeV2Client client = ClientOver(handler);
 
         await Assert.ThrowsAsync<HttpRequestException>(() =>
-            new AnytypeV2ObjectReader(client).ReadAsync("o1", ct: Ct));
+            new AnytypeV2ObjectReader(client).ReadAsync("bafyreiobjectaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa", ct: Ct));
     }
 
     // ---- writer ----
@@ -97,11 +97,11 @@ public class AnytypeV2ReadWriteTests
         var handler = new FakeV2Handler().Reply(HttpStatusCode.OK, """{"object":{}}""", ("ETag", "\"w1\""));
         using AnytypeV2Client client = ClientOver(handler);
 
-        AnytypeV2WriteReceipt receipt = await new AnytypeV2Writer(client).ApplyObjectOpsAsync("o1", OneOp(), ct: Ct);
+        AnytypeV2WriteReceipt receipt = await new AnytypeV2Writer(client).ApplyObjectOpsAsync("bafyreiobjectaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa", OneOp(), ct: Ct);
 
         FakeV2Handler.Seen seen = Assert.Single(handler.Requests);
         Assert.Equal("PATCH", seen.Method);
-        Assert.Equal("/v2/spaces/space-1/objects/o1", seen.PathAndQuery);
+        Assert.Equal("/v2/spaces/space-1/objects/bafyreiobjectaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa", seen.PathAndQuery);
         Assert.Equal(
             """{"ops":[{"op":"update_block","id":"b1","set":{"checked":true}}]}""",
             seen.Body);
@@ -117,9 +117,9 @@ public class AnytypeV2ReadWriteTests
         using AnytypeV2Client client = ClientOver(handler);
         var writer = new AnytypeV2Writer(client);
 
-        await writer.ApplyObjectOpsAsync("o1", OneOp(), ct: Ct);
-        await writer.ApplyObjectOpsAsync("o1", OneOp(), ct: Ct);
-        await writer.ApplyObjectOpsAsync("o1", OneOp(), new AnytypeV2WriteOptions { IdempotencyKey = "mine" }, Ct);
+        await writer.ApplyObjectOpsAsync("bafyreiobjectaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa", OneOp(), ct: Ct);
+        await writer.ApplyObjectOpsAsync("bafyreiobjectaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa", OneOp(), ct: Ct);
+        await writer.ApplyObjectOpsAsync("bafyreiobjectaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa", OneOp(), new AnytypeV2WriteOptions { IdempotencyKey = "mine" }, Ct);
 
         Assert.NotEqual(handler.Requests[0].Header("Idempotency-Key"), handler.Requests[1].Header("Idempotency-Key"));
         Assert.Equal("mine", handler.Requests[2].Header("Idempotency-Key"));
@@ -132,7 +132,7 @@ public class AnytypeV2ReadWriteTests
         using AnytypeV2Client client = ClientOver(handler);
 
         await new AnytypeV2Writer(client).ApplyObjectOpsAsync(
-            "o1", OneOp(),
+            "bafyreiobjectaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa", OneOp(),
             new AnytypeV2WriteOptions { IfMatch = "\"r1\"", DryRun = true, FullIds = true }, Ct);
 
         FakeV2Handler.Seen seen = Assert.Single(handler.Requests);
@@ -168,7 +168,7 @@ public class AnytypeV2ReadWriteTests
         await Assert.ThrowsAsync<ArgumentException>(() =>
             writer.ApplyTypeOpsAsync("task", OneOp(), ct: Ct));
         await Assert.ThrowsAsync<ArgumentException>(() =>
-            writer.ApplyObjectOpsAsync("o1", [AnytypeV2TypeOps.RemoveProperty("p")], ct: Ct));
+            writer.ApplyObjectOpsAsync("bafyreiobjectaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa", [AnytypeV2TypeOps.RemoveProperty("p")], ct: Ct));
 
         Assert.Empty(handler.Requests);
     }
@@ -201,7 +201,7 @@ public class AnytypeV2ReadWriteTests
         using AnytypeV2Client client = ClientOver(handler);
 
         AnytypeV2Exception error = await Assert.ThrowsAsync<AnytypeV2Exception>(() =>
-            new AnytypeV2Writer(client).ApplyObjectOpsAsync("o1", OneOp(), ct: Ct));
+            new AnytypeV2Writer(client).ApplyObjectOpsAsync("bafyreiobjectaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa", OneOp(), ct: Ct));
 
         Assert.Equal(0, error.OpIndex);
     }

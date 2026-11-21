@@ -7,8 +7,8 @@ namespace Deckle.Anytype.Tests;
 [Trait("Category", "integration")]
 public class AnytypeUtilityGesturesTests
 {
-    private const string CollectionId = "bafycollection000000000000000000000000000000000000000000000";
-    private const string ObjectId = "bafyobject000000000000000000000000000000000000000000000000";
+    private const string CollectionId = "bafycollectionaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa";
+    private const string ObjectId = "bafyobjectaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa";
 
     private static CancellationToken Ct => TestContext.Current.CancellationToken;
 

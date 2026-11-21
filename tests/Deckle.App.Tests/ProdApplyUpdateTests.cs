@@ -62,7 +62,51 @@ public sealed class ProdApplyUpdateTests : IDisposable
         Assert.Contains("apply failed", Log());
     }
 
-    private void RunHelper()
+    [Fact]
+    public void A_way_back_held_for_a_moment_is_retried_and_current_returns()
+    {
+        // next\ cannot move; then previous\ is held too, until the way back has
+        // failed once (the renames wait 5 s) and before its retries run out.
+        using (File.Open(Path.Combine(_root, "next", "build.txt"), FileMode.Open, FileAccess.Read, FileShare.None))
+            RunHelper(afterSwapStarted: () => HoldPrevious(TimeSpan.FromSeconds(7)));
+
+        Assert.Equal("current", Build("current"));
+        Assert.Contains("outcome=runs_current", Log());
+        Assert.DoesNotContain("current_missing", Log());
+    }
+
+    [Fact]
+    public void A_way_back_that_keeps_failing_says_current_is_missing_and_starts_nothing()
+    {
+        int exitCode;
+        using (File.Open(Path.Combine(_root, "next", "build.txt"), FileMode.Open, FileAccess.Read, FileShare.None))
+            exitCode = RunHelper(afterSwapStarted: () => HoldPrevious(TimeSpan.FromSeconds(30)));
+
+        Assert.False(Directory.Exists(Path.Combine(_root, "current")));
+        Assert.Contains("outcome=current_missing", Log());
+        Assert.DoesNotContain("runs_current", Log());
+        Assert.Contains("reason=exe_missing", Log());
+        Assert.NotEqual(0, exitCode);
+    }
+
+    // Waits for current\ to be moved to previous\, then keeps a file of it open
+    // without sharing, which keeps the folder from being renamed back.
+    private void HoldPrevious(TimeSpan duration)
+    {
+        string file = Path.Combine(_root, "previous", "build.txt");
+        var deadline = DateTime.UtcNow.AddSeconds(30);
+        while (!File.Exists(file))
+        {
+            if (DateTime.UtcNow > deadline) throw new TimeoutException("current was never moved to previous");
+            Thread.Sleep(20);
+        }
+        using var held = File.Open(file, FileMode.Open, FileAccess.Read, FileShare.None);
+        _holdUntilExit.Wait(duration);
+    }
+
+    private readonly ManualResetEventSlim _holdUntilExit = new(false);
+
+    private int RunHelper(Action? afterSwapStarted = null)
     {
         var psi = new ProcessStartInfo
         {
@@ -78,7 +122,12 @@ public sealed class ProdApplyUpdateTests : IDisposable
             psi.ArgumentList.Add(arg);
 
         using Process helper = Process.Start(psi)!;
-        Assert.True(helper.WaitForExit(TimeSpan.FromSeconds(60)), "the helper did not finish within a minute");
+        Task? holder = afterSwapStarted is null ? null : Task.Run(afterSwapStarted);
+        bool finished = helper.WaitForExit(TimeSpan.FromSeconds(90));
+        _holdUntilExit.Set();
+        holder?.GetAwaiter().GetResult();
+        Assert.True(finished, "the helper did not finish within 90 seconds");
+        return helper.ExitCode;
     }
 
     private string? Build(string folder)

@@ -13,9 +13,9 @@ public class ProjectGesturesTests
 {
     const string ProjectId = "bafyreiprojectaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa";
     const string EpicId    = "bafyreiepicaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa";
-    const string ActiveTaskId = "bafyreiTaskactiveaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa";
-    const string ArchivedTaskId = "bafyreiTaskarchivedaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa";
-    const string OldTaskId = "bafyreiTaskoldaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa";
+    const string ActiveTaskId = "bafyreitaskactiveaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa";
+    const string ArchivedTaskId = "bafyreitaskarchivedaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa";
+    const string OldTaskId = "bafyreitaskoldaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa";
     const string OtherProjectId = "bafyreiprojectotheraaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa";
     static CancellationToken Ct => TestContext.Current.CancellationToken;
 
@@ -220,7 +220,7 @@ public class ProjectGesturesTests
 
     // ── Reads over the v2 client ─────────────────────────────────────────────
 
-    const string ReportId ="bafyreiReportaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa";
+    const string ReportId ="bafyreireportaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa";
 
     // The resolver is never reached (selectors are ids) and creation is not
     // exercised here, so the v1 client is a placeholder; only the v2 handler talks.

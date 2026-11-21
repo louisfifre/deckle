@@ -10,7 +10,6 @@ using Deckle.Shell;
 using Deckle.Shell.Foreground;
 using Deckle.Shell.TaskbarCover;
 using Deckle.Shell.TrayMenu;
-using Deckle.Speech;
 using Deckle.Transcription;
 using Deckle.Transcription.Parakeet;
 using Deckle.Transcription.Whisper;
@@ -21,7 +20,6 @@ public partial class App
 {
     // Module names in the log: the ModuleIds vocabulary for the pieces a
     // person can leave out, plain names for the shell pieces always composed.
-    private const string SpeechModule            = "speech";
     private const string ForegroundWatcherModule = "foreground_watcher";
     private const string TaskbarCoverModule      = "taskbar_cover";
     private const string TaskbarModule           = "taskbar";
@@ -97,10 +95,6 @@ public partial class App
             if (engineSkip is SkipNativeRuntimeMissing or SkipNativeRuntimeUnloadable)
                 _speechRepairReason = engineSkip;
         }
-
-        // Constructed dormant: nothing calls Speak yet.
-        context.Compose(SpeechModule, () =>
-            _speechEngine = new SpeechEngine(new ChatterboxSpeechBackend()));
 
         // Construction does no I/O; the Ambient settings observer starts and
         // stops the engine.

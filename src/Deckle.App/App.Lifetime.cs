@@ -16,11 +16,23 @@ public partial class App
     // exists, so the line waits for the sinks.
     private static bool _residentMutexAbandoned;
 
+    // Why the gate refused, for NoteSecondInstanceRejected: a plain second
+    // launch, or a mutex that could not be created at all.
+    private string? _residentRefusal;
+
     private bool TryAcquireResidentOwnership()
     {
         // The identity is the suite's own app: Local\Deckle.Resident, as ever.
-        ResidentInstance? instance = ResidentInstance.TryAcquire(AppIdentity.Current);
-        if (instance is null) return false;
+        // A mutex that cannot be created refuses the launch like a second one
+        // (ResidentInstance), and the cause goes to second-instance.txt.
+        ResidentInstance? instance = ResidentInstance.TryAcquire(AppIdentity.Current, out string? failure);
+        if (instance is null)
+        {
+            _residentRefusal = failure is null
+                ? "another Deckle is resident"
+                : $"the resident gate could not be created ({failure})";
+            return false;
+        }
 
         _residentInstance = instance;
         _residentMutexAbandoned = instance.Abandoned;
@@ -31,10 +43,10 @@ public partial class App
     // resident run holds the log open for writing, so the fact goes to a
     // small file of its own, beside the launcher's. The resident run copies it into
     // the log at its next start (ReportRejectedSecondInstances).
-    private static void NoteSecondInstanceRejected() =>
+    private void NoteSecondInstanceRejected() =>
         NoteFile.Append(
             Path.Combine(AppPaths.DiagnosticsDirectory, SecondInstanceFileName),
-            $"pid={Environment.ProcessId} | another Deckle is resident, this one exits",
+            $"pid={Environment.ProcessId} | {_residentRefusal ?? "another Deckle is resident"}, this one exits",
             DateTimeOffset.Now);
 
     private void ReleaseResidentOwnership()
@@ -175,7 +187,6 @@ public partial class App
         TryShutdown("message_host_dispose", () => _messageHost?.Dispose());
         TryShutdown("overlay_manager_dispose", () => _overlayManager?.Dispose());
         TryShutdown("engine_dispose", () => _engine?.Dispose());
-        TryShutdown("speech_engine_dispose", () => _speechEngine?.Dispose());
         TryShutdown("trackpad_shutdown", ShutdownTrackpad);
         TryShutdown("taskbar_cover_shutdown", ShutdownTaskbarCover);
         TryShutdown("taskbar_shutdown", ShutdownTaskbar);

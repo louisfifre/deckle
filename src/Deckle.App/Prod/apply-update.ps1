@@ -84,6 +84,7 @@ if ($running.Count -gt 0) {
 }
 
 $swapped = $false
+$rollbackFailed = $false
 try {
     if (Test-Path -LiteralPath $previous) {
         Invoke-WithRetry { Remove-Item -LiteralPath $previous -Recurse -Force }
@@ -93,14 +94,31 @@ try {
         Invoke-WithRetry { Rename-Item -LiteralPath $next -NewName 'current' }
         $swapped = $true
     } catch {
-        Rename-Item -LiteralPath $previous -NewName 'current'
-        throw
+        $swapError = $_.Exception.Message
+        # The way back is retried like the renames before it: an antivirus can
+        # hold the folder here too. If it still fails, current\ is missing.
+        try {
+            Invoke-WithRetry { Rename-Item -LiteralPath $previous -NewName 'current' }
+        } catch {
+            $rollbackFailed = $true
+            Write-Note ("apply failed | ex_message={0} | rollback_ex_message={1} | outcome=current_missing" -f $swapError, $_.Exception.Message)
+        }
+        throw $swapError
     }
 } catch {
-    Write-Note ("apply failed | ex_message={0} | outcome=runs_current" -f $_.Exception.Message)
+    # A failed rollback has already said its own, exact outcome.
+    if (-not $rollbackFailed) {
+        Write-Note ("apply failed | ex_message={0} | outcome=runs_current" -f $_.Exception.Message)
+    }
 }
 
 $exe = Join-Path $current 'Deckle.exe'
+if (-not (Test-Path -LiteralPath $exe)) {
+    # Nothing to start: say so and leave, rather than let Start-Process fail
+    # without a trace. A repair of the prod copy is the next step.
+    Write-Note "apply aborted | reason=exe_missing | path=$exe"
+    exit 1
+}
 $version = try { (Get-Item -LiteralPath $exe).VersionInfo.ProductVersion } catch { '' }
 if ($swapped) {
     Write-Note "apply completed | version=$version"
