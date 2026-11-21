@@ -1,5 +1,6 @@
 using System.Runtime.InteropServices;
 using Deckle.App.SelfCheck;
+using Deckle.Hosting.SelfCheck;
 using Deckle.Contributions;
 using Deckle.Core;
 using Deckle.Diagnostics;
@@ -124,7 +125,7 @@ public partial class App
         // opens: walking nothing must never read as a pass.
         string? only = SelfCheckTarget.ReadArgument(args);
         string targetReason = "";
-        SelfCheckTarget? target = only is null ? null : SelfCheckTarget.Parse(only, out targetReason);
+        SelfCheckTarget? target = only is null ? null : SelfCheckTarget.Parse(only, SelfCheckWindowCatalog.Published, out targetReason);
 
         if (!gate.Allowed || string.IsNullOrWhiteSpace(outputFolder) || (only is not null && target is null))
         {
@@ -554,7 +555,7 @@ public partial class App
     private static async Task<SelfCheckMicrophone> ProbeMicrophoneForSelfCheckAsync()
     {
         Audio.ProbeResult probe = await Task.Run(() => new Audio.MicrophoneCapture().Probe(""));
-        SelfCheckMicrophone outcome = SelfCheckMicrophone.From(
+        SelfCheckMicrophone outcome = SelfCheckMicrophoneOutcome.From(
             probe.Ok, probe.Stage, probe.Kind,
             Audio.MicrophoneCapture.ErrorName(probe.ErrorCode),
             Audio.MicrophoneCapture.FormatErrorCode(probe.ErrorCode));

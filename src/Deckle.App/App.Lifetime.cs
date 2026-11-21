@@ -1,6 +1,7 @@
 using Deckle.App;
 using Deckle.Core;
 using Deckle.Diagnostics;
+using Deckle.Hosting;
 using Deckle.Transcription;
 using Deckle.Localization;
 
@@ -8,9 +9,8 @@ namespace Deckle.App;
 
 public partial class App
 {
-    private const string ResidentMutexName = @"Local\Deckle.Resident";
     private const string SecondInstanceFileName = "second-instance.txt";
-    private Mutex? _residentMutex;
+    private ResidentInstance? _residentInstance;
 
     // Read by ReportCrashDumpCapture: ownership is taken before any sink
     // exists, so the line waits for the sinks.
@@ -18,27 +18,12 @@ public partial class App
 
     private bool TryAcquireResidentOwnership()
     {
-        var mutex = new Mutex(initiallyOwned: false, ResidentMutexName);
-        bool acquired;
-        try
-        {
-            acquired = mutex.WaitOne(0);
-        }
-        catch (AbandonedMutexException)
-        {
-            // The previous process died without orderly teardown. Windows grants
-            // this thread ownership; recovery is safe because no old hook remains.
-            acquired = true;
-            _residentMutexAbandoned = true;
-        }
+        // The identity is the suite's own app: Local\Deckle.Resident, as ever.
+        ResidentInstance? instance = ResidentInstance.TryAcquire(AppIdentity.Current);
+        if (instance is null) return false;
 
-        if (!acquired)
-        {
-            mutex.Dispose();
-            return false;
-        }
-
-        _residentMutex = mutex;
+        _residentInstance = instance;
+        _residentMutexAbandoned = instance.Abandoned;
         return true;
     }
 
@@ -54,18 +39,14 @@ public partial class App
 
     private void ReleaseResidentOwnership()
     {
-        Mutex? mutex = _residentMutex;
-        _residentMutex = null;
-        if (mutex is null) return;
+        ResidentInstance? instance = _residentInstance;
+        _residentInstance = null;
+        if (instance is null) return;
 
         // ApplicationException: this thread does not own the mutex (QuitApp
         // reached from another thread). The handle closes either way.
-        try { mutex.ReleaseMutex(); }
-        catch (ApplicationException ex)
-        {
+        if (instance.Release() is { } ex)
             DeckleAppSource.Log.ResidentMutexReleaseFailed(ex.GetType().Name, ex.Message);
-        }
-        finally { mutex.Dispose(); }
     }
 
     // How long a quit waits for the work in flight before it gives up on it.

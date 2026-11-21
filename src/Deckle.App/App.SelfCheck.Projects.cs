@@ -1,5 +1,6 @@
 using System.Diagnostics;
 using Deckle.App.SelfCheck;
+using Deckle.Hosting.SelfCheck;
 using Deckle.Core;
 using Deckle.Modules;
 using Deckle.Projects;

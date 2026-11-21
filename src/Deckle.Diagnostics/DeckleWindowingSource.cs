@@ -76,6 +76,9 @@ public sealed class DeckleWindowingSource : DeckleEventSource
     public const int EvtWindowFailureRepeated = 10;
     public const int EvtWindowFailureRecovered = 11;
     // 12 retired.
+    public const int EvtWindowCreated        = 13;
+    public const int EvtWindowOpenFailed     = 14;
+    public const int EvtWindowOperationFailed = 15;
 
     // Common trunk. `hmon` comes from `MonitorFromWindow`, `dpi` from
     // `GetDpiForWindow`.
@@ -276,5 +279,39 @@ public sealed class DeckleWindowingSource : DeckleEventSource
     {
         if (!IsEnabled(EventLevel.Informational, (EventKeywords)Keywords.Windowing)) return;
         WriteEvent(EvtWindowFailureRecovered, window, stage, failures);
+    }
+
+    // Once per window per process: later opens re-activate the same window.
+    [Event(EvtWindowCreated,
+           Level = EventLevel.Informational,
+           Keywords = (EventKeywords)Keywords.Lifecycle,
+           Tags = ObservationTags.Milestone,
+           Message = "Window created")]
+    public void WindowCreated(string window)
+    {
+        if (IsEnabled()) WriteEvent(EvtWindowCreated, window);
+    }
+
+    // The window does not open; the exception goes on to the crash net.
+    [Event(EvtWindowOpenFailed,
+           Level = EventLevel.Error,
+           Keywords = (EventKeywords)Keywords.Lifecycle,
+           Message = "A window could not be opened\nwindow={0} | ex_type={1} | ex_message={2}")]
+    public void WindowOpenFailed(string window, string ex_type, string ex_message)
+    {
+        if (IsEnabled()) WriteEvent(EvtWindowOpenFailed, window, ex_type, ex_message);
+    }
+
+    // One event for any secondary window step that failed without breaking
+    // the window. operation names the step (placement_restore, placement_save,
+    // placement_load...); reason is exception when ex_type and ex_message
+    // carry the cause.
+    [Event(EvtWindowOperationFailed,
+           Level = EventLevel.Warning,
+           Keywords = (EventKeywords)Keywords.Windowing,
+           Message = "A window step failed, and the window works on\nwindow={0} | operation={1} | reason={2} | ex_type={3} | ex_message={4}")]
+    public void WindowOperationFailed(string window, string operation, string reason, string ex_type, string ex_message)
+    {
+        if (IsEnabled()) WriteEvent(EvtWindowOperationFailed, window, operation, reason, ex_type, ex_message);
     }
 }

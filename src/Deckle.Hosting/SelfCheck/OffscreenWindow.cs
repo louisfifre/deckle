@@ -2,7 +2,7 @@ using System.Runtime.InteropServices;
 using Microsoft.UI.Xaml;
 using WinRT.Interop;
 
-namespace Deckle.App.SelfCheck;
+namespace Deckle.Hosting.SelfCheck;
 
 // Shows a window the way the self-check needs it: rendered, never seen and never
 // activated. The run happens while the maintainer works, and a window that
@@ -18,7 +18,7 @@ namespace Deckle.App.SelfCheck;
 //   - shown with SW_SHOWNOACTIVATE, never Window.Activate.
 // Whether XAML still renders for a window nobody can see is not assumed: the
 // self-check reads real pixels from it, and fails if there are none.
-internal static class OffscreenWindow
+public static class OffscreenWindow
 {
     private const int GWL_EXSTYLE = -20;
     private const long WS_EX_TOOLWINDOW = 0x00000080;

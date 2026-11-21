@@ -1,3 +1,4 @@
+using Deckle.Diagnostics;
 using Deckle.Composition;
 using Deckle.Llm;
 using Deckle.Llm.Rewrite;
@@ -55,7 +56,7 @@ public sealed partial class TranscribeRewriteWindow
         catch (Exception ex)
         {
             if (_running) EndRun();
-            DeckleAppSource.Log.WindowOperationFailed(
+            DeckleWindowingSource.Log.WindowOperationFailed(
                 "transcribe-rewrite", "transcribe", "exception", ex.GetType().Name, ex.Message);
         }
         finally
@@ -143,7 +144,7 @@ public sealed partial class TranscribeRewriteWindow
         catch (Exception ex)
         {
             if (_running) EndRun();
-            DeckleAppSource.Log.WindowOperationFailed(
+            DeckleWindowingSource.Log.WindowOperationFailed(
                 "transcribe-rewrite", "rewrite", "exception", ex.GetType().Name, ex.Message);
         }
         finally
@@ -174,7 +175,7 @@ public sealed partial class TranscribeRewriteWindow
         }
         catch (Exception ex)
         {
-            DeckleAppSource.Log.WindowOperationFailed(
+            DeckleWindowingSource.Log.WindowOperationFailed(
                 "transcribe-rewrite", "copy", "exception", ex.GetType().Name, ex.Message);
         }
     }
@@ -215,7 +216,7 @@ public sealed partial class TranscribeRewriteWindow
         }
         catch (Exception ex)
         {
-            DeckleAppSource.Log.WindowOperationFailed(
+            DeckleWindowingSource.Log.WindowOperationFailed(
                 "transcribe-rewrite", "save", "exception", ex.GetType().Name, ex.Message);
         }
     }

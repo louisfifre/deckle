@@ -1,3 +1,4 @@
+using Deckle.Hosting;
 using System.Diagnostics;
 using Deckle.Diagnostics;
 using Deckle.Llm.Rewrite;
@@ -28,7 +29,7 @@ public partial class App
             var sw = Stopwatch.StartNew();
             _windowRewriteService ??= new RewriteService();
             RewriteService rewriter = _windowRewriteService;
-            var window = CreateWindowOrLog("transcribe-rewrite", () => new TranscribeRewriteWindow
+            var window = WindowLifecycle.CreateOrLog("transcribe-rewrite", () => new TranscribeRewriteWindow
             {
                 TranscribeFile = _engine is { } engine
                     ? (path, onUtterance) => engine.TranscribeFileToTextAsync(path, onUtterance)
@@ -37,16 +38,16 @@ public partial class App
                 OnShowRewriteSettingsRequested = () => ShowSettingsWindowLazy(
                     Llm.Rewrite.Views.LlmSettingsModule.PageTag),
             });
-            SecondaryWindowPlacement.Restore(window, SecondaryWindowPlacement.TranscribeRewrite);
+            WindowPlacement.Restore(window, SecondaryWindowPlacement.TranscribeRewrite);
             window.AppWindow.Closing += (_, _) =>
-                SecondaryWindowPlacement.Save(window, SecondaryWindowPlacement.TranscribeRewrite);
+                WindowPlacement.Save(window, SecondaryWindowPlacement.TranscribeRewrite);
             window.Closed += (_, _) =>
             {
                 if (ReferenceEquals(_transcribeRewriteWindow, window)) _transcribeRewriteWindow = null;
             };
 
             _transcribeRewriteWindow = window;
-            ApplyThemeToSingle(window);
+            WindowTheme.Apply(window);
             DeckleWindowingSource.Log.WindowLoadComplete("transcribe-rewrite", sw.ElapsedMilliseconds);
         }
         return _transcribeRewriteWindow;

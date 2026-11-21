@@ -1,7 +1,7 @@
 using System.Text.Json;
 using System.Text.Json.Serialization;
 
-namespace Deckle.App.SelfCheck;
+namespace Deckle.Hosting.SelfCheck;
 
 // What the self-check run saw, and the verdict drawn from it. The file is the
 // run's only output the caller must read (scripts/self-check.ps1), so it is
@@ -12,7 +12,7 @@ namespace Deckle.App.SelfCheck;
 //
 // The verdict lives here, apart from the code that drives the windows, so it
 // can be tested without a window.
-internal sealed class SelfCheckReport
+public sealed class SelfCheckReport
 {
     public const string FileName = "report.json";
 
@@ -25,6 +25,15 @@ internal sealed class SelfCheckReport
         PropertyNamingPolicy = JsonNamingPolicy.SnakeCaseLower,
         DefaultIgnoreCondition = JsonIgnoreCondition.WhenWritingNull,
     };
+
+    // The windows a full run must have walked, in walk order; the executable
+    // sets them before the run. Not part of the file.
+    [JsonIgnore]
+    public IReadOnlyList<string> RequiredWindows { get; set; } = [];
+
+    // Whether a full run must have made the microphone probe. Not part of the file.
+    [JsonIgnore]
+    public bool RequiresMicrophone { get; set; }
 
     public string Version { get; set; } = "";
     public string Build { get; set; } = "";
@@ -85,7 +94,7 @@ internal sealed class SelfCheckReport
 
         if (Only is null)
         {
-            foreach (string window in SelfCheckTarget.Windows)
+            foreach (string window in RequiredWindows)
             {
                 if (!Surfaces.Any(s => s.Window == window))
                     failures.Add($"{window}: never walked, so nothing was checked there.");
@@ -103,7 +112,7 @@ internal sealed class SelfCheckReport
         if (Microphone is null)
         {
             // A targeted run leaves the probe out; a full run must have made it.
-            if (Only is null) failures.Add("microphone: the probe never ran.");
+            if (Only is null && RequiresMicrophone) failures.Add("microphone: the probe never ran.");
         }
         else
         {
@@ -182,7 +191,7 @@ internal sealed class SelfCheckReport
 //   Width, Height   the image's size in pixels; 0 when the technique does not say.
 //   Parts           the files, in order, when a page was too tall for one image.
 //   Error           why an image could not be made, when it threw.
-internal sealed record SelfCheckSurface(
+public sealed record SelfCheckSurface(
     string Window, string? Page, string? Label, bool Loaded, long Ms, string? Png,
     int PopupsClosed = 0, int PopupsStillOpen = 0,
     string? Technique = null, int Width = 0, int Height = 0,
@@ -192,15 +201,15 @@ internal sealed record SelfCheckSurface(
     public string Name => Page is null ? Window : $"{Window}/{Page}";
 }
 
-internal sealed record SelfCheckLeftOut(string Piece, string Why);
+public sealed record SelfCheckLeftOut(string Piece, string Why);
 
 // One Error or Critical line of the run's own log.jsonl.
-internal sealed record SelfCheckLogEvent(string Timestamp, string Level, string Provider, string Event, string Message);
+public sealed record SelfCheckLogEvent(string Timestamp, string Level, string Provider, string Event, string Message);
 
 // How the microphone probe ended, with the stage that refused. The distinction
 // that matters: the native library not loading (a packaging fault of the build)
 // against a device that is absent, held or refusing (a fact about the machine).
-internal sealed record SelfCheckMicrophone(string Outcome, string? Stage, string ErrorName, string ErrorCode)
+public sealed record SelfCheckMicrophone(string Outcome, string? Stage, string ErrorName, string ErrorCode)
 {
     public const string Ok = "ok";
     public const string LoadFailed = "load_failed";
@@ -208,33 +217,11 @@ internal sealed record SelfCheckMicrophone(string Outcome, string? Stage, string
     public const string DeviceMissing = "device_missing";
     public const string DeviceBusy = "device_busy";
     public const string DeviceRefused = "device_refused";
-
-    // From a probe: Ok, Stage, the classified kind, the code and its symbol.
-    // The stage decides first, because a library that did not load carries the
-    // same code (-10000) a refusing device can.
-    public static SelfCheckMicrophone From(
-        bool ok, string? stage, Deckle.Audio.MicErrorKind kind, string errorName, string errorCode)
-    {
-        if (ok) return new(Ok, null, "OK", "0");
-
-        string outcome = stage switch
-        {
-            "load" => LoadFailed,
-            "initialize" => InitializeFailed,
-            _ => kind switch
-            {
-                Deckle.Audio.MicErrorKind.NotDetected => DeviceMissing,
-                Deckle.Audio.MicErrorKind.InUse => DeviceBusy,
-                _ => DeviceRefused,
-            },
-        };
-        return new(outcome, stage, errorName, errorCode);
-    }
 }
 
 // Reads the Error and Critical lines of a log.jsonl. Pure, so a test hands it
 // lines. A line that is not JSON (a write cut by a crash) is skipped.
-internal static class SelfCheckLogReader
+public static class SelfCheckLogReader
 {
     // EventLevel names in the log's "level" field.
     private static readonly HashSet<string> Severe = new(StringComparer.Ordinal) { "Critical", "Error" };

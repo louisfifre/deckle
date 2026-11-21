@@ -1,4 +1,5 @@
 using Deckle.App.SelfCheck;
+using Deckle.Hosting.SelfCheck;
 using Deckle.Atelier;
 using Deckle.Atelier.Views;
 using Deckle.Vision;

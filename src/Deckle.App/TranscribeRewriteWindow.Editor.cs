@@ -1,3 +1,4 @@
+using Deckle.Diagnostics;
 using Microsoft.UI.Text;
 using Microsoft.UI.Xaml;
 using Microsoft.UI.Xaml.Controls;
@@ -69,7 +70,7 @@ public sealed partial class TranscribeRewriteWindow
         }
         catch (Exception ex)
         {
-            DeckleAppSource.Log.WindowOperationFailed(
+            DeckleWindowingSource.Log.WindowOperationFailed(
                 "transcribe-rewrite", "paste", "exception", ex.GetType().Name, ex.Message);
         }
     }

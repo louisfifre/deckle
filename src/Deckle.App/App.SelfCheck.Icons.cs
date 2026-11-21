@@ -1,4 +1,5 @@
 using Deckle.App.SelfCheck;
+using Deckle.Hosting.SelfCheck;
 using WinRT.Interop;
 
 namespace Deckle.App;

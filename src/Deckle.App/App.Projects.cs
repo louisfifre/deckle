@@ -1,3 +1,4 @@
+using Deckle.Hosting;
 using System.Diagnostics;
 using Deckle.Core;
 using Deckle.Diagnostics;
@@ -48,17 +49,17 @@ public partial class App
         // Not gated: one Stopwatch per window per process, and the provider
         // declares this milestone ungoverned.
         var sw = Stopwatch.StartNew();
-        var window = CreateWindowOrLog("projects", create);
-        SecondaryWindowPlacement.Restore(window, SecondaryWindowPlacement.Projects);
+        var window = WindowLifecycle.CreateOrLog("projects", create);
+        WindowPlacement.Restore(window, SecondaryWindowPlacement.Projects);
         window.AppWindow.Closing += (_, _) =>
-            SecondaryWindowPlacement.Save(window, SecondaryWindowPlacement.Projects);
+            WindowPlacement.Save(window, SecondaryWindowPlacement.Projects);
         window.Closed += (_, _) =>
         {
             if (ReferenceEquals(_projectsWindow, window)) _projectsWindow = null;
         };
 
         _projectsWindow = window;
-        ApplyThemeToSingle(window);
+        WindowTheme.Apply(window);
         DeckleWindowingSource.Log.WindowLoadComplete("projects", sw.ElapsedMilliseconds);
         return window;
     }

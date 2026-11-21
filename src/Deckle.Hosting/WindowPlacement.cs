@@ -1,19 +1,14 @@
 using System.Runtime.InteropServices;
 using System.Text.Json;
 using Deckle.Core;
+using Deckle.Diagnostics;
 using Microsoft.UI.Xaml;
 using WinRT.Interop;
 
-namespace Deckle.App;
+namespace Deckle.Hosting;
 
-internal static class SecondaryWindowPlacement
+public static class WindowPlacement
 {
-    public const string Settings = "settings";
-    public const string Log = "log";
-    public const string Projects = "projects";
-    public const string TranscribeRewrite = "transcribe-rewrite";
-    public const string PasteToFolder = "paste-to-folder";
-
     private const int SW_SHOWNORMAL = 1;
     private const int SW_SHOWMINIMIZED = 2;
     private const int SW_SHOWMAXIMIZED = 3;
@@ -70,7 +65,7 @@ internal static class SecondaryWindowPlacement
         }
         catch (Exception ex)
         {
-            DeckleAppSource.Log.WindowOperationFailed(
+            DeckleWindowingSource.Log.WindowOperationFailed(
                 key, "placement_restore", "exception", ex.GetType().Name, ex.Message);
         }
     }
@@ -90,7 +85,7 @@ internal static class SecondaryWindowPlacement
         }
         catch (Exception ex)
         {
-            DeckleAppSource.Log.WindowOperationFailed(
+            DeckleWindowingSource.Log.WindowOperationFailed(
                 key, "placement_save", "exception", ex.GetType().Name, ex.Message);
         }
     }
@@ -132,7 +127,7 @@ internal static class SecondaryWindowPlacement
         {
             // The store holds every window's placement, so no single window
             // is named; each opens at its default position this run.
-            DeckleAppSource.Log.WindowOperationFailed(
+            DeckleWindowingSource.Log.WindowOperationFailed(
                 "all", "placement_load", "exception", ex.GetType().Name, ex.Message);
             return new Dictionary<string, PlacementDto>(StringComparer.Ordinal);
         }

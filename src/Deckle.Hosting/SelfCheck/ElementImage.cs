@@ -6,7 +6,7 @@ using Microsoft.UI.Xaml.Media.Imaging;
 using Windows.Graphics.Imaging;
 using Windows.Storage.Streams;
 
-namespace Deckle.App.SelfCheck;
+namespace Deckle.Hosting.SelfCheck;
 
 // One page as an image, all of it. The window capture (WindowSnapshot) shows what
 // the window shows, so a page taller than the window is cut at its bottom edge;
@@ -22,7 +22,7 @@ namespace Deckle.App.SelfCheck;
 //
 // A texture has a size limit. A page taller than MaxPixels is rendered in
 // viewport-sized parts, scrolling the ScrollViewer between them.
-internal static class ElementImage
+public static class ElementImage
 {
     // Direct3D 11 feature level 11 guarantees textures up to 16384 pixels.
     internal const int MaxPixels = 16384;
@@ -42,7 +42,7 @@ internal static class ElementImage
     // shadow, a focus rectangle): RenderTargetBitmap never has those pixels.
     internal const int PageMargin = 32;
 
-    internal sealed record Result(IReadOnlyList<string> Files, int Width, int Height);
+    public sealed record Result(IReadOnlyList<string> Files, int Width, int Height);
 
     // Writes the page to <basePath>.png, or <basePath>-1.png, -2.png… when it
     // had to be cut. basePath has no extension.

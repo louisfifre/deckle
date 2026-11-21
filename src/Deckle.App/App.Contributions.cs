@@ -1,3 +1,4 @@
+using Deckle.Hosting;
 using Deckle.Contributions;
 using Deckle.Core;
 using Deckle.Diagnostics;
@@ -40,15 +41,15 @@ public partial class App
     private sealed class ContributionServices : IContributionHostServices
     {
         public Microsoft.UI.Xaml.Window CreateOrLog(string name, Func<Microsoft.UI.Xaml.Window> create)
-            => CreateWindowOrLog(name, create);
+            => WindowLifecycle.CreateOrLog(name, create);
 
         public void Place(Microsoft.UI.Xaml.Window window, string name)
         {
-            SecondaryWindowPlacement.Restore(window, name);
-            window.AppWindow.Closing += (_, _) => SecondaryWindowPlacement.Save(window, name);
+            WindowPlacement.Restore(window, name);
+            window.AppWindow.Closing += (_, _) => WindowPlacement.Save(window, name);
         }
 
-        public void ApplyTheme(Microsoft.UI.Xaml.Window window) => ApplyThemeToSingle(window);
+        public void ApplyTheme(Microsoft.UI.Xaml.Window window) => WindowTheme.Apply(window);
 
         public void WhenClosed(Microsoft.UI.Xaml.Window window, Action closed)
             => window.Closed += (_, _) => closed();

@@ -96,7 +96,7 @@ public sealed partial class DeckleAppSource : DeckleEventSource
     public const int EvtRestartSpawned                 = 81;
     public const int EvtHotkeyRegistrationFailed       = 82;
     // 83 and 84 retired.
-    public const int EvtWindowOperationFailed          = 85;
+    // 85 retired: moved to the windowing provider (DeckleWindowingSource), which every app of the suite shares.
     public const int EvtCrashRelaunched                = 86;
     public const int EvtDictationRecoveryUnreadable    = 87;
     public const int EvtDictationRecoveryClipboardFailed = 88;
@@ -121,8 +121,8 @@ public sealed partial class DeckleAppSource : DeckleEventSource
     public const int EvtAutocorrectEnrollmentPromptFailed = 105;
     public const int EvtCleanupFailed                  = 106;
     public const int EvtInputConsumerUnavailable       = 107;
-    public const int EvtWindowCreated                  = 108;
-    public const int EvtWindowOpenFailed               = 109;
+    // 108 retired: moved to the windowing provider, as 85 and 109.
+    // 109 retired: moved to the windowing provider, as 85 and 108.
     public const int EvtTrayToggleChanged              = 110;
     public const int EvtThemeApplied                   = 111;
     public const int EvtThemeUnknown                   = 112;

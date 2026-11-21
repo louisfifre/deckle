@@ -1,4 +1,9 @@
-namespace Deckle.App.SelfCheck;
+namespace Deckle.Hosting.SelfCheck;
+
+// The windows an executable's full run walks, in walk order (the verdict
+// requires each of them of a full run, and the one named of a targeted run),
+// and the subset whose walk shows more than one view.
+public sealed record SelfCheckWindows(IReadOnlyList<string> Windows, IReadOnlyList<string> WithViews);
 
 // What a run was asked to look at when it must not walk everything:
 // `--self-check <folder> --only <target>`. A target is a window ("mail") or one
@@ -6,6 +11,9 @@ namespace Deckle.App.SelfCheck;
 // "atelier/photos-gallery", "projects/p3"): the name its image carries in a
 // full run. It exists so a session that changed one view checks that view in
 // seconds instead of paying for the whole walk.
+//
+// Which windows a target may name is the executable's composition
+// (SelfCheckWindows): the published Deckle and each separate app give theirs.
 //
 // How a view is reached depends on its window. A Settings page stands alone and
 // is opened directly. A Mail, Atelier or Projects view is a state reached from
@@ -17,28 +25,9 @@ namespace Deckle.App.SelfCheck;
 // that names no window refuses the run with the names it could have been,
 // rather than passing on a walk of nothing. Whether the view exists is known
 // only once its window has listed its views; the report answers that.
-internal sealed record SelfCheckTarget(string Window, string? View)
+public sealed record SelfCheckTarget(string Window, string? View)
 {
     public const string Flag = "--only";
-
-    // The windows a full run walks, in walk order. The verdict requires each
-    // of them of a full run, and the one named of a targeted run.
-    // The contributed windows (PublishedComposition) walk after the host's
-    // own, before Projects, in composition order.
-    public static readonly string[] Windows =
-    [
-        "settings", "log", "transcribe-rewrite", "paste-to-folder",
-        .. PublishedComposition.Walks.Select(w => w.WindowName),
-        "projects",
-    ];
-
-    // The windows whose walk shows more than one view.
-    private static readonly string[] WithViews =
-    [
-        "settings", "transcribe-rewrite", "paste-to-folder",
-        .. PublishedComposition.Walks.Where(w => w.HasViews).Select(w => w.WindowName),
-        "projects",
-    ];
 
     public string Name => View is null ? Window : $"{Window}/{View}";
 
@@ -52,22 +41,22 @@ internal sealed record SelfCheckTarget(string Window, string? View)
     }
 
     // Null with a reason when the text names nothing a run can walk.
-    public static SelfCheckTarget? Parse(string text, out string reason)
+    public static SelfCheckTarget? Parse(string text, SelfCheckWindows catalog, out string reason)
     {
         reason = "";
         string[] parts = text.Trim().ToLowerInvariant().Split('/');
         string window = parts[0];
-        if (parts.Length > 2 || Array.IndexOf(Windows, window) < 0)
+        if (parts.Length > 2 || !catalog.Windows.Contains(window))
         {
             reason = $"'{text}' names no window of the self-check. A target is one of "
-                + $"{string.Join(", ", Windows)}, or <window>/<view> in {string.Join(", ", WithViews)}.";
+                + $"{string.Join(", ", catalog.Windows)}, or <window>/<view> in {string.Join(", ", catalog.WithViews)}.";
             return null;
         }
         if (parts.Length == 1) return new SelfCheckTarget(window, null);
 
-        if (Array.IndexOf(WithViews, window) < 0 || parts[1].Length == 0)
+        if (!catalog.WithViews.Contains(window) || parts[1].Length == 0)
         {
-            reason = $"'{text}' names no view. A view is <window>/<view> in {string.Join(", ", WithViews)}; "
+            reason = $"'{text}' names no view. A view is <window>/<view> in {string.Join(", ", catalog.WithViews)}; "
                 + $"{window} alone is walked whole.";
             return null;
         }
@@ -80,7 +69,7 @@ internal sealed record SelfCheckTarget(string Window, string? View)
 // state. A walk with a target reaches the states before it without a picture,
 // photographs the target, and is then done: the caller stops the walk, so
 // nothing after the target is opened.
-internal sealed class SelfCheckWalkGate(string? view)
+public sealed class SelfCheckWalkGate(string? view)
 {
     // Every state the walk came to, so a target that matched none can be
     // answered with what it could have been.

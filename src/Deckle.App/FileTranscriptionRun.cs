@@ -1,3 +1,4 @@
+using Deckle.Diagnostics;
 using System.ComponentModel;
 using System.Runtime.CompilerServices;
 
@@ -130,7 +131,7 @@ internal sealed class FileTranscriptionRun(
             }
             catch (Exception ex)
             {
-                DeckleAppSource.Log.WindowOperationFailed(
+                DeckleWindowingSource.Log.WindowOperationFailed(
                     "transcribe-rewrite", "file", "exception", ex.GetType().Name, ex.Message);
                 item.State = item.State == FileTranscriptionState.Transcribing
                     ? FileTranscriptionState.TranscriptionFailed
@@ -156,7 +157,7 @@ internal sealed class FileTranscriptionRun(
         }
         catch (Exception ex) when (ex is IOException or UnauthorizedAccessException)
         {
-            DeckleAppSource.Log.WindowOperationFailed(
+            DeckleWindowingSource.Log.WindowOperationFailed(
                 "transcribe-rewrite", "write", "exception", ex.GetType().Name, ex.Message);
             item.State = FileTranscriptionState.WriteFailed;
             return;
@@ -189,7 +190,7 @@ internal sealed class FileTranscriptionRun(
             }
             catch (Exception ex) when (ex is IOException or UnauthorizedAccessException)
             {
-                DeckleAppSource.Log.WindowOperationFailed(
+                DeckleWindowingSource.Log.WindowOperationFailed(
                     "transcribe-rewrite", "write", "exception", ex.GetType().Name, ex.Message);
                 item.RewriteFailed = true;
             }
@@ -210,7 +211,7 @@ internal sealed class FileTranscriptionRun(
         }
         catch (Exception ex)
         {
-            DeckleAppSource.Log.WindowOperationFailed(
+            DeckleWindowingSource.Log.WindowOperationFailed(
                 "transcribe-rewrite", "rewrite", "exception", ex.GetType().Name, ex.Message);
             rewritten = "";
         }

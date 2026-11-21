@@ -1,10 +1,10 @@
 using Deckle.Core;
 
-namespace Deckle.App.SelfCheck;
+namespace Deckle.Hosting.SelfCheck;
 
 // The answer of the gate: whether the self-check may run, and when it may not,
 // the sentence the report carries.
-internal readonly record struct SelfCheckGateResult(bool Allowed, string Reason);
+public readonly record struct SelfCheckGateResult(bool Allowed, string Reason);
 
 // The one rule that keeps the self-check away from the maintainer's data: it runs
 // only on a data root of its own. AppPaths freezes its root at first touch, so
@@ -16,7 +16,7 @@ internal readonly record struct SelfCheckGateResult(bool Allowed, string Reason)
 //   - the default root itself, spelled in any way that resolves to it;
 //   - a folder inside the default root (a "temp" subfolder there is still under
 //     the folders the resident app, the relocation and the cleanups own).
-internal static class SelfCheckDataRootGate
+public static class SelfCheckDataRootGate
 {
     public static SelfCheckGateResult Evaluate(string? dataRootVariable, string defaultRoot)
     {

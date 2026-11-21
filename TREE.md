@@ -633,7 +633,9 @@ _Generated from `git ls-files` — do not edit by hand._
 │   │   ├── Prod/
 │   │   │   └── apply-update.ps1
 │   │   ├── SelfCheck/
-│   │   │   └── IconImage.cs
+│   │   │   ├── IconImage.cs
+│   │   │   ├── SelfCheckMicrophoneOutcome.cs
+│   │   │   └── SelfCheckWindowCatalog.cs
 │   │   ├── Strings/
 │   │   │   └── en-US/
 │   │   │       └── Resources.resw
@@ -712,6 +714,7 @@ _Generated from `git ls-files` — do not edit by hand._
 │   │   ├── LogWindow.xaml.cs
 │   │   ├── ProdUpdate.cs
 │   │   ├── Program.cs
+│   │   ├── SecondaryWindowPlacement.cs
 │   │   ├── TranscribeRewriteHistory.cs
 │   │   ├── TranscribeRewriteWindow.AutoSave.cs
 │   │   ├── TranscribeRewriteWindow.Capture.cs
@@ -1378,7 +1381,12 @@ _Generated from `git ls-files` — do not edit by hand._
 │   │   │   ├── SelfCheckDataRootGate.cs
 │   │   │   ├── SelfCheckReport.cs
 │   │   │   └── SelfCheckTarget.cs
-│   │   └── WindowPlacement.cs
+│   │   ├── Deckle.Hosting.csproj
+│   │   ├── DiagnosticsHost.cs
+│   │   ├── ResidentInstance.cs
+│   │   ├── WindowLifecycle.cs
+│   │   ├── WindowPlacement.cs
+│   │   └── WindowTheme.cs
 │   ├── Deckle.Hud/
 │   │   ├── Chrono/
 │   │   │   ├── GLOSSARY.md  — glossary-deckle-hud-chrono Chrono HUD element vocabulary. It names the face's eight elements and the accen…
@@ -3057,6 +3065,10 @@ _Generated from `git ls-files` — do not edit by hand._
 │   │   ├── HomeToolCatalogTests.cs
 │   │   ├── HomeTypedToolCatalogTests.cs
 │   │   └── MessageTemplateDoctrineTests.cs
+│   ├── Deckle.Hosting.Tests/
+│   │   ├── Deckle.Hosting.Tests.csproj
+│   │   ├── SelfCheckTests.cs
+│   │   └── WindowThemeTests.cs
 │   ├── Deckle.Hud.Tests/
 │   │   ├── AnimationGateTests.cs
 │   │   ├── AnimationOfferTests.cs
