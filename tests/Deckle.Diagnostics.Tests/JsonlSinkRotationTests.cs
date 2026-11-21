@@ -214,6 +214,47 @@ public sealed class JsonlSinkRotationTests
         }
     }
 
+
+    // A generation compressed after the roll is named `<file>.<digits>.gz`. It
+    // must still be a generation: counted toward the cap, pruned oldest first,
+    // and never lend its number to the next roll, whose move overwrites.
+    [Fact]
+    [Trait("Category", "regression")]
+    public void ACompressedGenerationKeepsItsNumberAndCountsTowardTheCap()
+    {
+        string dir = NewTempDir("gzip");
+        string active = Path.Combine(dir, "trace.jsonl");
+        string archive = Path.Combine(dir, "archive");
+        Directory.CreateDirectory(archive);
+        File.WriteAllText(Generation(dir, 1), "{}\n");
+        File.WriteAllText(Path.Combine(archive, "trace.jsonl.0002.gz"), "older");
+        File.WriteAllText(Path.Combine(archive, "trace.jsonl.0003.gz"), "newest");
+        File.WriteAllText(Path.Combine(archive, "trace.jsonl.notes"), "not a generation");
+
+        var sink = NewSink(active, maxLines: 1, maxArchives: 3);
+        try
+        {
+            // Two lines: the second rolls the first into the next number.
+            sink.Write(Line(0));
+            sink.Write(Line(1));
+            sink.Flush();
+
+            // The roll numbers after the newest generation, compressed or not.
+            Assert.True(File.Exists(Generation(dir, 4)));
+            // Four generations against a cap of three: the oldest is pruned,
+            // the compressed ones count, and the file that is not a generation
+            // stays.
+            Assert.False(File.Exists(Generation(dir, 1)));
+            Assert.True(File.Exists(Path.Combine(archive, "trace.jsonl.0002.gz")));
+            Assert.True(File.Exists(Path.Combine(archive, "trace.jsonl.0003.gz")));
+            Assert.True(File.Exists(Path.Combine(archive, "trace.jsonl.notes")));
+        }
+        finally
+        {
+            sink.Dispose();
+            Directory.Delete(dir, recursive: true);
+        }
+    }
     [Fact]
     public void RejectsAZeroArchiveCap()
     {

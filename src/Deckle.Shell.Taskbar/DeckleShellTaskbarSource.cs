@@ -36,7 +36,7 @@ public sealed class DeckleShellTaskbarSource : DeckleEventSource
     public const int EvtNativeEngineDisconnected     = 20;
     public const int EvtNativeEngineUnavailable      = 21;
     public const int EvtNativeEngineNote             = 22;
-    public const int EvtNativeEngineDetail           = 23;
+    // 23 retired: NativeEngineDetail (the DLL's Verbose trace, 2026-11-21).
     public const int EvtNativeEngineWarning          = 24;
     public const int EvtNativeEngineError            = 25;
     public const int EvtTaskbarPartsChanged          = 26;
@@ -55,6 +55,9 @@ public sealed class DeckleShellTaskbarSource : DeckleEventSource
     public const int EvtSymbolLookupFailed           = 39;
     public const int EvtNativeEngineBuildMismatch    = 40;
     public const int EvtNativeEngineHeldOff          = 41;
+    public const int EvtTaskbarPipeServerFailed      = 42;
+    public const int EvtTaskbarPipeServerRecovered   = 43;
+    public const int EvtTaskbarPipeLineFailed        = 44;
 
     // ── Tray icon promotion ───────────────────────────────────────────────────
     //
@@ -270,16 +273,6 @@ public sealed class DeckleShellTaskbarSource : DeckleEventSource
         if (IsEnabled()) WriteEvent(EvtNativeEngineNote, name, fields);
     }
 
-    [Event(EvtNativeEngineDetail,
-           Level = EventLevel.Verbose,
-           Keywords = (EventKeywords)Keywords.Lifecycle,
-           Message = "name={0} | fields={1}")]
-    public void NativeEngineDetail(string name, string fields)
-    {
-        if (!IsEnabled(EventLevel.Verbose, (EventKeywords)Keywords.Lifecycle)) return;
-        WriteEvent(EvtNativeEngineDetail, name, fields);
-    }
-
     [Event(EvtNativeEngineWarning,
            Level = EventLevel.Warning,
            Keywords = (EventKeywords)Keywords.Lifecycle,
@@ -387,6 +380,42 @@ public sealed class DeckleShellTaskbarSource : DeckleEventSource
     public void NativeEngineHeldOff(string target, int quick_losses, int window_seconds)
     {
         if (IsEnabled()) WriteEvent(EvtNativeEngineHeldOff, target, quick_losses, window_seconds);
+    }
+
+    // One Warning per incident: the pipe the engine connects to could not be
+    // created or served, so the engine has no channel until the server tries
+    // again. ex_type: the exception's type. retry_seconds: the wait before the
+    // next try, which doubles while the failure repeats. Closed by
+    // TaskbarPipeServerRecovered.
+    [Event(EvtTaskbarPipeServerFailed,
+           Level = EventLevel.Warning,
+           Keywords = (EventKeywords)Keywords.Lifecycle,
+           Message = "The channel to the taskbar engine failed, so the engine cannot reach Deckle until it is served again\nex_type={0} | retry_seconds={1}")]
+    public void TaskbarPipeServerFailed(string ex_type, int retry_seconds)
+    {
+        if (IsEnabled()) WriteEvent(EvtTaskbarPipeServerFailed, ex_type, retry_seconds);
+    }
+
+    [Event(EvtTaskbarPipeServerRecovered,
+           Level = EventLevel.Informational,
+           Keywords = (EventKeywords)Keywords.Lifecycle,
+           Tags = ObservationTags.Milestone,
+           Message = "The channel to the taskbar engine is served again")]
+    public void TaskbarPipeServerRecovered()
+    {
+        if (IsEnabled()) WriteEvent(EvtTaskbarPipeServerRecovered);
+    }
+
+    // One Warning per run of lines: a line from the engine made its handler
+    // throw, so that line was dropped and the connection kept. The first line
+    // handled afterwards ends the run, with no line of its own.
+    [Event(EvtTaskbarPipeLineFailed,
+           Level = EventLevel.Warning,
+           Keywords = (EventKeywords)Keywords.Lifecycle,
+           Message = "A message from the taskbar engine could not be handled and was dropped\nex_type={0}")]
+    public void TaskbarPipeLineFailed(string ex_type)
+    {
+        if (IsEnabled()) WriteEvent(EvtTaskbarPipeLineFailed, ex_type);
     }
 
     // A pass over the settings threw. trigger: startup, setting or

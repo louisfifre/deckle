@@ -27,12 +27,11 @@ public sealed partial class AutocorrectEngine
         bool enabledHere = IsEnabledFor(settings, surface.ProcessName);
         bool undecided = !IsDecided(settings, surface.ProcessName);
 
-        // A declined app (decided, off) is left entirely alone: no policy run,
-        // no suggestion, and no text collection. Only an enabled or a not-yet-
-        // decided app is evaluated by the policy below.
+        // A declined app (decided, off) is left entirely alone: no policy run
+        // and no suggestion. Only an enabled or a not-yet-decided app is
+        // evaluated by the policy below.
         if (!enabledHere && !undecided)
         {
-            FeedCorpus(commit, commit.Word); // on-screen is the verbatim typed word
             if (rollupEnabled) _rollupGated++;
             MaybeRollup(commit.TimestampMs, rollupEnabled);
             return;
@@ -50,12 +49,7 @@ public sealed partial class AutocorrectEngine
         // A word the user reopened and retyped is exempt from the commit stage:
         // the deliberate keystroke asserts intent, so the literal stands here and
         // no decision is computed.
-        // The decision ledger is otherwise built only on an enrolled surface and
-        // only when the opt-in toggle is on — null, and the chain runs at no cost.
-        CorrectionTrace? trace = !commit.Reopened && enabledHere && _decisionTelemetry?.Invoke() == true
-            ? new CorrectionTrace()
-            : null;
-        var decision = commit.Reopened ? null : _policy.Evaluate(commit.Word, leftContext, trace);
+        var decision = commit.Reopened ? null : _policy.Evaluate(commit.Word, leftContext);
 
         // A suppressed pair never fires again whatever the policy says — enforced
         // here so even a policy without dictionary access honors the suppression.
@@ -63,12 +57,10 @@ public sealed partial class AutocorrectEngine
             && _dictionary?.IsSuppressed(decision.Original, decision.Replacement) == true)
         {
             decision = null;
-            trace?.MarkSuppressed(); // a stage fired, a learned suppression vetoed it
         }
 
         if (enabledHere)
         {
-            long wordId = ++_wordId;
             bool surfaceKnown = true;
 
             // Learning feeds on words the engine leaves alone. A corrected commit
@@ -89,21 +81,16 @@ public sealed partial class AutocorrectEngine
                 surfaceKnown = TryApplyMistouchRepair(commit);
             }
 
-            if (trace is not null)
-                EmitDecision(wordId, commit.Word, leftContext, trace);
-
             // Replace=false can mean a partial SendInput burst. The screen is
             // then unknowable: do not claim the intended replacement in the
-            // corpus or sentence model, and reset every tracker-owned span before
+            // sentence model, and reset every tracker-owned span before
             // accepting more input.
             if (!surfaceKnown)
             {
-                InvalidateModeledSurface();
+                _tracker.NotifyExternalMutation();
                 MaybeRollup(commit.TimestampMs, rollupEnabled);
                 return;
             }
-
-            FeedCorpus(commit, decision?.Replacement ?? commit.Word);
         }
         else
         {
@@ -111,8 +98,6 @@ public sealed partial class AutocorrectEngine
             // applied is the trigger to offer enrollment for this app — once.
             if (decision is not null)
                 MaybeSuggestEnrollment(surface.ProcessName);
-            // Correction withheld, so the on-screen form is the typed word itself.
-            FeedCorpus(commit, commit.Word);
             if (rollupEnabled) _rollupGated++;
         }
 
@@ -148,9 +133,7 @@ public sealed partial class AutocorrectEngine
     // Applies an approved mistouch family's span repair — the separator run
     // between the previous word and the one just committed, rewritten on screen
     // (« qu;il » → « qu'il »). A learned suppression vetoes it like any
-    // correction; the corpus records the separator change on the final side so
-    // the emitted sentence stays glued to the screen (the typed side keeps the
-    // faulty run — the mining pair).
+    // correction.
     private bool TryApplyMistouchRepair(WordCommit commit)
     {
         if (_mistouch is null) return true;
@@ -171,8 +154,6 @@ public sealed partial class AutocorrectEngine
             if (IsActivityRollupEnabled()) _rollupCorrections++;
             DeckleAutocorrectSource.Log.CorrectionApplied();
             LogCorrectionDetail(decision, plan.Backspaces);
-            if (CanCollectText())
-                _corpus?.SeparatorEdit(repair.Previous, repair.OldSeparators, repair.NewSeparators);
             CorrectionApplied?.Invoke(decision);
             return true;
         }
@@ -224,9 +205,6 @@ public sealed partial class AutocorrectEngine
 
         if (!IsEnabledFor(settings, surface.ProcessName))
             return;
-
-        if (CanCollectText())
-            _corpus?.Edit(edit.Original, edit.Replacement);
 
         // A committed word the user reopened and retyped — the WMR signal, counted
         // whatever the retype was (a hand-fix, a rewording, an undo of a correction).

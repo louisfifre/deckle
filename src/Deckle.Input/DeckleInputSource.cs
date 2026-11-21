@@ -5,11 +5,11 @@ namespace Deckle.Input;
 
 // Input module provider. Covers the Raw Input host lifecycle (dedicated
 // thread + message-only window), Precision Touchpad device presence
-// (Bluetooth arrivals and removals) and the periodic contact-frame rollup.
+// (Bluetooth arrivals and removals) and the keyboard host's periodic rollup.
 //
-// Frames themselves are never logged — at report cadence they would drown
-// the LogWindow — nor recorded to disk since 2026-11-13; the EventSource
-// carries the aggregated rollup and the lifecycle milestones.
+// Frames themselves are never logged, nor aggregated into a rollup — at report
+// cadence they would drown the LogWindow — nor recorded to disk since
+// 2026-11-13; the EventSource carries the lifecycle milestones.
 [EventSource(Name = "Deckle-Input")]
 public sealed class DeckleInputSource : DeckleEventSource
 {
@@ -25,16 +25,11 @@ public sealed class DeckleInputSource : DeckleEventSource
         => OperationalLogAdmission.IsDetailEnabled(
             OperationalLogActivity.Input, Log, level, keywords);
 
-    // The rollups are the summaries of their loops, admitted from Summary up:
-    // the keyboard rollup on Autocorrect's control while that activity runs,
-    // the contact-frame rollup on Input's.
+    // The keyboard rollup is the summary of its loop, admitted from Summary up
+    // on Autocorrect's control while that activity runs.
     internal static bool IsAutocorrectSummaryEnabled(EventLevel level, EventKeywords keywords)
         => OperationalLogAdmission.IsScopedSummaryEnabled(
             OperationalLogActivity.Autocorrect, Log, level, keywords);
-
-    internal static bool IsInputActivitySummaryEnabled(EventLevel level, EventKeywords keywords)
-        => OperationalLogAdmission.IsSummaryEnabled(
-            OperationalLogActivity.Input, Log, level, keywords);
 
     // Host names carried by the events both input hosts share.
     internal const string TouchpadHost = "touchpad";
@@ -50,7 +45,7 @@ public sealed class DeckleInputSource : DeckleEventSource
     public const int EvtTouchpadRemoved          = 8;
     // 9 retired.
     // 10 retired.
-    public const int EvtFrameRollup              = 11;
+    // 11 retired: FrameRollup (5 s touchpad frame cadence, low-level noise, 2026-11-21).
     // 12 retired: RecordingStarted (raw contact frame recording, 2026-11-13).
     // 13 retired.
     // 14 retired.
@@ -218,23 +213,6 @@ public sealed class DeckleInputSource : DeckleEventSource
     public void ParserCreateFailed(string reason)
     {
         if (IsEnabled()) WriteEvent(EvtParserCreateFailed, reason);
-    }
-
-    // ── Frame rollup (5 s aggregate while frames flow) ───────────────────
-
-    [Event(EvtFrameRollup,
-           Level = EventLevel.Verbose,
-           Keywords = (EventKeywords)Keywords.Heartbeat,
-           Tags = ObservationTags.Summary,
-           Message = "count={0} | rate_hz={1} | max_gap_ms={2} | max_tips={3} | fragmented={4} | orphans={5} | flushes={6} | scan_mismatches={7}")]
-    public void FrameRollup(
-        int count, double rate_hz, double max_gap_ms, int max_tips,
-        int fragmented, long orphans, long flushes, long scan_mismatches)
-    {
-        if (IsInputActivitySummaryEnabled(
-                EventLevel.Verbose, (EventKeywords)Keywords.Heartbeat))
-            WriteEvent(EvtFrameRollup,
-            count, rate_hz, max_gap_ms, max_tips, fragmented, orphans, flushes, scan_mismatches);
     }
 
     // ── Keyboard host lifecycle ──────────────────────────────────────────

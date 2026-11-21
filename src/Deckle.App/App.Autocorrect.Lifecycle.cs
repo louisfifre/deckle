@@ -53,8 +53,6 @@ public partial class App
         {
             if (_autocorrectSubscribed || _autocorrectShuttingDown) return;
             AutocorrectSettingsService.Instance.Changed += ReconcileAutocorrect;
-            Deckle.Diagnostics.Telemetry.TelemetrySettingsService.Instance.Changed +=
-                ReconcileAutocorrectTelemetry;
             _autocorrectSubscribed = true;
         }
 
@@ -162,15 +160,6 @@ public partial class App
         }
     }
 
-    private void ReconcileAutocorrectTelemetry()
-    {
-        lock (_autocorrectLifecycleLock)
-        {
-            if (!_autocorrectShuttingDown)
-                _autocorrectRuntime?.Engine.ReconcileTextTelemetry();
-        }
-    }
-
     // An in-flight build observes the shutdown flag when it completes and
     // disposes its local runtime instead of publishing it.
     private void ShutdownAutocorrect()
@@ -183,8 +172,6 @@ public partial class App
             if (_autocorrectSubscribed)
             {
                 AutocorrectSettingsService.Instance.Changed -= ReconcileAutocorrect;
-                Deckle.Diagnostics.Telemetry.TelemetrySettingsService.Instance.Changed -=
-                    ReconcileAutocorrectTelemetry;
                 _autocorrectSubscribed = false;
             }
 

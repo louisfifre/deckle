@@ -213,6 +213,14 @@ public partial class App
         Settings.SettingsService.Instance.Current.Developer.DeveloperMode = true;
         Settings.SettingsService.Instance.Save();
 
+        using (var self = System.Diagnostics.Process.GetCurrentProcess())
+        {
+            report.Perf = new SelfCheckPerf
+            {
+                StartupReadyMs = (long)(DateTime.Now - self.StartTime).TotalMilliseconds,
+            };
+        }
+
         if (target is null)
         {
             Step("microphone");
@@ -437,6 +445,16 @@ public partial class App
         {
             Step("icons");
             await CaptureTaskbarIconsAsync(report, captures, outputFolder);
+        }
+
+        // The bench's figures: the footprint of the warm app, then, when asked,
+        // a dictation take and the footprint it leaves (App.SelfCheck.Perf.cs).
+        report.Perf!.Footprint = SelfCheckFootprint.Read();
+        if (target is null && Environment.GetEnvironmentVariable(BenchDictationEnvVar) is { Length: > 0 })
+        {
+            Step("dictation");
+            report.Perf.Dictation = await MeasureDictationForBenchAsync();
+            report.Perf.FootprintAfterDictation = SelfCheckFootprint.Read();
         }
 
         run.Complete();

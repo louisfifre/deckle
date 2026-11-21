@@ -59,6 +59,8 @@ What the menu offers today, level by level. A row reads as its action followed b
 |  | Runtime assets | set up | [`setup/setup-assets.ps1`](setup/setup-assets.ps1) | |
 | **Versions** | Record version | patch, minor, major | [`git/record-version.ps1`](git/record-version.ps1) `-Apply` | yes |
 |  | Changelog | preview, write | [`git/changelog.ps1`](git/changelog.ps1) | yes |
+| **Bench** | Take a pass | Debug, Release | [`bench/perf-bench.ps1`](bench/perf-bench.ps1) | |
+|  | Compare passes | | [`bench/perf-compare.ps1`](bench/perf-compare.ps1) | |
 | **Maintenance** | Preview | build outputs | [`maintenance/clean.ps1`](maintenance/clean.ps1) | yes |
 |  |  | native folder | [`maintenance/clean-native.ps1`](maintenance/clean-native.ps1) `-WhatIf` | |
 |  |  | AI sessions | [`maintenance/reset-agent-state.ps1`](maintenance/reset-agent-state.ps1) | yes |

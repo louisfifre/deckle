@@ -26,9 +26,6 @@ public sealed partial class AutocorrectViewModel : ObservableObject
     [ObservableProperty]
     public partial string NewExclusion { get; set; } = string.Empty;
 
-    // The module's dataset consents live in AutocorrectTelemetryViewModel, its
-    // contribution to the Diagnostics page.
-
     public AutocorrectViewModel()
     {
         _isSyncing = true;

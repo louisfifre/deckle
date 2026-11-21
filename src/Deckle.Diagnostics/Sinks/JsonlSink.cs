@@ -25,6 +25,7 @@ namespace Deckle.Diagnostics;
 public sealed class JsonlSink : IFlushableLogSink
 {
     private const int DefaultQueueCapacity = 1024;
+    private const string CompressedSuffix = ".gz";
 
     private readonly string _filePath;
     private readonly Func<EventEntry, bool> _predicate;
@@ -37,6 +38,12 @@ public sealed class JsonlSink : IFlushableLogSink
     // Worker-thread-owned state.
     private FileStream? _stream;
     private long _linesWritten;
+
+    // After a roll that failed, the line count at which the next attempt is made.
+    // Without it every line past the cap would try the roll again, and each try
+    // that fails recounts the whole file: a file held by a reader that forbids the
+    // move would be read in full once per row. Zero while no roll is failing.
+    private long _nextRollAttemptAt;
 
     // Failed maintenance attempts of the open incident. Owned by the constructor
     // until the queue exists, by the worker after.
@@ -99,7 +106,9 @@ public sealed class JsonlSink : IFlushableLogSink
     {
         try
         {
-            if (_rotation is not null && _linesWritten >= _rotation.MaxLines)
+            if (_rotation is not null
+                && _linesWritten >= _rotation.MaxLines
+                && _linesWritten >= _nextRollAttemptAt)
                 RollFiles();
 
             FileStream stream = EnsureStream();
@@ -151,12 +160,17 @@ public sealed class JsonlSink : IFlushableLogSink
                 File.Move(_filePath, target, overwrite: true);
 
             _linesWritten = 0;
+            _nextRollAttemptAt = 0;
         }
         catch (Exception ex)
         {
             // The file is where it was, so its count is what the next attempt
             // needs. A count that fails too belongs to the same incident.
             _linesWritten = CountLines(_filePath, out _);
+            // The next attempt waits for a twentieth of the cap in lines (at
+            // least one) past the row about to be written, so a roll that cannot
+            // happen costs one recount per that many rows instead of one per row.
+            _nextRollAttemptAt = _linesWritten + 1 + Math.Max(1, rotation.MaxLines / 20);
             ReportMaintenanceFailure("roll", ex, onWorker: true);
             return;
         }
@@ -264,8 +278,11 @@ public sealed class JsonlSink : IFlushableLogSink
         return max + 1;
     }
 
-    // Archive files named `<fileName>.<digits>`; anything else in the folder is
-    // not ours and is neither counted nor deleted.
+    // Archive files named `<fileName>.<digits>`, or `<fileName>.<digits>.gz` once an
+    // archive has been compressed; anything else in the folder is not ours and is
+    // neither counted nor deleted. A compressed generation keeps its number, so
+    // it still counts toward the cap, is pruned oldest first, and never lets
+    // the next roll reuse its number.
     private static IEnumerable<(int Number, string Path)> EnumerateGenerations(
         string archiveDirectory,
         string fileName)
@@ -274,6 +291,8 @@ public sealed class JsonlSink : IFlushableLogSink
         foreach (string path in Directory.EnumerateFiles(archiveDirectory, prefix + "*"))
         {
             string suffix = System.IO.Path.GetFileName(path)[prefix.Length..];
+            if (suffix.EndsWith(CompressedSuffix, StringComparison.Ordinal))
+                suffix = suffix[..^CompressedSuffix.Length];
             if (int.TryParse(
                     suffix,
                     NumberStyles.None,

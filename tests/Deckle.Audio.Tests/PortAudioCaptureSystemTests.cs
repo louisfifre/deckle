@@ -67,7 +67,6 @@ public sealed class PortAudioCaptureSystemTests
     {
         public string AudioInputEndpointId => "";
         public int MaxRecordingDurationSeconds => 0;
-        public bool MicrophoneTelemetryEnabled => false;
         public double VoiceLevelDbfs => -45.0;
         public string RecordingPurpose => "system_test";
     }

@@ -10,7 +10,7 @@ namespace Deckle.Audio;
 
 // Microphone capture engine: opens the microphone through PortAudio (its
 // WASAPI host API on Windows), runs the capture loop, keeps the per-recording
-// RMS log and builds the post-recording telemetry payload.
+// RMS log that feeds the tail diagnostic.
 //
 // The signal. The microphone is opened in the raw processing mode when the
 // device gives it (no effects, no gain control, no noise suppression between
@@ -36,8 +36,7 @@ public sealed class MicrophoneCapture : IMicrophoneCapture
 
     // Per-recording RMS history: one linear-RMS sample per 50 ms sub-window,
     // appended by CapturePipeline. Cleared at every Record() entry. Drives the
-    // tail diagnostic at Stop and the per-recording mic telemetry summary that
-    // auto-calibration reads.
+    // tail diagnostic at Stop.
     private readonly List<float> _rmsLog = new(capacity: 20 * 60 * 10);
 
     // Microphone level, linear RMS [0, 1], one emission per 50 ms sub-window
@@ -225,7 +224,7 @@ public sealed class MicrophoneCapture : IMicrophoneCapture
             CaptureStarted?.Invoke();
 
             // Reset the per-recording RMS series: the previous session's tail
-            // must not leak into this run's telemetry summary.
+            // must not leak into this run's tail diagnostic.
             _rmsLog.Clear();
 
             pump = CaptureLoop.Pump(
@@ -306,50 +305,22 @@ public sealed class MicrophoneCapture : IMicrophoneCapture
                 rmsAvg, aggPeak, dbfsAvg);
         }
 
-        MicrophoneTelemetryPayload? telemetry = null;
-        var tail = MicrophoneTelemetryCalculator.ComputeTail(_rmsLog);
+        // The tail diagnostic is operational detail only: it tells a reader of
+        // the log whether the take ended on speech (the last words may be
+        // clipped) or on silence.
+        var tail = RecordingTailCalculator.ComputeTail(_rmsLog);
         if (tail is null)
         {
-            DeckleAudioSource.Log.MicrophoneTelemetryEmpty();
+            DeckleAudioSource.Log.RecordingTooShortToMeasure();
         }
-        else
+        else if (OperationalLogAdmission.IsScopedDetailEnabled(
+                     OperationalLogActivity.Transcription,
+                     DeckleAudioSource.Log,
+                     EventLevel.Verbose,
+                     (EventKeywords)Keywords.Capture))
         {
-            if (OperationalLogAdmission.IsScopedDetailEnabled(
-                    OperationalLogActivity.Transcription,
-                    DeckleAudioSource.Log,
-                    EventLevel.Verbose,
-                    (EventKeywords)Keywords.Capture))
-            {
-                // The line exists only for admitted detail. The tail
-                // measurements themselves remain functional input to
-                // telemetry and auto-calibration below.
-                DeckleAudioSource.Log.RecordingTailSummaryDetail(
-                    tail.Value.TailMs, tail.Value.TailDbfs, tail.Value.TailState);
-            }
-
-            telemetry = MicrophoneTelemetryCalculator.Compute(_rmsLog, tail.Value);
-        }
-
-        // The payload is always *computed*: the orchestrator's auto-calibration
-        // reads it from the result. The host's toggle only decides whether it's
-        // broadcast.
-        if (telemetry is not null && host.MicrophoneTelemetryEnabled)
-        {
-            DeckleAudioSource.Log.MicrophoneTelemetryRecorded(
-                telemetry.DurationSeconds,
-                telemetry.Samples,
-                telemetry.MinDbfs,
-                telemetry.P10Dbfs,
-                telemetry.P25Dbfs,
-                telemetry.P50Dbfs,
-                telemetry.P75Dbfs,
-                telemetry.P90Dbfs,
-                telemetry.MaxDbfs,
-                telemetry.MeanRms,
-                telemetry.MeanDbfs,
-                telemetry.TailRms,
-                telemetry.TailDbfs,
-                telemetry.TailState);
+            DeckleAudioSource.Log.RecordingTailSummaryDetail(
+                tail.Value.TailMs, tail.Value.TailDbfs, tail.Value.TailState);
         }
 
         var outcome = pump.Exit switch
@@ -360,7 +331,6 @@ public sealed class MicrophoneCapture : IMicrophoneCapture
 
         return new CaptureResult(
             Pcm:           pcm,
-            Telemetry:     telemetry,
             Outcome:       outcome,
             DrainDuration: pump.DrainDuration,
             ErrorCode:     0);
@@ -368,7 +338,6 @@ public sealed class MicrophoneCapture : IMicrophoneCapture
 
     private static CaptureResult MicError(uint code) => new(
         Pcm:           System.Array.Empty<float>(),
-        Telemetry:     null,
         Outcome:       CaptureOutcome.MicError,
         DrainDuration: System.TimeSpan.Zero,
         ErrorCode:     code);

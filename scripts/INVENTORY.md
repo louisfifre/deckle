@@ -45,6 +45,15 @@ Run one with `pwsh -NoProfile -File scripts/<path> [arguments]`. An action names
   - Actions: Verify branch
   - Parameters: -Branch <string>, -Target <string>, -Server <string>
 
+## `scripts/bench/`
+
+- `bench/perf-bench.ps1` — **Take a performance pass.** Measures the built Deckle on a separate instance with its own data root, as the self-check runs it, and writes one dated JSON file of named metrics: the time to the self-check's ready state, the first-open cost of each window, the load time of each page the self-check walks, the memory and handle count of the warm app, and a dictation take on a test audio file, phase by phase as the engine logs them (PipelineTimings).
+  - Actions: Take a pass
+  - Parameters: -Configuration Debug|Release, -Target <string>, -Label <string>, -OutputFolder <string>, -AudioFile <string>, -Repeat <int>, -SkipDictation, -Only <string>, -TimeoutSeconds <int>
+- `bench/perf-compare.ps1` — **Compare two performance passes.** Reads two files written by perf-bench.ps1 and lists every metric with its change, flagging as a regression each one that got worse by more than the threshold.
+  - Actions: Compare passes
+  - Parameters: -Before <string>, -After <string>, -ThresholdPercent <double>, -Folder <string>
+
 ## `scripts/git/`
 
 - `git/changelog.ps1` — **Update the changelog.** Generates CHANGELOG.md in the Keep a Changelog format from the Conventional Commits history, one section per published version.

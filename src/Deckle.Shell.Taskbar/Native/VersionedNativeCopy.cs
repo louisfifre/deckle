@@ -37,21 +37,31 @@ internal sealed class VersionedNativeCopy
         Path.Combine(Deckle.Core.AppPaths.GetModuleDirectory(TaskbarSettingsModule.ModuleId), "native");
 
     // "<file version>-<first 8 hex of SHA-256>" for the DLL at `sourcePath`.
-    public static string FolderNameFor(string sourcePath)
+    public static string FolderNameFor(string sourcePath) =>
+        FolderNameFor(sourcePath, SHA256.HashData(File.ReadAllBytes(sourcePath)));
+
+    private static string FolderNameFor(string sourcePath, byte[] hash)
     {
         string version = FileVersionInfo.GetVersionInfo(sourcePath).FileVersion ?? "0.0.0.0";
-        byte[] hash = SHA256.HashData(File.ReadAllBytes(sourcePath));
         return $"{version}-{Convert.ToHexString(hash, 0, 4).ToLowerInvariant()}";
     }
 
     // Copies the DLL when its versioned folder is not there yet and returns the
     // path of the copy. The copy is written under a temporary name and moved
     // into place, so a crash never leaves a half file under the real name.
+    //
+    // A copy that is already there is trusted only when its SHA-256 is the
+    // source's: the folder is in the user's data root, writable by the user, and
+    // the file is loaded into explorer, so a truncated or altered copy is
+    // replaced by a fresh one rather than loaded. A copy that cannot be replaced
+    // (explorer holds it open) makes Ensure throw: an unchecked DLL is never
+    // returned.
     public string Ensure(string sourcePath)
     {
-        string folder = Path.Combine(_root, FolderNameFor(sourcePath));
+        byte[] sourceHash = SHA256.HashData(File.ReadAllBytes(sourcePath));
+        string folder = Path.Combine(_root, FolderNameFor(sourcePath, sourceHash));
         string target = Path.Combine(folder, DllName);
-        if (File.Exists(target)) return target;
+        if (IsCopyOf(target, sourceHash)) return target;
 
         Directory.CreateDirectory(folder);
         string temporary = Path.Combine(folder, $"{DllName}.{Guid.NewGuid():N}.tmp");
@@ -60,9 +70,9 @@ internal sealed class VersionedNativeCopy
             File.Copy(sourcePath, temporary);
             try
             {
-                File.Move(temporary, target);
+                File.Move(temporary, target, overwrite: true);
             }
-            catch (IOException) when (File.Exists(target))
+            catch (IOException) when (IsCopyOf(target, sourceHash))
             {
                 // Another copy of Deckle moved the same file in first.
             }
@@ -74,6 +84,21 @@ internal sealed class VersionedNativeCopy
             catch (UnauthorizedAccessException) { }
         }
         return target;
+    }
+
+    // False when the file is missing, unreadable or its bytes hash to something else.
+    // A file explorer has loaded is opened with read sharing, which Windows allows.
+    private static bool IsCopyOf(string path, byte[] expectedHash)
+    {
+        try
+        {
+            using var stream = new FileStream(path, FileMode.Open, FileAccess.Read, FileShare.ReadWrite | FileShare.Delete);
+            return SHA256.HashData(stream).AsSpan().SequenceEqual(expectedHash);
+        }
+        catch (Exception exception) when (exception is IOException or UnauthorizedAccessException)
+        {
+            return false;   // FileNotFoundException and DirectoryNotFoundException are IOExceptions
+        }
     }
 
     // Lets packaged processes (AppContainer) read and run the DLL: grants read and

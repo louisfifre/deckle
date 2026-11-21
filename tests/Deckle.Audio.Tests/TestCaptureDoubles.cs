@@ -108,7 +108,6 @@ internal sealed class FakeRecordingHost : IAudioRecordingHost
 {
     public string AudioInputEndpointId { get; set; } = "";
     public int MaxRecordingDurationSeconds { get; set; }
-    public bool MicrophoneTelemetryEnabled { get; set; }
     public double VoiceLevelDbfs { get; set; } = -40;
     public bool RetainsAudio { get; set; } = true;
     public bool ExclusiveMode { get; set; }

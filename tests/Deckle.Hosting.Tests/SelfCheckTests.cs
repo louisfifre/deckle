@@ -101,6 +101,74 @@ public class SelfCheckTests
         Assert.Empty(report.Failures);
     }
 
+    // ── The bench's figures ──────────────────────────────────────────────────
+
+    // A machine without the runtime or a model is a fact about it: the take the
+    // bench asked for is reported skipped, and the run still passes.
+    [Fact]
+    [Trait("Category", "unit")]
+    public void Verdict_WarnsWhenTheBenchDictationWasSkipped()
+    {
+        SelfCheckReport report = PassingReport();
+        report.Perf = new SelfCheckPerf
+        {
+            Dictation = new SelfCheckDictation(SelfCheckDictation.Skipped, "speech_model_missing", "whisper", 0, 0),
+        };
+
+        report.Judge();
+
+        Assert.Equal("passed", report.Outcome);
+        Assert.Contains(report.Warnings, w => w.Contains("speech_model_missing"));
+    }
+
+    [Fact]
+    [Trait("Category", "unit")]
+    public void Verdict_FailsWhenTheBenchDictationReturnedNoText()
+    {
+        SelfCheckReport report = PassingReport();
+        report.Perf = new SelfCheckPerf
+        {
+            Dictation = new SelfCheckDictation(SelfCheckDictation.Failed, "no_text", "whisper", 900, 0),
+        };
+
+        report.Judge();
+
+        Assert.Equal("failed", report.Outcome);
+        Assert.Contains(report.Failures, f => f.StartsWith("dictation"));
+    }
+
+    // The bench reads these names from the file: renaming one breaks every saved pass.
+    [Fact]
+    [Trait("Category", "unit")]
+    public void Report_WritesTheBenchFiguresUnderTheirContractNames()
+    {
+        SelfCheckReport report = PassingReport();
+        report.Perf = new SelfCheckPerf
+        {
+            StartupReadyMs = 1234,
+            Footprint = new SelfCheckFootprint(1, 2, 3, 4, 5),
+            Dictation = new SelfCheckDictation(SelfCheckDictation.Ok, null, "whisper", 900, 12),
+        };
+
+        string json = report.ToJson();
+
+        Assert.Contains("\"startup_ready_ms\": 1234", json);
+        Assert.Contains("\"private_working_set_bytes\": 2", json);
+        Assert.Contains("\"handles\": 4", json);
+        Assert.Contains("\"wall_ms\": 900", json);
+    }
+
+    [Fact]
+    [Trait("Category", "unit")]
+    public void Footprint_ReadsThisProcess()
+    {
+        SelfCheckFootprint footprint = SelfCheckFootprint.Read();
+
+        Assert.True(footprint.WorkingSetBytes > 0);
+        Assert.True(footprint.PrivateWorkingSetBytes > 0);
+        Assert.True(footprint.Handles > 0);
+    }
+
     // The overflow of 0.87.14 killed the process on one page: what is left on
     // disk is a report that did not complete, with the page it was opening.
     [Fact]

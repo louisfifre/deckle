@@ -17,10 +17,8 @@ public sealed partial class AutocorrectEngine
             _host.KeyReceived += OnKey;
             _host.PointerInteraction += OnPointerInteraction;
             _host.FocusChanged += OnFocusChanged;
-            _host.DrainRequested += OnDrainRequested;
             _tracker.WordCommitted += OnWordCommitted;
             _tracker.WordEdited += OnWordEdited;
-            _tracker.TrackerReset += OnTrackerReset;
 
             if (!_host.Start())
             {
@@ -50,8 +48,6 @@ public sealed partial class AutocorrectEngine
         _started = false;
         _host.Stop();
         Unsubscribe();
-        _corpus?.Discard();
-        _stream?.Discard();
         _dictionary?.Flush();
         OperationalLogAdmission.SetActive(OperationalLogActivity.Autocorrect, false);
         DeckleAutocorrectSource.Log.EngineStopped();
@@ -73,9 +69,7 @@ public sealed partial class AutocorrectEngine
         _host.KeyReceived -= OnKey;
         _host.PointerInteraction -= OnPointerInteraction;
         _host.FocusChanged -= OnFocusChanged;
-        _host.DrainRequested -= OnDrainRequested;
         _tracker.WordCommitted -= OnWordCommitted;
         _tracker.WordEdited -= OnWordEdited;
-        _tracker.TrackerReset -= OnTrackerReset;
     }
 }

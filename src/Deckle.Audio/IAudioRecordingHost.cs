@@ -15,12 +15,6 @@ public interface IAudioRecordingHost
     // the start of each recording. 0 = no cap.
     int MaxRecordingDurationSeconds { get; }
 
-    // The Recording page's microphone-telemetry opt-in. Gates the emission of
-    // the per-recording MicrophoneTelemetryPayload EventSource event.
-    // The payload is always *computed* (auto-calibration depends on it);
-    // this flag only decides whether it's broadcast.
-    bool MicrophoneTelemetryEnabled { get; }
-
     // The voice level in dBFS (CaptureSettings.VoiceLevelDbfs): the level the
     // low-audio tracker tests for sustained voice, the same value the segmenter
     // cuts on. Deliberately not defaulted: a default would quietly hold a

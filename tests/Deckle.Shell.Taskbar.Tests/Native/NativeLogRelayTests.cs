@@ -21,8 +21,18 @@ public sealed class NativeLogRelayTests
         return Assert.Single(listener.Events);
     }
 
+    // The DLL's Verbose trace is not relayed: it was low-level noise in the log.
+    [Fact]
+    public void AVerboseRecordOfTheDllIsNotRelayed()
+    {
+        using var listener = new TestEventListener("Deckle-Taskbar");
+
+        NativeLogRelay.Relay(Record(NativeLogLevel.Verbose));
+
+        Assert.Empty(listener.Events);
+    }
+
     [Theory]
-    [InlineData("Verbose", DeckleShellTaskbarSource.EvtNativeEngineDetail, EventLevel.Verbose)]
     [InlineData("Info", DeckleShellTaskbarSource.EvtNativeEngineNote, EventLevel.Informational)]
     [InlineData("Warning", DeckleShellTaskbarSource.EvtNativeEngineWarning, EventLevel.Warning)]
     [InlineData("Error", DeckleShellTaskbarSource.EvtNativeEngineError, EventLevel.Error)]

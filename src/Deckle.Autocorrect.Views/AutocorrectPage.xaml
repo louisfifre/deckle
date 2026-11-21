@@ -94,10 +94,6 @@
                     </StackPanel>
                 </catalog:SettingsSection>
 
-                <!-- The module's two dataset consents live on Settings >
-                     Diagnostics, the one editor of what Deckle records
-                     (AutocorrectTelemetryViewModel, 2026-10-14). -->
-
             </StackPanel>
         </Grid>
     </ScrollViewer>

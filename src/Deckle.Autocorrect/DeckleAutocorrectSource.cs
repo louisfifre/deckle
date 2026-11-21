@@ -38,9 +38,8 @@ public sealed class DeckleAutocorrectSource : DeckleEventSource
     public const int EvtEnrollmentSuggested = 10;
     public const int EvtLexiconLoadComplete = 11;
     public const int EvtEngineReady         = 12;
-    public const int EvtAutocorrectDecision = 17;
-    public const int EvtAutocorrectText     = 19;
-    public const int EvtAutocorrectStream   = 21;
+    // 17, 19 and 21 retired: the per-word decision, typed-sentence and typing-stream
+    // datasets (autocorrect.decisions, .text and .stream), removed with their settings.
     // 22 retired.
     // 23 retired.
     public const int EvtInjectionRecovered  = 24;
@@ -289,76 +288,6 @@ public sealed class DeckleAutocorrectSource : DeckleEventSource
         public const string Unmodeled = "unmodeled";
         public const string Unsupported = "unsupported";
         public const string ProtectedSurface = "protected_surface";
-    }
-
-    // ── Correction decision dataset ──────────────────────────────────────
-    //
-    // The per-word decision ledger, the deep "why did(n't) it correct?" surface.
-    // These two DELIBERATELY carry text: the typed word, its left context, and the
-    // candidate forms with their scores. They are routed solely to the opt-in
-    // autocorrect.decisions.jsonl sink (gated by AutocorrectDecisions, off by
-    // default) and excluded from trace.jsonl. CorrectionTrace renders the flat fields.
-
-    [Event(EvtAutocorrectDecision,
-           Level = EventLevel.Verbose,
-           Tags = ObservationTags.Dataset,
-           Keywords = (EventKeywords)Keywords.Heartbeat,
-           Message = "word={1} | outcome={3} | stage={4} | reason={5}")]
-    public void AutocorrectDecisionRecorded(
-        long   id,
-        string word,
-        string context,
-        string outcome,
-        string stage,
-        string reason,
-        string candidates,
-        string gauges,
-        string trail)
-    {
-        if (!IsEnabled(EventLevel.Verbose, (EventKeywords)Keywords.Heartbeat)) return;
-        WriteEvent(EvtAutocorrectDecision,
-            id, word, context, outcome, stage, reason, candidates, gauges, trail);
-    }
-
-    // ── Typed-sentence corpus ─────────────────────────────────────────────
-    //
-    // One sentence typed on an enrolled, editable, non-password surface; its fields
-    // are SentenceCorpus.SentenceRecord's. The heaviest text capture in the module,
-    // a verbatim record of typed input: routed solely to the opt-in
-    // autocorrect.text.jsonl sink (gated by AutocorrectText, off by default) and
-    // excluded from trace.jsonl.
-
-    [Event(EvtAutocorrectText,
-           Level = EventLevel.Verbose,
-           Tags = ObservationTags.Dataset,
-           Keywords = (EventKeywords)Keywords.Heartbeat,
-           Message = "process={0} | typed={1} | closure={4}")]
-    public void AutocorrectTextRecorded(
-        string process, string typed, string final, string history, string closure, string timing)
-    {
-        if (!IsEnabled(EventLevel.Verbose, (EventKeywords)Keywords.Heartbeat)) return;
-        WriteEvent(EvtAutocorrectText, process, typed, final, history, closure, timing);
-    }
-
-    // ── Typing stream ─────────────────────────────────────────────────────
-    //
-    // One closed run of the typing stream on an ENROLLED correctable surface; its
-    // fields and replay contract are TypingStream's. Verbatim typed input: routed
-    // solely to the opt-in autocorrect.stream.jsonl sink under the SAME consent
-    // envelope as the typed-sentence corpus (gated by AutocorrectText, off by
-    // default) and excluded from trace.jsonl. Password surfaces never reach the
-    // stream: the engine gates them before decoding.
-
-    [Event(EvtAutocorrectStream,
-           Level = EventLevel.Verbose,
-           Tags = ObservationTags.Dataset,
-           Keywords = (EventKeywords)Keywords.Heartbeat,
-           Message = "process={0} | text={1} | erased={2} | closure={3}")]
-    public void AutocorrectStreamRecorded(
-        string process, string text, int erased, string closure, string timing)
-    {
-        if (!IsEnabled(EventLevel.Verbose, (EventKeywords)Keywords.Heartbeat)) return;
-        WriteEvent(EvtAutocorrectStream, process, text, erased, closure, timing);
     }
 
     // ── Learning ─────────────────────────────────────────────────────────

@@ -13,8 +13,7 @@ internal static class NativeLogRelay
         switch (record.Level)
         {
             case NativeLogLevel.Verbose:
-                log.NativeEngineDetail(record.Event, fields);
-                break;
+                break;   // the DLL's trace is low-level noise; Info and above travel
             case NativeLogLevel.Warning:
                 log.NativeEngineWarning(record.Event, record.Message, fields);
                 break;

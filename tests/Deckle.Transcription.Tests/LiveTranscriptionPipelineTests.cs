@@ -855,7 +855,6 @@ public sealed class LiveTranscriptionPipelineTests
 
             return new CaptureResult(
                 captured.ToArray(),
-                Telemetry: null,
                 _outcome,
                 TimeSpan.Zero,
                 ErrorCode: 0);

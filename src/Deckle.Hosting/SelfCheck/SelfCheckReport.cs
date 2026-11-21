@@ -51,6 +51,9 @@ public sealed class SelfCheckReport
 
     public List<SelfCheckSurface> Surfaces { get; set; } = [];
     public SelfCheckMicrophone? Microphone { get; set; }
+
+    // Startup, memory and the dictation take, for the measurement bench.
+    public SelfCheckPerf? Perf { get; set; }
     public List<SelfCheckLogEvent> Errors { get; set; } = [];
 
     // What the run composed and what it left out, with the reason, so a reader
@@ -132,6 +135,17 @@ public sealed class SelfCheckReport
                         $"microphone: {Microphone.Outcome} at stage {Microphone.Stage ?? "?"} ({Microphone.ErrorName} {Microphone.ErrorCode}).");
                     break;
             }
+        }
+
+        // The dictation take is asked for by the bench alone. A machine without
+        // the runtime or a model is a fact about it; an engine that returned no
+        // text is a fault.
+        if (Perf?.Dictation is { } dictation)
+        {
+            if (dictation.Outcome == SelfCheckDictation.Skipped)
+                warnings.Add($"dictation: skipped ({dictation.Reason}).");
+            else if (dictation.Outcome == SelfCheckDictation.Failed)
+                failures.Add($"dictation: the engine returned no text ({dictation.Reason}).");
         }
 
         // The probe logs its own refusal as the Error a take would raise

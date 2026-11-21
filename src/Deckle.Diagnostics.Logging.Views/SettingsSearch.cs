@@ -39,11 +39,6 @@ public static class SettingsSearch
         },
         new SettingSearchEntry
         {
-            LabelKey = "LoggingMicrophoneLevelCard",
-            Keywords = ["microphone", "rms", "volume", "telemetry"],
-        },
-        new SettingSearchEntry
-        {
             LabelKey = "LoggingLlmCard",
             Keywords = ["llm", "tokens", "usage", "cost", "ollama", "claude", "openai", "rewrite"],
         },
