@@ -22,7 +22,7 @@ internal sealed class SelfCheckPerf
     public SelfCheckFootprint? Footprint { get; set; }
     public SelfCheckDictation? Dictation { get; set; }
 
-    // Again after the take, with the model loaded: what the engine keeps.
+    // Again after the take and the engine's release: what stays behind (a leak check).
     public SelfCheckFootprint? FootprintAfterDictation { get; set; }
 }
 
@@ -68,7 +68,7 @@ internal sealed record SelfCheckFootprint(
 // One take of the dictation pipeline on a file, through the real engine.
 //   Outcome   ok, skipped (the machine has no runtime or model: a fact, not a
 //             fault) or failed (the engine returned no text).
-//   WallMs    the call to TranscribeFileToTextAsync, from request to text.
+//   WallMs    from the file queued to the engine's finished signal.
 //   Phases (model load, decode, ...) are the engine's own PipelineTimings line
 //   in the run's log; the transcript itself is never kept, only its length.
 internal sealed record SelfCheckDictation(

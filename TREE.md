@@ -288,6 +288,10 @@ _Generated from `git ls-files` — do not edit by hand._
 ├── scripts/
 │   ├── .deckle-scripts/
 │   │   └── manifest.json
+│   ├── bench/
+│   │   ├── perf-bench.ps1  — Take a performance pass Measures the built Deckle on a separate instance with its own data root, as the…
+│   │   ├── perf-compare.ps1  — Compare two performance passes Reads two files written by perf-bench.ps1 and lists every metric with its chang…
+│   │   └── README.md  — Bench Takes a dated measurement pass of Deckle on a separate instance and compares tw…
 │   ├── git/
 │   │   ├── changelog.ps1  — Update the changelog Generates CHANGELOG.md in the Keep a Changelog format from the Conventional Com…
 │   │   ├── git-common.ps1
@@ -395,6 +399,7 @@ _Generated from `git ls-files` — do not edit by hand._
 │   │   │   ├── BuildServerWatchdogBugNotes.md
 │   │   │   ├── inspect-context.tests.ps1
 │   │   │   ├── InspectContextBugNotes.md
+│   │   │   ├── perf-compare.tests.ps1
 │   │   │   ├── publish-native-runtime.tests.ps1
 │   │   │   ├── read-log.tests.ps1
 │   │   │   └── update-readme-stats.tests.ps1

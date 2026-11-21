@@ -47,12 +47,25 @@ public partial class App
         var engine = new TranscriptionEngine(host, backend);
         try
         {
+            // The tray's road, not the window's: only it closes on the shared
+            // finalize, which logs the take's PipelineTimings. It writes the
+            // transcript beside the audio, in the bench's own folder.
+            var finished = new TaskCompletionSource<TranscriptionOutcome>(TaskCreationOptions.RunContinuationsAsynchronously);
+            engine.TranscriptionFinished += outcome => finished.TrySetResult(outcome);
+
             var clock = Stopwatch.StartNew();
-            string? text = await engine.TranscribeFileToTextAsync(audioPath);
+            if (engine.EnqueueFileTranscriptions([audioPath]) == 0)
+                return new(SelfCheckDictation.Failed, "not_queued", backendName, 0, 0);
+            Task done = await Task.WhenAny(finished.Task, Task.Delay(TimeSpan.FromMinutes(5)));
             clock.Stop();
-            return text is null
-                ? new(SelfCheckDictation.Failed, "no_text", backendName, clock.ElapsedMilliseconds, 0)
-                : new(SelfCheckDictation.Ok, null, backendName, clock.ElapsedMilliseconds, text.Length);
+            if (done != finished.Task)
+                return new(SelfCheckDictation.Failed, "timeout", backendName, clock.ElapsedMilliseconds, 0);
+
+            string transcript = Path.ChangeExtension(audioPath, ".txt");
+            int chars = File.Exists(transcript) ? (int)new FileInfo(transcript).Length : 0;
+            return finished.Task.Result == TranscriptionOutcome.SavedToFile
+                ? new(SelfCheckDictation.Ok, null, backendName, clock.ElapsedMilliseconds, chars)
+                : new(SelfCheckDictation.Failed, "no_text", backendName, clock.ElapsedMilliseconds, 0);
         }
         finally
         {
