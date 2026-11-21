@@ -105,6 +105,10 @@ internal sealed class FakeHomeAnytypeServer : IDisposable
         tags.Add(new JsonObject { ["key"] = key, ["name"] = name });
     }
 
+    // A made-up id in the real shape (bafy + lowercase base32): the client refuses any other.
+    public static string Id(string label, int n) =>
+        ("bafyrei" + label + string.Concat(n.ToString(System.Globalization.CultureInfo.InvariantCulture).Select(d => (char)('a' + (d - '0'))))).PadRight(56, 'x');
+
     public static JsonObject Room(string id, string code, string name) => Object(
         id, HomeSchema.Types.Room, name,
         TextProperty(HomeSchema.Properties.Code, "Code", code));
@@ -382,7 +386,8 @@ internal sealed class FakeHomeAnytypeServer : IDisposable
     private (int Status, string Json) Create(string body)
     {
         JsonObject payload = (JsonObject)JsonNode.Parse(body)!;
-        string id = "created-" + Interlocked.Increment(ref _nextId);
+        // A real id shape (bafy + lowercase base32), which the client now requires.
+        string id = ("bafyreicreated" + (char)('a' + Interlocked.Increment(ref _nextId))).PadRight(56, 'a');
         string typeKey = payload["type_key"]?.GetValue<string>() ?? "";
         bool isNote = ((JsonArray)_schemaManifest["types"]!).OfType<JsonObject>().Any(value =>
             value["key"]?.GetValue<string>() == typeKey

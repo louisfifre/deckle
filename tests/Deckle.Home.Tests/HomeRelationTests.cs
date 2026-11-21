@@ -12,28 +12,28 @@ public sealed class HomeRelationTests
     public async Task AddPointConnectionPreservesExistingConnections()
     {
         using var server = new FakeHomeAnytypeServer();
-        JsonObject device = Device("device-1", "Equipment", "point-1");
+        JsonObject device = Device("bafyreidevicebaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa", "Equipment", "bafyreipointbaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa");
         server.SetObjects(device,
-            FakeHomeAnytypeServer.Point("point-1", "ZZ-PS01", "First point", "room-1"),
-            FakeHomeAnytypeServer.Point("point-2", "ZZ-PS02", "Second point", "room-1"));
+            FakeHomeAnytypeServer.Point("bafyreipointbaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa", "ZZ-PS01", "First point", "bafyreiroombaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"),
+            FakeHomeAnytypeServer.Point("bafyreipoint2aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa", "ZZ-PS02", "Second point", "bafyreiroombaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"));
         using var api = new AnytypeApiClient(server.Credentials);
         await new HomeGestures(api, FakeHomeAnytypeServer.HomeSpace).UpdateTypedAsync(HomeSchema.Types.Device,
-            [new HomeUpdateItem("device-1", null, new JsonObject
-            { ["connected_to"] = new JsonObject { ["add"] = new JsonArray("point-2") } })], TestContext.Current.CancellationToken);
+            [new HomeUpdateItem("bafyreidevicebaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa", null, new JsonObject
+            { ["connected_to"] = new JsonObject { ["add"] = new JsonArray("bafyreipoint2aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa") } })], TestContext.Current.CancellationToken);
         JsonNode patch = JsonNode.Parse(server.Requests.Single(r => r.Method == "PATCH").Body)!;
-        Assert.Equal(new[] { "point-1", "point-2" }, patch["properties"]![0]!["objects"]!.AsArray().Select(x => x!.GetValue<string>()));
+        Assert.Equal(new[] { "bafyreipointbaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa", "bafyreipoint2aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa" }, patch["properties"]![0]!["objects"]!.AsArray().Select(x => x!.GetValue<string>()));
     }
 
     [Fact]
     public async Task ConflictingRelationDeltaStopsBeforeWriting()
     {
         using var server = new FakeHomeAnytypeServer();
-        server.SetObjects(Device("device-1", "Equipment"),
-            FakeHomeAnytypeServer.Point("point-1", "ZZ-PS01", "Point", "room-1"));
+        server.SetObjects(Device("bafyreidevicebaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa", "Equipment"),
+            FakeHomeAnytypeServer.Point("bafyreipointbaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa", "ZZ-PS01", "Point", "bafyreiroombaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"));
         using var api = new AnytypeApiClient(server.Credentials);
         await Assert.ThrowsAsync<ArgumentException>(() => new HomeGestures(api, FakeHomeAnytypeServer.HomeSpace)
-            .UpdateAsync([new HomeUpdateItem("device-1", null, new JsonObject
-            { ["connected_to"] = new JsonObject { ["add"] = new JsonArray("point-1"), ["remove"] = new JsonArray("Point") } })],
+            .UpdateAsync([new HomeUpdateItem("bafyreidevicebaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa", null, new JsonObject
+            { ["connected_to"] = new JsonObject { ["add"] = new JsonArray("bafyreipointbaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"), ["remove"] = new JsonArray("Point") } })],
                 TestContext.Current.CancellationToken));
         Assert.DoesNotContain(server.Requests, r => r.Method == "PATCH");
     }
@@ -42,14 +42,14 @@ public sealed class HomeRelationTests
     public async Task DeviceConnectsToPointsAndControlsDevicesButNotCircuits()
     {
         using var server = new FakeHomeAnytypeServer();
-        server.SetObjects(Device("device-1", "Controller"), Device("device-2", "Bulb"),
-            FakeHomeAnytypeServer.Circuit("circuit-1", "F1"));
+        server.SetObjects(Device("bafyreidevicebaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa", "Controller"), Device("bafyreidevice2aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa", "Bulb"),
+            FakeHomeAnytypeServer.Circuit("bafyreicircuitbaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa", "F1"));
         using var api = new AnytypeApiClient(server.Credentials);
         var gestures = new HomeGestures(api, FakeHomeAnytypeServer.HomeSpace);
-        await gestures.UpdateAsync([new HomeUpdateItem("device-1", null,
-            new JsonObject { ["controls"] = "device-2" })], TestContext.Current.CancellationToken);
+        await gestures.UpdateAsync([new HomeUpdateItem("bafyreidevicebaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa", null,
+            new JsonObject { ["controls"] = "bafyreidevice2aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa" })], TestContext.Current.CancellationToken);
         await Assert.ThrowsAsync<InvalidOperationException>(() => gestures.UpdateAsync(
-            [new HomeUpdateItem("device-1", null, new JsonObject { ["connected_to"] = "circuit-1" })],
+            [new HomeUpdateItem("bafyreidevicebaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa", null, new JsonObject { ["connected_to"] = "bafyreicircuitbaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa" })],
             TestContext.Current.CancellationToken));
         Assert.Single(server.Requests, r => r.Method == "PATCH");
     }
@@ -65,7 +65,7 @@ public sealed class HomeRelationTests
             TestContext.Current.CancellationToken);
         JsonNode create = JsonNode.Parse(server.Requests.Single(r => r.Method == "POST").Body)!;
         Assert.Equal("zone-fixture-type", create["type_key"]!.GetValue<string>());
-        await gestures.UpdateTypedAsync("zone", [new HomeUpdateItem("created-1", null, new JsonObject { ["notes"] = "Updated" })],
+        await gestures.UpdateTypedAsync("zone", [new HomeUpdateItem("bafyreicreatedbaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa", null, new JsonObject { ["notes"] = "Updated" })],
             TestContext.Current.CancellationToken);
         Assert.Single(server.Requests, r => r.Method == "PATCH");
     }

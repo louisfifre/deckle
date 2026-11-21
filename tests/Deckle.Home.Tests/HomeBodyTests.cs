@@ -12,13 +12,13 @@ public sealed class HomeBodyTests
     public async Task SectionUpdatePreservesOtherContentAndUsesHomeSpace()
     {
         using var server = new FakeHomeAnytypeServer();
-        JsonObject task = FakeHomeAnytypeServer.Todo("task-1", "Fictional task", null, false);
+        JsonObject task = FakeHomeAnytypeServer.Todo("bafyreitaskbaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa", "Fictional task", null, false);
         task["markdown"] = "Introduction\n\n## Work\nOld\n\n## Keep\nCollected fact\n";
         server.SetObjects(task);
         using var api = new AnytypeApiClient(server.Credentials);
         var gestures = new HomeGestures(api, FakeHomeAnytypeServer.HomeSpace);
         string result = await gestures.UpdateTypedAsync(HomeSchema.Types.Todo,
-            [new HomeUpdateItem("task-1", null, null, Section: new HomeSectionEdit("Work", "New"))],
+            [new HomeUpdateItem("bafyreitaskbaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa", null, null, Section: new HomeSectionEdit("Work", "New"))],
             TestContext.Current.CancellationToken);
         var patch = server.Requests.Single(request => request.Method == "PATCH");
         Assert.StartsWith("/v1/spaces/" + FakeHomeAnytypeServer.HomeSpace + "/objects/", patch.Path);
@@ -33,13 +33,13 @@ public sealed class HomeBodyTests
     public async Task MissingSectionStopsTheWholeBatchBeforeAnyWrite()
     {
         using var server = new FakeHomeAnytypeServer();
-        server.SetObjects(FakeHomeAnytypeServer.Todo("task-1", "First", null, false),
-            FakeHomeAnytypeServer.Todo("task-2", "Second", null, false));
+        server.SetObjects(FakeHomeAnytypeServer.Todo("bafyreitaskbaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa", "First", null, false),
+            FakeHomeAnytypeServer.Todo("bafyreitask2aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa", "Second", null, false));
         using var api = new AnytypeApiClient(server.Credentials);
         var gestures = new HomeGestures(api, FakeHomeAnytypeServer.HomeSpace);
         await Assert.ThrowsAsync<InvalidOperationException>(() => gestures.UpdateAsync(
-            [new HomeUpdateItem("task-1", "New name", null),
-             new HomeUpdateItem("task-2", null, null, Section: new HomeSectionEdit("Missing", "Content"))],
+            [new HomeUpdateItem("bafyreitaskbaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa", "New name", null),
+             new HomeUpdateItem("bafyreitask2aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa", null, null, Section: new HomeSectionEdit("Missing", "Content"))],
             TestContext.Current.CancellationToken));
         Assert.DoesNotContain(server.Requests, request => request.Method == "PATCH");
     }
@@ -65,10 +65,10 @@ public sealed class HomeBodyTests
     public async Task ProductCannotBeCompletedAsATask()
     {
         using var server = new FakeHomeAnytypeServer();
-        server.SetObjects(FakeHomeAnytypeServer.Errand("product-1", "Fictional product", false));
+        server.SetObjects(FakeHomeAnytypeServer.Errand("bafyreiproductbaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa", "Fictional product", false));
         using var api = new AnytypeApiClient(server.Credentials);
         await Assert.ThrowsAsync<InvalidOperationException>(() =>
-            new HomeGestures(api, FakeHomeAnytypeServer.HomeSpace).CompleteAsync("product-1", TestContext.Current.CancellationToken));
+            new HomeGestures(api, FakeHomeAnytypeServer.HomeSpace).CompleteAsync("bafyreiproductbaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa", TestContext.Current.CancellationToken));
         Assert.DoesNotContain(server.Requests, request => request.Method == "PATCH");
     }
 }
