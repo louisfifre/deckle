@@ -42,13 +42,6 @@ public partial class App
 
         try
         {
-            // Listening first: a gateway adopted from an earlier Deckle may ask
-            // for an approval as soon as this Deckle is up.
-            phase = "approvals";
-            approvals = new DeletionApprovalPipeServer(
-                GatewayContract.DeletionApprovalPipeName, DeletionApproval.Current);
-            approvals.Start();
-
             phase = "prepare";
             await BackendInstallation.PrepareAsync(ct).ConfigureAwait(false);
 
@@ -62,7 +55,24 @@ public partial class App
                 (endOutcome, endReason) = ("failed", "endpoint_conflict");
                 return;
             }
+            // No backend installed: Anytype was never set up on this machine.
+            // Neither the approval pipe nor the gateway has anything to serve,
+            // so the runtime ends here and stays quiet until the next start,
+            // after the person has set Anytype up. BackendNotProvisioned already
+            // said why.
+            if (outcome == BackendStartOutcome.NotProvisioned)
+            {
+                (endOutcome, endReason) = ("skipped", "not_provisioned");
+                return;
+            }
             ct.ThrowIfCancellationRequested();
+
+            // Listening before the gateway starts: a gateway adopted from an
+            // earlier Deckle may ask for an approval as soon as this Deckle is up.
+            phase = "approvals";
+            approvals = new DeletionApprovalPipeServer(
+                GatewayContract.DeletionApprovalPipeName, DeletionApproval.Current);
+            approvals.Start();
 
             // The gateway reads its own credentials and tokens; a gateway that
             // finds them missing exits and the supervisor leaves it stopped.
