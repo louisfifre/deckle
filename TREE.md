@@ -3399,9 +3399,11 @@ _Generated from `git ls-files` — do not edit by hand._
 │   ├── Deckle.Transcription.Parakeet.Tests/
 │   │   ├── Backend/
 │   │   │   ├── ParakeetBackendFakes.cs
+│   │   │   ├── ParakeetBackendLexiconTests.cs
 │   │   │   ├── ParakeetBackendObservabilityTests.cs
 │   │   │   ├── ParakeetBackendSystemTests.cs
-│   │   │   └── ParakeetBackendTests.cs
+│   │   │   ├── ParakeetBackendTests.cs
+│   │   │   └── ParakeetLexiconSystemTests.cs
 │   │   ├── Chunking/
 │   │   │   └── LongAudioChunkerTests.cs
 │   │   ├── Decoding/
