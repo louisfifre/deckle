@@ -155,7 +155,10 @@ public sealed partial class DeployPage : Page
         string source = Path.GetFullPath(context.SourceDirectory);
         string target = Path.GetFullPath(context.InstallDirectory);
 
-        Directory.CreateDirectory(target);
+        // Before anything is cleared: a folder that cannot be written must fail
+        // here, not after the previous install was half emptied.
+        if (!FolderSafety.CanWrite(target))
+            throw new IOException($"Deckle cannot write to the install folder '{target}'.");
         if (File.Exists(Path.Combine(target, "Deckle.exe")))
         {
             foreach (string entry in Directory.EnumerateFileSystemEntries(target))
