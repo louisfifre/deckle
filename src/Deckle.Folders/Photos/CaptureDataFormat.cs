@@ -2,8 +2,9 @@ using System.Globalization;
 
 namespace Deckle.Folders;
 
-// How capture data reads in the details panel, as the boards write it (12.4):
-// "dim. 14 juin 2026, 15:42", "Kestrel K2", "35 mm f/1,8",
+// How capture data reads in the details panel, as the boards write it (12.4),
+// the date in the culture's own long date and short time patterns:
+// "dimanche 14 juin 2026, 15:42", "Kestrel K2", "35 mm f/1,8",
 // "1/250 s · f/2,8 · ISO 400", "45,7640° N, 4,8357° E". A value the file does
 // not hold returns null, so the panel leaves its row out rather than showing
 // an empty one.
@@ -14,7 +15,7 @@ public static class CaptureDataFormat
     private const string Separator = " · ";
 
     public static string? Taken(CaptureData data, CultureInfo culture) =>
-        data.Taken is { } t ? t.ToString("ddd d MMMM yyyy, HH:mm", culture) : null;
+        data.Taken is { } t ? $"{t.ToString(culture.DateTimeFormat.LongDatePattern, culture)}, {t.ToString(culture.DateTimeFormat.ShortTimePattern, culture)}" : null;
 
     // The make is left out when the model already names it, as cameras often
     // write "NIKON CORPORATION" then "NIKON Z 6".
