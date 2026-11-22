@@ -4,12 +4,6 @@ Deckle depends on the following third-party components and data sources. This fi
 
 ## Native dependencies
 
-### whisper.cpp
-
-- Repository : https://github.com/ggerganov/whisper.cpp
-- License : MIT. Read from the bundle notes that `scripts/release/publish-native-runtime.ps1` writes, which point to the upstream `LICENSE`.
-- Used as : pre-built native DLLs (`whisper.dll`, `ggml.dll`, `ggml-base.dll`, the `ggml-cpu-*.dll` variants, `ggml-vulkan.dll`) loaded at runtime. The catalog lives in `src/Deckle.Transcription.Whisper/Setup/NativeRuntime.cs`.
-
 ### PortAudio
 
 - Repository : https://github.com/PortAudio/portaudio
@@ -21,18 +15,6 @@ Deckle depends on the following third-party components and data sources. This fi
 - Repository : https://github.com/istupakov/onnx-asr
 - License : MIT, Copyright (c) 2025 Ilya Stupakov. The license text ships beside the file, as `parakeet-onnx-asr.LICENSE.txt`.
 - Used as : `nemo128.onnx`, the mel-spectrogram graph bundled in onnx-asr 0.12.0, copied unchanged from the package (138,824 bytes, SHA-256 `5B4A84C52EEAA615DC46D781CC7E4598F9B432184831D57493C48ADCD01371A9`) into `src/Deckle.Transcription.Parakeet/MelFrontEnd` and run as the Parakeet backend's front end, so that its features match the reference implementation the backend is measured against.
-
-### Microsoft Visual C++ Redistributable
-
-- Project : https://learn.microsoft.com/cpp/windows/latest-supported-vc-redist
-- License : Microsoft Visual Studio license, which permits redistributing the Redist DLLs with an application built with that Visual Studio. Read from the bundle notes that `scripts/release/publish-native-runtime.ps1` writes into each native runtime release.
-- Used as : runtime DLLs (`vcruntime140.dll`, `vcruntime140_1.dll`, `msvcp140.dll`, `vcomp140.dll`) shipped alongside the whisper.cpp build that was produced with MSVC, so the bundle loads on a machine without the Redist installed.
-
-### Vulkan loader
-
-- Project : https://www.lunarg.com/vulkan-sdk/
-- License : Apache 2.0 (loader and tools).
-- Used at runtime via the system-installed Vulkan ICD when GPU acceleration is requested by whisper.cpp.
 
 ## Referenced implementations
 
@@ -159,7 +141,11 @@ The autocorrect module (`Deckle.Autocorrect`) ships compact derived lexicons und
 
 ## Models
 
-Whisper model weights downloaded from [ggerganov/whisper.cpp on Hugging Face](https://huggingface.co/ggerganov/whisper.cpp) are distributed under the original Whisper license (MIT). They are not redistributed in this repository.
+### Parakeet TDT 0.6B v3 Ultra
+
+- Models : NVIDIA `nvidia/parakeet-tdt-0.6b-v3` (https://huggingface.co/nvidia/parakeet-tdt-0.6b-v3), post-trained by moondream as `moondream/parakeet-ultra` (https://huggingface.co/moondream/parakeet-ultra), exported to ONNX by Olicorne as `Olicorne/parakeet-tdt-0.6b-v3-ultra-onnx` (https://huggingface.co/Olicorne/parakeet-tdt-0.6b-v3-ultra-onnx).
+- License : CC-BY-4.0 (https://creativecommons.org/licenses/by/4.0/). Attribution to NVIDIA for the base model, to moondream for the post-training and to Olicorne for the ONNX export. The weights are unchanged by Deckle.
+- Used as : the speech model of the Parakeet backend. Downloaded on demand into `parakeet-tdt-0.6b-v3-ultra` under the models directory, from the repository's commit `db1fd7a2d89672e8e52383505f0149076faab6f7`, each file checked against the SHA-256 pinned in `src/Deckle.Transcription.Parakeet/Setup/ParakeetModelCatalog.cs`. Not redistributed in this repository.
 
 ### Silero VAD
 

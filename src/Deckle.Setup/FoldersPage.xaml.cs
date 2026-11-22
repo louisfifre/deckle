@@ -4,7 +4,6 @@ using System.IO;
 using Microsoft.UI.Xaml.Controls;
 using Microsoft.UI.Xaml.Navigation;
 using Windows.Storage.Pickers;
-using Deckle.Modules;
 using Deckle.Localization;
 
 namespace Deckle.Setup;
@@ -183,17 +182,13 @@ public sealed partial class FoldersPage : Page
     {
         if (_setup is null || _context is null) return;
 
-        // The Choices recap displays Context.Location, which must be the chosen
-        // data root, not the default AppPaths froze on in this temp process.
+        // Context.Location must be the chosen data root, not the default AppPaths
+        // froze on in this temp process.
         _context.Location = _context.DataDirectory;
 
         DeckleSetupSource.Log.FoldersChosen();
         DeckleSetupSource.Log.FoldersChosenDetail(_context.InstallDirectory, _context.DataDirectory);
 
-        _setup.Body.Navigate(
-            _context.SelectedModules.Contains(ModuleIds.Transcription)
-                ? typeof(ChoicesPage)
-                : typeof(DeployPage),
-            _setup);
+        _setup.Body.Navigate(typeof(DeployPage), _setup);
     }
 }

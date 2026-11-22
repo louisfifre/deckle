@@ -184,7 +184,7 @@
     <value>Deckle will copy every log line to a trace file on this device (trace.jsonl), so you can follow an issue across restarts.</value>
   </data>
   <data name="ApplicationLogConsent_Body_What" xml:space="preserve">
-    <value>Every log line from every subsystem (capture, VAD, Whisper, rewriting, clipboard, UI) at every verbosity level. Log messages can include partial transcription text when a pipeline step logs what it just produced. Nothing is sent over the network.</value>
+    <value>Every log line from every subsystem (capture, VAD, transcription, rewriting, clipboard, UI) at every verbosity level. Log messages can include partial transcription text when a pipeline step logs what it just produced. Nothing is sent over the network.</value>
   </data>
   <data name="ApplicationLogConsent_Body_Remind" xml:space="preserve">
     <value>The trace is chatty. Expect roughly 2 MB per 30 minutes of active use. Every 8,000 lines, the file moves to the archive folder, which keeps the last 10 and deletes older ones. Turn it off once you have what you need.</value>
@@ -195,10 +195,10 @@
     <value>Enable audio corpus</value>
   </data>
   <data name="AudioCorpusConsent_Body_Intro" xml:space="preserve">
-    <value>Deckle will save the raw microphone audio of every transcription as a 16 kHz mono WAV file, next to the JSONL text corpus under an audio/ subfolder per profile. Useful for replaying a past session against a different Whisper model or prompt.</value>
+    <value>Deckle will save the raw microphone audio of every transcription as a 16 kHz mono WAV file, next to the JSONL text corpus under an audio/ subfolder per profile. Useful for replaying a past session against a different speech model.</value>
   </data>
   <data name="AudioCorpusConsent_Body_What" xml:space="preserve">
-    <value>The exact audio passed to whisper.cpp, including any silence and background noise picked up by the microphone. One WAV per transcription. Nothing is sent over the network.</value>
+    <value>The exact audio passed to the speech model, including any silence and background noise picked up by the microphone. One WAV per transcription. Nothing is sent over the network.</value>
   </data>
   <data name="AudioCorpusConsent_Body_Remind" xml:space="preserve">
     <value>Voice recordings are biometric-adjacent and the files can be replayed verbatim. Review and purge the folder regularly, and exclude it from any backup target you don't control.</value>
@@ -234,10 +234,6 @@
   <!-- ─── Setup wizard — shell ───────────────────────────────────────
        SetupWindow shell strings: window title, footer buttons. The
        footer buttons reuse Common_* via x:Uid in XAML. -->
-
-  <!-- ─── Setup wizard — choices page ────────────────────────────────
-       Step header text is set programmatically by ChoicesPage via
-       SetStepHeader. Cards in XAML use x:Uid for header/description. -->
 
   <!-- ─── Setup wizard — installing page ─────────────────────────────
        Inline Cancel install button in XAML uses x:Uid. All progress
@@ -522,19 +518,19 @@
     <value>Data folder</value>
   </data>
   <data name="GeneralDataFolderCard.Description" xml:space="preserve">
-    <value>Settings, telemetry, models and native libraries.</value>
+    <value>Settings, telemetry and models.</value>
   </data>
   <data name="GeneralRerunSetupCard.Header" xml:space="preserve">
     <value>Setup wizard</value>
   </data>
   <data name="GeneralRerunSetupCard.Description" xml:space="preserve">
-    <value>Change the installed modules, swap the speech model or replace the speech engine.</value>
+    <value>Change the installed modules.</value>
   </data>
   <data name="GeneralRerunSetupButton.Content" xml:space="preserve">
     <value>Run setup…</value>
   </data>
 
-  <!-- ─── WhisperPage ────────────────────────────────────────────────
+  <!-- ─── TranscriptionPage ────────────────────────────────────────────────
        Second page in the Settings nav. Per-setting Reset buttons share
        the SettingsResetButton.ToolTipService.ToolTip key (style-level
        tooltip in the Page resources). -->
@@ -621,7 +617,7 @@
 
   <!-- GeneralPage Audio input ComboBox items -->
 
-  <!-- WhisperPage Reset all dialog -->
+  <!-- TranscriptionPage Reset all dialog -->
 
   <!-- LlmPage Reset all rewriting dialog + Ollama status -->
 

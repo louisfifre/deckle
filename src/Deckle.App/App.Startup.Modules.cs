@@ -12,7 +12,6 @@ using Deckle.Shell.TaskbarCover;
 using Deckle.Shell.TrayMenu;
 using Deckle.Transcription;
 using Deckle.Transcription.Parakeet;
-using Deckle.Transcription.Whisper;
 
 namespace Deckle.App;
 
@@ -27,56 +26,41 @@ public partial class App
     private const string TaskbarWindowsKeyModule = "taskbar_windows_key";
 
     private const string SkipNotPresent          = "not_present";
-    private const string SkipNativeRuntimeMissing = "native_runtime_missing";
-    private const string SkipNativeRuntimeUnloadable = "native_runtime_unloadable";
     private const string SkipSpeechModelMissing  = "speech_model_missing";
 
     // ForegroundWatcher.Start returns false only when its foreground hook
     // could not be set; same spelling as the watcher's own reason.
     private const string RefuseForegroundHookFailed = "foreground_hook_failed";
 
-    // Whether the configured (or default) Parakeet model folder holds every file the default
-    // configuration needs.
-    private static bool ParakeetModelPresent() =>
-        ParakeetModelFiles.Resolve(
-            TranscriptionSettingsService.Instance.Current.Engine.ParakeetModelDirectory,
-            TranscriptionSettingsService.Instance.ResolveModelsDirectory()).IsComplete;
+    // Whether the model folder holds what the loader opens at the chosen precision; the folder
+    // Deckle provisions is also held to its pinned file sizes (ParakeetModelCatalog.IsPresent).
+    private static bool ParakeetModelPresent()
+    {
+        TranscriptionSettingsService settings = TranscriptionSettingsService.Instance;
+        EngineSettings engine = settings.Current.Engine;
+        return ParakeetModelCatalog.IsPresent(
+            engine.ParakeetModelDirectory, settings.ResolveModelsDirectory(), engine.ParakeetEncoder);
+    }
 
     private void InitializeStartupModules(StartupContext context)
     {
-        // Without the native runtime and a speech model the engine is not
-        // composed and the rest of the app runs normally: provisioning happens
-        // on demand from Settings, never as a hard gate that quits the app. The
-        // WhisperBackend constructor installs the native log hook and would throw
-        // DllNotFoundException without the runtime.
-        //
-        // Present is not enough: the catalog is loaded once here, the way the
-        // first take will, so a runtime that does not load on this machine is
-        // named now (the check logs the DLL and the import) instead of at the
-        // first hotkey press. The check frees what it loads, and loading a
-        // backend DLL does not register it: ggml enumerates the GPU only when
-        // the first model load asks it to (NativeRuntimeLoader).
-        //
-        // The hidden engine choice picks which of the two gates applies. Parakeet needs no
-        // native runtime of ours (ONNX Runtime ships inside the app), only its model folder.
-        bool useParakeet = context.TranscriptionPresent
-            && TranscriptionSettingsService.Instance.Current.Engine.Backend == AsrBackendKind.Parakeet;
+        // Without a speech model the engine is not composed and the rest of the
+        // app runs normally: provisioning happens through the setup window or
+        // from Settings, never as a hard gate that quits the app. Parakeet needs
+        // no native runtime of ours (ONNX Runtime ships inside the app), only its
+        // model folder.
         string? engineSkip =
-            !context.TranscriptionPresent         ? SkipNotPresent
-            : useParakeet                         ? (ParakeetModelPresent() ? null : SkipSpeechModelMissing)
-            : !NativeRuntime.IsInstalled()        ? SkipNativeRuntimeMissing
-            : !NativeRuntime.CheckLoad().Loads    ? SkipNativeRuntimeUnloadable
-            : !SpeechModels.IsAnyModelInstalled() ? SkipSpeechModelMissing
-            : null;
+            !context.TranscriptionPresent ? SkipNotPresent
+            : ParakeetModelPresent()      ? null
+            : SkipSpeechModelMissing;
         if (engineSkip is null)
         {
             context.Compose(ModuleIds.Transcription, () =>
             {
                 var host = new AppTranscriptionEngineHost();
-                IAsrBackend backend = useParakeet ? new ParakeetBackend(host) : new WhisperBackend(host);
                 _engine = new TranscriptionEngine(
                     host,
-                    backend,
+                    new ParakeetBackend(host),
                     recovery: new DictationRecoveryStore(AppPaths.DictationRecoveryFilePath),
                     takeAudio: new TakeAudioRecoveryStore(AppPaths.TakeAudioRecoveryFilePath));
             });
@@ -84,18 +68,14 @@ public partial class App
         else
         {
             context.Skip(ModuleIds.Transcription, engineSkip);
-            // A present module that cannot run is the person's to fix, from the
-            // Whisper page that provisions the runtime and the models. Nothing
-            // closes it in this process: the engine is composed only at start,
-            // so what fixes it is the restart that follows provisioning.
+            // A present module that cannot run is the person's to fix. The
+            // incident opens the Transcription page, whose setup bar starts the
+            // download, so startup opens no window of its own at each launch.
+            // Nothing closes it in this process: the engine is composed only at
+            // start, so what fixes it is the restart that follows provisioning.
             if (engineSkip != SkipNotPresent)
-                UserIncidentRegistry.Instance.Open(UserIncidents.WhisperModel, engineSkip);
-            // The runtime is what a bundle change breaks, so it alone earns the
-            // setup window at the end of startup (App.SpeechRepair.cs).
-            if (engineSkip is SkipNativeRuntimeMissing or SkipNativeRuntimeUnloadable)
-                _speechRepairReason = engineSkip;
+                UserIncidentRegistry.Instance.Open(UserIncidents.SpeechModel, engineSkip);
         }
-
         // Construction does no I/O; the Ambient settings observer starts and
         // stops the engine.
         if (context.AmbientPresent)

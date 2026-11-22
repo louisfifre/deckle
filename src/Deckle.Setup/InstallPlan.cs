@@ -7,7 +7,7 @@ using Deckle.Anytype;
 using Deckle.Core;
 using Deckle.Modules;
 using Deckle.Transcription;
-using Deckle.Transcription.Whisper;
+using Deckle.Transcription.Parakeet;
 using Deckle.Vad;
 using Deckle.Localization;
 
@@ -20,7 +20,7 @@ namespace Deckle.Setup;
 // gesture; this plan only composes them.
 public static class InstallPlan
 {
-    public const string NativeRuntimeItemId = "native-runtime";
+    public const string ParakeetModelItemId = "parakeet-model";
     public const string SileroItemId        = "silero-vad";
     public const string AnytypeItemId       = "anytype-cli";
 
@@ -104,10 +104,7 @@ public static class InstallPlan
 
         if (moduleId == ModuleIds.Transcription)
         {
-            items.Add(NativeRuntimeItem());
-            // The wizard host seeds SelectedModel; the guard covers a host
-            // that did not.
-            if (context.SelectedModel is { } model) items.Add(WhisperModelItem(model));
+            if (ParakeetModelItemFor(context) is { } model) items.Add(model);
             items.Add(SileroItem());
         }
         else if (moduleId == ModuleIds.Anytype)
@@ -120,27 +117,50 @@ public static class InstallPlan
 
     // ── Transcription ─────────────────────────────────────────────────────────
 
-    // Usable, not merely present: a catalog whose files are all there but do
-    // not load on this machine is reinstalled like a missing one, which is
-    // what brings an install back after the bundle changed version.
-    private static InstallItem NativeRuntimeItem() => new()
-    {
-        Id          = NativeRuntimeItemId,
-        DisplayName = NativeRuntime.CurrentBundle.DisplayName,
-        SizeBytes   = NativeRuntime.CurrentBundle.SizeBytes,
-        IsInstalled = NativeRuntime.IsUsable,
-        RunAsync    = NativeRuntime.ProvisionAsync,
-    };
+    // Where the engine will read the model and at which encoder precision. The
+    // install-mode temp process asks no settings service: it would write a default
+    // settings.json under the default root and start a watcher on it, and nothing
+    // is configured yet there, so the model goes into the chosen data root's models
+    // folder at the default precision.
+    private readonly record struct ModelSite(string ConfiguredDirectory, string ModelsDirectory, ParakeetEncoderPrecision Precision);
 
-    private static InstallItem WhisperModelItem(ModelEntry model) => new()
+    private static ModelSite SiteOf(SetupContext context)
     {
-        Id          = model.Id,
-        DisplayName = model.DisplayName,
-        SizeBytes   = model.SizeBytes,
-        IsInstalled = () => SpeechModels.IsInstalled(model),
-        RunAsync    = (progress, ct) => SpeechModels.ProvisionAsync(model, progress, ct),
-    };
+        if (context.InstallMode)
+            return new("", Path.Combine(context.DataDirectory, "models"), new EngineSettings().ParakeetEncoder);
 
+        TranscriptionSettingsService settings = TranscriptionSettingsService.Instance;
+        EngineSettings engine = settings.Current.Engine;
+        return new(engine.ParakeetModelDirectory, settings.ResolveModelsDirectory(), engine.ParakeetEncoder);
+    }
+
+    // The files the engine reads at the chosen precision, not only the model: a
+    // folder holding the graphs without their weights is reinstalled like an
+    // empty one. Only the folder Deckle provisions is ever filled: a folder the
+    // person configured is theirs, so the plan leaves it out and the speech-model
+    // incident and the page readout are what report it.
+    private static InstallItem? ParakeetModelItemFor(SetupContext context)
+    {
+        ModelSite site = SiteOf(context);
+        if (!string.IsNullOrWhiteSpace(site.ConfiguredDirectory)) return null;
+
+        return ParakeetModelItem(
+            ParakeetModelFiles.Resolve("", site.ModelsDirectory).Directory,
+            site.Precision);
+    }
+
+    // Whether the Parakeet model is part of the plan and still to download.
+    public static bool IsParakeetModelPending(SetupContext context) =>
+        Build(context).Any(item => item.Id == ParakeetModelItemId && !item.IsInstalled());
+
+    internal static InstallItem ParakeetModelItem(string modelFolder, ParakeetEncoderPrecision precision) => new()
+    {
+        Id          = ParakeetModelItemId,
+        DisplayName = Loc.Get("Setup_Item_ParakeetModel"),
+        SizeBytes   = ParakeetModelCatalog.TotalBytesFor(precision),
+        IsInstalled = () => ParakeetModelCatalog.IsInstalled(modelFolder, precision),
+        RunAsync    = (progress, ct) => ParakeetModelCatalog.ProvisionAsync(modelFolder, precision, progress, ct),
+    };
     // The Silero model is also lazily fetched by VadService at first use —
     // that path stays as the safety net; installing it here makes the first
     // dictation complete instead of untrimmed.

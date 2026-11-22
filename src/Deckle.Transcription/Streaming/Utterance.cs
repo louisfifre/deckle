@@ -2,7 +2,7 @@ namespace Deckle.Transcription;
 
 // One unit emitted by the EnergySegmenter: a speech span bounded by detected
 // silence or by the end of capture, handed to the ASR backend as ONE
-// transcription call. Distinct from Whisper's output "segment"
+// transcription call. Distinct from the backend's output "segment"
 // (TranscriptionSegment).
 //
 //   Samples  — mono 16 kHz float[-1, 1], the concatenation of the kept 50 ms

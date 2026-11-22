@@ -8,10 +8,10 @@ public sealed partial class DeckleAppSource
     [Event(EvtPathsDetail,
            Level = EventLevel.Verbose,
            Keywords = (EventKeywords)Keywords.Lifecycle,
-           Message = "root={0} | settings={1} | telemetry={2} | models={3} | native={4}")]
-    public void PathsDetail(string root, string settings, string telemetry, string models, string native)
+           Message = "root={0} | settings={1} | telemetry={2} | models={3}")]
+    public void PathsDetail(string root, string settings, string telemetry, string models)
     {
-        if (IsEnabled()) WriteEvent(EvtPathsDetail, PathRedaction.Redact(root), PathRedaction.Redact(settings), PathRedaction.Redact(telemetry), PathRedaction.Redact(models), PathRedaction.Redact(native));
+        if (IsEnabled()) WriteEvent(EvtPathsDetail, PathRedaction.Redact(root), PathRedaction.Redact(settings), PathRedaction.Redact(telemetry), PathRedaction.Redact(models));
     }
 
     [Event(EvtStartupMilestones,

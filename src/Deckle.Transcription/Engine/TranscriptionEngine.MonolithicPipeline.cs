@@ -12,8 +12,7 @@ public sealed partial class TranscriptionEngine
     // ── MonolithicPipeline partial — capture, then one backend call ──────────
     //
     // Capture the whole take, then a single backend.TranscribeAsync() that does
-    // its own internal windowing (30 s + dynamic seek in Whisper) and
-    // inter-window context propagation. No chunking on the C# side; the take
+    // its own internal windowing and inter-window context propagation. No chunking on the C# side; the take
     // goes through the optional DSP and the Silero trim first, like each
     // utterance of the segmented session.
     //
@@ -123,7 +122,7 @@ public sealed partial class TranscriptionEngine
         }
 
         // The Silero trim, at the edges only: the leading and trailing silence
-        // Whisper hallucinates on go, the pauses inside the take stay. The
+        // the model can write text over go, the pauses inside the take stay. The
         // segmented session cuts each utterance to its speech spans instead
         // (TrimSpeech); here that would glue every pause of a long dictation
         // and its per-span floor would drop a short word said after a pause,
@@ -136,14 +135,13 @@ public sealed partial class TranscriptionEngine
             float[]? trimmed = TrimSpeechEdges(vad, vadOptions, backendAudio, utteranceIndex: 0);
             // A trim that found no speech does not end the take: the whole take
             // is one utterance here, and dropping it would lose what Silero
-            // missed with no second chance. The take goes to Whisper untrimmed
-            // and unpadded, as before the trim existed, and the backend's own
-            // no-speech filter judges it. The SpeechTrimmed line already logged
-            // 0 speech segments, which is what a reader needs to see this.
+            // missed with no second chance. The take goes to the backend untrimmed
+            // and unpadded, as before the trim existed. The SpeechTrimmed line
+            // already logged 0 speech segments, which is what a reader needs to see this.
             if (trimmed is { Length: > 0 })
             {
                 backendAudio = trimmed;
-                // Whisper sometimes ended the text early when the audio stopped on
+                // A speech model (Whisper, when measured) ended the text early when the audio stopped on
                 // near-digital silence after the trim; a noise tail fixed it (see
                 // TrailingNoisePad). The pad goes only to the backend: BackendAudio
                 // keeps the trimmed, unpadded buffer, as in the streaming consumer.

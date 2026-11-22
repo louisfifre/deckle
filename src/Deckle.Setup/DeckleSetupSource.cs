@@ -17,9 +17,9 @@ public sealed partial class DeckleSetupSource : DeckleEventSource
     // 5 retired.
     public const int EvtWindowOpened               = 6;
     public const int EvtWindowClosing              = 7;
-    public const int EvtNativeSourcePicked         = 8;
+    // 8 retired.
     // 9 retired.
-    public const int EvtChoicesConfirmed           = 10;
+    // 10 retired.
     // 11 retired.
     // 12 retired.
     // 13 retired.
@@ -31,9 +31,9 @@ public sealed partial class DeckleSetupSource : DeckleEventSource
     public const int EvtSummaryShown               = 19;
     // 20 retired.
     public const int EvtWindowClosingDetail        = 21;
-    public const int EvtNativeSourcePickedDetail   = 22;
+    // 22 retired.
     // 23 retired.
-    public const int EvtChoicesConfirmedDetail     = 24;
+    // 24 retired.
     // 25 retired.
     // 26 retired.
     // 27 retired.
@@ -70,7 +70,7 @@ public sealed partial class DeckleSetupSource : DeckleEventSource
     public const int EvtRelocateCompletedDetail    = 55;
     // 56 retired.
     // 57 retired.
-    public const int EvtNativeImportFailed         = 58;
+    // 58 retired.
     public const int EvtItemStarted                = 59;
     public const int EvtItemSkippedDetail          = 60;
     public const int EvtItemDownloadFailed         = 61;
@@ -87,8 +87,8 @@ public sealed partial class DeckleSetupSource : DeckleEventSource
     public const int EvtBestEffortFailedDetail     = 72;
     public const int EvtPredecessorWaitTimedOut    = 73;
     public const int EvtChildProcessLaunchedDetail = 74;
-    public const int EvtItemImportFailed           = 75;
-    public const int EvtItemImported               = 76;
+    // 75 retired.
+    // 76 retired.
     public const int EvtRelocateFilesSkipped       = 77;
     public const int EvtPredecessorWaitFailed      = 78;
 

@@ -94,8 +94,9 @@ public sealed class LiveTranscriptionPipelineTests
         Assert.Equal(1, backend.MaxConcurrentCalls);
         Assert.All(backend.SampleCounts.Skip(1), count =>
             Assert.Equal(6 * 800 + TrailingNoisePad.PadSamples, count));
-        Assert.Equal("test prompt", backend.Contexts[1].PrimingText);
-        Assert.Equal("test prompt bonjour", backend.Contexts[2].PrimingText);
+        // The first utterance has nothing to continue; the second is primed with the first's tail.
+        Assert.Equal("", backend.Contexts[1].PrimingText);
+        Assert.Equal("bonjour", backend.Contexts[2].PrimingText);
         Assert.False(engine.IsBusy);
     }
 
@@ -777,7 +778,6 @@ public sealed class LiveTranscriptionPipelineTests
             Transcription.Streaming.Segmenter.HangoverRampEndMs = 50;
             Transcription.Streaming.Segmenter.MarginMs = 0;
             Transcription.Streaming.MinSpeechMs = 250;
-            Transcription.Engine.InitialPrompt = "test prompt";
             Llm.Enabled = false;
         }
 

@@ -131,7 +131,7 @@ public sealed partial class DeckleWhispSource
     [Event(EvtPageInitFailed,
            Level = EventLevel.Error,
            Keywords = (EventKeywords)Keywords.Lifecycle,
-           Message = "The Whisper page failed to initialize\nex_type={0} | ex_message={1}")]
+           Message = "The Transcription page failed to initialize\nex_type={0} | ex_message={1}")]
     public void PageInitFailed(string ex_type, string ex_message)
     {
         if (IsEnabled()) WriteEvent(EvtPageInitFailed, ex_type, ex_message);
@@ -149,7 +149,7 @@ public sealed partial class DeckleWhispSource
     [Event(EvtPageReady,
            Level = EventLevel.Informational,
            Keywords = (EventKeywords)Keywords.Lifecycle,
-           Message = "Whisper page ready")]
+           Message = "Transcription page ready")]
     public void PageReady()
     {
         if (IsEnabled()) WriteEvent(EvtPageReady);
@@ -167,19 +167,10 @@ public sealed partial class DeckleWhispSource
     [Event(EvtPageLoadedFailed,
            Level = EventLevel.Error,
            Keywords = (EventKeywords)Keywords.Lifecycle,
-           Message = "The Whisper page failed to load\nex_type={0} | ex_message={1}")]
+           Message = "The Transcription page failed to load\nex_type={0} | ex_message={1}")]
     public void PageLoadedFailed(string ex_type, string ex_message)
     {
         if (IsEnabled()) WriteEvent(EvtPageLoadedFailed, ex_type, ex_message);
-    }
-
-    [Event(EvtPageModelScanFailed,
-           Level = EventLevel.Warning,
-           Keywords = (EventKeywords)Keywords.Lifecycle,
-           Message = "Scanning for models failed, so the model list may be incomplete\nex_type={0} | ex_message={1}")]
-    public void PageModelScanFailed(string ex_type, string ex_message)
-    {
-        if (IsEnabled()) WriteEvent(EvtPageModelScanFailed, ex_type, ex_message);
     }
 
     [Event(EvtPageDiscardRestartChanges,
@@ -194,7 +185,7 @@ public sealed partial class DeckleWhispSource
     [Event(EvtPageResetAll,
            Level = EventLevel.Informational,
            Keywords = (EventKeywords)Keywords.Lifecycle,
-           Message = "Reset all Whisper settings to defaults")]
+           Message = "Reset all Transcription settings to defaults")]
     public void PageResetAll()
     {
         if (IsEnabled()) WriteEvent(EvtPageResetAll);

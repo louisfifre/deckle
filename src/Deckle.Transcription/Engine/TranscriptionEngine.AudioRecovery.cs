@@ -230,7 +230,6 @@ public sealed partial class TranscriptionEngine
         }
 
         var policy = new SegmentedTranscriptionPolicy(
-            FixedPrompt: _host.Transcription.Engine.InitialPrompt ?? "",
             ApplyPreprocessing: true,
             RejectIncompleteResults: true);
         SegmentedTranscriptionSession<StreamingConsumeResult> session =

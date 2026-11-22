@@ -114,7 +114,7 @@ public sealed class WhispModelLifecycleTests
         Assert.Equal(Field(loading, WorkId.FieldName), Field(unavailable, WorkId.FieldName));
         Assert.Equal("file_not_found", Field(unavailable, "reason"));
         // Which file is missing and what the load asked for, so the line stands alone.
-        Assert.EndsWith("ggml-small.bin", Field(unavailable, "model_path"));
+        Assert.EndsWith("vocab.txt", Field(unavailable, "model_path"));
         Assert.Equal("True", Field(unavailable, "use_gpu"));
 
         // The later attempts are told in the detail, never in the log.
@@ -138,7 +138,7 @@ public sealed class WhispModelLifecycleTests
     [Fact]
     public async Task AModelThatCannotLoadIsAUserIncidentUntilALoadSucceeds()
     {
-        UserIncidentRegistry.Instance.Close(UserIncidents.WhisperModel);
+        UserIncidentRegistry.Instance.Close(UserIncidents.SpeechModel);
         using var listener = new TestEventListener(Provider);
         var backend = new ScriptedBackend(loadFails: true);
         using var engine = new TranscriptionEngine(new FakeHost(), backend);
@@ -146,13 +146,13 @@ public sealed class WhispModelLifecycleTests
         await RunColdBatchAsync(engine, listener);
 
         UserIncident incident = Assert.Single(
-            UserIncidentRegistry.Instance.Snapshot(), i => i.Id == UserIncidents.WhisperModel);
+            UserIncidentRegistry.Instance.Snapshot(), i => i.Id == UserIncidents.SpeechModel);
         Assert.Equal("file_not_found", incident.Reason);
 
         backend.LoadFails = false;
         await RunColdBatchAsync(engine, listener);
 
-        Assert.False(UserIncidentRegistry.Instance.IsOpen(UserIncidents.WhisperModel));
+        Assert.False(UserIncidentRegistry.Instance.IsOpen(UserIncidents.SpeechModel));
     }
 
     [Fact]
@@ -188,39 +188,6 @@ public sealed class WhispModelLifecycleTests
         Assert.Equal(EventLevel.Warning, failed.Level);
     }
 
-    [Fact]
-    [Trait("Category", "regression")]
-    public void AFallbackNamesWhatWasAskedAndWhatWasObtained()
-    {
-        using var listener = new TestEventListener(Provider);
-
-        DeckleWhispSource.Log.ModelFallback("ggml-large-v3-turbo.bin", "ggml-small.bin");
-
-        EventWrittenEventArgs fallback = Assert.Single(listener.Events);
-        Assert.Equal(EventLevel.Warning, fallback.Level);
-        Assert.Equal("ggml-large-v3-turbo.bin", Field(fallback, "configured"));
-        Assert.Equal("ggml-small.bin", Field(fallback, "installed"));
-    }
-
-    [Fact]
-    [Trait("Category", "regression")]
-    public void AnIgnoredModelPathNamesTheFileUsedAndKeepsTheVariablesValueInTheDetail()
-    {
-        using var listener = new TestEventListener(Provider);
-
-        DeckleWhispSource.Log.ModelPathEnvIgnored("ggml-small.bin");
-        DeckleWhispSource.Log.ModelPathEnvIgnoredDetail(@"C:\Users\Someone\model.bin", "ggml-small.bin");
-
-        EventWrittenEventArgs warning = Assert.Single(
-            listener.Events, e => e.EventId == DeckleWhispSource.EvtModelPathEnvIgnored);
-        Assert.Equal(EventLevel.Warning, warning.Level);
-        Assert.Equal("ggml-small.bin", Field(warning, "fallback_file"));
-        Assert.DoesNotContain(warning.PayloadNames!, name => name == "env_path");
-        EventWrittenEventArgs detail = Assert.Single(
-            listener.Events, e => e.EventId == DeckleWhispSource.EvtModelPathEnvIgnoredDetail);
-        Assert.Equal(EventLevel.Verbose, detail.Level);
-    }
-
     private sealed class FakeHost : ITranscriptionEngineHost
     {
         public TranscriptionSettings Transcription { get; } = new();
@@ -245,7 +212,7 @@ public sealed class WhispModelLifecycleTests
         {
             if (LoadFails)
                 return Task.FromResult(new ModelLoadResult(
-                    false, 0, null, "file_not_found", @"C:\data\models\ggml-small.bin", GpuRequested: true));
+                    false, 0, null, "file_not_found", @"C:\data\models\parakeet-tdt-0.6b-v3-ultra\vocab.txt", GpuRequested: true));
             _loaded = true;
             return Task.FromResult(new ModelLoadResult(true, 35, "scripted", null));
         }

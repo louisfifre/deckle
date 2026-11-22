@@ -18,7 +18,7 @@ public static class SettingsHost
     public static Action<string>? ApplyTheme;
 
     // Restart the process, optionally returning to a Settings page tag. The tag
-    // is assembly-qualified (e.g. "Deckle.Transcription.WhisperPage,
+    // is assembly-qualified (e.g. "Deckle.Transcription.TranscriptionPage,
     // Deckle.Transcription") for cross-assembly Type.GetType resolution.
     public static Action<string?>? RestartApp;
 
@@ -28,10 +28,10 @@ public static class SettingsHost
     // The wizard lives in Deckle.Setup, which Deckle.Settings does not reference.
     public static Action? OpenSetupWizard;
 
-    // Whether the speech runtime + default model are provisioned, so the
-    // Dictation page can offer setup instead of its tuning controls. Answered by
-    // the App, which owns the provisioning knowledge — Deckle.Transcription
-    // can't see the Whisper child module. Callers treat "unwired" as provisioned.
+    // Whether the speech model is provisioned, so the Dictation page can offer
+    // setup instead of implying a working engine. Answered by the App, which owns
+    // the provisioning knowledge — Deckle.Transcription can't see the Parakeet
+    // child module. Callers treat "unwired" as provisioned.
     public static Func<bool>? IsSpeechProvisioned;
 
     // What a Parakeet model folder holds, for the speech engine card of the

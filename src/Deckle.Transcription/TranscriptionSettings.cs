@@ -8,29 +8,25 @@ namespace Deckle.Transcription;
 // (TranscriptionEngine) and by the active IAsrBackend.
 public sealed class TranscriptionSettings
 {
-    // User override for the directory containing speech models (.bin files
-    // for Whisper, plus the Silero VAD). Empty = fall back to
+    // User override for the directory containing the speech models (the
+    // Parakeet model folder and the Silero VAD). Empty = fall back to
     // AppPaths.ModelsDirectory (= <UserDataRoot>/models/).
     public string ModelsDirectory { get; set; } = "";
 
     public EngineSettings          Engine          { get; set; } = new();
-    public ConfidenceSettings      Confidence      { get; set; } = new();
-    public OutputFilterSettings    OutputFilters   { get; set; } = new();
-    public DecodingSettings        Decoding        { get; set; } = new();
-    public ContextSettings         Context         { get; set; } = new();
     public StreamingSettings       Streaming       { get; set; } = new();
     public LexiconSettings         Lexicon         { get; set; } = new();
 }
 
 // The person's own words: names, product names, jargon the speech model does
 // not know or writes in the wrong case. A transducer such as Parakeet has no
-// text prompt to carry them the way Whisper's initial_prompt did, so they act
-// in two places instead: the decoder gives the tokens that spell them a bonus
-// (Boost), and the final text takes their exact casing (always on, it only
-// changes letter case). The autocorrect reads the same list and treats these
-// words as the person's own. The strength of the boost is a constant of the
-// Parakeet backend, not a setting; a file from 0.144 still carrying
-// "boostStrength" loads, the key is ignored and dropped at the next save.
+// text prompt to carry them, so they act in two places: the decoder gives the
+// tokens that spell them a bonus (Boost), and the final text takes their exact
+// casing (always on, it only changes letter case). The autocorrect reads the
+// same list and treats these words as the person's own. The strength of the
+// boost is a constant of the Parakeet backend, not a setting; a file from 0.144
+// still carrying "boostStrength" loads, the key is ignored and dropped at the
+// next save.
 public sealed class LexiconSettings
 {
     // One word or phrase per entry, written the way it must appear: "Deckle",
@@ -67,7 +63,7 @@ public sealed class StreamingSettings
 // It cleans each chunk the energy segmenter cut, keeping only the speech spans
 // (so a mid-utterance pause the voice level didn't split is removed) and
 // dropping an utterance with no speech at all (an energy false positive on
-// noise/silence) — the main guard against whisper hallucinating on near-silence.
+// noise/silence) — the main guard against the model writing text over near-silence.
 // The model (silero_vad.onnx) is provisioned on demand; until it is present the
 // trim is a silent no-op (the first take after enabling triggers a one-time
 // background download and runs untrimmed). The three parameters default to the
@@ -92,78 +88,30 @@ public sealed class SpeechTrimSettings
     public int SpeechPadMs { get; set; } = 30;
 }
 
-// Bootstrap parameters for the active ASR engine. Model and UseGpu are
-// load-time settings, read at each model load: a change applies at the next
-// load, after the idle unload or the restart the page offers. Language and the
-// prompt apply on every call.
+// Bootstrap parameters for the speech engine. The model folder, its encoder
+// precision and UseGpu are load-time settings, read at each model load: a
+// change applies at the next load, after the idle unload or the restart the
+// page offers.
+//
+// An older settings file may still carry the engine choice ("backend") and
+// the Whisper-only values (model, language, initialPrompt, carryInitialPrompt,
+// and the confidence, outputFilters, decoding and context sections): the
+// serializer ignores keys it does not know, so such a file loads with every
+// other value intact, and the next save drops them.
 public sealed class EngineSettings
 {
-    // Which inference engine runs the dictation. Hidden for now (no Settings page
-    // offers it): Whisper stays the default until Parakeet has earned the place.
-    public AsrBackendKind Backend { get; set; } = AsrBackendKind.Whisper;
+    // The folder name the model takes inside the speech model directory when no
+    // folder is configured. Here, beside the setting it answers, so the engine's
+    // observability and the backend's file layout name the same default.
+    public const string DefaultParakeetFolderName = "parakeet-tdt-0.6b-v3-ultra";
 
-    // Parakeet only: folder holding the model (vocab.txt, fp32/, fp16/).
-    // Empty = "parakeet-tdt-0.6b-v3-ultra" inside the speech model directory.
+    // Folder holding the model (vocab.txt, fp32/, fp16/).
+    // Empty = DefaultParakeetFolderName inside the speech model directory.
     public string ParakeetModelDirectory { get; set; } = "";
 
-    // Parakeet only: FP32 is the default because FP16 can cost fidelity on French
-    // speech; FP16 halves the memory the encoder takes.
+    // FP32 is the default because FP16 can cost fidelity on French speech;
+    // FP16 halves the memory the encoder takes.
     public ParakeetEncoderPrecision ParakeetEncoder { get; set; } = ParakeetEncoderPrecision.Fp32;
 
-    public string Model { get; set; } = "ggml-base.bin";
     public bool UseGpu { get; set; } = true;
-    public string Language { get; set; } = "fr";
-
-    // A style sample, not an instruction: Whisper is not instruction-tuned, so
-    // meta phrases leak into the output. Never put a raw-speech → clean-text
-    // example in it.
-    public string InitialPrompt { get; set; } =
-        "Bon. Je suis en train de coder une application Windows, je continue l'interface avec un contour animé qui tourne. " +
-        "C'est plutôt propre, même si certaines parties restent fragiles. " +
-        "Côté workflow, je travaille avec plusieurs branches Git, je merge sur la branche principale, je lance les tests à chaque itération. " +
-        "Côté outils, .NET, Visual Studio, Python, Whisper, le shell. " +
-        "Ouais, ça avance bien, même si parfois j'ai un truc cassé et il faut tout reprendre. " +
-        "Voilà. Ok.";
-
-    // Prepend initial_prompt to every 30s decode window (not just the first).
-    // Stabilizes punctuation and register across long recordings.
-    public bool CarryInitialPrompt { get; set; } = true;
-}
-
-// Thresholds that trigger whisper.cpp temperature fallback. Stored as double
-// for the UI (WinUI NumberBox/Slider work in double); cast to float when
-// mapping to the native struct.
-public sealed class ConfidenceSettings
-{
-    // whisper.cpp fails a decode when its token entropy falls below this value,
-    // so a higher threshold is stricter, not laxer.
-    public double EntropyThreshold { get; set; } = 2.4;
-    public double LogprobThreshold { get; set; } = -1.0;
-    public double NoSpeechThreshold { get; set; } = 0.6;
-}
-
-public sealed class OutputFilterSettings
-{
-    public bool SuppressNonSpeechTokens { get; set; } = true;
-    public bool SuppressBlank { get; set; } = true;
-    public string SuppressRegex { get; set; } = "";
-}
-
-public sealed class DecodingSettings
-{
-    public double Temperature { get; set; } = 0.0;
-    public double TemperatureIncrement { get; set; } = 0.2;
-
-    // BeamSize applies only when UseBeamSearch is true.
-    public bool UseBeamSearch { get; set; } = true;
-    public int BeamSize { get; set; } = 5;
-}
-
-
-// UseContext = inverse of native no_context.
-// MaxTokens <= 0 means "auto": whisper.cpp keeps its own default.
-public sealed class ContextSettings
-{
-    public bool UseContext { get; set; } = true;
-    public int MaxTokens { get; set; } = -1;
 }

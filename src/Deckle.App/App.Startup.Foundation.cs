@@ -10,7 +10,6 @@ using Deckle.Shell;
 using Deckle.Shell.TaskbarCover;
 using Deckle.Shell.TrayMenu;
 using Deckle.Transcription;
-using Deckle.Transcription.Whisper;
 
 namespace Deckle.App;
 
@@ -168,8 +167,7 @@ public partial class App
                 AppPaths.UserDataRoot,
                 AppPaths.SettingsFilePath,
                 AppPaths.TelemetryDirectory,
-                AppPaths.ModelsDirectory,
-                AppPaths.NativeDirectory);
+                AppPaths.ModelsDirectory);
         }
 
         // Read now, before any Deckle window exists, so the foreground it

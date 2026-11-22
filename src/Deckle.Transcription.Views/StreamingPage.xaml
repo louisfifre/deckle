@@ -10,9 +10,9 @@
          pause strip the cut margin and the minimum speech). Everything shows
          whatever the switch says: it picks only the dictation pipeline, while
          files and recovered takes are always cut with these settings. The
-         guards against text from silence and noise are not here: they apply to
-         every recording, so they sit on the Decoding page. Every card is
-         composed from WhisperViewModel's manifests. -->
+         silence and noise filtering closes the page: its fold applies to every
+         recording, whatever the switch says. Every card is composed from
+         TranscriptionViewModel's manifests. -->
     <ScrollViewer Padding="32,24,32,24"
                   VerticalScrollBarVisibility="Auto"
                   HorizontalScrollBarVisibility="Disabled">
@@ -29,7 +29,7 @@
                                             ResetAllRequested="ResetAll_Click" />
 
                 <!-- The pipeline switch, first and alone. Composed:
-                     WhisperViewModel.StreamingSwitch. -->
+                     TranscriptionViewModel.StreamingSwitch. -->
                 <StackPanel x:Name="SwitchHost"
                             Spacing="{StaticResource SettingsCardSpacing}" />
 
@@ -40,11 +40,18 @@
                              under it, the four hangover anchors and the control
                              points beside it (under it on a narrow page), then
                              the pause view in a frame of its own with its two
-                             durations (WhisperViewModel.SegmentationSettings). -->
+                             durations (TranscriptionViewModel.SegmentationSettings). -->
                         <StackPanel x:Name="SegmentationHost"
                                     Spacing="{StaticResource SettingsCardSpacing}" />
                     </StackPanel>
                 </catalog:SettingsSection>
+
+                <!-- ── Silence and noise filtering ─────────────────────────
+                     One fold with no master, collapsed: the Silero trim (its
+                     switch, then its three parameters while it is on).
+                     Composed: TranscriptionViewModel.SilenceGuardSettings. -->
+                <StackPanel x:Name="SilenceGuardsHost"
+                            Spacing="{StaticResource SettingsCardSpacing}" />
 
             </StackPanel>
         </Grid>

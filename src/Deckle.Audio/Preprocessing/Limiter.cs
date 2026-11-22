@@ -6,7 +6,7 @@ namespace Deckle.Audio;
 //
 // Soft peak limiter, look-ahead-free, one instance fresh per Process call.
 // Sits last in the chain — the safety guard after makeup gain, so no sample
-// reaches the digital ceiling and clips on the way to Whisper.
+// reaches the digital ceiling and clips on the way to the speech model.
 //
 // Design choice that matters for the unit test contract: the attack is
 // INSTANTANEOUS (the gain can drop to the exact value needed on the very

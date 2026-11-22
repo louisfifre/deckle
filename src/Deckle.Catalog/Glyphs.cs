@@ -64,13 +64,7 @@ public static class Glyphs
     public const string OpenExternal = "";
     public const string Cancel = "";
 
-    // Whisper transcription specifics
-    public const string Language = "";
-    public const string Prompt = "";
-    public const string Gpu = "";
-    public const string Filter = "";
-    public const string Pattern = "";
-    public const string Context = "";
+    // Transcription specifics
     public const string Tokens = "";
     public const string Tuning = "";
 

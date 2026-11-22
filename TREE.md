@@ -219,8 +219,6 @@ _Generated from `git ls-files` — do not edit by hand._
 │   │   ├── download-integrity.psm1
 │   │   ├── manifest.ps1
 │   │   ├── native-console.ps1
-│   │   ├── native-runtime-release.psm1
-│   │   ├── pe-imports.psm1
 │   │   ├── release-validation.psm1
 │   │   ├── repository-inventory.psm1
 │   │   ├── resource-inventory.psm1
@@ -231,7 +229,6 @@ _Generated from `git ls-files` — do not edit by hand._
 │   │   └── version.ps1
 │   ├── maintenance/
 │   │   ├── apply-anytype-schema.ps1  — Apply a schema manifest or a space plan to an Anytype space, or read a space into a plan With -Plan, builds a whole space from one plan file, in creation order: propert…
-│   │   ├── clean-native.ps1  — Clean the native folder Brings the whisper.cpp native folder under the user data root back to the curre…
 │   │   ├── clean.ps1  — Clean build outputs Removes the build output folders of every language present in the repository, e…
 │   │   ├── README.md  — Maintenance Previews and cleanups of the build outputs, the machine's .NET build servers an…
 │   │   ├── reset-agent-state.ps1  — Inspect or reset local AI sessions Builds a cleanup plan for the local Claude Code session data of the current acc…
@@ -242,8 +239,7 @@ _Generated from `git ls-files` — do not edit by hand._
 │   ├── release/
 │   │   ├── build-anytype-backend.ps1  — Build the Anytype backend Rebuilds one anytype-cli release tag from source for Windows with the tantivy-g…
 │   │   ├── publish-app.ps1  — Prepare or publish the app release Builds the two artifacts a Deckle GitHub Release carries: the installer stub an…
-│   │   ├── publish-native-runtime.ps1  — Prepare or publish the native runtime Packages a versioned zip of the native DLLs that Deckle's first-run wizard down…
-│   │   └── README.md  — Release Prepare and publish the app and the native runtime.
+│   │   └── README.md  — Release Prepare and publish the app.
 │   ├── settings/
 │   │   ├── check-scripts.ps1  — Check scripts Reads every script the menu could offer and reports the ones it would hide or t…
 │   │   ├── README.md  — Settings The launcher's own folder, installed with it: its update and its script check.
@@ -254,7 +250,7 @@ _Generated from `git ls-files` — do not edit by hand._
 │   │   ├── install-hooks.ps1  — Install git hooks Installs the repository's git hooks from their versioned sources and registers…
 │   │   ├── README.md  — Setup Standard files and hooks of a repository.
 │   │   ├── scaffold.ps1  — Scaffold repository files Creates the standard folders and files a repository starts with, and never over…
-│   │   ├── setup-assets.ps1  — Set up runtime assets Populates the native and models folders under the user data root with the whisp…
+│   │   ├── setup-assets.ps1  — Set up runtime assets Populates the models folder under the user data root with the Parakeet speech m…
 │   │   ├── update-inventory.ps1
 │   │   └── update-tree.ps1
 │   ├── tests/
@@ -271,7 +267,6 @@ _Generated from `git ls-files` — do not edit by hand._
 │   │   │   ├── inspect-context.tests.ps1
 │   │   │   ├── InspectContextBugNotes.md
 │   │   │   ├── perf-compare.tests.ps1
-│   │   │   ├── publish-native-runtime.tests.ps1
 │   │   │   └── read-log.tests.ps1
 │   │   └── lib/
 │   │       ├── agent-skills-layout.tests.ps1
@@ -279,9 +274,6 @@ _Generated from `git ls-files` — do not edit by hand._
 │   │       ├── context-inventory.tests.ps1
 │   │       ├── deckle-process.tests.ps1
 │   │       ├── download-integrity.tests.ps1
-│   │       ├── native-runtime-release.tests.ps1
-│   │       ├── pe-fixture.ps1
-│   │       ├── pe-imports.tests.ps1
 │   │       ├── release-validation.tests.ps1
 │   │       ├── repository-inventory.tests.ps1
 │   │       ├── resource-inventory.tests.ps1
@@ -542,8 +534,6 @@ _Generated from `git ls-files` — do not edit by hand._
 │   │   ├── App.SelfCheck.Projects.Home.cs
 │   │   ├── App.SelfCheck.Projects.Project.cs
 │   │   ├── App.SelfCheck.Rewriting.cs
-│   │   ├── App.SelfCheck.Transcription.cs
-│   │   ├── App.SpeechRepair.cs
 │   │   ├── App.Startup.CommandLine.cs
 │   │   ├── App.Startup.CrashDumps.cs
 │   │   ├── App.Startup.DictationRecovery.cs
@@ -2142,10 +2132,7 @@ _Generated from `git ls-files` — do not edit by hand._
 │   │   ├── Update/
 │   │   │   └── UpdateService.cs
 │   │   ├── ByteSizeFormatter.cs
-│   │   ├── ChoicesPage.xaml
-│   │   ├── ChoicesPage.xaml.cs
 │   │   ├── Deckle.Setup.csproj
-│   │   ├── DeckleSetupSource.Choices.cs
 │   │   ├── DeckleSetupSource.cs
 │   │   ├── DeckleSetupSource.Deploy.cs
 │   │   ├── DeckleSetupSource.Provisioning.cs
@@ -2161,7 +2148,6 @@ _Generated from `git ls-files` — do not edit by hand._
 │   │   ├── InstallingPage.xaml.cs
 │   │   ├── InstallItem.cs
 │   │   ├── InstallPlan.cs
-│   │   ├── ModelFileImport.cs
 │   │   ├── ModulesPage.xaml
 │   │   ├── ModulesPage.xaml.cs
 │   │   ├── RelocatePage.xaml
@@ -2374,8 +2360,6 @@ _Generated from `git ls-files` — do not edit by hand._
 │   │   │   ├── TakeAudioRecorder.cs
 │   │   │   ├── TakeAudioRecovery.cs
 │   │   │   └── TakeAudioRecoveryStore.cs
-│   │   ├── Setup/
-│   │   │   └── ModelEntry.cs
 │   │   ├── Streaming/
 │   │   │   ├── EnergySegmenter.cs
 │   │   │   ├── EnergySegmenterSettings.cs
@@ -2384,7 +2368,6 @@ _Generated from `git ls-files` — do not edit by hand._
 │   │   │   ├── TranscriptSnapshot.cs
 │   │   │   ├── Utterance.cs
 │   │   │   └── UtteranceProgress.cs
-│   │   ├── AsrBackendKind.cs
 │   │   ├── Deckle.Transcription.csproj
 │   │   ├── DeckleWhispSource.cs
 │   │   ├── DeckleWhispSource.Decode.cs
@@ -2403,6 +2386,7 @@ _Generated from `git ls-files` — do not edit by hand._
 │   │   ├── DeckleWhispSource.WarmupModel.cs
 │   │   ├── GLOSSARY.md  — glossary-deckle-transcription Transcription vocabulary. It names the two entry points (dictation, file transc…
 │   │   ├── ITranscriptionEngineHost.cs
+│   │   ├── ParakeetEncoderPrecision.cs
 │   │   ├── TranscriptionSettings.cs
 │   │   └── TranscriptionSettingsService.cs
 │   ├── Deckle.Transcription.Parakeet/
@@ -2426,6 +2410,8 @@ _Generated from `git ls-files` — do not edit by hand._
 │   │   ├── Segments/
 │   │   │   ├── DecodedToken.cs
 │   │   │   └── SegmentBuilder.cs
+│   │   ├── Setup/
+│   │   │   └── ParakeetModelCatalog.cs
 │   │   ├── Tokenization/
 │   │   │   ├── ParakeetDetokenizer.cs
 │   │   │   └── ParakeetVocabulary.cs
@@ -2442,52 +2428,23 @@ _Generated from `git ls-files` — do not edit by hand._
 │   │   │       └── Resources.resw
 │   │   ├── ViewModels/
 │   │   │   ├── LexiconWordRow.cs
-│   │   │   ├── WhisperTelemetryViewModel.cs
-│   │   │   ├── WhisperViewModel.cs
-│   │   │   ├── WhisperViewModel.DictationExperience.cs
-│   │   │   ├── WhisperViewModel.Engine.cs
-│   │   │   ├── WhisperViewModel.Lexicon.cs
-│   │   │   ├── WhisperViewModel.Settings.cs
-│   │   │   ├── WhisperViewModel.SpeechEngine.cs
-│   │   │   └── WhisperViewModel.Streaming.cs
+│   │   │   ├── TranscriptionTelemetryViewModel.cs
+│   │   │   ├── TranscriptionViewModel.cs
+│   │   │   ├── TranscriptionViewModel.DictationExperience.cs
+│   │   │   ├── TranscriptionViewModel.Engine.cs
+│   │   │   ├── TranscriptionViewModel.Lexicon.cs
+│   │   │   ├── TranscriptionViewModel.Settings.cs
+│   │   │   ├── TranscriptionViewModel.SpeechEngine.cs
+│   │   │   └── TranscriptionViewModel.Streaming.cs
 │   │   ├── Deckle.Transcription.Views.csproj
-│   │   ├── DecodingPage.xaml
-│   │   ├── DecodingPage.xaml.cs
 │   │   ├── LexiconPage.xaml
 │   │   ├── LexiconPage.xaml.cs
 │   │   ├── SettingsSearch.cs
 │   │   ├── StreamingPage.xaml
 │   │   ├── StreamingPage.xaml.cs
-│   │   ├── WhisperPage.xaml
-│   │   ├── WhisperPage.xaml.cs
-│   │   └── WhisperSettingsModule.cs
-│   ├── Deckle.Transcription.Whisper/
-│   │   ├── Engine/
-│   │   │   ├── GpuMemoryPreflight.cs
-│   │   │   ├── WhisperContextParamsMapper.cs
-│   │   │   └── WhisperParamsMapper.cs
-│   │   ├── Pinvoke/
-│   │   │   ├── WhisperPInvoke.cs
-│   │   │   └── WhisperStructs.cs
-│   │   ├── Setup/
-│   │   │   ├── NativeRuntime.cs
-│   │   │   ├── NativeRuntimeLoadCheck.cs
-│   │   │   ├── NativeRuntimeLoader.cs
-│   │   │   ├── OnceOnSuccess.cs
-│   │   │   ├── PeImports.cs
-│   │   │   ├── SpeechModelResolver.cs
-│   │   │   ├── SpeechModels.cs
-│   │   │   └── VideoMemoryProbe.cs
-│   │   ├── Deckle.Transcription.Whisper.csproj
-│   │   ├── DeckleWhisperSource.cs
-│   │   ├── KnownHallucinations.cs
-│   │   ├── RepetitionDetector.cs
-│   │   ├── WhisperBackend.cs
-│   │   ├── WhisperBackend.Model.cs
-│   │   ├── WhisperBackend.NativeLogging.cs
-│   │   ├── WhisperBackend.Transcribe.cs
-│   │   ├── WhisperComputeDeviceObserver.cs
-│   │   └── WhisperNativeLogCompactor.cs
+│   │   ├── TranscriptionPage.xaml
+│   │   ├── TranscriptionPage.xaml.cs
+│   │   └── TranscriptionSettingsModule.cs
 │   ├── Deckle.Vad/
 │   │   ├── Deckle.Vad.csproj
 │   │   ├── DeckleVadSource.cs
@@ -3293,12 +3250,11 @@ _Generated from `git ls-files` — do not edit by hand._
 │   │   ├── DataRootTreeTests.cs
 │   │   ├── Deckle.Setup.Tests.csproj
 │   │   ├── DeckleSetupSourceTests.cs
+│   │   ├── InstallPlanTests.cs
 │   │   ├── LocMirrorBugNotes.md
 │   │   ├── MessageTemplateDoctrineTests.cs
-│   │   ├── ModelFileImportTests.cs
 │   │   ├── PayloadDeploymentTests.cs
 │   │   ├── SetupCancellationLogTests.cs
-│   │   ├── SetupPathRedactionTests.cs
 │   │   ├── SetupStringMirrorTests.cs
 │   │   ├── UpdateHandoffBugNotes.md
 │   │   ├── UpdatePredecessorTests.cs
@@ -3416,6 +3372,8 @@ _Generated from `git ls-files` — do not edit by hand._
 │   │   │   └── TdtGreedyDecoderTests.cs
 │   │   ├── Segments/
 │   │   │   └── SegmentBuilderTests.cs
+│   │   ├── Setup/
+│   │   │   └── ParakeetModelCatalogTests.cs
 │   │   ├── Tokenization/
 │   │   │   ├── ParakeetDetokenizerTests.cs
 │   │   │   └── ParakeetVocabularySystemTests.cs
@@ -3476,29 +3434,6 @@ _Generated from `git ls-files` — do not edit by hand._
 │   │   ├── WhispEventIdBugNotes.md
 │   │   ├── WhispModelLifecycleBugNotes.md
 │   │   └── WhispModelLifecycleTests.cs
-│   ├── Deckle.Transcription.Whisper.Tests/
-│   │   ├── Deckle.Transcription.Whisper.Tests.csproj
-│   │   ├── GpuMemoryPreflightTests.cs
-│   │   ├── HallucinationBugNotes.md
-│   │   ├── KnownHallucinationsTests.cs
-│   │   ├── MessageTemplateDoctrineTests.cs
-│   │   ├── MilestoneClosersTests.cs
-│   │   ├── NativeRuntimeBugNotes.md
-│   │   ├── NativeRuntimeLoaderTests.cs
-│   │   ├── NativeRuntimeTests.cs
-│   │   ├── OnceOnSuccessTests.cs
-│   │   ├── OperationalObservabilityCollection.cs
-│   │   ├── PeImportsTests.cs
-│   │   ├── RepetitionDetectorTests.cs
-│   │   ├── SpeechModelFilesTests.cs
-│   │   ├── SpeechModelResolverTests.cs
-│   │   ├── TestPeImage.cs
-│   │   ├── WhisperComputeDeviceObserverTests.cs
-│   │   ├── WhisperContextBugNotes.md
-│   │   ├── WhisperContextParamsMapperTests.cs
-│   │   ├── WhisperParamsMapperTests.cs
-│   │   ├── WhisperPathRedactionTests.cs
-│   │   └── WhisperReferenceAudioSystemTests.cs
 │   ├── Deckle.Vad.Tests/
 │   │   ├── Deckle.Vad.Tests.csproj
 │   │   ├── MessageTemplateDoctrineTests.cs

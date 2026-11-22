@@ -17,8 +17,7 @@ namespace Deckle.Core;
 //   • telemetry/    — JSONL files (microphone level) and per-profile corpus
 //   • diagnostics/  — local logs (setup, errors, trace.jsonl); never transmitted
 //   • diagnostics/dumps/ — minidumps of fatal runtime errors, newest few kept
-//   • models/       — Whisper ggml-*.bin and the other downloaded models
-//   • native/       — whisper.dll, ggml*.dll and the C++ runtime (NativeRuntime)
+//   • models/       — the downloaded models (the Parakeet folder, the Silero VAD)
 //   • modules/      — one folder per module (GetModuleDirectory)
 //
 // Another executable of the suite (AppIdentity) keeps all of this under
@@ -31,9 +30,9 @@ namespace Deckle.Core;
 // overrides it.
 //
 // The application binary itself stays read-only and Program Files-friendly:
-// it ships with Assets but no models, no native DLLs, no config. The setup
+// it ships with Assets but no models, no config. The setup
 // wizard or scripts/setup/setup-assets.ps1 populates
-// <UserDataRoot>\models\ and \native\.
+// <UserDataRoot>\models\.
 public static class AppPaths
 {
     public const string AppFolderName = "Deckle";
@@ -69,7 +68,6 @@ public static class AppPaths
     // host's entry point before it arms the capture, not here.
     public static string CrashDumpsDirectory          { get; }
     public static string ModelsDirectory              { get; }
-    public static string NativeDirectory              { get; }
     public static string ModulesDirectory             { get; }
 
     /// <summary>
@@ -109,18 +107,16 @@ public static class AppPaths
         DiagnosticsDirectory         = roots.DiagnosticsDirectory;
         CrashDumpsDirectory          = Path.Combine(DiagnosticsDirectory, "dumps");
         ModelsDirectory            = Path.Combine(UserDataRoot, "models");
-        NativeDirectory              = Path.Combine(UserDataRoot, "native");
         ModulesDirectory             = Path.Combine(UserDataRoot, "modules");
 
         // UserDataRoot, telemetry, and diagnostics are created eagerly — the
         // locations the app writes to from boot during normal operation.
         // diagnostics/ holds the always-on local setup/error logs, written
         // unconditionally before the user can opt into anything, so the folder
-        // must exist at the very first emission. Models and native
-        // are populated by the wizard or the user; creating them empty here
-        // would mask the "missing dependencies" detection done by
-        // NativeRuntime and SpeechModels. Backups dir is created on first write
-        // by SettingsBackupService.
+        // must exist at the very first emission. Models is populated by the
+        // wizard or the user; creating it empty here would mask the "missing
+        // dependencies" detection done by the speech model check. Backups dir is
+        // created on first write by SettingsBackupService.
         Directory.CreateDirectory(UserDataRoot);
         Directory.CreateDirectory(TelemetryDirectory);
         Directory.CreateDirectory(DiagnosticsDirectory);

@@ -19,8 +19,8 @@ public static partial class HudComposition
 
     // ── DeviceLost hook ──────────────────────────────────────────────────
     // Every surface here is baked on Win2D's process-wide shared device. When
-    // the GPU goes away (TDR, driver reset, contention with whisper.cpp's
-    // Vulkan backend on the same GPU) the surfaces go invalid and the brushes
+    // the GPU goes away (TDR, driver reset, contention with the speech
+    // model's DirectML encoder on the same GPU) the surfaces go invalid and the brushes
     // sample black, which reads as a frozen rotation while the animations
     // still tick. Nothing recovers here: the event only reports the loss.
     //

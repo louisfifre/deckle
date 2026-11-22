@@ -6,8 +6,7 @@ namespace Deckle.Setup;
 public sealed partial class DeckleSetupSource
 {
     // ── Install items (InstallingPage) ────────────────────────────────────────
-    // The native runtime is one of these items ("native-runtime"); it has no
-    // events of its own any more.
+    // One start, finish and failure line per item; an item has no events of its own.
 
     [Event(EvtItemStarted,
            Level = EventLevel.Informational,

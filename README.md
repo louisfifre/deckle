@@ -2,7 +2,7 @@
   <img src="docs/media/board-hero.png" alt="Deckle. A local companion for Windows 11: one app, many modules, each turned on or off as you like. Nothing leaves your machine." width="100%">
 </p>
 
-Voice dictation is the first module and the most established one. Press the hotkey, speak, and press it again when you are done. Deckle cuts your speech into utterances on your pauses and transcribes each one with a local Whisper model while you keep talking. A long pause becomes a new paragraph. The text goes to the clipboard.
+Voice dictation is the first module and the most established one. Press the hotkey, speak, and press it again when you are done. Deckle cuts your speech into utterances on your pauses and transcribes each one with a local speech model while you keep talking. A long pause becomes a new paragraph. The text goes to the clipboard.
 
 **[Get the newest release](https://github.com/louisfifre/deckle/releases)**
 
@@ -14,7 +14,7 @@ Voice dictation is the first module and the most established one. Press the hotk
 
 - **One hotkey, pressed twice.** Win + the key left of 1 starts a take; the same key stops it. It is a toggle, so your hands are free while you speak. Every hotkey, this one included, can be changed in **Settings › Shortcuts**.
 - **Utterances cut on your pauses.** An energy threshold watches the microphone level and cuts an utterance when you pause long enough. A Silero voice-activity model then trims each utterance down to the speech it contains.
-- **A local Whisper model.** Speech recognition runs through [whisper.cpp](https://github.com/ggerganov/whisper.cpp) on your GPU through Vulkan, with a CPU fallback. The default model is Whisper base (`ggml-base`, about 150 MB); Whisper large-v3 (about 3 GB) is available for better accuracy.
+- **A local Parakeet model.** Speech recognition runs [NVIDIA Parakeet](https://huggingface.co/nvidia/parakeet-tdt-0.6b-v3) (TDT 0.6B v3, in the Ultra post-training) through [ONNX Runtime](https://onnxruntime.ai/) on your GPU through DirectML, with a CPU fallback. The model is about 2.5 GB, downloaded once by the setup wizard.
 - **Transcription while you speak.** Each utterance is transcribed as soon as it is cut, so pressing stop only waits for the utterances still in the queue.
 - **The text as it comes.** A panel beside the HUD shows each utterance's text as soon as it is transcribed. You pick its side, left or right, in **Settings › Transcription**.
 - **A countdown before each cut.** While you pause, the HUD outline shows how much of the pause is left before the utterance is cut, and draws back when you speak again.
@@ -33,7 +33,7 @@ Deckle is one app with several modules. You choose them at setup and can change 
 
 | Module | What it adds | Status |
 |---|---|---|
-| **Dictation** | Voice transcription on a hotkey or from an audio file, through a local Whisper model. | Delivered, the most established module |
+| **Dictation** | Voice transcription on a hotkey or from an audio file, through a local Parakeet model. | Delivered, the most established module |
 | **Rewrite** | A cleanup pass on the transcript through a language model, local (Ollama, LM Studio, any OpenAI-compatible endpoint) or hosted (Claude). Requires Dictation. | Delivered; richer rewrite flows are still taking shape |
 | **Autocorrect** | French-first accent restoration and conservative typo correction, in the apps you enroll. | Delivered |
 | **Ambient light** | Screen color mapped to Philips Hue lights over the local network. | In progress |
@@ -57,7 +57,7 @@ Smaller touches outside the module list: a **taskbar cover** that masks the task
 - Speech recognition, autocorrect, and screen analysis run locally. Audio and ambient frames are never uploaded.
 - Autocorrect never observes password fields and acts only in apps you enroll.
 - Deckle sends no analytics. Optional diagnostic datasets are consent-gated and stored locally.
-- Internet access is used to install and update Deckle, and to download once the models and native runtimes your modules need. Hue discovery can use Philips' service when you ask for it.
+- Internet access is used to install and update Deckle, and to download once the models your modules need. Hue discovery can use Philips' service when you ask for it.
 - Rewrite contacts the provider you choose. Ollama and LM Studio default to the local machine. Claude is a hosted API: it receives the transcript text only once you store a key and select a Claude profile.
 
 ## Install
@@ -80,7 +80,7 @@ pwsh scripts/build-run.ps1 -Configuration Release  # build and run
 pwsh scripts/build-run.ps1 -Configuration Release -NoRun  # build only
 ```
 
-The scripts, their switches, and how the native runtime is sourced are documented in [scripts/README.md](scripts/README.md). How the dictation chain works, file by file, is in [docs/transcription-audio-chain.md](docs/transcription-audio-chain.md).
+The scripts and their switches are documented in [scripts/README.md](scripts/README.md). How the dictation chain works, file by file, is in [docs/transcription-audio-chain.md](docs/transcription-audio-chain.md).
 
 The code is split into `src/Deckle.*` modules behind one `Deckle.App` host, with tests in `tests/` and documentation in `docs/`.
 
@@ -94,7 +94,7 @@ Deckle is built by one product designer, with the help of language models for ar
 
 ## Acknowledgements
 
-Built on [whisper.cpp](https://github.com/ggerganov/whisper.cpp), [WinUI 3](https://github.com/microsoft/microsoft-ui-xaml) and the [Windows App SDK](https://github.com/microsoft/WindowsAppSDK), the [Windows Community Toolkit](https://github.com/CommunityToolkit/Windows), [Win2D](https://github.com/microsoft/Win2D), the [Vulkan SDK](https://www.lunarg.com/vulkan-sdk/), and the [Philips Hue](https://developers.meethue.com/) Entertainment API. Full attributions are in [NOTICE.md](NOTICE.md).
+Built on [NVIDIA Parakeet](https://huggingface.co/nvidia/parakeet-tdt-0.6b-v3) and [ONNX Runtime](https://onnxruntime.ai/), [WinUI 3](https://github.com/microsoft/microsoft-ui-xaml) and the [Windows App SDK](https://github.com/microsoft/WindowsAppSDK), the [Windows Community Toolkit](https://github.com/CommunityToolkit/Windows), [Win2D](https://github.com/microsoft/Win2D), and the [Philips Hue](https://developers.meethue.com/) Entertainment API. Full attributions are in [NOTICE.md](NOTICE.md).
 
 ## License
 

@@ -7,7 +7,7 @@ namespace Deckle.Diagnostics;
 // it belongs to and the Settings page that shows the gesture.
 //
 // An id is a source, not a module: Ambient Light has two (the push and the
-// event stream to the bridge), Transcription two (the Whisper model and the
+// event stream to the bridge), Transcription two (the speech model and the
 // speech-trim model). The App folds them into one line per module.
 public static class UserIncidents
 {
@@ -18,8 +18,8 @@ public static class UserIncidents
     // The microphone could not be opened for a recording.
     public const string Microphone = "microphone";
 
-    // The Whisper model or its native runtime is missing or failed to load.
-    public const string WhisperModel = "whisper_model";
+    // The speech model is missing, incomplete or failed to load.
+    public const string SpeechModel = "speech_model";
 
     // The speech-trim (VAD) model is missing, corrupt or failed.
     public const string VadModel = "vad_model";
@@ -43,7 +43,7 @@ public static class UserIncidents
     // Every id above, so a host can check it declared each one.
     public static IReadOnlyList<string> All { get; } =
     [
-        PrecisionScroll, Microphone, WhisperModel, VadModel,
+        PrecisionScroll, Microphone, SpeechModel, VadModel,
         AnytypeBackend, AnytypeGateway, HuePush, HueEvents, ToastsElevated,
     ];
 }

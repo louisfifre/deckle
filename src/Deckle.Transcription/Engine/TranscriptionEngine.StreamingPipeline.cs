@@ -51,7 +51,6 @@ public sealed partial class TranscriptionEngine
         using IDisposable? recoveryFeed = FeedRecovery();
 
         var policy = new SegmentedTranscriptionPolicy(
-            FixedPrompt: _host.Transcription.Engine.InitialPrompt ?? "",
             ApplyPreprocessing: true,
             RejectIncompleteResults: false,
             StopCaptureOnPrimeFailure: true,
@@ -489,7 +488,6 @@ public sealed partial class TranscriptionEngine
         // dropped or empty utterance in between does not swallow the break.
         bool pendingParagraphBreak = false;
 
-        string fixedPrompt = policy.FixedPrompt;
         string? previousTail = null;
         bool incomplete = false;
         // Consecutive failed utterances: one Warning opens the incident, repeats
@@ -498,7 +496,7 @@ public sealed partial class TranscriptionEngine
 
         // The opt-in DSP runs per utterance here, not once over the whole take:
         // each utterance is decoded in its own backend call, so landing each on
-        // TargetRmsDbfs is the per-call level Whisper wants, and a whole-take
+        // TargetRmsDbfs is the per-call level the model wants, and a whole-take
         // measure could only complete at Stop, defeating the streaming latency.
         // The segmenter emits only voiced spans, so boosting silence is not a
         // risk here.
@@ -517,17 +515,17 @@ public sealed partial class TranscriptionEngine
             // as dequeued whether or not the backend call succeeds.
             int backlogAfter = onDequeue();
 
-            // Continuity is given by hand: the fixed stylistic prompt plus the
-            // previous utterance's tail. A looped previous utterance contributes
-            // no tail, so a loop cannot contaminate the next.
-            // The backend may also keep what it decoded last (Whisper does, in its
-            // decoder state). That carry follows the tail: the call continues the
-            // previous one only when the tail of a call of this take is carried.
-            // So the first call of the take starts clean of the warm-up's output
-            // and of the previous take, and a call after a loop, a failure or an
-            // empty utterance starts clean of what it decoded.
+            // Continuity is given by hand: the previous utterance's tail. A looped
+            // previous utterance contributes no tail, so a loop cannot contaminate
+            // the next. A backend that keeps what it decoded last in its own state
+            // follows the tail: the call continues the previous one only when the
+            // tail of a call of this take is carried. So the first call of the take
+            // starts clean of the warm-up's output and of the previous take, and a
+            // call after a loop, a failure or an empty utterance starts clean of
+            // what it decoded. A backend with no use for either (Parakeet) ignores
+            // them.
             var ctx = new TranscriptionContext(
-                BuildPriming(fixedPrompt, previousTail),
+                previousTail ?? "",
                 EmitPreamble:          nUtt == 1,
                 TimelineOffsetSec:     u.StartSec,
                 ContinuesPreviousCall: !string.IsNullOrEmpty(previousTail));
@@ -556,7 +554,7 @@ public sealed partial class TranscriptionEngine
                 else if (trimmed.Length == 0)
                 {
                     // No speech — an energy false positive on noise/silence. Drop it
-                    // rather than feed near-silence to whisper, which hallucinates on
+                    // rather than feed near-silence to the model, which can write text over
                     // it. The previous tail is left intact: a dropped utterance adds
                     // no text and must not sever the continuity of the real ones.
                     DeckleVadSource.Log.UtteranceDroppedNoSpeech(u.Index);
@@ -574,7 +572,7 @@ public sealed partial class TranscriptionEngine
             // blip and the pad cannot buy it a longer duration budget.
             int speechSamples = samples.Length;
 
-            // Whisper sometimes ended the text early when the audio stopped on
+            // A speech model (Whisper, when measured) ended the text early when the audio stopped on
             // near-digital silence after the trim; a noise tail fixed it on
             // replay, digital silence did not (see TrailingNoisePad). The pad
             // goes only to the backend: BackendAudio keeps the unpadded corpus.
@@ -728,18 +726,8 @@ public sealed partial class TranscriptionEngine
         return flat;
     }
 
-    // Fixed stylistic prompt + the previous utterance's tail (most recent context
-    // last, closest to the current audio — how Whisper reads initial_prompt).
-    private static string BuildPriming(string fixedPrompt, string? previousTail)
-    {
-        if (string.IsNullOrWhiteSpace(previousTail)) return fixedPrompt;
-        if (string.IsNullOrWhiteSpace(fixedPrompt)) return previousTail;
-        return fixedPrompt + " " + previousTail;
-    }
-
-    // Enough for word-boundary and register continuity without blowing the
-    // prompt-token budget (Whisper keeps the most recent tokens if the prompt
-    // overflows anyway).
+    // Enough for word-boundary and register continuity without growing the
+    // context a backend may have to carry.
     private const int PrimingTailWords = 30;
     private static string TailOf(string text)
     {
@@ -766,7 +754,6 @@ public sealed partial class TranscriptionEngine
     // from its document, so the Appended snapshots carry the rewrites already
     // back. A null return lets the raw assembly stand.
     private readonly record struct SegmentedTranscriptionPolicy(
-        string FixedPrompt,
         bool ApplyPreprocessing,
         bool RejectIncompleteResults,
         bool StopCaptureOnPrimeFailure = false,

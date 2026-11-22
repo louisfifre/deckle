@@ -10,7 +10,6 @@ using Deckle.Shell;
 using Deckle.Shell.TaskbarCover;
 using Deckle.Shell.TrayMenu;
 using Deckle.Transcription;
-using Deckle.Transcription.Whisper;
 using Deckle.Localization;
 
 namespace Deckle.App;
@@ -66,22 +65,26 @@ public partial class App
             bool ok = await setup.Completion;
             if (ok)
                 RestartApp(ModulePresence.IsPresent(ModuleIds.Transcription)
-                    ? Transcription.Views.WhisperSettingsModule.PageTag
+                    ? Transcription.Views.TranscriptionSettingsModule.PageTag
                     : null);
         };
 
-        // The Dictation page lives in Deckle.Transcription, which cannot see the
-        // Whisper child module, so the App, which composes both, answers here.
-        Settings.SettingsHost.IsSpeechProvisioned =
-            () => NativeRuntime.IsUsable() && SpeechModels.IsAnyModelInstalled();
+        // The Dictation page lives in Deckle.Transcription.Views, which cannot see
+        // the Parakeet child module, so the App, which composes both, answers
+        // here: whether the model folder holds every file the engine needs.
+        Settings.SettingsHost.IsSpeechProvisioned = ParakeetModelPresent;
 
-        // Same reason for the Parakeet model folder: the layout lives in the
+        // Same reason for the state of the model folder: the layout lives in the
         // Parakeet child module, which only the App references.
         Settings.SettingsHost.InspectParakeetModelFolder = configured =>
         {
-            var files = Deckle.Transcription.Parakeet.ParakeetModelFiles.Resolve(
-                configured, TranscriptionSettingsService.Instance.ResolveModelsDirectory());
-            return new Settings.ParakeetModelFolderState(files.Directory, files.IsComplete, files.HasFp16Encoder);
+            string modelsDirectory = TranscriptionSettingsService.Instance.ResolveModelsDirectory();
+            var files = Deckle.Transcription.Parakeet.ParakeetModelFiles.Resolve(configured, modelsDirectory);
+            return new Settings.ParakeetModelFolderState(
+                files.Directory,
+                Deckle.Transcription.Parakeet.ParakeetModelCatalog.IsPresent(
+                    configured, modelsDirectory, TranscriptionSettingsService.Instance.Current.Engine.ParakeetEncoder),
+                files.HasFp16Encoder);
         };
 
         WireUpdaterHooks();
@@ -148,17 +151,14 @@ public partial class App
             // The microphone level, a developer capture, is the Diagnostics
             // page's own card under Detailed logs, no longer a contribution.
             RegisterSettingsModule(Audio.Views.RecordingSettingsModule.Describe(order: 50), Audio.Views.SettingsSearch.Entries);
-            // One module, four rail entries: the module's page (General under the
-            // node) then Lexicon, Decoding and Streaming nested under it, each
-            // registered on its own so the search index resolves page
-            // coordinates per page. Lexicon comes first: every Parakeet user
-            // needs it, Decoding is for experts.
-            RegisterSettingsModule(Transcription.Views.WhisperSettingsModule.Describe(order: 100), Transcription.Views.SettingsSearch.Entries);
-            RegisterSettingsModule(Transcription.Views.WhisperSettingsModule.DescribeLexicon(order: 105), Transcription.Views.SettingsSearch.LexiconEntries);
-            RegisterSettingsModule(Transcription.Views.WhisperSettingsModule.DescribeDecoding(order: 110), Transcription.Views.SettingsSearch.DecodingEntries);
-            RegisterSettingsModule(Transcription.Views.WhisperSettingsModule.DescribeStreaming(order: 120), Transcription.Views.SettingsSearch.StreamingEntries);
+            // One module, three rail entries: the module's page (General under the
+            // node) then Lexicon and Streaming nested under it, each registered
+            // on its own so the search index resolves page coordinates per page.
+            RegisterSettingsModule(Transcription.Views.TranscriptionSettingsModule.Describe(order: 100), Transcription.Views.SettingsSearch.Entries);
+            RegisterSettingsModule(Transcription.Views.TranscriptionSettingsModule.DescribeLexicon(order: 105), Transcription.Views.SettingsSearch.LexiconEntries);
+            RegisterSettingsModule(Transcription.Views.TranscriptionSettingsModule.DescribeStreaming(order: 120), Transcription.Views.SettingsSearch.StreamingEntries);
             ContributeDiagnostics(
-                Transcription.Views.WhisperTelemetryViewModel.Contribution(order: 100),
+                Transcription.Views.TranscriptionTelemetryViewModel.Contribution(order: 100),
                 "Deckle.Transcription.Views",
                 Transcription.Views.SettingsSearch.TelemetryEntries);
         }

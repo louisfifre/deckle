@@ -156,7 +156,7 @@ public sealed class TakeAudioRecoveryEngineTests : IDisposable
         finally
         {
             // The failed load opened a process-wide incident.
-            UserIncidentRegistry.Instance.Close(UserIncidents.WhisperModel);
+            UserIncidentRegistry.Instance.Close(UserIncidents.SpeechModel);
         }
     }
 

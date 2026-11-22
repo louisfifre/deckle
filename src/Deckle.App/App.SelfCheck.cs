@@ -61,7 +61,7 @@ public partial class App
         new("crash supervisor (Program.Main)",
             "The supervisor swallows the child's exit code and relaunches it. The self-check runs unsupervised so a crash exit code reaches the caller."),
         new("transcription engine, speech engine",
-            "They need the native runtime and a model, open the audio device and load the GPU. The Dictation pages must render without them: if one cannot, it fails."),
+            "They need a speech model, open the audio device and load the GPU. The Dictation pages must render without them: if one cannot, it fails."),
         new("ambient engine",
             "Starting it captures the screen and talks to the Hue bridge."),
         new("trackpad, precision scroll, mouse wheel, input host",
@@ -315,14 +315,6 @@ public partial class App
             {
                 Step("settings/diagnostics-open");
                 await CaptureDiagnosticsOpenAsync(report, settings, outputFolder, captures);
-            }
-
-            // The Transcription and Lexicon pages again under Parakeet, with
-            // sample lexicon terms (App.SelfCheck.Transcription.cs).
-            if (onlyPage is null or "whisper" or "lexicon")
-            {
-                Step("settings/whisper-parakeet");
-                await CaptureTranscriptionParakeetAsync(report, settings, outputFolder, captures);
             }
         }
 

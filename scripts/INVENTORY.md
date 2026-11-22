@@ -32,7 +32,7 @@ Run one with `pwsh -NoProfile -File scripts/<path> [arguments]`. An action names
   - Parameters: -Trace, -Last <int>, -Level <string>, -SinceMinutes <int>, -Match <string>, -Payload, -DataRoot <string>
 - `self-check.ps1` — **Self-check the built app.** Runs a built app of the suite once in its self-check mode and judges its report.
   - Actions: Self-check · Self-check Mail `-App mail` · Self-check Folders `-App folders`
-  - Parameters: -App <string>, -Only <string>, -Configuration Debug|Release, -Target <string>, -TimeoutSeconds <int>, -OutputFolder <string>, -LinkRuntime, -KeepData
+  - Parameters: -App <string>, -Only <string>, -Configuration Debug|Release, -Target <string>, -TimeoutSeconds <int>, -OutputFolder <string>, -LinkModels, -KeepData
 - `stats.ps1` — **Repository statistics.** Walk every project under src\ and build one file inventory per Deckle module, with line counts.
   - Actions: Statistics / repository
   - Parameters: -Target <string>, -WatchThreshold <int>, -TooLargeThreshold <int>, -CSharpWatchThreshold <int>, -CSharpTooLargeThreshold <int>, -ResourceWatchThreshold <int>, -ResourceTooLargeThreshold <int>, -Json <string>, -PassThru
@@ -68,9 +68,6 @@ Run one with `pwsh -NoProfile -File scripts/<path> [arguments]`. An action names
 - `maintenance/apply-anytype-schema.ps1` — **Apply a schema manifest or a space plan to an Anytype space, or read a space into a plan.** With -Plan, builds a whole space from one plan file, in creation order: properties and options, types with their panel and default template, collections, queries, templates with their in-body views, type views, pages and, when asked for, objects and the sidebar.
   - Actions: Apply a schema manifest or a space plan to an Anytype space, or read a space into a plan
   - Parameters: -Space <string> (required), -Manifest <string>, -Plan <string>, -Stages <string[]>, -Check, -RecheckAfterMinutes <int>, -ReadTo <string>, -Pages <string[]>, -InviteLink <string>, -Pilot, -AcceptTimeoutMinutes <int>, -DataRoot <string>
-- `maintenance/clean-native.ps1` — **Clean the native folder.** Brings the whisper.cpp native folder under the user data root back to the current catalog, the RequiredDllNames of NativeRuntime.cs: deletes every DLL the catalog does not name (an older bundle's libwhisper.dll and MinGW runtime, a stray build artifact) and the .partial leftovers of an interrupted extraction, then reports the catalog DLLs that are missing.
-  - Actions: Preview / native folder `-WhatIf` · Clean / native folder (danger)
-  - Parameters: -DataRoot <string>
 - `maintenance/clean.ps1` — **Clean build outputs.** Removes the build output folders of every language present in the repository, each only when it passes three locks: it is a known output folder of a language the repository uses, git ignores it, and it holds no tracked file.
   - Actions: Preview / build outputs · Clean / build outputs `-Apply` (danger)
   - Parameters: -Target <string>, -Apply
@@ -97,9 +94,6 @@ Run one with `pwsh -NoProfile -File scripts/<path> [arguments]`. An action names
 - `release/publish-app.ps1` — **Prepare or publish the app release.** Builds the two artifacts a Deckle GitHub Release carries: the installer stub and the self-contained app ZIP with its sha256 sidecar.
   - Actions: App release / prepare · App release / publish `-Publish` (danger)
   - Parameters: -Target <string>, -OutDir <string>, -Publish, -Notes <string>
-- `release/publish-native-runtime.ps1` — **Prepare or publish the native runtime.** Packages a versioned zip of the native DLLs that Deckle's first-run wizard downloads at install time.
-  - Actions: Native runtime / prepare · Native runtime / publish `-Publish` (danger)
-  - Parameters: -Version <string>, -WhisperRepo <string>, -WhisperBuildDir <string>, -ArtifactPath <string>, -Target <string>, -OutDir <string>, -Publish, -Notes <string>
 
 ## `scripts/settings/`
 
@@ -114,7 +108,7 @@ Run one with `pwsh -NoProfile -File scripts/<path> [arguments]`. An action names
 
 - `setup/bootstrap-dev-env.ps1` — **Bootstrap the dev environment.** Brings a fresh Windows 11 machine up to speed for building and running Deckle.
   - Actions: Dev environment / plan `-DryRun` · Dev environment / bootstrap `-Yes` (danger)
-  - Parameters: -DryRun, -Full, -IncludeAssets, -SkipAssets, -AssetsRelease <string>, -Yes
+  - Parameters: -DryRun, -Full, -IncludeAssets, -SkipAssets, -Yes
 - `setup/build-portaudio.ps1` — **Build PortAudio.** Rebuilds the portaudio.dll that Deckle.Audio ships, from the pinned PortAudio commit, with the WASAPI host API only, and writes it with its license and provenance into src/Deckle.Audio/Native/win-x64.
   - Actions: PortAudio / build
   - Parameters: -WorkDir <string>
@@ -124,9 +118,9 @@ Run one with `pwsh -NoProfile -File scripts/<path> [arguments]`. An action names
 - `setup/scaffold.ps1` — **Scaffold repository files.** Creates the standard folders and files a repository starts with, and never overwrites what exists: whatever is already there is kept as it is.
   - Actions: Scaffold / preview · Scaffold / apply `-Apply`
   - Parameters: -Target <string>, -Apply, -Folders <string[]>, -License <string>, -Name <string>, -Holder <string>
-- `setup/setup-assets.ps1` — **Set up runtime assets.** Populates the native and models folders under the user data root with the whisper.cpp DLLs, the Visual C++ runtime they import and the Whisper models the app needs at runtime.
+- `setup/setup-assets.ps1` — **Set up runtime assets.** Populates the models folder under the user data root with the Parakeet speech model (FP32, into parakeet-tdt-0.6b-v3-ultra, about 2.4 GB) and the Silero VAD model the app needs at runtime.
   - Actions: Runtime assets / set up
-  - Parameters: -DataRoot <string>, -FromRelease <string>, -WhisperRepo <string>, -WhisperBuildDir <string>, -WithLarge, -Force
+  - Parameters: -DataRoot <string>, -Force
 - `setup/update-inventory.ps1` — Regenerate scripts/INVENTORY.md. (not in the menu)
   - Parameters: -Target <string>, -Apply
 - `setup/update-tree.ps1` — Regenerate TREE.md. (not in the menu)

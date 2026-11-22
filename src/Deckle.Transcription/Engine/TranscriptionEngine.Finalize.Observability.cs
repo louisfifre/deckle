@@ -27,8 +27,8 @@ public sealed partial class TranscriptionEngine
         long hotkeyToCaptureMs = _hotkeySw?.ElapsedMilliseconds ?? 0;
         long recordDrainMs = (long)_recordDrainDuration.TotalMilliseconds;
         long stopToPipelineMs = _stopToPipelineSw?.ElapsedMilliseconds ?? 0;
-        long whisperInitMs = production.InitMs;
-        long whisperMs = Math.Max(0, production.TotalTranscribeMs - whisperInitMs);
+        long engineInitMs = production.InitMs;
+        long decodeMs = Math.Max(0, production.TotalTranscribeMs - engineInitMs);
         string strategyLabel = _backend.Name;
 
         if (isFileRun)
@@ -44,7 +44,7 @@ public sealed partial class TranscriptionEngine
         DeckleWhispSource.Log.PipelineCompletedDetail(delivery.Outcome.ToString());
         DeckleWhispSource.Log.PipelineTimings(
             recordingDurationSec, _modelLoadMs, hotkeyToCaptureMs, recordDrainMs,
-            stopToPipelineMs, whisperInitMs, whisperMs, rewrite.LlmMs,
+            stopToPipelineMs, engineInitMs, decodeMs, rewrite.LlmMs,
             clipboardMs);
         DeckleWhispSource.Log.PipelineLlmMetrics(
             rewrite.LlmLoadMs,
@@ -62,7 +62,7 @@ public sealed partial class TranscriptionEngine
 
         _recordingSw?.Stop();
 
-        RecordCorpus(production, rawText, rewrite, isFileRun, recordingDurationSec, whisperMs);
+        RecordCorpus(production, rawText, rewrite, isFileRun, recordingDurationSec, decodeMs);
     }
 
     private void RecordCorpus(
@@ -71,7 +71,7 @@ public sealed partial class TranscriptionEngine
         FinalizeRewrite rewrite,
         bool isFileRun,
         double recordingDurationSec,
-        long whisperMs)
+        long decodeMs)
     {
         var telemetrySettings = _host.Telemetry;
         if (!telemetrySettings.CorpusEnabled)
@@ -109,15 +109,15 @@ public sealed partial class TranscriptionEngine
             bucket:                "raw",
             tier:                  asrTier,
             backend:               _backend.Name,
-            model:                 asrSettings.Model,
-            language:              asrSettings.Language,
-            prompt_or_instruction: asrSettings.InitialPrompt ?? "",
+            model:                 DescribeAsrModel(asrSettings),
+            language:              "",
+            prompt_or_instruction: "",
             text:                  rawText,
             text_words:            rawWordCount,
             text_chars:            rawText.Length,
             duration_seconds:      recordingDurationSec,
             words_per_second:      recordingDurationSec > 0 ? rawWordCount / recordingDurationSec : 0,
-            elapsed_ms:            whisperMs,
+            elapsed_ms:            decodeMs,
             audio_content:         corpusContent);
 
         if (rewrite.Profile is null)
@@ -144,5 +144,17 @@ public sealed partial class TranscriptionEngine
             text_words:            rewriteWordCount,
             text_chars:            rewrite.Text.Length,
             elapsed_ms:            rewrite.LlmMs);
+    }
+
+    // The model of the corpus line: the model folder's name and the encoder's
+    // precision ("parakeet-tdt-0.6b-v3-ultra/fp32"). The corpus line keeps its
+    // language and prompt fields, empty: the engine has neither to record.
+    private static string DescribeAsrModel(EngineSettings engine)
+    {
+        string folder = string.IsNullOrWhiteSpace(engine.ParakeetModelDirectory)
+            ? EngineSettings.DefaultParakeetFolderName
+            : Path.GetFileName(engine.ParakeetModelDirectory.TrimEnd(
+                Path.DirectorySeparatorChar, Path.AltDirectorySeparatorChar));
+        return $"{folder}/{engine.ParakeetEncoder.ToString().ToLowerInvariant()}";
     }
 }

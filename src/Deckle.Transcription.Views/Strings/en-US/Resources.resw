@@ -168,10 +168,10 @@
        error or warning is worth surfacing in the HUD. Each pair maps
        to one (Severity, Role) combination decided in code, not here.
        Naming: Engine_<Reason>_Title and Engine_<Reason>_Body. -->
-  <data name="Engine_WhisperModelNotFound_Title" xml:space="preserve">
+  <data name="Engine_SpeechModelNotFound_Title" xml:space="preserve">
     <value>Speech model not found</value>
   </data>
-  <data name="Engine_WhisperModelNotFound_Body_Format" xml:space="preserve">
+  <data name="Engine_SpeechModelNotFound_Body_Format" xml:space="preserve">
     <value>Get it in Settings › {0}.</value>
   </data>
   <data name="Engine_ModelLoadFailed_Title" xml:space="preserve">
@@ -311,10 +311,6 @@
        SetupWindow shell strings: window title, footer buttons. The
        footer buttons reuse Common_* via x:Uid in XAML. -->
 
-  <!-- ─── Setup wizard — choices page ────────────────────────────────
-       Step header text is set programmatically by ChoicesPage via
-       SetStepHeader. Cards in XAML use x:Uid for header/description. -->
-
   <!-- ─── Setup wizard — installing page ─────────────────────────────
        Inline Cancel install button in XAML uses x:Uid. All progress
        and status strings are emitted from C# during the run. -->
@@ -328,7 +324,7 @@
        First page in the Settings nav. Page title, page subtitle, then
        sections in order: Shortcuts, Appearance, Startup, Recording,
        Telemetry, Back up & restore, Application data. -->
-  <data name="WhisperPageBehaviourSection.Title" xml:space="preserve">
+  <data name="TranscriptionPageBehaviourSection.Title" xml:space="preserve">
     <value>Overlay</value>
   </data>
   <data name="GeneralOverlayExpander.Header" xml:space="preserve">
@@ -374,46 +370,22 @@
     <value>A 16 kHz mono WAV per recording, about 2 MB per minute.</value>
   </data>
 
-  <!-- ─── WhisperPage ────────────────────────────────────────────────
+  <!-- ─── TranscriptionPage ────────────────────────────────────────────────
        Second page in the Settings nav. Per-setting Reset buttons share
        the SettingsResetButton.ToolTipService.ToolTip key (style-level
        tooltip in the Page resources). -->
-  <!-- Transcription not-provisioned call-to-action. Shown when the speech runtime
-       or model is missing; the button reopens the first-run setup wizard. -->
-  <data name="WhisperSetupInfoBar.Title" xml:space="preserve">
+  <!-- Transcription not-provisioned call-to-action. Shown when the speech model
+       is missing or incomplete; the button reopens the first-run setup wizard. -->
+  <data name="TranscriptionSetupInfoBar.Title" xml:space="preserve">
     <value>Transcription isn't set up</value>
   </data>
-  <data name="WhisperSetupInfoBar.Message" xml:space="preserve">
-    <value>Download the speech engine and a model to start transcribing.</value>
+  <data name="TranscriptionSetupInfoBar.Message" xml:space="preserve">
+    <value>Download the speech model to start transcribing.</value>
   </data>
-  <data name="WhisperSetupButton.Content" xml:space="preserve">
+  <data name="TranscriptionSetupButton.Content" xml:space="preserve">
     <value>Set up</value>
   </data>
-  <data name="WhisperModelCard.Header" xml:space="preserve">
-    <value>Speech model</value>
-  </data>
-  <data name="WhisperModelCard.Description" xml:space="preserve">
-    <value>Larger models are more accurate, slower and heavier.</value>
-  </data>
-  <data name="WhisperModelSuggest.PlaceholderText" xml:space="preserve">
-    <value>Pick a model</value>
-  </data>
-  <data name="WhisperLanguageCard.Header" xml:space="preserve">
-    <value>Language</value>
-  </data>
-  <data name="WhisperLanguageCard.Description" xml:space="preserve">
-    <value>The language you speak. Auto lets Deckle detect it.</value>
-  </data>
-  <data name="WhisperInitialPromptCard.Header" xml:space="preserve">
-    <value>Initial prompt</value>
-  </data>
-  <data name="WhisperInitialPromptCard.Description" xml:space="preserve">
-    <value>A sentence that teaches the model proper names, tone and recurring mistakes.</value>
-  </data>
-  <data name="WhisperInitialPromptBox.PlaceholderText" xml:space="preserve">
-    <value>Je parle en français, je dis parfois des mots anglais. Claude, pas cloud.</value>
-  </data>
-  <!-- The Lexicon page (LexiconPage, WhisperViewModel.Lexicon.cs). -->
+  <!-- The Lexicon page (LexiconPage, TranscriptionViewModel.Lexicon.cs). -->
   <data name="SettingsModuleNavLabel_Lexicon" xml:space="preserve">
     <value>Lexicon</value>
   </data>
@@ -422,9 +394,6 @@
   </data>
   <data name="LexiconPageHeader.Description" xml:space="preserve">
     <value>Words dictation writes exactly as you type them.</value>
-  </data>
-  <data name="LexiconPageWhisperInfoBar.Title" xml:space="preserve">
-    <value>Only Parakeet uses this list</value>
   </data>
   <data name="LexiconAddCard.Header" xml:space="preserve">
     <value>Add a word</value>
@@ -444,171 +413,81 @@
   <data name="LexiconBoostCard.Header" xml:space="preserve">
     <value>Favor these words when listening</value>
   </data>
-  <data name="WhisperUseGpuCard.Header" xml:space="preserve">
+  <data name="TranscriptionUseGpuCard.Header" xml:space="preserve">
     <value>GPU acceleration</value>
   </data>
-  <data name="WhisperUseGpuCard.Description" xml:space="preserve">
+  <data name="TranscriptionUseGpuCard.Description" xml:space="preserve">
     <value>Faster transcription on the graphics card. Turn off if you see instability or crashes.</value>
   </data>
-  <data name="WhisperVadEnabledCard.Header" xml:space="preserve">
+  <data name="TranscriptionVadEnabledCard.Header" xml:space="preserve">
     <value>Trim silence around speech</value>
   </data>
-  <data name="WhisperVadEnabledCard.Description" xml:space="preserve">
+  <data name="TranscriptionVadEnabledCard.Description" xml:space="preserve">
     <value>Keeps only the spoken part of each utterance before it reaches the model.</value>
   </data>
-  <data name="WhisperVadThresholdCard.Header" xml:space="preserve">
+  <data name="TranscriptionVadThresholdCard.Header" xml:space="preserve">
     <value>Detector confidence</value>
   </data>
-  <data name="WhisperVadThresholdCard.Description" xml:space="preserve">
+  <data name="TranscriptionVadThresholdCard.Description" xml:space="preserve">
     <value>How sure the detector must be to keep a span; higher trims more and may clip soft speech.</value>
   </data>
-  <data name="WhisperVadMinSilenceCard.Header" xml:space="preserve">
+  <data name="TranscriptionVadMinSilenceCard.Header" xml:space="preserve">
     <value>Minimum silence</value>
   </data>
-  <data name="WhisperVadMinSilenceCard.Description" xml:space="preserve">
+  <data name="TranscriptionVadMinSilenceCard.Description" xml:space="preserve">
     <value>A shorter pause does not split speech, so a breath is bridged.</value>
   </data>
-  <data name="WhisperVadSpeechPadCard.Header" xml:space="preserve">
+  <data name="TranscriptionVadSpeechPadCard.Header" xml:space="preserve">
     <value>Speech padding</value>
   </data>
-  <data name="WhisperVadSpeechPadCard.Description" xml:space="preserve">
+  <data name="TranscriptionVadSpeechPadCard.Description" xml:space="preserve">
     <value>Audio kept on each side of speech, so a word's start or end is not clipped.</value>
   </data>
-  <!-- The three output filters forbid tokens to the decoder; none removes text
-       after the fact (whisper.cpp documentation; not checked in the shipped
-       v1.9.1 source). suppress_nst forbids the non-speech symbols, suppress_blank
-       a blank or end-of-text as a segment's first token, suppress_regex every
-       token whose text matches. The headers still say "Remove"/"Drop": their
-       renaming waits on the Decoding rework (2026-11-07 review, change 5). -->
-  <data name="WhisperSuppressNstCard.Header" xml:space="preserve">
-    <value>Remove sound tags</value>
-  </data>
-  <data name="WhisperSuppressNstCard.Description" xml:space="preserve">
-    <value>Whisper may not write the symbols sound tags are made of, such as brackets and music notes, anywhere in the text.</value>
-  </data>
-  <data name="WhisperSuppressBlankCard.Header" xml:space="preserve">
-    <value>Drop empty segments</value>
-  </data>
-  <data name="WhisperSuppressBlankCard.Description" xml:space="preserve">
-    <value>Whisper may not start a segment with a blank or end it before its first word.</value>
-  </data>
-  <data name="WhisperSuppressRegexCard.Header" xml:space="preserve">
-    <value>Remove a pattern</value>
-  </data>
-  <data name="WhisperSuppressRegexCard.Description" xml:space="preserve">
-    <value>Whisper may not write a token that matches this regular expression.</value>
-  </data>
-  <data name="WhisperUseContextCard.Header" xml:space="preserve">
-    <value>Carry context between segments</value>
-  </data>
-  <data name="WhisperUseContextCard.Description" xml:space="preserve">
-    <value>Each segment primes the next for consistent wording; turn it off if the text starts repeating itself.</value>
-  </data>
-  <data name="WhisperMaxTokensCard.Header" xml:space="preserve">
-    <value>Maximum tokens per segment</value>
-  </data>
-  <data name="WhisperMaxTokensCard.Description" xml:space="preserve">
-    <value>How many tokens of the previous text prime each segment.</value>
-  </data>
-  <data name="WhisperUseBeamSearchCard.Header" xml:space="preserve">
-    <value>Explore several hypotheses at once</value>
-  </data>
-  <data name="WhisperUseBeamSearchCard.Description" xml:space="preserve">
-    <value>More accurate, a little slower.</value>
-  </data>
-  <data name="WhisperBeamSizeCard.Header" xml:space="preserve">
-    <value>Number of hypotheses</value>
-  </data>
-  <data name="WhisperBeamSizeCard.Description" xml:space="preserve">
-    <value>Higher is more accurate and slower.</value>
-  </data>
-  <data name="WhisperTemperatureCard.Header" xml:space="preserve">
-    <value>Temperature</value>
-  </data>
-  <data name="WhisperTemperatureCard.Description" xml:space="preserve">
-    <value>The randomness of the decoding; raise it only if the model keeps repeating a phrase.</value>
-  </data>
-  <data name="WhisperTemperatureIncrementCard.Header" xml:space="preserve">
-    <value>Retry temperature step</value>
-  </data>
-  <data name="WhisperTemperatureIncrementCard.Description" xml:space="preserve">
-    <value>An uncertain segment is retried with this much more randomness each time.</value>
-  </data>
-  <data name="WhisperEntropyCard.Header" xml:space="preserve">
-    <value>Minimum entropy</value>
-  </data>
-  <data name="WhisperEntropyCard.Description" xml:space="preserve">
-    <value>A segment with less word diversity than this is retried; higher catches subtler repetitions.</value>
-  </data>
-  <data name="WhisperLogprobCard.Header" xml:space="preserve">
-    <value>Minimum confidence</value>
-  </data>
-  <data name="WhisperLogprobCard.Description" xml:space="preserve">
-    <value>A segment decoded below this average confidence is retried; closer to 0 is stricter.</value>
-  </data>
-  <data name="WhisperNoSpeechCard.Header" xml:space="preserve">
-    <value>No-speech cut-off</value>
-  </data>
-  <data name="WhisperNoSpeechCard.Description" xml:space="preserve">
-    <value>Drops a segment the model hears as silence when it is also under Minimum confidence, on the Decoding page; lower drops more.</value>
-  </data>
-  <data name="WhisperModelsDirCard.Header" xml:space="preserve">
+  <data name="TranscriptionModelsDirCard.Header" xml:space="preserve">
     <value>Models folder</value>
   </data>
-  <data name="WhisperModelsDirCard.Description" xml:space="preserve">
+  <data name="TranscriptionModelsDirCard.Description" xml:space="preserve">
     <value>Where the speech models and the Silero model live.</value>
   </data>
-  <!-- The speech engine fold (WhisperViewModel.SpeechEngineSettings). The choice
-       is read at startup: a change waits for the restart footer. -->
-  <data name="WhisperEngineMode.Header" xml:space="preserve">
+  <!-- The speech engine fold (TranscriptionViewModel.SpeechEngineSettings). Its values
+       are read at each model load: a change waits for the restart footer. -->
+  <data name="TranscriptionSpeechEngineFold.Header" xml:space="preserve">
     <value>Speech engine</value>
   </data>
-  <data name="WhisperEngineMode.Description" xml:space="preserve">
-    <value>What turns your voice into text, from the next start. Parakeet is a preview: it reads its model from the Location below and ignores the Whisper model, language and initial prompt.</value>
+  <data name="TranscriptionSpeechEngineFold.Description" xml:space="preserve">
+    <value>Where Parakeet, the speech model, is read from, and how precisely it computes.</value>
   </data>
-  <data name="WhisperEngineWhisper.Content" xml:space="preserve">
-    <value>Whisper</value>
-  </data>
-  <data name="WhisperEngineParakeet.Content" xml:space="preserve">
-    <value>Parakeet (preview)</value>
-  </data>
-  <data name="WhisperParakeetFilesCard.Header" xml:space="preserve">
+  <data name="TranscriptionParakeetFilesCard.Header" xml:space="preserve">
     <value>Model files</value>
   </data>
-  <data name="WhisperParakeetFiles_Complete" xml:space="preserve">
+  <data name="TranscriptionParakeetFiles_Complete" xml:space="preserve">
     <value>Complete model found.</value>
   </data>
-  <data name="WhisperParakeetFiles_CompleteWithFp16" xml:space="preserve">
+  <data name="TranscriptionParakeetFiles_CompleteWithFp16" xml:space="preserve">
     <value>Complete model found, with an FP16 encoder.</value>
   </data>
-  <data name="WhisperParakeetFiles_Incomplete" xml:space="preserve">
-    <value>No complete model in this folder. It must hold vocab.txt, nemo128.onnx and the fp32 folder with the encoder and the decoder.</value>
+  <data name="TranscriptionParakeetFiles_Incomplete" xml:space="preserve">
+    <value>No complete model in this folder. It must hold vocab.txt and the fp32 folder with the encoder, the decoder and their weight files.</value>
   </data>
-  <data name="WhisperParakeetEncoderCard.Header" xml:space="preserve">
+  <data name="TranscriptionParakeetEncoderCard.Header" xml:space="preserve">
     <value>Encoder precision</value>
   </data>
-  <data name="WhisperParakeetEncoderCard.Description" xml:space="preserve">
+  <data name="TranscriptionParakeetEncoderCard.Description" xml:space="preserve">
     <value>FP16 stores the encoder's numbers on 16 bits instead of 32 (FP32): half the memory, no speed gain on the graphics card, and it can cost accuracy on French. FP32 is the safe choice.</value>
   </data>
-  <data name="WhisperParakeetEncoderFp32.Content" xml:space="preserve">
+  <data name="TranscriptionParakeetEncoderFp32.Content" xml:space="preserve">
     <value>FP32</value>
   </data>
-  <data name="WhisperParakeetEncoderFp16.Content" xml:space="preserve">
+  <data name="TranscriptionParakeetEncoderFp16.Content" xml:space="preserve">
     <value>FP16</value>
   </data>
-  <data name="WhisperParakeetEncoderMissing.Message" xml:space="preserve">
+  <data name="TranscriptionParakeetEncoderMissing.Message" xml:space="preserve">
     <value>This folder has no FP16 encoder, so Parakeet cannot load with this precision.</value>
   </data>
-  <!-- DecodingPage, while Parakeet is the chosen engine. -->
-  <data name="DecodingPageWhisperOnlyInfoBar.Title" xml:space="preserve">
-    <value>These settings are for Whisper</value>
-  </data>
-  <data name="DecodingPageWhisperOnlyInfoBar.Message" xml:space="preserve">
-    <value>Parakeet is the chosen speech engine and does not read them. The silence trim below still applies.</value>
-  </data>  <data name="WhisperRestartDiscard.Content" xml:space="preserve">
+  <data name="TranscriptionRestartDiscard.Content" xml:space="preserve">
     <value>Discard</value>
   </data>
-  <data name="WhisperRestartNow.Content" xml:space="preserve">
+  <data name="TranscriptionRestartNow.Content" xml:space="preserve">
     <value>Restart now</value>
   </data>
 
@@ -627,63 +506,33 @@
        Page titles, subtitles, and section headers rendered as plain
        TextBlocks (not Cards). x:Uid resolves <Uid>.Text automatically.
        Values mirror the raw Surface_Purpose entries for code-behind. -->
-  <data name="WhisperPageHeader.Title" xml:space="preserve">
+  <data name="TranscriptionPageHeader.Title" xml:space="preserve">
     <value>Transcription</value>
   </data>
-  <data name="WhisperPageHeader.Description" xml:space="preserve">
+  <data name="TranscriptionPageHeader.Description" xml:space="preserve">
     <value>The on-screen overlay, the model and the engine.</value>
   </data>
-  <!-- The module's two other pages, nested under it in the rail. -->
-  <data name="DecodingPageHeader.Title" xml:space="preserve">
-    <value>Decoding</value>
-  </data>
-  <data name="DecodingPageHeader.Description" xml:space="preserve">
-    <value>How Whisper searches for the text, and what it does with silence and noise.</value>
-  </data>
-  <data name="DecodingPageDecodingSection.Title" xml:space="preserve">
-    <value>Decoding</value>
-  </data>
-  <data name="DecodingPageDecodingSection.Caption" xml:space="preserve">
-    <value>How the decoder searches for the text, and how it retries when unsure.</value>
-  </data>
-  <data name="DecodingPageConfidenceSection.Title" xml:space="preserve">
-    <value>Confidence</value>
-  </data>
-  <data name="DecodingPageConfidenceSection.Caption" xml:space="preserve">
-    <value>When Whisper retries a segment.</value>
-  </data>
-  <data name="WhisperPageOutputFiltersSection.Title" xml:space="preserve">
-    <value>Output filters</value>
-  </data>
-  <data name="WhisperPageOutputFiltersSection.Caption" xml:space="preserve">
-    <value>What Whisper may never write.</value>
-  </data>
-  <data name="WhisperPageContextSegmentationSection.Title" xml:space="preserve">
-    <value>Context</value>
-  </data>
-  <data name="WhisperPageContextSegmentationSection.Caption" xml:space="preserve">
-    <value>What each segment knows of the previous one.</value>
-  </data>
+  <!-- The module's other pages, nested under it in the rail. -->
   <data name="StreamingPageHeader.Title" xml:space="preserve">
     <value>Streaming</value>
   </data>
   <data name="StreamingPageHeader.Description" xml:space="preserve">
-    <value>How Deckle cuts each recording into utterances.</value>
+    <value>How Deckle cuts each recording into utterances and filters silence and noise.</value>
   </data>
   <data name="StreamingPageSegmentationSection.Title" xml:space="preserve">
     <value>Segmentation</value>
   </data>
-  <data name="WhisperPageModelEngineSection.Title" xml:space="preserve">
+  <data name="TranscriptionPageModelEngineSection.Title" xml:space="preserve">
     <value>Model and engine</value>
   </data>
   <!-- The one fold of the guards against text from silence and noise, on the
-       Decoding page (WhisperViewModel.SilenceGuardSettings, 2026-11-07 review,
+       Streaming page (TranscriptionViewModel.SilenceGuardSettings, 2026-11-07 review,
        change 6): named for what it spares the person, not for its detectors. -->
-  <data name="WhisperSilenceGuardsFold.Header" xml:space="preserve">
+  <data name="TranscriptionSilenceGuardsFold.Header" xml:space="preserve">
     <value>Silence and noise filtering</value>
   </data>
-  <data name="WhisperSilenceGuardsFold.Description" xml:space="preserve">
-    <value>Keeps Whisper from writing words you never said when it hears silence or noise.</value>
+  <data name="TranscriptionSilenceGuardsFold.Description" xml:space="preserve">
+    <value>Keeps the speech model from writing words you never said when it hears silence or noise.</value>
   </data>
   <data name="StreamingPageSegmentationSection.Caption" xml:space="preserve">
     <value>The voice level that opens an utterance is on the Recording page.</value>
@@ -698,9 +547,9 @@
 
   <!-- GeneralPage Audio input ComboBox items -->
 
-  <!-- WhisperPage Reset all dialog -->
-  <data name="Settings_ResetWhisperDialog_Detail" xml:space="preserve">
-    <value>The Decoding and Streaming pages keep their own values.</value>
+  <!-- TranscriptionPage Reset all dialog -->
+  <data name="Settings_ResetTranscriptionDialog_Detail" xml:space="preserve">
+    <value>The Lexicon and Streaming pages keep their own values.</value>
   </data>
 
   <!-- LlmPage Reset all rewriting dialog + Ollama status -->
@@ -717,94 +566,94 @@
        The XAML Title="..." attribute is overridden in code-behind
        through AppWindow.Title in each window's ConfigureWindow. -->
 
-  <!-- ─── WhisperPage — Streaming pipeline (experimental) ─────────────
+  <!-- ─── TranscriptionPage — Streaming pipeline (experimental) ─────────────
        Strategy selector + energy-segmenter parameters. -->
-  <data name="WhisperStreamingEnabledCard.Header" xml:space="preserve">
+  <data name="TranscriptionStreamingEnabledCard.Header" xml:space="preserve">
     <value>Transcribe as you speak</value>
   </data>
-  <data name="WhisperStreamingEnabledCard.Description" xml:space="preserve">
+  <data name="TranscriptionStreamingEnabledCard.Description" xml:space="preserve">
     <value>Off transcribes a dictation in one pass once you stop; files and recovered takes are always cut.</value>
   </data>
   <!-- The cut margin and the minimum speech: once two cards, now the two
-       values of the cut curve's pause strip (WhisperViewModel.SegmentationSettings,
+       values of the cut curve's pause strip (TranscriptionViewModel.SegmentationSettings,
        CurveArgs.Pause). Header is the caption of each one's field under the plot
        and the accessible name of its handle on the strip, with the unit as the
        other fields' captions carry it; Description is the field's tooltip. -->
-  <data name="WhisperSegMarginCard.Header" xml:space="preserve">
+  <data name="TranscriptionSegMarginCard.Header" xml:space="preserve">
     <value>Cut margin, s</value>
   </data>
-  <data name="WhisperSegMarginCard.Description" xml:space="preserve">
+  <data name="TranscriptionSegMarginCard.Description" xml:space="preserve">
     <value>How much of the pause after your last word an utterance keeps; too short can clip a soft ending.</value>
   </data>
-  <data name="WhisperMinSpeechCard.Header" xml:space="preserve">
+  <data name="TranscriptionMinSpeechCard.Header" xml:space="preserve">
     <value>Minimum speech, s</value>
   </data>
-  <data name="WhisperMinSpeechCard.Description" xml:space="preserve">
+  <data name="TranscriptionMinSpeechCard.Description" xml:space="preserve">
     <value>A shorter sound is not speech, for the cut as for the silence trim; too long drops a short word said alone.</value>
   </data>
   <!-- The pause strip under the cut curve: its caption, then the words drawn on
        it. Read by the Catalog composer (PauseStripArgs.LabelKey); no element
        carries this name as an x:Uid. -->
-  <data name="WhisperCutPauseStrip.Header" xml:space="preserve">
+  <data name="TranscriptionCutPauseStrip.Header" xml:space="preserve">
     <value>One pause, zoomed</value>
   </data>
-  <data name="WhisperCutPauseStrip.MinimumSpeech" xml:space="preserve">
+  <data name="TranscriptionCutPauseStrip.MinimumSpeech" xml:space="preserve">
     <value>minimum speech</value>
   </data>
-  <data name="WhisperCutPauseStrip.Kept" xml:space="preserve">
+  <data name="TranscriptionCutPauseStrip.Kept" xml:space="preserve">
     <value>kept</value>
   </data>
-  <data name="WhisperCutPauseStrip.Dropped" xml:space="preserve">
+  <data name="TranscriptionCutPauseStrip.Dropped" xml:space="preserve">
     <value>dropped</value>
   </data>
-  <data name="WhisperCutPauseStrip.Cut" xml:space="preserve">
+  <data name="TranscriptionCutPauseStrip.Cut" xml:space="preserve">
     <value>cut</value>
   </data>
   <!-- The cut curve: the card shows no header or description of its own; the
-       sentence that reads the current values (WhisperViewModel.CutCurveSentence)
+       sentence that reads the current values (TranscriptionViewModel.CutCurveSentence)
        sits under the plot, and Header is the editor's accessible name;
        the four anchor entries are the legend fields under the plot, their
        Header the field's caption (and, joined two by two, the accessible name
        of the curve's corner handles) and their Description its tooltip. -->
-  <data name="WhisperCutCurveCard.Header" xml:space="preserve">
+  <data name="TranscriptionCutCurveCard.Header" xml:space="preserve">
     <value>Pause before cutting</value>
   </data>
-  <data name="WhisperCutCurveCard.Description" xml:space="preserve">
+  <data name="TranscriptionCutCurveCard.Description" xml:space="preserve">
     <value>How long a pause must last to cut, shrinking as the utterance grows.</value>
   </data>
   <!-- {0} the maximum wait, {1} the ramp start, {2} the minimum wait, {3} the
-       ramp end, all in seconds (WhisperViewModel.CutCurveSentence). -->
-  <data name="WhisperCutCurveSentence_Format" xml:space="preserve">
+       ramp end, all in seconds (TranscriptionViewModel.CutCurveSentence). -->
+  <data name="TranscriptionCutCurveSentence_Format" xml:space="preserve">
     <value>Deckle cuts after {0:F1} s of silence, for speech up to {1:F0} s long. The longer you speak, the shorter the wait: it falls to {2:F1} s at {3:F0} s.</value>
   </data>
-  <data name="WhisperSegHangoverMaxCard.Header" xml:space="preserve">
+  <data name="TranscriptionSegHangoverMaxCard.Header" xml:space="preserve">
     <value>Max wait, s</value>
   </data>
-  <data name="WhisperSegHangoverMaxCard.Description" xml:space="preserve">
+  <data name="TranscriptionSegHangoverMaxCard.Description" xml:space="preserve">
     <value>The silence that ends a short utterance.</value>
   </data>
-  <data name="WhisperSegHangoverMinCard.Header" xml:space="preserve">
+  <data name="TranscriptionSegHangoverMinCard.Header" xml:space="preserve">
     <value>Min wait, s</value>
   </data>
-  <data name="WhisperSegHangoverMinCard.Description" xml:space="preserve">
+  <data name="TranscriptionSegHangoverMinCard.Description" xml:space="preserve">
     <value>The silence that ends a long utterance.</value>
   </data>
-  <data name="WhisperSegHangoverRampStartCard.Header" xml:space="preserve">
+  <data name="TranscriptionSegHangoverRampStartCard.Header" xml:space="preserve">
     <value>Ramp start, s</value>
   </data>
-  <data name="WhisperSegHangoverRampStartCard.Description" xml:space="preserve">
+  <data name="TranscriptionSegHangoverRampStartCard.Description" xml:space="preserve">
     <value>Utterance length where the wait starts shrinking.</value>
   </data>
-  <data name="WhisperSegHangoverRampEndCard.Header" xml:space="preserve">
+  <data name="TranscriptionSegHangoverRampEndCard.Header" xml:space="preserve">
     <value>Ramp end, s</value>
   </data>
-  <data name="WhisperSegHangoverRampEndCard.Description" xml:space="preserve">
+  <data name="TranscriptionSegHangoverRampEndCard.Description" xml:space="preserve">
     <value>Utterance length where the wait reaches its minimum.</value>
   </data>
 
   <!-- ─── Dataset consents (Settings > Diagnostics) ───────────────────
        The dictation's latency and audio-corpus opt-ins, composed on the
-       Diagnostics page from WhisperTelemetryViewModel; their words stay here.
+       Diagnostics page from TranscriptionTelemetryViewModel; their words stay here.
        The latency, corpus and audio-corpus card copy is carried above under
        the General* keys; the audio-corpus content radio is added here. -->
   <data name="GeneralAudioCorpusContentCard.Header" xml:space="preserve">
@@ -820,17 +669,8 @@
     <value>Always raw</value>
   </data>
 
-  <data name="WhisperSuppressRegexBox.PlaceholderText" xml:space="preserve">
-    <value>(e.g. .*\[.*)</value>
-  </data>
-  <data name="WhisperTemperatureIncrementWarning.Message" xml:space="preserve">
-    <value>With the step set to 0, Whisper won't retry uncertain segments. Leave at 0.2 unless you have a specific reason.</value>
-  </data>
   <data name="SettingsModuleNavLabel" xml:space="preserve">
     <value>Transcription</value>
-  </data>
-  <data name="SettingsModuleNavLabel_Decoding" xml:space="preserve">
-    <value>Decoding</value>
   </data>
   <data name="SettingsModuleNavLabel_Streaming" xml:space="preserve">
     <value>Streaming</value>

@@ -13,10 +13,8 @@
 #>
 
 # The app payload is the publish folder, not a single file: the rationale sits
-# in the _IsPublishing PropertyGroup of Deckle.App.csproj. The whisper.cpp
-# native runtime and the Whisper models are not shipped: the setup wizard
-# provisions them per user, and the native bundle has its own release cycle
-# (publish-native-runtime.ps1, native-vX.Y.Z tags).
+# in the _IsPublishing PropertyGroup of Deckle.App.csproj. The speech model is
+# not shipped: the setup wizard provisions it per user.
 
 [CmdletBinding()]
 param(
@@ -51,7 +49,6 @@ $LibDir = Join-Path $ScriptsDir 'lib'
 . (Join-Path $LibDir 'native-console.ps1')
 . (Join-Path $LibDir 'version.ps1')
 Import-Module (Join-Path $LibDir 'release-validation.psm1') -Force
-Import-Module (Join-Path $LibDir 'native-runtime-release.psm1') -Force
 
 $WorkflowOutput = New-WorkflowOutput -Category 'publish'
 
@@ -244,25 +241,6 @@ if ($Publish) {
             }) `
             -Next @('No release repair remains.')
         return
-    }
-
-    # The setup wizard downloads the separately versioned whisper.cpp bundle:
-    # prove it is publicly downloadable and byte-for-byte identical to the
-    # metadata compiled into Deckle before releasing an installer that needs it.
-    Write-WorkflowStep -Output $WorkflowOutput -Message 'Verify native runtime release'
-    $nativeSource = Join-Path $RepoRoot 'src\Deckle.Transcription.Whisper\Setup\NativeRuntime.cs'
-    $nativeBundle = Get-DeckleNativeRuntimeBundle -SourcePath $nativeSource
-    $nativeDownload = Join-Path ([IO.Path]::GetTempPath()) "deckle-native-preflight-$([guid]::NewGuid()).zip"
-    try {
-        Invoke-WebRequest -Uri $nativeBundle.Url -OutFile $nativeDownload
-        $verifiedNative = Assert-DeckleNativeRuntimeArtifact `
-            -Bundle $nativeBundle `
-            -ArtifactPath $nativeDownload
-        Write-WorkflowMessage -Output $WorkflowOutput -Message "native-v$($verifiedNative.Version) available and verified ($($verifiedNative.SizeBytes) bytes)"
-    } finally {
-        if (Test-Path -LiteralPath $nativeDownload) {
-            Remove-Item -LiteralPath $nativeDownload -Force
-        }
     }
 }
 

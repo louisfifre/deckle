@@ -14,7 +14,7 @@ namespace Deckle.App;
 // id (UserIncidents) and know nothing of the tray; this table is the App's
 // answer to "under which name, and where is the fix".
 //
-// One line per module, not per id: Transcription has two sources (the Whisper
+// One line per module, not per id: Transcription has two sources (the speech
 // model and the speech-trim model) and Ambient Light two (the event stream and
 // the push), and the person fixes either from the same place. The order of
 // Sources is the order of the lines, and a module's line opens the page of its
@@ -38,8 +38,8 @@ internal static class TrayIncidentLines
     [
         new(UserIncidents.PrecisionScroll, ModuleIds.PrecisionScroll,   PrecisionScrollSettingsModule.PageTag),
         new(UserIncidents.Microphone,      RecordingModule,             RecordingSettingsModule.PageTag),
-        new(UserIncidents.WhisperModel,    ModuleIds.Transcription,     WhisperSettingsModule.PageTag),
-        new(UserIncidents.VadModel,        ModuleIds.Transcription,     WhisperSettingsModule.StreamingPageTag),
+        new(UserIncidents.SpeechModel,     ModuleIds.Transcription,     TranscriptionSettingsModule.PageTag),
+        new(UserIncidents.VadModel,        ModuleIds.Transcription,     TranscriptionSettingsModule.StreamingPageTag),
         new(UserIncidents.AnytypeBackend,  ModuleIds.Anytype,           GeneralPageTag),
         new(UserIncidents.AnytypeGateway,  ModuleIds.Anytype,           GeneralPageTag),
         new(UserIncidents.HueEvents,       ModuleIds.Ambient,           AmbientSettingsModule.PageTag),

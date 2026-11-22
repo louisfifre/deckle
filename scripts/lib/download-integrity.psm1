@@ -1,18 +1,19 @@
 # Reads the SHA-256 the C# code pins for each downloaded model and checks a
 # file against one, so a setup script never trusts a download on its size
-# alone. The hashes stay in SpeechModels.cs and SileroVadModel.cs, which the
-# app's setup wizard also checks; nothing here keeps a copy of them.
+# alone. The hashes stay in ParakeetModelCatalog.cs and SileroVadModel.cs,
+# which the app's setup wizard also checks; nothing here keeps a copy of them.
 
 $ErrorActionPreference = 'Stop'
 
-function Get-DeckleSpeechModelHashes {
+function Get-DeckleParakeetModelFiles {
     <#
     .SYNOPSIS
-        Maps each Whisper model file name to the SHA-256 SpeechModels.cs pins.
+        The files of the Parakeet model ParakeetModelCatalog.cs pins: path,
+        size, SHA-256 and download URL.
     .DESCRIPTION
-        A ModelEntry names its file through a constant for the default model,
-        so the file name is read from the end of its Url, which every entry
-        spells out.
+        Reads the default file list (the FP32 set the wizard downloads), not the
+        optional FP16 encoder. The URL is built from the catalog's repository
+        and revision, the way ParakeetModelFile.Url is.
     #>
     [CmdletBinding()]
     param(
@@ -20,28 +21,36 @@ function Get-DeckleSpeechModelHashes {
     )
 
     if (-not (Test-Path -LiteralPath $SourcePath -PathType Leaf)) {
-        throw "Speech models source not found: $SourcePath"
+        throw "Parakeet model catalog source not found: $SourcePath"
     }
     $source = Get-Content -LiteralPath $SourcePath -Raw
-    $entries = [regex]::Matches(
+    $repository = [regex]::Match($source, 'const\s+string\s+Repository\s*=\s*"(?<value>[^"]+)"')
+    $revision = [regex]::Match($source, 'const\s+string\s+Revision\s*=\s*"(?<value>[0-9a-f]{40})"')
+    if (-not $repository.Success -or -not $revision.Success) {
+        throw "Repository and Revision not found in $SourcePath"
+    }
+    $list = [regex]::Match(
         $source,
-        'new\s+ModelEntry\((?<body>.*?)\)\s*[,;]',
+        'Files\s*\{\s*get;\s*\}\s*=\s*\[(?<body>.*?)\];',
         [System.Text.RegularExpressions.RegexOptions]::Singleline)
+    if (-not $list.Success) {
+        throw "ParakeetModelCatalog.Files not found in $SourcePath"
+    }
 
-    $hashes = [ordered]@{}
-    foreach ($entry in $entries) {
-        $body = $entry.Groups['body'].Value
-        $url = [regex]::Match($body, 'Url:\s*"(?<value>[^"]+)"')
-        $sha = [regex]::Match($body, 'Sha256:\s*"(?<value>[0-9a-fA-F]{64})"')
-        if (-not $url.Success -or -not $sha.Success) {
-            throw "A ModelEntry in $SourcePath has no readable Url and Sha256"
+    $files = foreach ($entry in [regex]::Matches(
+            $list.Groups['body'].Value,
+            'new\("(?<path>[^"]+)",\s*(?<size>[0-9_]+),\s*"(?<sha>[0-9a-fA-F]{64})"\)')) {
+        [pscustomobject]@{
+            Path      = $entry.Groups['path'].Value
+            SizeBytes = [long]($entry.Groups['size'].Value -replace '_', '')
+            Sha256    = $entry.Groups['sha'].Value.ToLowerInvariant()
+            Url       = "https://huggingface.co/$($repository.Groups['value'].Value)/resolve/$($revision.Groups['value'].Value)/$($entry.Groups['path'].Value)"
         }
-        $hashes[[uri]::new($url.Groups['value'].Value).Segments[-1]] = $sha.Groups['value'].Value.ToLowerInvariant()
     }
-    if (-not $hashes.Count) {
-        throw "No ModelEntry found in $SourcePath"
+    if (-not @($files).Count) {
+        throw "No file found in ParakeetModelCatalog.Files of $SourcePath"
     }
-    return $hashes
+    return @($files)
 }
 
 function Get-DeckleSileroVadHash {
@@ -82,4 +91,4 @@ function Test-DeckleFileSha256 {
     return $actual -ceq $ExpectedSha256.ToLowerInvariant()
 }
 
-Export-ModuleMember -Function Get-DeckleSpeechModelHashes, Get-DeckleSileroVadHash, Test-DeckleFileSha256
+Export-ModuleMember -Function Get-DeckleParakeetModelFiles, Get-DeckleSileroVadHash, Test-DeckleFileSha256

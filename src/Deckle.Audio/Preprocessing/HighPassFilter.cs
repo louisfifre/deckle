@@ -12,7 +12,7 @@ namespace Deckle.Audio;
 // Role in the chain: strip everything below the speech band — mains hum
 // (50/60 Hz), HVAC rumble, plosive thumps, table vibration — and the DC
 // offset along the way (a high-pass at ~90 Hz removes the 0 Hz component
-// for free). This both cleans the signal Whisper sees and stabilises the
+// for free). This both cleans the signal the speech model sees and stabilises the
 // downstream RMS measurement (rumble inflates RMS without carrying speech).
 //
 // Q = 1/√2 (≈0.707) gives the maximally-flat Butterworth response — no

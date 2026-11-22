@@ -4,7 +4,7 @@ namespace Deckle.Diagnostics;
 
 // Cross-cutting sub-provider: explicit application cancellations. Capturing
 // OperationCanceledException at sites where they are semantically interesting
-// (Whisper engine, Vision capture, Llm rewrite, Ollama polling) answers "why
+// (transcription engine, Vision capture, Llm rewrite, Ollama polling) answers "why
 // did the operation stop" without guessing. Without this event, an OCE
 // silently swallowed in a catch leaves no trace, and a chain of cascading
 // cancellations is impossible to reconstruct after the fact. The primitive is
@@ -54,7 +54,7 @@ public sealed class DeckleCancellationSource : DeckleEventSource
 // Closed `operation` vocabulary of OperationCancelled.
 public static class CancelledOperations
 {
-    // Transcription (warmup, VAD, whisper_run).
+    // Transcription (warmup, VAD, decoding).
     public const string WhispTranscribe = "whisp-transcribe";
 
     // A file transcription batch.

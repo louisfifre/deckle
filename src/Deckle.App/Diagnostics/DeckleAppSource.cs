@@ -142,9 +142,7 @@ public sealed partial class DeckleAppSource : DeckleEventSource
     public const int EvtSurvivedException              = 126;
     public const int EvtSurvivedExceptionRepeated      = 127;
     // 128 and 129 retired (the legacy log file rename was removed).
-    public const int EvtSpeechRepairOffered            = 130;
-    public const int EvtSpeechRepairEnded              = 131;
-    public const int EvtSpeechRepairFailed             = 132;
+    // 130 to 132 retired (startup no longer opens setup for a missing speech model).
     public const int EvtShutdownRequestIgnored         = 133;
     public const int EvtStartupFailed                  = 134;
     public const int EvtCaptureFolderOpenFailed        = 135;

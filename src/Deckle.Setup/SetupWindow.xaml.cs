@@ -11,9 +11,7 @@ using WinRT.Interop;
 using Deckle.Core;
 using Deckle.Catalog;
 using Deckle.Diagnostics;
-using Deckle.Modules;
 using Deckle.Shell.WindowChrome;
-using Deckle.Transcription.Whisper;
 using Deckle.Localization;
 
 namespace Deckle.Setup;
@@ -51,7 +49,6 @@ public sealed partial class SetupWindow : Window
         // if a navigation path skips the Modules page.
         Context = context ?? new SetupContext
         {
-            SelectedModel = SpeechModels.DefaultWhisperModel,
             SelectedModules = Deckle.Modules.ModulePresence.Choice
                 ?? Deckle.Modules.ModuleRegistry.Modules
                     .Select(m => m.Id)
@@ -155,9 +152,7 @@ public sealed partial class SetupWindow : Window
         RefreshStepRail();
     }
 
-    // Also called by the Modules page on every selection change, so ticking
-    // Transcription adds or removes its step live.
-    public void RefreshStepRail()
+    private void RefreshStepRail()
     {
         if (!IsWizard) return;
 
@@ -195,7 +190,6 @@ public sealed partial class SetupWindow : Window
     {
         var steps = new List<SetupStep> { SetupStep.Modules };
         if (Context.InstallMode || Context.ResumesInstall) steps.Add(SetupStep.Location);
-        if (Context.SelectedModules.Contains(ModuleIds.Transcription)) steps.Add(SetupStep.Transcription);
         steps.Add(SetupStep.Install);
         steps.Add(SetupStep.Finish);
         return steps;
@@ -223,13 +217,10 @@ public sealed partial class SetupWindow : Window
         }
     }
 
-    // The Transcription step wears its module's icon, read from the catalogue
-    // the module card and the Settings page read, so the three cannot drift.
     private static string StepGlyph(SetupStep step) => step switch
     {
         SetupStep.Modules       => Glyphs.Setup,
         SetupStep.Location      => Glyphs.Folder,
-        SetupStep.Transcription => ModuleRegistry.Modules.First(m => m.Id == ModuleIds.Transcription).Glyph,
         SetupStep.Install       => Glyphs.Download,
         _                       => Glyphs.Launch,
     };
@@ -238,7 +229,6 @@ public sealed partial class SetupWindow : Window
     {
         SetupStep.Modules       => typeof(ModulesPage),
         SetupStep.Location      => typeof(FoldersPage),
-        SetupStep.Transcription => typeof(ChoicesPage),
         _                       => null,
     };
 

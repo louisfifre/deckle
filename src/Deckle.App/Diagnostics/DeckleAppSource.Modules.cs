@@ -5,7 +5,7 @@ namespace Deckle.App;
 
 // The composition of the resident app, one line per piece, so the log of
 // a run says which modules it had. A skip carries its reason: a missing
-// native runtime reads differently from a module the person left out.
+// speech model reads differently from a module the person left out.
 public sealed partial class DeckleAppSource
 {
     // Written before the module's composition runs: a module that hangs at

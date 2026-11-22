@@ -6,10 +6,10 @@ namespace Deckle.Transcription.Parakeet;
 // Parakeet backend provider: the model it loads (which files, which device, why
 // not) and the native decode calls. The transcription engine above it logs through
 // Deckle-Whisp and tells the story of a take; this provider carries the facts
-// behind it, in the same split the Whisper backend keeps with Deckle-Whisper.
+// behind it.
 //
 // Transcript text never enters an event here: segment events carry counts and
-// timings only (and those come from Deckle-Whisp, the way Whisper's do).
+// timings only (and those come from Deckle-Whisp).
 [EventSource(Name = "Deckle-Parakeet")]
 public sealed class DeckleParakeetSource : DeckleEventSource
 {

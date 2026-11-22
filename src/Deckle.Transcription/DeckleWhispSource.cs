@@ -7,8 +7,8 @@ namespace Deckle.Transcription;
 // the model lifecycle as the engine sees it (lazy load, idle unload), the
 // start-of-take prime, the take and file pipelines, clipboard, and
 // structured end-of-pipeline heartbeats (CorpusAsrRecorded,
-// CorpusRewriteRecorded). The native Whisper backend has its own provider
-// (DeckleWhisperSource).
+// CorpusRewriteRecorded). The Parakeet backend has its own provider
+// (DeckleParakeetSource).
 //
 // Transcript text never enters an operational event, so never the LogWindow or
 // trace.jsonl. It travels only in the Dataset-tagged corpus events, which those
@@ -41,7 +41,7 @@ public sealed partial class DeckleWhispSource : DeckleEventSource
     public const int EvtModelLoading                     = 17;
     // 18 retired.
     // 19 retired.
-    public const int EvtModelInitFromFile                = 20;
+    // 20 retired.
     // 21 retired.
     public const int EvtModelLoaded                      = 22;
     // 23 retired.
@@ -50,7 +50,7 @@ public sealed partial class DeckleWhispSource : DeckleEventSource
     public const int EvtModelUnloadedMilestone              = 26;
     public const int EvtModelUnloaded                    = 27;
     public const int EvtModelIdleTimerSet                = 28;
-    public const int EvtModelPathEnvIgnored              = 29;
+    // 29 retired.
     // 30 retired.
     // 31 retired.
     // 32 retired.
@@ -71,7 +71,7 @@ public sealed partial class DeckleWhispSource : DeckleEventSource
     // 47 retired.
     public const int EvtTranscribeCompleted              = 48;
     public const int EvtTranscribeCompleteDetail         = 49;
-    public const int EvtTranscribeRepetitionLoop         = 50;
+    // 50 retired.
     public const int EvtTranscribeSkipped                = 51;
     // 52 retired.
     // 53 retired.
@@ -114,10 +114,7 @@ public sealed partial class DeckleWhispSource : DeckleEventSource
     public const int EvtPageResetAll                     = 98;
     public const int EvtPageStackTrace                   = 99;
     // 100 retired.
-    public const int EvtWhisperInitParamsParsed          = 101;
-    public const int EvtWhisperModelLoadParsed           = 102;
-    public const int EvtWhisperBackendInitParsed         = 103;
-    public const int EvtWhisperInitStateParsed           = 104;
+    // 101–104: retired IDs, never reused.
     public const int EvtCorpusAsrRecorded                = 105;
     public const int EvtCorpusRewriteRecorded            = 106;
     public const int EvtTranscriptionPreprocessed        = 107;
@@ -142,7 +139,7 @@ public sealed partial class DeckleWhispSource : DeckleEventSource
     // 128 retired.
     // 129 retired.
     // 130 retired.
-    public const int EvtModelPathEnvIgnoredDetail        = 131;
+    // 131 retired.
     // 132 retired.
     // 133 retired.
     // 134 retired.
@@ -164,7 +161,7 @@ public sealed partial class DeckleWhispSource : DeckleEventSource
     // 150 retired.
     // 151 retired.
     // 152 retired.
-    public const int EvtTranscribeHallucinationFiltered  = 153;
+    // 153 retired.
     // 154 retired.
     public const int EvtPrimeOverlap                     = 155;
     public const int EvtFileTranscriptionStarted         = 156;
@@ -176,13 +173,13 @@ public sealed partial class DeckleWhispSource : DeckleEventSource
     // 162 retired.
     // 163 retired.
     // 164 retired.
-    public const int EvtModelFallback                    = 165;
-    // 166 retired: its configured and installed names moved into EvtModelFallback.
+    // 165 retired.
+    // 166 retired.
     // 167 retired: TranscriptionCorrelation, a line carrying only the
     // transcription_id that TakeStarted, the milestone after it, carries too.
 
-    public const int EvtTranscribePromptConfigured       = 168;
-    public const int EvtTranscribeRepetitionLoopMetrics  = 169;
+    // 168 retired.
+    // 169 retired.
     public const int EvtSegmentRecognized                = 170;
     // 171 retired: DictationPasted.
     public const int EvtDictationCopied                  = 172;
@@ -206,7 +203,7 @@ public sealed partial class DeckleWhispSource : DeckleEventSource
     // 190 retired.
     // 191 retired.
     // 192 retired.
-    public const int EvtTranscribeHallucinationFilteredMetrics = 193;
+    // 193 retired.
     public const int EvtWarmupClipMissingDetail          = 194;
     public const int EvtModelUnavailable                 = 195;
     public const int EvtModelLoadRetryFailed             = 196;
@@ -247,7 +244,7 @@ public sealed partial class DeckleWhispSource : DeckleEventSource
     public const int EvtFileTranscriptionWriteFailed     = 231;
     public const int EvtPageInitFailed                   = 232;
     public const int EvtPageLoadedFailed                 = 233;
-    public const int EvtPageModelScanFailed              = 234;
+    // 234 retired.
     public const int EvtPipelineTimings                  = 235;
     public const int EvtSettingsLoadWarning              = 236;
     public const int EvtSettingsLoadError                = 237;

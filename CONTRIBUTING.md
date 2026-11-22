@@ -6,7 +6,7 @@ Deckle is a personal project, built for the maintainer's daily use and as a way 
 
 Ideas and design proposals for supporting more languages are especially welcome.
 
-Transcription is already multilingual through Whisper. The open architectural problem is the system-wide corrector: it is French-first today, and parts of its pipeline depend deliberately on French lexical data, morphology, evaluation corpora, and small local models. Adding a language should preserve the qualities that make correction trustworthy — conservative decisions, measurable false-correction rates, reversibility, local inference, and modest hardware requirements — rather than amount to swapping one dictionary for another.
+Transcription is already multilingual through Parakeet. The open architectural problem is the system-wide corrector: it is French-first today, and parts of its pipeline depend deliberately on French lexical data, morphology, evaluation corpora, and small local models. Adding a language should preserve the qualities that make correction trustworthy — conservative decisions, measurable false-correction rates, reversibility, local inference, and modest hardware requirements — rather than amount to swapping one dictionary for another.
 
 An implementation is not required. A useful proposal can instead clarify:
 

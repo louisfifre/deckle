@@ -11,7 +11,7 @@ namespace Deckle.Transcription.Views;
 // writes a stale copy.
 public sealed partial class LexiconPage : Page
 {
-    public WhisperViewModel ViewModel { get; } = new();
+    public TranscriptionViewModel ViewModel { get; } = new();
 
     // Held so it lives as long as the cached page.
     private readonly SettingsComposer _composer;
@@ -31,7 +31,6 @@ public sealed partial class LexiconPage : Page
     {
         base.OnNavigatedTo(e);
         ViewModel.Load();
-        WhisperInfoBar.IsOpen = ViewModel.IsWhisperChosen;
     }
 
     // Enter adds what is in the box, the gesture a field with an add button

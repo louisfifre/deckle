@@ -178,9 +178,6 @@ public sealed partial class ModulesPage : Page
         if (_setup is null) return;
         _setup.Context.SelectedModules = new HashSet<string>(_selection, StringComparer.Ordinal);
 
-        // The Transcription step exists only while its module is selected.
-        _setup.RefreshStepRail();
-
         _setup.SetTotalEstimate(InstallPlan.DescribeTotal(_setup.Context));
     }
 
@@ -201,12 +198,6 @@ public sealed partial class ModulesPage : Page
         }
 
         ModulePresence.Save(_selection.ToList());
-
-        if (_selection.Contains(ModuleIds.Transcription))
-        {
-            _setup.Body.Navigate(typeof(ChoicesPage), _setup);
-            return;
-        }
 
         bool anythingToInstall = InstallPlan.Build(_setup.Context).Any(i => !i.IsInstalled());
         if (anythingToInstall)

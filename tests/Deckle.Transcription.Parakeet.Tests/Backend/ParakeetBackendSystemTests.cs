@@ -16,7 +16,7 @@ public sealed class ParakeetBackendSystemTests
     public async Task InstalledParakeetTranscribesTheReferenceSpeech()
     {
         var files = new ParakeetModelFiles(ModelFolder);
-        Assert.SkipUnless(files.IsComplete, $"No complete Parakeet model at {ModelFolder}.");
+        Assert.SkipUnless(files.IsCompleteFor(ParakeetEncoderPrecision.Fp32), $"No complete Parakeet model at {ModelFolder}.");
 
         float[] pcm = ReadReferenceSpeech();
         using var backend = await LoadBackendAsync(ParakeetEncoderPrecision.Fp32);
@@ -38,7 +38,7 @@ public sealed class ParakeetBackendSystemTests
     public async Task InstalledParakeetFp16EncoderTranscribesTheReferenceSpeech()
     {
         var files = new ParakeetModelFiles(ModelFolder);
-        Assert.SkipUnless(files.IsComplete && files.HasFp16Encoder, $"No Parakeet model with an FP16 encoder at {ModelFolder}.");
+        Assert.SkipUnless(files.IsCompleteFor(ParakeetEncoderPrecision.Fp16), $"No Parakeet model with an FP16 encoder at {ModelFolder}.");
 
         float[] pcm = ReadReferenceSpeech();
         using var backend = await LoadBackendAsync(ParakeetEncoderPrecision.Fp16);
@@ -66,7 +66,7 @@ public sealed class ParakeetBackendSystemTests
     private static async Task TranscribeRepeatedSpeechAsync(double targetSeconds, int expectedChunks)
     {
         var files = new ParakeetModelFiles(ModelFolder);
-        Assert.SkipUnless(files.IsComplete, $"No complete Parakeet model at {ModelFolder}.");
+        Assert.SkipUnless(files.IsCompleteFor(ParakeetEncoderPrecision.Fp32), $"No complete Parakeet model at {ModelFolder}.");
 
         float[] speech = ReadReferenceSpeech();
         float[] gap = new float[(int)(1.5 * LongAudioChunker.SampleRate)];

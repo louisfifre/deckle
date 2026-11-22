@@ -93,8 +93,8 @@
        %TEMP% on each version's first launch and pollutes C:, the very thing the
        install-location choice exists to avoid.
 
-       Native DLLs and Whisper models are not shipped: they live under the user
-       data root (native\, models\), provisioned per user.
+       Speech models are not shipped: they live under the user
+       data root (models\), provisioned per user.
 
        PublishTrimmed stays off: WinUI 3, XAML compilation and x:Bind generated
        code rely on reflection paths the IL linker cannot prove safe. -->
@@ -169,7 +169,6 @@
     <ProjectReference Include="..\Deckle.Transcription\Deckle.Transcription.csproj" />
     <ProjectReference Include="..\Deckle.Transcription.Views\Deckle.Transcription.Views.csproj" />
     <ProjectReference Include="..\Deckle.Transcription.Parakeet\Deckle.Transcription.Parakeet.csproj" />
-    <ProjectReference Include="..\Deckle.Transcription.Whisper\Deckle.Transcription.Whisper.csproj" />
     <ProjectReference Include="..\Deckle.Vision\Deckle.Vision.csproj" />
   </ItemGroup>
 

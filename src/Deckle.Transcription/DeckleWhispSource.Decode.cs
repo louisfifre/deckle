@@ -41,10 +41,9 @@ public sealed partial class DeckleWhispSource
     }
 
     // Per call, unlike TranscribeParams (first call only): what this call
-    // really ran with. Whisper does not report which temperature of the
-    // fallback ladder produced the result, nor a compression ratio, so the
-    // ladder is logged as configured (temp_start, temp_inc). last_end_s against
-    // audio_s shows whether decoding stopped short of the end of the audio.
+    // really ran with. A backend with no prompt or temperature ladder (Parakeet)
+    // logs zeros for those columns. last_end_s against audio_s shows whether
+    // decoding stopped short of the end of the audio.
     [Event(EvtTranscribeDecodeUsed,
            Level = EventLevel.Verbose,
            Keywords = (EventKeywords)Keywords.Pipeline,
@@ -61,20 +60,6 @@ public sealed partial class DeckleWhispSource
                 (EventKeywords)Keywords.Pipeline)) return;
         WriteEvent(EvtTranscribeDecodeUsed, offset_s, prompt_chars, continues_previous, no_context,
             temp_start, temp_inc, segments, last_end_s, audio_s, aborted);
-    }
-
-    [Event(EvtTranscribePromptConfigured,
-           Level = EventLevel.Verbose,
-           Keywords = (EventKeywords)Keywords.Pipeline,
-           Message = "len={0} | carry={1}")]
-    public void TranscribePromptConfigured(int prompt_len, bool carry)
-    {
-        if (!OperationalLogAdmission.IsDetailEnabled(
-                OperationalLogActivity.Transcription,
-                this,
-                EventLevel.Verbose,
-                (EventKeywords)Keywords.Pipeline)) return;
-        WriteEvent(EvtTranscribePromptConfigured, prompt_len, carry);
     }
 
     [Event(EvtTranscribeEmpty,
@@ -118,51 +103,6 @@ public sealed partial class DeckleWhispSource
     public void TranscribeCompleteDetail(long whisper_ms, long n_seg, long chars)
     {
         if (IsEnabled()) WriteEvent(EvtTranscribeCompleteDetail, whisper_ms, n_seg, chars);
-    }
-
-    [Event(EvtTranscribeRepetitionLoop,
-           Level = EventLevel.Warning,
-           Keywords = (EventKeywords)Keywords.Pipeline,
-           Message = "A repetition loop was detected and transcription was aborted")]
-    public void TranscribeRepetitionLoop()
-    {
-        if (IsEnabled()) WriteEvent(EvtTranscribeRepetitionLoop);
-    }
-
-    [Event(EvtTranscribeRepetitionLoopMetrics,
-           Level = EventLevel.Verbose,
-           Keywords = (EventKeywords)Keywords.Pipeline,
-           Message = "streak={0} | period={1}")]
-    public void TranscribeRepetitionLoopMetrics(int streak, int period)
-    {
-        if (!OperationalLogAdmission.IsDetailEnabled(
-                OperationalLogActivity.Transcription,
-                this,
-                EventLevel.Verbose,
-                (EventKeywords)Keywords.Pipeline)) return;
-        WriteEvent(EvtTranscribeRepetitionLoopMetrics, streak, period);
-    }
-
-    [Event(EvtTranscribeHallucinationFiltered,
-           Level = EventLevel.Informational,
-           Keywords = (EventKeywords)Keywords.Pipeline,
-           Message = "A known hallucination was filtered out")]
-    public void TranscribeHallucinationFiltered()
-    {
-        if (IsEnabled()) WriteEvent(EvtTranscribeHallucinationFiltered);
-    }
-
-    // One per segment left out. `entry` is the catalogue line as written in the
-    // code, never the decoded text, so the payload carries nothing the person
-    // said. Not behind the Transcription detail control: it explains why text
-    // went missing from a take, which a reader needs whatever the verbosity.
-    [Event(EvtTranscribeHallucinationFilteredMetrics,
-           Level = EventLevel.Verbose,
-           Keywords = (EventKeywords)Keywords.Pipeline,
-           Message = "segment={0} | segments={1} | chars={2} | entry={3}")]
-    public void TranscribeHallucinationFilteredMetrics(int segment, int segments, int chars, string entry)
-    {
-        if (IsEnabled()) WriteEvent(EvtTranscribeHallucinationFilteredMetrics, segment, segments, chars, entry);
     }
 
     [Event(EvtTranscribeSkipped,

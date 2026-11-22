@@ -9,7 +9,7 @@ public sealed partial class DeckleWhispSource
 
     // The clip ships with the app, so its absence is an incomplete install or a
     // build without its assets. The warm-up then runs on silence, the input on
-    // which Whisper decodes subtitle credits: a reader must see it.
+    // which a speech model can decode subtitle credits: a reader must see it.
     [Event(EvtWarmupClipMissing,
            Level = EventLevel.Warning,
            Keywords = (EventKeywords)Keywords.Lifecycle,
@@ -195,22 +195,6 @@ public sealed partial class DeckleWhispSource
         if (IsEnabled()) WriteEvent(EvtModelLoadRetrying, work_id);
     }
 
-    // The whisper.cpp context the load created, printed in hex as native
-    // handles are, so two loads of one run tell apart; 0x0 means init failed,
-    // which ReportLoadFailure then says in a sentence. Model-load internals,
-    // so the Details verbosity admits it.
-    [Event(EvtModelInitFromFile,
-           Level = EventLevel.Verbose,
-           Keywords = (EventKeywords)Keywords.Lifecycle,
-           Message = "ctx=0x{0:X}")]
-    public void ModelInitFromFile(long ctx)
-    {
-        if (OperationalLogAdmission.IsDetailEnabled(
-                OperationalLogActivity.Transcription, this,
-                EventLevel.Verbose, (EventKeywords)Keywords.Lifecycle))
-            WriteEvent(EvtModelInitFromFile, ctx);
-    }
-
     // Opens the "no transcription" incident, once until a load succeeds.
     // reason is the backend's ErrorReason, load_failed when it gave none, or
     // load_exception when the load threw; ex_type and ex_message are empty
@@ -243,7 +227,7 @@ public sealed partial class DeckleWhispSource
     // work_id is the one of the load whose failure opened the incident, so the
     // file pairs the ModelUnavailable that opened it with this line that closes
     // it. load_ms and device describe the load that succeeded. device is the
-    // backend's accelerator word ("CPU", "Vulkan0", "unknown").
+    // backend's accelerator word ("CPU", "DirectML", "unknown").
     [Event(EvtModelRecovered,
            Level = EventLevel.Informational,
            Keywords = (EventKeywords)Keywords.Lifecycle,
@@ -267,7 +251,7 @@ public sealed partial class DeckleWhispSource
     [Event(EvtModelOnDemandLoad,
            Level = EventLevel.Informational,
            Keywords = (EventKeywords)Keywords.Lifecycle,
-           Message = "The Whisper model loads on demand")]
+           Message = "The speech model loads on demand")]
     public void ModelOnDemandLoad()
     {
         if (IsEnabled()) WriteEvent(EvtModelOnDemandLoad);
@@ -322,80 +306,4 @@ public sealed partial class DeckleWhispSource
         if (IsEnabled()) WriteEvent(EvtModelIdleTimerSet, idle_s);
     }
 
-    // The variable named a file that is not an existing absolute path. The
-    // Warning names what was obtained, the file the settings resolved to; the
-    // value of the variable can carry a user path and stays in the Verbose
-    // detail.
-    [Event(EvtModelPathEnvIgnored,
-           Level = EventLevel.Warning,
-           Keywords = (EventKeywords)Keywords.Lifecycle,
-           Message = "The model path variable is not an existing absolute path, so the default model is used\nfallback_file={0}")]
-    public void ModelPathEnvIgnored(string fallback_file)
-    {
-        if (IsEnabled()) WriteEvent(EvtModelPathEnvIgnored, fallback_file);
-    }
-
-    [Event(EvtModelPathEnvIgnoredDetail,
-           Level = EventLevel.Verbose,
-           Keywords = (EventKeywords)Keywords.Lifecycle,
-           Message = "env_path={0} | fallback={1}")]
-    public void ModelPathEnvIgnoredDetail(string env_path, string fallback)
-    {
-        if (IsEnabled()) WriteEvent(EvtModelPathEnvIgnoredDetail, env_path, fallback);
-    }
-
-    // The Warning names what was asked and what was obtained, both file names
-    // in the models directory.
-    [Event(EvtModelFallback,
-           Level = EventLevel.Warning,
-           Keywords = (EventKeywords)Keywords.Lifecycle,
-           Message = "The configured model file is missing, so an installed model is used instead\nconfigured={0} | installed={1}")]
-    public void ModelFallback(string configured, string installed)
-    {
-        if (IsEnabled()) WriteEvent(EvtModelFallback, configured, installed);
-    }
-
-    // ── Whisper init-phase compaction ────────────────────────────────────
-    //
-    // Each event consolidates one phase of whisper.cpp's init flow that
-    // would otherwise spam several separate Verbose lines. The summary
-    // payload is built by WhisperNativeLogCompactor from the per-phase
-    // lines as they arrive; flush happens on the first line of the next
-    // phase (or on any non-phase line).
-
-    [Event(EvtWhisperInitParamsParsed,
-           Level = EventLevel.Verbose,
-           Keywords = (EventKeywords)Keywords.Lifecycle,
-           Message = "summary={0}")]
-    public void WhisperInitParamsParsed(string summary)
-    {
-        if (IsEnabled()) WriteEvent(EvtWhisperInitParamsParsed, summary);
-    }
-
-    [Event(EvtWhisperModelLoadParsed,
-           Level = EventLevel.Verbose,
-           Keywords = (EventKeywords)Keywords.Lifecycle,
-           Message = "summary={0}")]
-    public void WhisperModelLoadParsed(string summary)
-    {
-        if (IsEnabled()) WriteEvent(EvtWhisperModelLoadParsed, summary);
-    }
-
-    [Event(EvtWhisperBackendInitParsed,
-           Level = EventLevel.Verbose,
-           Keywords = (EventKeywords)Keywords.Lifecycle,
-           Message = "summary={0}")]
-    public void WhisperBackendInitParsed(string summary)
-    {
-        if (IsEnabled()) WriteEvent(EvtWhisperBackendInitParsed, summary);
-    }
-
-    [Event(EvtWhisperInitStateParsed,
-           Level = EventLevel.Verbose,
-           Keywords = (EventKeywords)Keywords.Lifecycle,
-           Message = "summary={0}")]
-    public void WhisperInitStateParsed(string summary)
-    {
-        if (IsEnabled()) WriteEvent(EvtWhisperInitStateParsed, summary);
-    }
 }

@@ -19,8 +19,7 @@ public sealed class DeckleWhispSourceTests : IDisposable
     {
         using var listener = new TestEventListener("Deckle-Whisp");
 
-        DeckleWhispSource.Log.TranscribePromptConfigured(42, carry: true);
-        DeckleWhispSource.Log.TranscribeRepetitionLoopMetrics(4, 2);
+        DeckleWhispSource.Log.TranscribeDecodeUsed(0, 0, false, true, 0, 0, 3, 4.2, 4.5, false);
         DeckleWhispSource.Log.SegmentRecognized(1, 0, 1, 1, 0.1, 0.8, 0.6, 3, 5, 12);
 
         Assert.Empty(listener.Events);
@@ -33,14 +32,12 @@ public sealed class DeckleWhispSourceTests : IDisposable
             static activity => activity == OperationalLogActivity.Transcription);
         using var listener = new TestEventListener("Deckle-Whisp");
 
-        DeckleWhispSource.Log.TranscribePromptConfigured(42, carry: true);
-        DeckleWhispSource.Log.TranscribeRepetitionLoopMetrics(4, 2);
+        DeckleWhispSource.Log.TranscribeDecodeUsed(0, 0, false, true, 0, 0, 3, 4.2, 4.5, false);
         DeckleWhispSource.Log.SegmentRecognized(1, 0, 1, 1, 0.1, 0.8, 0.6, 3, 5, 12);
 
         Assert.Collection(
             listener.Events,
-            e => Assert.Equal(DeckleWhispSource.EvtTranscribePromptConfigured, e.EventId),
-            e => Assert.Equal(DeckleWhispSource.EvtTranscribeRepetitionLoopMetrics, e.EventId),
+            e => Assert.Equal(DeckleWhispSource.EvtTranscribeDecodeUsed, e.EventId),
             e => Assert.Equal(DeckleWhispSource.EvtSegmentRecognized, e.EventId));
 
         Assert.All(listener.Events, e =>
@@ -81,23 +78,6 @@ public sealed class DeckleWhispSourceTests : IDisposable
 
         var e = Assert.Single(listener.Events);
         Assert.Equal(expected, e.Payload![e.PayloadNames!.IndexOf("error_code")]);
-    }
-
-    [Fact]
-    public void FilteredHallucinationMetricsRemainWhenDetailsAreDisabled()
-    {
-        // The metrics explain why text went missing from a take, so the
-        // Transcription detail control does not hold them back.
-        using var listener = new TestEventListener("Deckle-Whisp");
-
-        DeckleWhispSource.Log.TranscribeHallucinationFiltered();
-        DeckleWhispSource.Log.TranscribeHallucinationFilteredMetrics(
-            1, 3, 34, "Sous-titrage Société Radio-Canada");
-
-        Assert.Collection(
-            listener.Events,
-            e => Assert.Equal(DeckleWhispSource.EvtTranscribeHallucinationFiltered, e.EventId),
-            e => Assert.Equal(DeckleWhispSource.EvtTranscribeHallucinationFilteredMetrics, e.EventId));
     }
 
     [Fact]

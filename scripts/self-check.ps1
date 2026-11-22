@@ -52,8 +52,8 @@
 .PARAMETER OutputFolder
     Where report.json and the captures go. A new folder under the temp folder by
     default; it is kept, the report and the images are the output.
-.PARAMETER LinkRuntime
-    Link the maintainer's native\ and models\ folders into the fresh root, so the
+.PARAMETER LinkModels
+    Link the maintainer's models\ folder into the fresh root, so the
     Dictation pages render in their provisioned state. Off by default: the run is
     then the same on every machine, and a page that deletes a model cannot reach
     the maintainer's. A junction cannot be read-only, so this stays opt-in; the
@@ -80,7 +80,7 @@ param(
     [ValidateRange(10, 1800)]
     [int]$TimeoutSeconds = 300,
     [string]$OutputFolder,
-    [switch]$LinkRuntime,
+    [switch]$LinkModels,
     [switch]$KeepData
 )
 
@@ -117,13 +117,10 @@ New-Item -ItemType Directory -Force -Path $DataRoot, $OutputFolder | Out-Null
 # the one setting it needs (Developer mode) in its own root. Nothing is copied
 # from the maintainer's root: Anytype data, telemetry, the personal dictionary
 # and secrets.dat stay where they are.
-if ($LinkRuntime) {
-    $defaultRoot = Join-Path $env:LOCALAPPDATA 'Deckle'
-    foreach ($folder in 'native', 'models') {
-        $source = Join-Path $defaultRoot $folder
-        if (Test-Path -LiteralPath $source) {
-            New-Item -ItemType Junction -Path (Join-Path $DataRoot $folder) -Target $source | Out-Null
-        }
+if ($LinkModels) {
+    $source = Join-Path (Join-Path $env:LOCALAPPDATA 'Deckle') 'models'
+    if (Test-Path -LiteralPath $source) {
+        New-Item -ItemType Junction -Path (Join-Path $DataRoot 'models') -Target $source | Out-Null
     }
 }
 

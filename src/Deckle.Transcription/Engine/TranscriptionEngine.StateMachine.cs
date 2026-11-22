@@ -18,8 +18,8 @@ public sealed partial class TranscriptionEngine
     // How long capture keeps running after the Stop press. The press lands
     // while the user is still finishing the last word, and the capture loop
     // would otherwise stop within one device period, cutting that word. The tail
-    // catches its end plus a little real trailing silence, which Whisper also
-    // ends on better than on a clipped word. The HUD has already switched to
+    // catches its end plus a little real trailing silence, which the speech
+    // model also ends on better than on a clipped word. The HUD has already switched to
     // "transcribing" on the press, so the tail is hidden behind that transition.
     // 400 ms: long enough to cover the end of a word and a breath, short enough
     // that the added wait stays under the threshold where a stop feels laggy.
@@ -336,7 +336,7 @@ public sealed partial class TranscriptionEngine
             // AboveNormal, not Normal: this thread runs the WASAPI capture loop,
             // which only needs to be scheduled promptly when the buffer-done event
             // fires (every 50 ms) and sleeps the rest of the time. At Normal it
-            // loses its slot to the concurrent Whisper inference on the thread
+            // loses its slot to the concurrent inference on the thread
             // pool; once a wait overruns the 200 ms ring (4 × 50 ms buffers) the
             // driver has no free buffer and drops incoming audio. The thread is
             // near-idle, so this starves nothing. Highest is avoided: it would

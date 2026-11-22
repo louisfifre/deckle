@@ -214,10 +214,6 @@
        SetupWindow shell strings: window title, footer buttons. The
        footer buttons reuse Common_* via x:Uid in XAML. -->
 
-  <!-- ─── Setup wizard — choices page ────────────────────────────────
-       Step header text is set programmatically by ChoicesPage via
-       SetStepHeader. Cards in XAML use x:Uid for header/description. -->
-
   <!-- ─── Setup wizard — installing page ─────────────────────────────
        Inline Cancel install button in XAML uses x:Uid. All progress
        and status strings are emitted from C# during the run. -->
@@ -232,7 +228,7 @@
        sections in order: Shortcuts, Appearance, Startup, Recording,
        Telemetry, Back up & restore, Application data. -->
 
-  <!-- ─── WhisperPage ────────────────────────────────────────────────
+  <!-- ─── TranscriptionPage ────────────────────────────────────────────────
        Second page in the Settings nav. Per-setting Reset buttons share
        the SettingsResetButton.ToolTipService.ToolTip key (style-level
        tooltip in the Page resources). -->
@@ -553,7 +549,7 @@
 
   <!-- GeneralPage Audio input ComboBox items -->
 
-  <!-- WhisperPage Reset all dialog -->
+  <!-- TranscriptionPage Reset all dialog -->
 
   <!-- LlmPage Reset all rewriting dialog + Ollama status -->
   <data name="Settings_ResetLlmDialog_Detail" xml:space="preserve">

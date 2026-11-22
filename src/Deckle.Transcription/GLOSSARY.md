@@ -60,7 +60,7 @@ A distinction that follows from plausible reformulation. A manifest error, such 
 Two devices carry the word "VAD" and are constantly conflated, yet they differ in kind. One is a model that finds speech in an utterance already cut. The other is a threshold that cuts a live stream. They also produce two different units of "cut", which must not be confused.
 
 **Neural VAD** :
-A device that uses a neural network to find the speech regions of one utterance and trim the silence around them before decoding. It runs inside the segmented session, on each utterance the energy segmenter has cut, after the optional audio processing and before Whisper; a monolithic dictation, which the segmenter does not cut, runs it once on the whole take as one utterance. It is model-based and works after the fact, so it needs the whole utterance in hand.
+A device that uses a neural network to find the speech regions of one utterance and trim the silence around them before decoding. It runs inside the segmented session, on each utterance the energy segmenter has cut, after the optional audio processing and before decoding; a monolithic dictation, which the segmenter does not cut, runs it once on the whole take as one utterance. It is model-based and works after the fact, so it needs the whole utterance in hand.
 _Avoid_ : VAD (bare, ambiguous), Silero (vendor-specific, the term should outlive the model).
 
 **Energy segmenter** :
@@ -72,8 +72,8 @@ A unit of cut that the energy segmenter emits, a span of speech bounded by detec
 _Avoid_ : chunk (too vague), segment (the output unit).
 
 **Segment** :
-A unit of cut that Whisper produces as output, a short timestamped span the model derives inside each utterance from its own decoding. An utterance is an input cut decided by energy, and a segment is an output cut decided by Whisper. One utterance contains one or more segments.
-_Avoid_ : utterance (the input unit), window (the 30 s encoder input).
+A unit of cut that the backend produces as output, a short timestamped span derived inside each utterance from its decoding. The Parakeet backend cuts them by rule from its token stream, after a sentence-ending mark or before a word that would pass 30 s. An utterance is an input cut decided by energy, and a segment is an output cut decided by the backend. One utterance contains one or more segments.
+_Avoid_ : utterance (the input unit), chunk (the backend's internal piece of long audio).
 
 **VAD** :
 Short for voice-activity detection, a generic name for anything that finds speech in audio. Used bare it is ambiguous in Deckle, which has both a neural VAD and an energy segmenter.
@@ -85,7 +85,4 @@ A third-party voice-activity detection model. It is the model behind the neural 
 A voice-activity detector based on signal energy. Deckle's energy-based device detects no voice and only cuts on silence, so it is the energy segmenter.
 
 **Chunk** :
-In ordinary use, any piece cut from a larger whole. It is too vague for the input unit of transcription, which is the utterance.
-
-**Window** :
-The fixed 30-second span of audio that Whisper's encoder takes as input. It is neither an utterance nor a segment.
+In ordinary use, any piece cut from a larger whole. It is too vague for the input unit of transcription, which is the utterance. Inside the Parakeet backend it has one precise sense: a piece of an utterance longer than 120 s, cut at a quiet spot so one encoder pass stays within memory (`LongAudioChunker`). The orchestrator never sees it.

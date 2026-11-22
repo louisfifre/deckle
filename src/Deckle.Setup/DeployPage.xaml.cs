@@ -17,7 +17,7 @@ namespace Deckle.Setup;
 // Install mode's terminal step in the temp process: place the binaries and
 // integrate, then hand the rest of the wizard to the installed copy. The split
 // exists because AppPaths froze on the default data root the moment this
-// process touched it — provisioning (models, natives) must run in a process
+// process touched it — provisioning (models) must run in a process
 // whose AppPaths resolved the CHOSEN root, and that can only be the installed
 // Deckle.exe launched with DECKLE_DATA_ROOT in its environment.
 //
@@ -229,12 +229,6 @@ public sealed partial class DeployPage : Page
         // The continuation cannot tell an update from an install by itself, and
         // without this flag it would open as the install wizard.
         if (context.UpdateMode) psi.ArgumentList.Add("--after-update");
-        if (context.SelectedModules.Contains(ModuleIds.Transcription)
-            && context.SelectedModel is { } model)
-        {
-            psi.ArgumentList.Add("--model");
-            psi.ArgumentList.Add(model.Id);
-        }
         if (context.CleanupDirectory is { } cleanup)
         {
             psi.ArgumentList.Add("--cleanup");

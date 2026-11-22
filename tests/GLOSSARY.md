@@ -35,7 +35,7 @@ In ordinary use, a test of collected usage data. A test that checks emitted Even
 ## Outside the automatic scope
 
 **system** :
-A test that exercises a heavy native runtime in realistic conditions, such as loading a 1 GB Whisper model, transcribing a reference audio file stored in the test repo, or reading a Hue Entertainment payload on a real bridge. It can be automated locally, but it is slow, demanding, and depends on native artifacts and hardware being available. It stays in the hands of Louis or a dedicated workstation.
+A test that exercises a heavy native runtime in realistic conditions, such as loading the 2.5 GB Parakeet model, transcribing a reference audio file stored in the test repo, or reading a Hue Entertainment payload on a real bridge. It can be automated locally, but it is slow, demanding, and depends on native artifacts and hardware being available. It stays in the hands of Louis or a dedicated workstation.
 
 **interactive** :
 A test that needs an interactive Windows workstation and a human, or a stand-in for one, able to present real conditions to the system, such as a real microphone that picks up sound, a global hotkey that must not conflict with another app, a UIAutomation target window to validate a focus probe, or a physical display for DXGI Output Duplication.
@@ -52,7 +52,7 @@ A test of a tool, or a tool that happens to live among the tests. A maintainer o
 
 ## Key distinction between integration and system
 
-The boundary between `integration` and `system` depends on how heavy the dependency is and whether it can be substituted. The `Deckle.Audio.MicrophoneCapture.Probe` function, which queries the audio device for its capabilities, is `integration` when a fake audio source stands behind the WASAPI seam. A test that records three seconds of real voice in a full loop is `interactive`. A test that drives Whisper on a wav stored in the test repo is `system`.
+The boundary between `integration` and `system` depends on how heavy the dependency is and whether it can be substituted. The `Deckle.Audio.MicrophoneCapture.Probe` function, which queries the audio device for its capabilities, is `integration` when a fake audio source stands behind the WASAPI seam. A test that records three seconds of real voice in a full loop is `interactive`. A test that drives Parakeet on a wav stored in the test repo is `system`.
 
 ### Example conversation
 

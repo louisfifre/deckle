@@ -2,7 +2,6 @@ using System;
 using System.Collections.Generic;
 
 using Deckle.Core;
-using Deckle.Transcription;
 
 namespace Deckle.Setup;
 
@@ -81,15 +80,9 @@ public sealed class SetupContext
     public IReadOnlySet<string> SelectedModules { get; set; } =
         new HashSet<string>(StringComparer.Ordinal);
 
-    // Null until the wizard host seeds it: SetupContext stays backend-agnostic
-    // and holds no ASR catalog default.
-    public ModelEntry? SelectedModel { get; set; }
-
-    public bool ChoicesConfirmed { get; set; }
-
     // ── Repair (the wizard opened by the app itself) ────────────────────────
     //
-    // Set when the running app found the speech engine missing or not loading
+    // Set when the running app found the speech model missing or incomplete
     // and opened the wizard on its own, straight on the install step. The
     // sentence says why; the install step shows it and waits for the person's
     // Download click before it fetches anything, then clears it so a Retry

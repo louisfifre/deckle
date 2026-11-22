@@ -6,11 +6,9 @@
     xmlns:local="using:Deckle.Transcription.Views"
     xmlns:catalog="using:Deckle.Catalog">
 
-    <!-- The Lexicon page of the Transcription module: the person's own words.
-         The list shows under every engine, because the autocorrect reads it
-         whatever the engine; the switch of the boost is Parakeet's alone and is
-         gated in the manifest (WhisperViewModel.Lexicon.cs). No Reset all: the
-         words are the person's data, and the switch has its own reset. Words
+    <!-- The Lexicon page of the Transcription module: the person's own words
+         and the switch of the boost (TranscriptionViewModel.Lexicon.cs). No Reset all:
+         the words are the person's data, and the switch has its own reset. Words
          are added one at a time, like the excluded words of the Autocorrect
          page, so a list never costs a multi-line field. -->
     <ScrollViewer Padding="32,24,32,24"
@@ -24,14 +22,6 @@
                 <catalog:SettingsPageHeader x:Name="Header"
                                             x:Uid="LexiconPageHeader"
                                             HasResetAll="False" />
-
-                <!-- Shown while Whisper is the chosen engine, which ignores the list. -->
-                <InfoBar x:Name="WhisperInfoBar"
-                         x:Uid="LexiconPageWhisperInfoBar"
-                         Severity="Informational"
-                         IsClosable="False"
-                         IsOpen="False"
-                         catalog:InfoBarLayout.CollapseWhenClosed="True" />
 
                 <StackPanel x:Name="BoostHost"
                             Spacing="{StaticResource SettingsCardSpacing}" />

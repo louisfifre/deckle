@@ -42,8 +42,8 @@ public sealed class PreprocessingSettings
 
     // ── Compressor — tames the intra-take dynamic range (whisper vs raised
     //    voice). Gentle on purpose: a hard broadcast ratio would lift the
-    //    inter-word noise floor, which is fuel for Whisper's silence
-    //    hallucinations. 2:1 soft-knee, not 4:1.
+    //    inter-word noise floor, which is fuel for the speech model's
+    //    hallucinations on silence. 2:1 soft-knee, not 4:1.
     public bool  CompressorEnabled { get; set; } = true;
     public float CompThresholdDbfs { get; set; } = -24f;
     public float CompRatio         { get; set; } = 2f;
