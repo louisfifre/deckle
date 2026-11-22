@@ -51,6 +51,35 @@ public sealed class DeletionApprovalRelayTests
         }
     }
 
+    [Theory]
+    [InlineData(1, 1)]
+    [InlineData(2, 2)]
+    [InlineData(3, 4)]
+    [InlineData(6, 30)]
+    [InlineData(50, 30)]
+    public void A_listener_that_cannot_listen_retries_slower_up_to_a_cap(int failures, int seconds)
+    {
+        Assert.Equal(TimeSpan.FromSeconds(seconds), DeletionApprovalPipeServer.RetryDelay(failures));
+    }
+
+    [Fact]
+    public async Task A_pipe_name_held_elsewhere_does_not_block_disposal()
+    {
+        string pipe = UniquePipe();
+        await using var first = new DeletionApprovalPipeServer(pipe, new RecordingApproval(DeletionApprovalOutcome.Approved));
+        first.Start();
+        // Four instances are taken only once its listeners are up.
+        await Task.Delay(300, TestContext.Current.CancellationToken);
+
+        var second = new DeletionApprovalPipeServer(pipe, new RecordingApproval(DeletionApprovalOutcome.Approved));
+        second.Start();
+        await Task.Delay(200, TestContext.Current.CancellationToken);
+
+        // Its listeners sit in their backoff delay; disposal cancels it at once.
+        Task dispose = second.DisposeAsync().AsTask();
+        Assert.Same(dispose, await Task.WhenAny(dispose, Task.Delay(TimeSpan.FromSeconds(5), TestContext.Current.CancellationToken)));
+    }
+
     private sealed class RecordingApproval(DeletionApprovalOutcome answer) : IDeletionApproval
     {
         public DeletionCandidate? Asked { get; private set; }

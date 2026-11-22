@@ -87,8 +87,15 @@ public sealed class DeletionApprovalPipeServer : IAsyncDisposable
         _run = Task.WhenAll(Enumerable.Range(0, MaxConnections).Select(_ => Task.Run(() => ServeAsync(_cts.Token))));
     }
 
+    // Wait before the next listen after consecutive failures: 1 s, doubling to a
+    // 30 s cap. A pipe that cannot be created (another session of the same
+    // machine holds the name) would otherwise spin.
+    internal static TimeSpan RetryDelay(int consecutiveFailures) =>
+        TimeSpan.FromSeconds(Math.Min(30, 1 << Math.Clamp(consecutiveFailures - 1, 0, 5)));
+
     private async Task ServeAsync(CancellationToken ct)
     {
+        int failures = 0;
         while (!ct.IsCancellationRequested)
         {
             string step = "listen";
@@ -99,6 +106,7 @@ public sealed class DeletionApprovalPipeServer : IAsyncDisposable
                     PipeTransmissionMode.Byte,
                     PipeOptions.Asynchronous | PipeOptions.CurrentUserOnly);
                 await pipe.WaitForConnectionAsync(ct).ConfigureAwait(false);
+                failures = 0;
 
                 step = "request";
                 string? line = await DeletionApprovalWire.ReadLineAsync(pipe, ct).ConfigureAwait(false);
@@ -119,8 +127,22 @@ public sealed class DeletionApprovalPipeServer : IAsyncDisposable
             catch (Exception ex) when (ex is IOException or UnauthorizedAccessException or JsonException)
             {
                 // A gateway that hung up, or a malformed request: this connection
-                // ends, the listener goes on.
-                DeckleAnytypeSource.Log.DeletionApprovalRelayFailed("app", step, ex.GetType().Name, ex.Message);
+                // ends, the listener goes on. A streak of failures is one
+                // incident: only its first is logged, and the retries slow down.
+                // A connection that broke after it was made is not a listen
+                // failure: it logs and listens again at once.
+                if (step != "listen")
+                {
+                    failures = 0;
+                    DeckleAnytypeSource.Log.DeletionApprovalRelayFailed("app", step, ex.GetType().Name, ex.Message);
+                    continue;
+                }
+
+                failures++;
+                if (failures == 1)
+                    DeckleAnytypeSource.Log.DeletionApprovalRelayFailed("app", step, ex.GetType().Name, ex.Message);
+                try { await Task.Delay(RetryDelay(failures), ct).ConfigureAwait(false); }
+                catch (OperationCanceledException) { return; }
             }
         }
     }
