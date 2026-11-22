@@ -14,7 +14,14 @@ public static class LexiconTerms
     public const int MaxTermLength = 64;
 
     /// <summary>
-    /// Trims each entry, collapses inner whitespace to one space, drops empty and over-long
+    /// A one-letter term is dropped: the casing pass would rewrite every occurrence of that
+    /// letter (« A » would turn each French « a » into « A »), and the decoder boost would
+    /// push it on every word start.
+    /// </summary>
+    public const int MinTermLength = 2;
+
+    /// <summary>
+    /// Trims each entry, collapses inner whitespace to one space, drops one-letter and over-long
     /// entries, and keeps the first spelling of each case-insensitive duplicate, in input order.
     /// </summary>
     public static IReadOnlyList<string> Merge(params IEnumerable<string>?[] sources)
@@ -27,7 +34,7 @@ public static class LexiconTerms
             foreach (string? raw in source)
             {
                 string term = Clean(raw);
-                if (term.Length == 0 || term.Length > MaxTermLength) continue;
+                if (term.Length < MinTermLength || term.Length > MaxTermLength) continue;
                 if (seen.Add(term)) terms.Add(term);
             }
         }
