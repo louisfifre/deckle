@@ -59,6 +59,17 @@ try {
     } finally {
         Stop-Process -Id $stand_in.Id -Force -ErrorAction SilentlyContinue
     }
+
+    # Without the watchdog script, or without pwsh, a build arms nothing and
+    # warns about nothing: the watchdog is a convenience of this checkout.
+    $targets = Join-Path (Split-Path -Parent $ScriptsDir) 'Directory.Build.targets'
+    $sandbox = Join-Path $root 'sandbox'
+    $null = New-Item -ItemType Directory -Path $sandbox
+    Copy-Item -LiteralPath $targets -Destination (Join-Path $sandbox 'Directory.Build.targets')
+    Set-Content -LiteralPath (Join-Path $sandbox 'probe.proj') -Value '<Project><Target Name="Build" /><Import Project="Directory.Build.targets" /></Project>'
+    $state = Join-Path $root 'state'
+    $out = & dotnet msbuild (Join-Path $sandbox 'probe.proj') -nologo -v:n "-p:DeckleBuildStateDir=$state" 2>&1 | Out-String
+    Assert-Equal $false ($out -match 'warning MSB') 'no script next to the targets means no warning'
 } finally {
     Remove-Item -LiteralPath $root -Recurse -Force -ErrorAction SilentlyContinue
 }
