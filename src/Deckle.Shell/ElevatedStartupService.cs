@@ -18,7 +18,10 @@ namespace Deckle.Shell;
 // Run key, and Disable restores it, since elevated startup implies startup.
 //
 // The task name is fixed, so IsEnabled reports ON only when the task's
-// <Command> is this exe. Nothing throws to the UI.
+// <Command> is this exe. A task whose Command is another exe (the install
+// folder moved) reads OFF but is named apart (PointsElsewhere): it still
+// starts the old exe at logon, and Enable overwrites it (/F). Nothing throws
+// to the UI.
 public static class ElevatedStartupService
 {
     private const string TaskName = "Deckle";
@@ -28,8 +31,14 @@ public static class ElevatedStartupService
     // starts from, the way AutostartService.DefaultEnabled serves the Run key.
     public static bool DefaultEnabled => false;
 
-    public static bool IsEnabled()
+    public static bool IsEnabled() => Probe(out _);
+
+    // True when the task starts this exe. When it does not, issue says why the
+    // toggle reads off beyond "no task": PointsElsewhere for a task that starts
+    // another exe, None otherwise.
+    public static bool Probe(out ElevatedStartupIssue issue)
     {
+        issue = ElevatedStartupIssue.None;
         try
         {
             // Query unelevated: reading a task does not require admin.
@@ -52,7 +61,7 @@ public static class ElevatedStartupService
             // Non-zero → task does not exist (or query failed). Treat as off.
             if (proc.ExitCode != 0) return false;
 
-            return TaskTargetsCurrentExe(xml);
+            return Classify(xml, Environment.ProcessPath, out issue);
         }
         catch (Exception ex)
         {
@@ -61,12 +70,18 @@ public static class ElevatedStartupService
         }
     }
 
-    public static bool Enable()
+    public static bool Enable() => TryEnable(out _);
+
+    // issue names why a false return failed, so the page can tell the person:
+    // UacDeclined for a refused prompt, TaskFailed for everything else.
+    public static bool TryEnable(out ElevatedStartupIssue issue)
     {
+        issue = ElevatedStartupIssue.None;
         string? exePath = Environment.ProcessPath;
         if (string.IsNullOrWhiteSpace(exePath))
         {
             DeckleShellSource.Log.ElevatedStartupEnableFailed("program_path_unknown", 0, "", "");
+            issue = ElevatedStartupIssue.TaskFailed;
             return false;
         }
 
@@ -95,6 +110,7 @@ public static class ElevatedStartupService
             if (proc.ExitCode != 0)
             {
                 DeckleShellSource.Log.ElevatedStartupEnableFailed("schtasks_failed", proc.ExitCode, "", "");
+                issue = ElevatedStartupIssue.TaskFailed;
                 return false;
             }
 
@@ -109,6 +125,7 @@ public static class ElevatedStartupService
         {
             // A declined UAC prompt ends here like any other failure: log + false.
             DeckleShellSource.Log.ElevatedStartupEnableFailed(FailureReason(ex), 0, ex.GetType().Name, ex.Message);
+            issue = IssueOf(ex);
             return false;
         }
         finally
@@ -167,11 +184,19 @@ public static class ElevatedStartupService
     // ERROR_CANCELLED (1223) from a runas start is the person declining the
     // UAC prompt, a choice rather than a fault, so the log names it apart.
     private static string FailureReason(Exception ex) =>
-        ex is Win32Exception { NativeErrorCode: 1223 } ? "uac_declined" : "exception";
+        IssueOf(ex) == ElevatedStartupIssue.UacDeclined ? "uac_declined" : "exception";
 
-    private static bool TaskTargetsCurrentExe(string taskXml)
+    internal static ElevatedStartupIssue IssueOf(Exception ex) =>
+        ex is Win32Exception { NativeErrorCode: 1223 }
+            ? ElevatedStartupIssue.UacDeclined
+            : ElevatedStartupIssue.TaskFailed;
+
+    // True when the task's Command is current. A readable task that starts
+    // another exe is false with PointsElsewhere; an unreadable one is false
+    // with None (logged).
+    internal static bool Classify(string taskXml, string? current, out ElevatedStartupIssue issue)
     {
-        string? current = Environment.ProcessPath;
+        issue = ElevatedStartupIssue.None;
         if (string.IsNullOrWhiteSpace(current)) return false;
 
         try
@@ -190,7 +215,10 @@ public static class ElevatedStartupService
             if (string.IsNullOrWhiteSpace(command)) return false;
 
             string stored = command.Trim().Trim('"');
-            return string.Equals(stored, current, StringComparison.OrdinalIgnoreCase);
+            if (string.Equals(stored, current, StringComparison.OrdinalIgnoreCase)) return true;
+
+            issue = ElevatedStartupIssue.PointsElsewhere;
+            return false;
         }
         catch (Exception ex)
         {

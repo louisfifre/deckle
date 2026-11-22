@@ -37,6 +37,7 @@ public sealed partial class GeneralPage : Page
 
         ViewModel.DataFolderMoveRequested += OnDataFolderMoveRequested;
         WireToastsElevatedInfoBar();
+        WireElevatedStartupInfoBar();
         WireInterfaceCapture();
 
         LoadAndSync();
