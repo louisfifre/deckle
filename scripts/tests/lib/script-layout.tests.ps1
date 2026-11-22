@@ -42,24 +42,4 @@ if ($headerFaults.Count -gt 0) {
     throw "Script Headers must be valid or absent:`n$($faultLines -join "`n")"
 }
 
-$workspace = Get-Content -Raw -LiteralPath (Join-Path $RepoRoot 'deckle.code-workspace') | ConvertFrom-Json
-$repositoryFolders = @($workspace.folders | Where-Object { $_.path -eq '.' })
-if ($repositoryFolders.Count -ne 1) {
-    throw 'The shared workspace must open the cloned repository exactly once.'
-}
-
-# The workspace is opened from the primary checkout, so its relative folders and the
-# expected container both anchor there, not to the linked worktree running this test.
-$gitCommonDir = git -C $RepoRoot rev-parse --path-format=absolute --git-common-dir
-if (-not $gitCommonDir) { throw 'Could not resolve the primary checkout from the git common directory.' }
-$PrimaryRoot = Split-Path -Parent ([System.IO.Path]::GetFullPath($gitCommonDir))
-$projectContainer = Split-Path -Parent $PrimaryRoot
-$worktreeContainer = Join-Path (Split-Path -Parent $projectContainer) "worktrees\$(Split-Path -Leaf $PrimaryRoot)"
-$resolvedWorkspaceFolders = @($workspace.folders | ForEach-Object {
-    [System.IO.Path]::GetFullPath((Join-Path $PrimaryRoot $_.path))
-})
-if ($resolvedWorkspaceFolders -notcontains $worktreeContainer) {
-    throw "The shared workspace must expose the project worktree container: $worktreeContainer"
-}
-
 Write-Host 'script-layout.tests.ps1: PASS' -ForegroundColor Green

@@ -54,9 +54,6 @@ _Generated from `git ls-files` — do not edit by hand._
 ├── .claude/
 │   ├── settings.json
 │   └── skills
-├── .github/
-│   └── workflows/
-│       └── update-readme-stats.yml
 ├── benchmark/
 │   ├── capture-tail/
 │   │   ├── .gitignore
@@ -403,7 +400,6 @@ _Generated from `git ls-files` — do not edit by hand._
 │   │   │   ├── build-locked-positional-dotnet-args.json
 │   │   │   ├── build-only-stops-resident.json
 │   │   │   ├── dotnet-max-node-response-precedence.json
-│   │   │   ├── repository-portability.json
 │   │   │   └── roslyn-server-escapes-low-priority.json
 │   │   ├── commands/
 │   │   │   ├── build-locked.tests.ps1
@@ -414,8 +410,7 @@ _Generated from `git ls-files` — do not edit by hand._
 │   │   │   ├── InspectContextBugNotes.md
 │   │   │   ├── perf-compare.tests.ps1
 │   │   │   ├── publish-native-runtime.tests.ps1
-│   │   │   ├── read-log.tests.ps1
-│   │   │   └── update-readme-stats.tests.ps1
+│   │   │   └── read-log.tests.ps1
 │   │   └── lib/
 │   │       ├── agent-skills-layout.tests.ps1
 │   │       ├── anytype-backend.tests.ps1
@@ -446,7 +441,6 @@ _Generated from `git ls-files` — do not edit by hand._
 │   ├── resource-validation.allowlist.json
 │   ├── self-check.ps1  — Self-check the built app Runs a built app of the suite once in its self-check mode and judges its report…
 │   ├── stats.ps1  — Repository statistics Walk every project under src\ and build one file inventory per Deckle module, w…
-│   ├── update-readme-stats.ps1  — Update the README pulse Regenerate the small "Development pulse" section in README.md from the local Gi…
 │   ├── verify-branch-server.ps1
 │   └── verify-branch.ps1  — Verify a branch on win-serv Sends a committed branch to the verification machine, win-serv, which builds it…
 ├── specs/
@@ -3653,7 +3647,6 @@ _Generated from `git ls-files` — do not edit by hand._
 ├── CHANGELOG.md
 ├── CLAUDE.md
 ├── CONTRIBUTING.md
-├── deckle.code-workspace
 ├── Deckle.Tests.sln
 ├── Directory.Build.props
 ├── Directory.Build.rsp

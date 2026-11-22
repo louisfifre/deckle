@@ -50,7 +50,6 @@ What the menu offers today, level by level. A row reads as its action followed b
 |  |  | log, trace | [`read-log.ps1`](read-log.ps1) | |
 |  | Update prod | | [`deploy-prod.ps1`](deploy-prod.ps1) | |
 |  | Roll back prod | | [`deploy-prod.ps1`](deploy-prod.ps1) `-Rollback` | |
-|  | README pulse | update | [`update-readme-stats.ps1`](update-readme-stats.ps1) `-Commit` | |
 |  | Statistics | repository | [`stats.ps1`](stats.ps1) | |
 |  |  | context | [`inspect-context.ps1`](inspect-context.ps1) | |
 | **Setup** | Scaffold | preview, apply | [`setup/scaffold.ps1`](setup/scaffold.ps1) | yes |
@@ -112,7 +111,6 @@ Each script is callable directly from a terminal; the menu is purely additive. C
 | [`inspect-processes.ps1`](inspect-processes.ps1) | Read-only: the running Deckle instances with the folder each runs from (prod copy, worktree, self-check), the dotnet builds and tests in progress with project and age, the `build-locked.ps1` runs waiting for a slot, test hosts, and the .NET build servers left behind. | none |
 | [`read-log.ps1`](read-log.ps1) | Read-only: the latest entries of `<UserDataRoot>\diagnostics\log.jsonl` (or `trace.jsonl` with `-Trace`), one line each, filtered by level, age and text. Shares the file with the running app. | `-Trace`, `-Last <n>`, `-Level Warning`, `-SinceMinutes <n>`, `-Match <regex>`, `-Payload`, `-DataRoot <path>` |
 | [`deploy-prod.ps1`](deploy-prod.ps1) | Build `main` (or `-Ref`) in Release in the reserved `prod-build` worktree, self-check it, and stage it in the prod copy without stopping the running Deckle; see *Prod copy*. Its summary's `Anytype` line compares the Anytype backend the deployed commit pins with the one `active.json` activates on this machine, and names the switch when they differ; it downloads nothing. Agents may run it. | `-Ref <ref>`, `-Root <path>`, `-Rollback`, `-Force`, `-SkipSelfCheck` |
-| [`update-readme-stats.ps1`](update-readme-stats.ps1) | Regenerate the README `Development pulse` section from local Git history. `-Commit` creates a local README-only commit and refuses unrelated tracked changes; it never pushes. Also used without `-Commit` by the monthly GitHub Action. | `-Target <worktree>`, `-ReadmePath <path>`, `-Commit` |
 | [`maintenance/clean-native.ps1`](maintenance/clean-native.ps1) | Bring `<UserDataRoot>\native\` back to the catalog of `NativeRuntime.cs`: delete the DLLs it does not name (an older bundle's `libwhisper.dll` and MinGW runtime) and `.partial` leftovers, then report the catalog DLLs that are missing. Does not stop Deckle; a DLL in use is reported and kept. | `-DataRoot <path>`, `-WhatIf` |
 | [`maintenance/switch-anytype-backend.ps1`](maintenance/switch-anytype-backend.ps1) | Point the Anytype backend at the version `BackendInstallation.CurrentBundle` pins, once it is staged under `versions\<version>` in the provider folder. The supervisor spawns what `active.json` names and never reads the pin, and only the setup wizard provisions it, so a new pin reaches a machine that already runs a backend through this gesture. Refuses while Deckle, the bot (which outlives Deckle) or Anytype Desktop runs; then copies `%APPDATA%\anytype\data` and `%USERPROFILE%\.anytype` to dated backups beside them, backs up `active.json` and rewrites it atomically. Without `-Apply` it only shows the plan. Downloads nothing, stops and starts nothing. | `-Apply`, `-Version X.Y.Z`, `-ProviderDirectory <path>` |
 | [`stats.ps1`](stats.ps1) | Walk every `.csproj` under `src/`, build a per-file inventory, highlight C# files over 400 / 600 effective LOC and other text files over 500 / 1000 raw lines, summarize modules by source LOC, list tracked repository file types dynamically, and print the per-file module table. Git defines the repository boundary, so ignored workspace data is excluded and tracked links are counted without traversal. Generated module files are also excluded. | `-Target <worktree>`, `-Json <path>`; `-PassThru` for structured output |
@@ -223,16 +221,6 @@ pwsh scripts/git/changelog.ps1 -Apply   # write CHANGELOG.md
 
 The bump rules, the categories and the release-notes path are the `deckle-versioning` skill's.
 
-## Generated docs automation
-
-The root README carries a small generated `Development pulse` section bounded by invisible HTML comments. Regenerate it locally through the menu (*README pulse › update*) or directly:
-
-```powershell
-pwsh scripts/update-readme-stats.ps1 -Commit
-```
-
-GitHub also runs `.github/workflows/update-readme-stats.yml` monthly and on manual dispatch. The workflow checks out full history (`fetch-depth: 0`), runs the same script, and commits `README.md` only when the generated section changed.
-
 ## Native runtime — three sourcing modes
 
 The app's first launch opens the in-app setup wizard when native DLLs or models are missing. The menu also exposes *Runtime assets › set up* as a developer shortcut over `setup/setup-assets.ps1`, which provisions the native DLL catalog of `NativeRuntime.cs` (whisper.cpp with its dynamic ggml backends, one per CPU level plus Vulkan, and the 4 Visual C++ runtime DLLs) through one of three paths:
@@ -262,6 +250,6 @@ Deckle is single-instance (a resident mutex rejects a second process) and holds 
 ## What is *not* here
 
 - **MSIX / packaged installer.** No MSIX or Store package — Deckle ships *unpackaged*. The GitHub Release, cut by `release/publish-app.ps1 -Publish`, carries two assets: the headline `Deckle-Setup-vX.Y.Z-win-x64.exe` — the installer stub the end user downloads and runs — and the self-contained app payload it fetches (`Deckle-vX.Y.Z.zip` + `.sha256`). Before building, the release script downloads and hash-verifies the native runtime pinned by the app, so it cannot publish an installer with a dead Whisper dependency. The `Deckle.Installer` stub resolves the latest release via the GitHub API, downloads the payload, sha256-verifies it, and installs per-user (GitHub auto-attaches the source-code archives too). Building from source via `build-run.ps1` (or the menu) stays the dev path.
-- **Automated builds and releases.** There is no CI build or automated publishing. The only GitHub Action refreshes the generated README development pulse monthly; both release flows — the app ZIP and the native runtime — remain manual maintainer actions.
+- **Automated builds and releases.** There is no CI build, no GitHub Action and no automated publishing; both release flows — the app ZIP and the native runtime — remain manual maintainer actions.
 - **The launcher's own code and docs.** Its glossary, its interaction specification, its tests and its history live in the deckle-scripts repository; here it is an installed dependency.
 - **Source mirror of whisper.cpp.** The repo no longer carries a `whisper.cpp/` clone. Rebuilders clone it themselves alongside the Deckle repo, build it locally, and point `-WhisperRepo` at it.

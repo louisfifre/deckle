@@ -52,16 +52,6 @@ Smaller touches outside the module list: a **taskbar cover** that masks the task
 
 ---
 
-<!-- deckle-stats:start -->
-## Development pulse
-
-| First commit | Commits | Active days | Lines added | Lines touched | Current tracked lines |
-|---:|---:|---:|---:|---:|---:|
-| 2026-04-01 | 4,987 | 138 | 704,341 | 1,045,930 | 363,460 |
-
-<sub>Generated from Git history on 2026-11-17. Counts include tracked text files only for the current line total.</sub>
-<!-- deckle-stats:end -->
-
 ## Privacy and network use
 
 - Speech recognition, autocorrect, and screen analysis run locally. Audio and ambient frames are never uploaded.
