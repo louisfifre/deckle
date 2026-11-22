@@ -11,9 +11,8 @@ namespace Deckle.Audio;
 // quiet passage and a raised sentence land closer together — the part of
 // the problem that absolute makeup gain alone can't fix. Deliberately
 // gentle (2:1 soft knee, not a broadcast 4:1): compressing hard lifts the
-// inter-word noise floor, and a raised floor feeds Whisper's silence
-// hallucinations ("Subtitles made by the Amara.org community").
-// The clean fix for silence is the upstream VAD, not aggressive
+// inter-word noise floor, and a raised floor feeds the speech model's
+// hallucinations on silence. The clean fix for silence is the upstream VAD, not aggressive
 // compression here.
 //
 // Detector on the rectified sample, gain smoothing applied to the gain

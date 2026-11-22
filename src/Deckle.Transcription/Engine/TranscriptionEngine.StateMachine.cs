@@ -18,8 +18,8 @@ public sealed partial class TranscriptionEngine
     // How long capture keeps running after the Stop press. The press lands
     // while the user is still finishing the last word, and the capture loop
     // would otherwise stop within one device period, cutting that word. The tail
-    // catches its end plus a little real trailing silence, which Whisper also
-    // ends on better than on a clipped word. The HUD has already switched to
+    // catches its end plus a little real trailing silence, which the speech
+    // model also ends on better than on a clipped word. The HUD has already switched to
     // "transcribing" on the press, so the tail is hidden behind that transition.
     // 400 ms: long enough to cover the end of a word and a breath, short enough
     // that the added wait stays under the threshold where a stop feels laggy.

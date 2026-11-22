@@ -12,10 +12,10 @@ namespace Deckle.Vad;
 // into utterances: a blip there is noise. At the edge of a take it is a word.
 // "Oui" said before a long sentence, or "merci" said last, lasts less than
 // 250 ms; with the shared floor the span is dropped, the edge moves to the next
-// span, and the word is cut off the audio Whisper receives. The edge detection
+// span, and the word is cut off the audio the speech model receives. The edge detection
 // therefore runs with a floor of one capture frame (50 ms): any voiced extent
 // the model finds at an edge is kept. A click that lasts that long can pull the
-// edge out by its own length, which costs Whisper some silence, not a word.
+// edge out by its own length, which costs the model some silence, not a word.
 public static class SpeechEdges
 {
     // One capture frame. Silero judges 32 ms windows, so a span must reach two

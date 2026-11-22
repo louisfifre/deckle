@@ -136,13 +136,12 @@ public sealed partial class TranscriptionEngine
             // A trim that found no speech does not end the take: the whole take
             // is one utterance here, and dropping it would lose what Silero
             // missed with no second chance. The take goes to the backend untrimmed
-            // and unpadded, as before the trim existed, and the backend's own
-            // no-speech filter judges it. The SpeechTrimmed line already logged
-            // 0 speech segments, which is what a reader needs to see this.
+            // and unpadded, as before the trim existed. The SpeechTrimmed line
+            // already logged 0 speech segments, which is what a reader needs to see this.
             if (trimmed is { Length: > 0 })
             {
                 backendAudio = trimmed;
-                // Whisper sometimes ended the text early when the audio stopped on
+                // A speech model (Whisper, when measured) ended the text early when the audio stopped on
                 // near-digital silence after the trim; a noise tail fixed it (see
                 // TrailingNoisePad). The pad goes only to the backend: BackendAudio
                 // keeps the trimmed, unpadded buffer, as in the streaming consumer.

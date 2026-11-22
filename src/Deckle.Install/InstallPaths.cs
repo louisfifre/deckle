@@ -8,7 +8,7 @@ namespace Deckle.Install;
 //   • Binaries  — the app folder. Per-user, no admin, VS Code / Discord style.
 //     Default %LOCALAPPDATA%\Programs\Deckle, changeable.
 //
-//   • Data      — Whisper models, settings, corpus. The real volume concern.
+//   • Data      — speech models, settings, corpus. The real volume concern.
 //     Default %LOCALAPPDATA%\Deckle (what AppPaths uses), relocatable off
 //     a saturated C: via the DECKLE_DATA_ROOT environment variable the app already
 //     honours. When the user picks a non-default data folder, the installer sets

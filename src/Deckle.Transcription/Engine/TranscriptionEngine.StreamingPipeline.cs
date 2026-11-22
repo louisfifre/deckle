@@ -572,7 +572,7 @@ public sealed partial class TranscriptionEngine
             // blip and the pad cannot buy it a longer duration budget.
             int speechSamples = samples.Length;
 
-            // Whisper sometimes ended the text early when the audio stopped on
+            // A speech model (Whisper, when measured) ended the text early when the audio stopped on
             // near-digital silence after the trim; a noise tail fixed it on
             // replay, digital silence did not (see TrailingNoisePad). The pad
             // goes only to the backend: BackendAudio keeps the unpadded corpus.

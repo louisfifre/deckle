@@ -29,7 +29,7 @@ namespace Deckle.Audio;
 //
 // Central guardrail (kept here in prose because it governs every default):
 // compressing hard + boosting hard lifts the inter-word noise floor, which
-// feeds Whisper's silence hallucinations. Stay gentle; the
+// feeds the speech model's hallucinations on silence. Stay gentle; the
 // clean silence fix is the upstream VAD, not this stage.
 //
 // Pure: Process clones its input and never mutates the caller's buffer — the
@@ -38,7 +38,7 @@ namespace Deckle.Audio;
 public static class TranscriptionPreprocessor
 {
     // The module captures at a single fixed format (16 kHz mono PCM16,
-    // as Whisper expects). The DSP time constants depend on it.
+    // as the speech model expects). The DSP time constants depend on it.
     public const double SampleRate = 16000.0;
 
     // Process one span (an utterance or a take). Returns the processed buffer plus the metrics worth
