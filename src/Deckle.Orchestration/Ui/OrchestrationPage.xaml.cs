@@ -172,7 +172,9 @@ public sealed partial class OrchestrationPage : Page
     private void RefreshElevationAdvisory(bool anyEntry)
     {
         DetectionStatus? status = OrchestrationRuntime.StatusProvider?.Invoke();
-        ElevationAdvisory.IsOpen = anyEntry
-            && status is { ProcessTraceAvailable: false, ForegroundMonitorPresent: false };
+        ElevationAdvisory.IsOpen = anyEntry && status is { NoticesOnlyAtForeground: true };
     }
+
+    private void OnElevationAdvisoryAction(object sender, RoutedEventArgs e) =>
+        OrchestrationRuntime.OpenGeneralSettings?.Invoke();
 }

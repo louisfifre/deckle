@@ -141,19 +141,25 @@
                                          Tag="OrchestrationPage_Section_Apps">
                     <StackPanel Spacing="{StaticResource SettingsCardSpacing}">
 
-                        <!-- Without the process trace (elevation) or a foreground
-                             monitor, a listed app is noticed only when the list
-                             changes, not when it starts. Not closable, because it
-                             describes a state, not an event. Collapsed while
-                             closed, so the panel's spacing skips it; its bottom
-                             margin only counts while it shows. -->
+                        <!-- Without the process trace (elevation), a listed app is
+                             noticed only when it comes to the front, not when it
+                             starts in the background. Informational: the module
+                             still works. Not closable, because it describes a
+                             state, not an event. Collapsed while closed, so the
+                             panel's spacing skips it; its bottom margin only
+                             counts while it shows. -->
                         <InfoBar x:Name="ElevationAdvisory"
                                  x:Uid="OrchestrationPage_ElevationAdvisory"
-                                 Severity="Warning"
+                                 Severity="Informational"
                                  IsClosable="False"
                                  IsOpen="False"
                                  catalog:InfoBarLayout.CollapseWhenClosed="True"
-                                 Margin="0,0,0,8" />
+                                 Margin="0,0,0,8">
+                            <InfoBar.ActionButton>
+                                <HyperlinkButton x:Uid="OrchestrationPage_ElevationAdvisoryAction"
+                                                 Click="OnElevationAdvisoryAction" />
+                            </InfoBar.ActionButton>
+                        </InfoBar>
 
                         <!-- A section is cards: the two ways to add by hand sit in
                              one, as the Scan card does above. -->

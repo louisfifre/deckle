@@ -63,6 +63,9 @@ public sealed class OrchestrationRuntime : IDisposable
     /// <summary>Read by the settings page through the App, which sets it. Null when no runtime is composed.</summary>
     public static Func<DetectionStatus>? StatusProvider { get; set; }
 
+    /// <summary>Opens Settings > General, where "Start elevated" lives. Set by the App, like <see cref="StatusProvider"/>.</summary>
+    public static Action? OpenGeneralSettings { get; set; }
+
     public OrchestrationRuntime(
         OrchestrationSettingsService settings,
         IForegroundMonitor foreground,
