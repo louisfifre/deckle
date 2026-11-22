@@ -38,8 +38,8 @@ internal static class TrayIncidentLines
     [
         new(UserIncidents.PrecisionScroll, ModuleIds.PrecisionScroll,   PrecisionScrollSettingsModule.PageTag),
         new(UserIncidents.Microphone,      RecordingModule,             RecordingSettingsModule.PageTag),
-        new(UserIncidents.SpeechModel,     ModuleIds.Transcription,     WhisperSettingsModule.PageTag),
-        new(UserIncidents.VadModel,        ModuleIds.Transcription,     WhisperSettingsModule.StreamingPageTag),
+        new(UserIncidents.SpeechModel,     ModuleIds.Transcription,     TranscriptionSettingsModule.PageTag),
+        new(UserIncidents.VadModel,        ModuleIds.Transcription,     TranscriptionSettingsModule.StreamingPageTag),
         new(UserIncidents.AnytypeBackend,  ModuleIds.Anytype,           GeneralPageTag),
         new(UserIncidents.AnytypeGateway,  ModuleIds.Anytype,           GeneralPageTag),
         new(UserIncidents.HueEvents,       ModuleIds.Ambient,           AmbientSettingsModule.PageTag),

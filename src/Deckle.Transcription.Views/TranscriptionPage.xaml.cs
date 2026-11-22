@@ -15,9 +15,9 @@ using Deckle.Localization;
 
 namespace Deckle.Transcription.Views;
 
-public sealed partial class WhisperPage : Page
+public sealed partial class TranscriptionPage : Page
 {
-    public WhisperViewModel ViewModel { get; } = new();
+    public TranscriptionViewModel ViewModel { get; } = new();
 
     // Guards the restart state during the initial sync: Load() sets VM
     // properties whose change handlers must not read as the person's edits.
@@ -31,7 +31,7 @@ public sealed partial class WhisperPage : Page
     private string _startupParakeetFolder = "";
     private ParakeetEncoderPrecision _startupParakeetEncoder;
 
-    public WhisperPage()
+    public TranscriptionPage()
     {
         DeckleWhispSource.Log.PageInitStart();
         try
@@ -47,7 +47,7 @@ public sealed partial class WhisperPage : Page
         }
 
         // The header asks; the page adds what its reset keeps.
-        Header.ResetDetail = Loc.Get("Settings_ResetWhisperDialog_Detail");
+        Header.ResetDetail = Loc.Get("Settings_ResetTranscriptionDialog_Detail");
 
         // Make the Page focusable so clicking on the background can
         // steal focus from the active control (triggering LostFocus →
@@ -89,7 +89,7 @@ public sealed partial class WhisperPage : Page
     // ── Composed settings ────────────────────────────────────────────────────
     //
     // The page only hosts: each method hands the host StackPanel and the VM's
-    // settings manifest (declared beside the VM in WhisperViewModel.Settings.cs)
+    // settings manifest (declared beside the VM in TranscriptionViewModel.Settings.cs)
     // to a composer, which builds the SettingsExpander — master toggle, child
     // cards, per-card and per-group reset — and subscribes to the VM so the
     // controls reflect Load() and any external reset without per-control binding
@@ -114,7 +114,7 @@ public sealed partial class WhisperPage : Page
         ComposeRegion(UseGpuHost, ViewModel.UseGpuSettingsManifest);
         // The lexicon and streaming manifests compose on LexiconPage and
         // StreamingPage, this module's other pages; the dataset consents compose
-        // on the Diagnostics page (WhisperTelemetryViewModel).
+        // on the Diagnostics page (TranscriptionTelemetryViewModel).
     }
 
     private SettingsComposer ComposeRegion(
@@ -174,9 +174,9 @@ public sealed partial class WhisperPage : Page
         if (_initializing) return;
         switch (e.PropertyName)
         {
-            case nameof(WhisperViewModel.UseGpu):
-            case nameof(WhisperViewModel.ParakeetModelDirectory):
-            case nameof(WhisperViewModel.ParakeetEncoder):
+            case nameof(TranscriptionViewModel.UseGpu):
+            case nameof(TranscriptionViewModel.ParakeetModelDirectory):
+            case nameof(TranscriptionViewModel.ParakeetEncoder):
                 UpdateRestartState();
                 break;
         }
@@ -235,7 +235,7 @@ public sealed partial class WhisperPage : Page
 
     private void RestartNow_Click(object sender, RoutedEventArgs e)
     {
-        SettingsHost.RestartApp?.Invoke("Deckle.Transcription.Views.WhisperPage, Deckle.Transcription.Views");
+        SettingsHost.RestartApp?.Invoke("Deckle.Transcription.Views.TranscriptionPage, Deckle.Transcription.Views");
     }
 
     private void RestartDiscard_Click(object sender, RoutedEventArgs e)

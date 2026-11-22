@@ -58,7 +58,7 @@ public sealed partial class SettingsComposer
         return (content, UpdateState);
     }
 
-    // Built to match the hand-authored per-card reset (WhisperPage's
+    // Built to match the hand-authored per-card reset (TranscriptionPage's
     // ResetButtonStyle); keep the two in step. The glyph is Reset, the one the
     // page header's Reset all and the hand-authored cards draw: the Refresh
     // arrow runs the other way and read as a redo beside them (Louis,

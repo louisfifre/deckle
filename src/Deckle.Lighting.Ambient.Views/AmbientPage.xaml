@@ -41,7 +41,7 @@
              "Settings page example"): StackPanel max 1000 in a Grid,
              Spacing=4 between cards (SettingsCardSpacing, from App.xaml). Each
              section is the shared SettingsSection block. Exact layer of
-             GeneralPage / WhisperPage. -->
+             GeneralPage / TranscriptionPage. -->
         <ScrollViewer Grid.Column="0"
                       Padding="32,24,32,24"
                       VerticalScrollBarVisibility="Auto"

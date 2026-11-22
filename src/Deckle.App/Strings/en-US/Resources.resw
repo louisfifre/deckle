@@ -913,7 +913,7 @@
     <value>Not enough space on {0}: {1} needed, {2} free.</value>
   </data>
 
-  <!-- ─── WhisperPage ────────────────────────────────────────────────
+  <!-- ─── TranscriptionPage ────────────────────────────────────────────────
        Second page in the Settings nav. Per-setting Reset buttons share
        the SettingsResetButton.ToolTipService.ToolTip key (style-level
        tooltip in the Page resources). -->
@@ -1008,8 +1008,8 @@
     <value>Listen turned itself off after 2 minutes. Turn it on again to keep watching your level.</value>
   </data>
 
-  <!-- WhisperPage Reset all dialog -->
-  <data name="Settings_ResetWhisperDialog_Detail" xml:space="preserve">
+  <!-- TranscriptionPage Reset all dialog -->
+  <data name="Settings_ResetTranscriptionDialog_Detail" xml:space="preserve">
     <value>The Lexicon and Streaming pages keep their own values.</value>
   </data>
 

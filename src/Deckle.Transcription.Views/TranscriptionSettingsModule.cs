@@ -2,7 +2,7 @@ using Deckle.Catalog;
 
 namespace Deckle.Transcription.Views;
 
-// ── WhisperSettingsModule ─────────────────────────────────────────────────────
+// ── TranscriptionSettingsModule ─────────────────────────────────────────────────────
 //
 // The transcription module's own nav identity for the Settings shell. The module
 // declares its pages, their icons and their label keys here; the composition root
@@ -13,7 +13,7 @@ namespace Deckle.Transcription.Views;
 // the restart footer), then Lexicon (the person's own words) and Streaming
 // (the pipeline switch, segmentation, silence and noise filtering) nested
 // under it.
-public static class WhisperSettingsModule
+public static class TranscriptionSettingsModule
 {
     // The PRI subtree of the nav labels and the search entries: the pages'
     // strings live with the pages, in the Views assembly.
@@ -21,7 +21,7 @@ public static class WhisperSettingsModule
 
     // The shell resolves these with Type.GetType, so they name the assembly
     // that compiles the pages.
-    public const string PageTag = "Deckle.Transcription.Views.WhisperPage, Deckle.Transcription.Views";
+    public const string PageTag = "Deckle.Transcription.Views.TranscriptionPage, Deckle.Transcription.Views";
     public const string LexiconPageTag = "Deckle.Transcription.Views.LexiconPage, Deckle.Transcription.Views";
     public const string StreamingPageTag = "Deckle.Transcription.Views.StreamingPage, Deckle.Transcription.Views";
 

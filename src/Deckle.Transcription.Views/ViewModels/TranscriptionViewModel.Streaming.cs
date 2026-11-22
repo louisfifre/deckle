@@ -2,7 +2,7 @@ using CommunityToolkit.Mvvm.ComponentModel;
 
 namespace Deckle.Transcription.Views;
 
-public partial class WhisperViewModel
+public partial class TranscriptionViewModel
 {
     // The Vad* values drive the Silero ONNX trim (Streaming.SpeechTrim).
     [ObservableProperty]

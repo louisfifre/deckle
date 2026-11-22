@@ -4,7 +4,7 @@
     <UseWinUI>true</UseWinUI>
     <!-- Neutral language for the lib's PRI fallback. Mirrors Deckle.App.csproj. -->
     <DefaultLanguage>en-US</DefaultLanguage>
-    <!-- Generates the lib's own .pri so x:Uid lookups in WhisperPage,
+    <!-- Generates the lib's own .pri so x:Uid lookups in TranscriptionPage,
          LexiconPage and StreamingPage, the composed cards (SettingsComposer
          reads the view model's assembly), the Diagnostics contribution and
          Loc.GetFrom resolve against the Deckle.Transcription.Views/Resources

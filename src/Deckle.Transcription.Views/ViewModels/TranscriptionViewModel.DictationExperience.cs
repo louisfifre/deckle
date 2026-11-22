@@ -3,7 +3,7 @@ using Deckle.Settings;
 
 namespace Deckle.Transcription.Views;
 
-public partial class WhisperViewModel
+public partial class TranscriptionViewModel
 {
     // These persist in the shell's Overlay section, read at runtime by the HUD;
     // this view model only surfaces them, and saves them through the shell's

@@ -9,16 +9,16 @@ using Deckle.Localization;
 namespace Deckle.Transcription.Views;
 
 // The Streaming page of the Transcription module: a host-only page over the
-// WhisperViewModel manifests of the streaming pipeline and of the silence and
+// TranscriptionViewModel manifests of the streaming pipeline and of the silence and
 // noise filtering. Everything under the switch shows whatever the strategy: the
 // switch picks only the dictation pipeline, and files and recovered takes are
 // always cut and trimmed with these settings, so hiding them would hide
 // settings still in use. Its own
 // view model instance reloads from the persisted settings on every navigation, like
-// WhisperPage's, so an edit made on another page of the module is picked up.
+// TranscriptionPage's, so an edit made on another page of the module is picked up.
 public sealed partial class StreamingPage : Page
 {
-    public WhisperViewModel ViewModel { get; } = new();
+    public TranscriptionViewModel ViewModel { get; } = new();
 
     // The values the page's reset covers. The streaming switch is composed
     // apart (_switchComposer) and is not in this list: on or off is the

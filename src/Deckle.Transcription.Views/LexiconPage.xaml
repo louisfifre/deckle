@@ -7,7 +7,7 @@
     xmlns:catalog="using:Deckle.Catalog">
 
     <!-- The Lexicon page of the Transcription module: the person's own words
-         and the switch of the boost (WhisperViewModel.Lexicon.cs). No Reset all:
+         and the switch of the boost (TranscriptionViewModel.Lexicon.cs). No Reset all:
          the words are the person's data, and the switch has its own reset. Words
          are added one at a time, like the excluded words of the Autocorrect
          page, so a list never costs a multi-line field. -->

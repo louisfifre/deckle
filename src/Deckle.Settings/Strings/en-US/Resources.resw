@@ -530,7 +530,7 @@
     <value>Run setup…</value>
   </data>
 
-  <!-- ─── WhisperPage ────────────────────────────────────────────────
+  <!-- ─── TranscriptionPage ────────────────────────────────────────────────
        Second page in the Settings nav. Per-setting Reset buttons share
        the SettingsResetButton.ToolTipService.ToolTip key (style-level
        tooltip in the Page resources). -->
@@ -617,7 +617,7 @@
 
   <!-- GeneralPage Audio input ComboBox items -->
 
-  <!-- WhisperPage Reset all dialog -->
+  <!-- TranscriptionPage Reset all dialog -->
 
   <!-- LlmPage Reset all rewriting dialog + Ollama status -->
 

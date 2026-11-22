@@ -18,7 +18,7 @@ namespace Deckle.Transcription.Views;
 //
 // An added word goes through LexiconTerms.Merge with the list, the one cleaning
 // rule: a duplicate (any casing) or a one-letter entry adds nothing.
-public partial class WhisperViewModel
+public partial class TranscriptionViewModel
 {
     public ObservableCollection<LexiconWordRow> LexiconWords { get; } = new();
 

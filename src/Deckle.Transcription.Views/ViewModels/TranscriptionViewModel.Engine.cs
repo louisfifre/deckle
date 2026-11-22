@@ -2,7 +2,7 @@ using CommunityToolkit.Mvvm.ComponentModel;
 
 namespace Deckle.Transcription.Views;
 
-public partial class WhisperViewModel
+public partial class TranscriptionViewModel
 {
     [ObservableProperty]
     public partial string ModelsDirectory { get; set; }

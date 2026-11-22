@@ -18,7 +18,7 @@ public static class SettingsHost
     public static Action<string>? ApplyTheme;
 
     // Restart the process, optionally returning to a Settings page tag. The tag
-    // is assembly-qualified (e.g. "Deckle.Transcription.WhisperPage,
+    // is assembly-qualified (e.g. "Deckle.Transcription.TranscriptionPage,
     // Deckle.Transcription") for cross-assembly Type.GetType resolution.
     public static Action<string?>? RestartApp;
 

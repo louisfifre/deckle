@@ -5,7 +5,7 @@ using Deckle.Diagnostics.Telemetry;
 
 namespace Deckle.Transcription.Views;
 
-// ── WhisperTelemetryViewModel ─────────────────────────────────────────────────
+// ── TranscriptionTelemetryViewModel ─────────────────────────────────────────────────
 //
 // The dictation corpus, with its audio option, as the module's contribution
 // to the Corpus section of Settings > Diagnostics (2026-11-13; the dictation
@@ -17,7 +17,7 @@ namespace Deckle.Transcription.Views;
 // Load() pulls from the telemetry store; a property change pushes the
 // corpus values back, never a value another model on the page owns, and
 // _isSyncing prevents re-saving during Load().
-public sealed partial class WhisperTelemetryViewModel : ObservableObject
+public sealed partial class TranscriptionTelemetryViewModel : ObservableObject
 {
     private bool _isSyncing;
 
@@ -32,7 +32,7 @@ public sealed partial class WhisperTelemetryViewModel : ObservableObject
     [ObservableProperty]
     public partial int AudioCorpusContentIndex { get; set; }
 
-    public WhisperTelemetryViewModel()
+    public TranscriptionTelemetryViewModel()
     {
         // Seeded closed under the guard, so no setter saves the seeds; Load()
         // overwrites them.
@@ -140,7 +140,7 @@ public sealed partial class WhisperTelemetryViewModel : ObservableObject
         "transcription", order,
         () =>
         {
-            var model = new WhisperTelemetryViewModel();
+            var model = new TranscriptionTelemetryViewModel();
             return new DiagnosticsSource(model, model.Settings, model.Load, model.TurnOff);
         });
 }

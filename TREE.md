@@ -2437,23 +2437,23 @@ _Generated from `git ls-files` — do not edit by hand._
 │   │   │       └── Resources.resw
 │   │   ├── ViewModels/
 │   │   │   ├── LexiconWordRow.cs
-│   │   │   ├── WhisperTelemetryViewModel.cs
-│   │   │   ├── WhisperViewModel.cs
-│   │   │   ├── WhisperViewModel.DictationExperience.cs
-│   │   │   ├── WhisperViewModel.Engine.cs
-│   │   │   ├── WhisperViewModel.Lexicon.cs
-│   │   │   ├── WhisperViewModel.Settings.cs
-│   │   │   ├── WhisperViewModel.SpeechEngine.cs
-│   │   │   └── WhisperViewModel.Streaming.cs
+│   │   │   ├── TranscriptionTelemetryViewModel.cs
+│   │   │   ├── TranscriptionViewModel.cs
+│   │   │   ├── TranscriptionViewModel.DictationExperience.cs
+│   │   │   ├── TranscriptionViewModel.Engine.cs
+│   │   │   ├── TranscriptionViewModel.Lexicon.cs
+│   │   │   ├── TranscriptionViewModel.Settings.cs
+│   │   │   ├── TranscriptionViewModel.SpeechEngine.cs
+│   │   │   └── TranscriptionViewModel.Streaming.cs
 │   │   ├── Deckle.Transcription.Views.csproj
 │   │   ├── LexiconPage.xaml
 │   │   ├── LexiconPage.xaml.cs
 │   │   ├── SettingsSearch.cs
 │   │   ├── StreamingPage.xaml
 │   │   ├── StreamingPage.xaml.cs
-│   │   ├── WhisperPage.xaml
-│   │   ├── WhisperPage.xaml.cs
-│   │   └── WhisperSettingsModule.cs
+│   │   ├── TranscriptionPage.xaml
+│   │   ├── TranscriptionPage.xaml.cs
+│   │   └── TranscriptionSettingsModule.cs
 │   ├── Deckle.Vad/
 │   │   ├── Deckle.Vad.csproj
 │   │   ├── DeckleVadSource.cs

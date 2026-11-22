@@ -27,8 +27,8 @@ public sealed partial class TranscriptionEngine
         long hotkeyToCaptureMs = _hotkeySw?.ElapsedMilliseconds ?? 0;
         long recordDrainMs = (long)_recordDrainDuration.TotalMilliseconds;
         long stopToPipelineMs = _stopToPipelineSw?.ElapsedMilliseconds ?? 0;
-        long whisperInitMs = production.InitMs;
-        long whisperMs = Math.Max(0, production.TotalTranscribeMs - whisperInitMs);
+        long engineInitMs = production.InitMs;
+        long decodeMs = Math.Max(0, production.TotalTranscribeMs - engineInitMs);
         string strategyLabel = _backend.Name;
 
         if (isFileRun)
@@ -44,7 +44,7 @@ public sealed partial class TranscriptionEngine
         DeckleWhispSource.Log.PipelineCompletedDetail(delivery.Outcome.ToString());
         DeckleWhispSource.Log.PipelineTimings(
             recordingDurationSec, _modelLoadMs, hotkeyToCaptureMs, recordDrainMs,
-            stopToPipelineMs, whisperInitMs, whisperMs, rewrite.LlmMs,
+            stopToPipelineMs, engineInitMs, decodeMs, rewrite.LlmMs,
             clipboardMs);
         DeckleWhispSource.Log.PipelineLlmMetrics(
             rewrite.LlmLoadMs,
@@ -62,7 +62,7 @@ public sealed partial class TranscriptionEngine
 
         _recordingSw?.Stop();
 
-        RecordCorpus(production, rawText, rewrite, isFileRun, recordingDurationSec, whisperMs);
+        RecordCorpus(production, rawText, rewrite, isFileRun, recordingDurationSec, decodeMs);
     }
 
     private void RecordCorpus(
@@ -71,7 +71,7 @@ public sealed partial class TranscriptionEngine
         FinalizeRewrite rewrite,
         bool isFileRun,
         double recordingDurationSec,
-        long whisperMs)
+        long decodeMs)
     {
         var telemetrySettings = _host.Telemetry;
         if (!telemetrySettings.CorpusEnabled)
@@ -117,7 +117,7 @@ public sealed partial class TranscriptionEngine
             text_chars:            rawText.Length,
             duration_seconds:      recordingDurationSec,
             words_per_second:      recordingDurationSec > 0 ? rawWordCount / recordingDurationSec : 0,
-            elapsed_ms:            whisperMs,
+            elapsed_ms:            decodeMs,
             audio_content:         corpusContent);
 
         if (rewrite.Profile is null)

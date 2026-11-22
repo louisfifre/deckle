@@ -7,13 +7,13 @@ using Deckle.Settings;
 
 namespace Deckle.Transcription.Views;
 
-// ── WhisperViewModel — the speech engine ─────────────────────────────────────
+// ── TranscriptionViewModel — the speech engine ─────────────────────────────────────
 //
 // The settings of the speech engine, Parakeet: its model folder and the
 // precision of its encoder. Both are read at each model load, so a change
 // reaches the next load, after the idle unload or the restart the page's
 // footer offers.
-public partial class WhisperViewModel
+public partial class TranscriptionViewModel
 {
     [ObservableProperty]
     public partial string ParakeetModelDirectory { get; set; }
@@ -50,9 +50,9 @@ public partial class WhisperViewModel
     // POCO initializer, the single source the settings file persists.
     public IReadOnlyList<SettingDescriptor> SpeechEngineSettings =>
     [
-        Setting.Section("WhisperSpeechEngineFold",
+        Setting.Section("TranscriptionSpeechEngineFold",
             [
-                Setting.Path("WhisperParakeetFolderCard",
+                Setting.Path("TranscriptionParakeetFolderCard",
                     () => ParakeetModelDirectory,
                     value => ParakeetModelDirectory = value,
                     new PathArgs(FolderPickerMode.Editable,
@@ -61,16 +61,16 @@ public partial class WhisperViewModel
                 // A diagnostic, read and never written: the block Windows-style
                 // settings pages use for a state (Readout), in an editor card
                 // that owns no value and so has no reset.
-                Setting.Editor<bool>("WhisperParakeetFilesCard",
+                Setting.Editor<bool>("TranscriptionParakeetFilesCard",
                     () => true,
                     _ => { },
                     new EditorArgs(BuildParakeetFilesReadout)),
-                Setting.Choice<ParakeetEncoderPrecision>("WhisperParakeetEncoderCard",
+                Setting.Choice<ParakeetEncoderPrecision>("TranscriptionParakeetEncoderCard",
                     () => ParakeetEncoder,
                     value => ParakeetEncoder = value,
                     [
-                        (ParakeetEncoderPrecision.Fp32, "WhisperParakeetEncoderFp32"),
-                        (ParakeetEncoderPrecision.Fp16, "WhisperParakeetEncoderFp16"),
+                        (ParakeetEncoderPrecision.Fp32, "TranscriptionParakeetEncoderFp32"),
+                        (ParakeetEncoderPrecision.Fp16, "TranscriptionParakeetEncoderFp16"),
                     ],
                     isAdvanced: true,
                     defaultValue: () => new EngineSettings().ParakeetEncoder,
@@ -84,7 +84,7 @@ public partial class WhisperViewModel
         if (ParakeetEncoder != ParakeetEncoderPrecision.Fp16) return null;
         ParakeetModelFolderState? folder = InspectParakeetFolder();
         return folder is { IsComplete: true, HasFp16Encoder: false }
-            ? Loc.GetFromOptional("Deckle.Transcription.Views", "WhisperParakeetEncoderMissing/Message")
+            ? Loc.GetFromOptional("Deckle.Transcription.Views", "TranscriptionParakeetEncoderMissing/Message")
             : null;
     }
 
@@ -93,9 +93,9 @@ public partial class WhisperViewModel
     private static (string Message, ReadoutStatus Status)? DescribeFolder(ParakeetModelFolderState? folder)
     {
         if (folder is null) return null;
-        string key = !folder.IsComplete ? "WhisperParakeetFiles_Incomplete"
-            : folder.HasFp16Encoder ? "WhisperParakeetFiles_CompleteWithFp16"
-            : "WhisperParakeetFiles_Complete";
+        string key = !folder.IsComplete ? "TranscriptionParakeetFiles_Incomplete"
+            : folder.HasFp16Encoder ? "TranscriptionParakeetFiles_CompleteWithFp16"
+            : "TranscriptionParakeetFiles_Complete";
         string? message = Loc.GetFromOptional("Deckle.Transcription.Views", key);
         return message is null ? null : (message, folder.IsComplete ? ReadoutStatus.Success : ReadoutStatus.Caution);
     }

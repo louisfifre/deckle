@@ -261,7 +261,7 @@ public sealed partial class SettingsComposer
 
     private void BuildCombo(SettingsCard card, SettingDescriptor s, ChoiceArgs args)
     {
-        // MinWidth matches the hand-authored Language ComboBox on WhisperPage, so a
+        // MinWidth matches the hand-authored Language ComboBox on TranscriptionPage, so a
         // composed picker sits at the same width as a bespoke one.
         var combo = new ComboBox { MinWidth = 160 };
         foreach (ChoiceOption option in args.Options)

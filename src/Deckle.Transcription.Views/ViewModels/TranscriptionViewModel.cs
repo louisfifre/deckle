@@ -3,7 +3,7 @@ using Deckle.Settings;
 
 namespace Deckle.Transcription.Views;
 
-// ViewModel for WhisperPage. Load() pulls from the settings POCOs, property
+// ViewModel for TranscriptionPage. Load() pulls from the settings POCOs, property
 // changes push back via PushToSettings(); _isSyncing prevents re-saving during
 // Load().
 //
@@ -12,11 +12,11 @@ namespace Deckle.Transcription.Views;
 // a field.
 //
 // Partial properties (not fields) for WinRT/AOT compatibility (MVVMTK0045).
-public partial class WhisperViewModel : ObservableObject
+public partial class TranscriptionViewModel : ObservableObject
 {
     private bool _isSyncing;
 
-    public WhisperViewModel()
+    public TranscriptionViewModel()
     {
         _isSyncing = true;
 
@@ -58,7 +58,7 @@ public partial class WhisperViewModel : ObservableObject
         OverlayPosition = overlay.Position;
         TranscriptPanelSide = NormalizeTranscriptPanelSide(overlay.TranscriptPanelSide);
 
-        // The dataset consents (latency, corpus) live in WhisperTelemetryViewModel,
+        // The dataset consents (latency, corpus) live in TranscriptionTelemetryViewModel,
         // composed on the Diagnostics page.
 
         // _isSyncing stays true until Load(), so no setter saves the seeds.

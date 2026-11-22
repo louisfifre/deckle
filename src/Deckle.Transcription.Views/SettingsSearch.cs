@@ -12,7 +12,7 @@ namespace Deckle.Transcription.Views;
 // composing the page.
 //
 // The lists are DECLARED here, not derived from the manifests, on purpose. The
-// composed cards live as instance properties on WhisperViewModel — reading them
+// composed cards live as instance properties on TranscriptionViewModel — reading them
 // means constructing a ViewModel, which pulls in its boot side effects (settings
 // load, capture-side wiring) and which the index must never do at boot. So a
 // card's identity travels as its bare LabelKey, the same string the manifest
@@ -25,7 +25,7 @@ namespace Deckle.Transcription.Views;
 // while the corpus opt-in is off), so a hit on one could not be reliably
 // brought into view. The fold's own card lands the user in the right region;
 // the buried child concepts stay findable through that card's Keywords. The
-// transient WhisperSetupInfoBar is not a setting — a not-provisioned
+// transient TranscriptionSetupInfoBar is not a setting — a not-provisioned
 // call-to-action — so it is absent too.
 //
 // Maintenance contract: one top-level card on a page, one entry here. Add a
@@ -49,7 +49,7 @@ public static class SettingsSearch
         // of its files and the encoder precision ride under it).
         new SettingSearchEntry
         {
-            LabelKey = "WhisperSpeechEngineFold",
+            LabelKey = "TranscriptionSpeechEngineFold",
             Keywords = ["parakeet", "engine", "nvidia", "model", "folder",
                         "encoder", "precision", "fp16", "fp32"],
         },
@@ -57,14 +57,14 @@ public static class SettingsSearch
         // GPU acceleration (composed toggle).
         new SettingSearchEntry
         {
-            LabelKey = "WhisperUseGpuCard",
+            LabelKey = "TranscriptionUseGpuCard",
             Keywords = ["directml", "hardware"],
         },
 
         // Models folder (composed Path).
         new SettingSearchEntry
         {
-            LabelKey = "WhisperModelsDirCard",
+            LabelKey = "TranscriptionModelsDirCard",
             Keywords = ["directory", "path", "storage"],
         },
     ];
@@ -93,7 +93,7 @@ public static class SettingsSearch
         // show whatever it says: files and recovered takes always use them).
         new SettingSearchEntry
         {
-            LabelKey = "WhisperStreamingEnabledCard",
+            LabelKey = "TranscriptionStreamingEnabledCard",
             Keywords = ["realtime", "live", "segmenter", "utterance"],
         },
 
@@ -102,7 +102,7 @@ public static class SettingsSearch
         // words that found those two cards find the card that now holds them.
         new SettingSearchEntry
         {
-            LabelKey = "WhisperCutCurveCard",
+            LabelKey = "TranscriptionCutCurveCard",
             Keywords = ["hangover", "pause", "cut", "ramp", "wait",
                         "margin", "silence", "end", "clip", "trailing",
                         "minimum", "speech", "blip", "noise", "short", "word", "drop", "cough"],
@@ -112,14 +112,14 @@ public static class SettingsSearch
         // threshold, minimum silence and padding ride under it).
         new SettingSearchEntry
         {
-            LabelKey = "WhisperSilenceGuardsFold",
+            LabelKey = "TranscriptionSilenceGuardsFold",
             Keywords = ["silero", "vad", "voice activity", "silence", "noise", "trim",
                         "threshold", "padding"],
         },
     ];
 
     // The dictation corpus, composed in the Corpus section of Settings >
-    // Diagnostics (WhisperTelemetryViewModel); registered under that page with
+    // Diagnostics (TranscriptionTelemetryViewModel); registered under that page with
     // this module's assembly, where its words live. The WAV opt-in and its
     // content radio ride under it as composed children.
     public static IReadOnlyList<SettingSearchEntry> TelemetryEntries { get; } =

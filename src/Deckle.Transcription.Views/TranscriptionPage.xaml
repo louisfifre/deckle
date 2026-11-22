@@ -1,5 +1,5 @@
 <Page
-    x:Class="Deckle.Transcription.Views.WhisperPage"
+    x:Class="Deckle.Transcription.Views.TranscriptionPage"
     xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
     xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
     xmlns:catalog="using:Deckle.Catalog">
@@ -24,27 +24,27 @@
                      Reset all on the trailing edge (active-when-dirty). The header
                      asks; the page adds its ResetDetail in the constructor. -->
                 <catalog:SettingsPageHeader x:Name="Header"
-                                            x:Uid="WhisperPageHeader"
+                                            x:Uid="TranscriptionPageHeader"
                                             ResetAllRequested="ResetAll_Click" />
 
                 <InfoBar x:Name="SetupInfoBar"
-                         x:Uid="WhisperSetupInfoBar"
+                         x:Uid="TranscriptionSetupInfoBar"
                          IsClosable="False"
                          IsOpen="False"
                          Margin="0,0,0,8"
                          catalog:InfoBarLayout.CollapseWhenClosed="True">
                     <InfoBar.ActionButton>
-                        <Button x:Uid="WhisperSetupButton"
+                        <Button x:Uid="TranscriptionSetupButton"
                                 Click="OnSetupClick" />
                     </InfoBar.ActionButton>
                 </InfoBar>
 
                 <!-- ── Overlay ──────────────────────────────────────────────────
                      The dictation experience — the on-screen HUD,
-                     relocated from General. Composed from WhisperViewModel.BehaviourSettings
+                     relocated from General. Composed from TranscriptionViewModel.BehaviourSettings
                      into the host below; its own section reset gates active-when-dirty. -->
                 <catalog:SettingsSection x:Name="BehaviourSection"
-                                         x:Uid="WhisperPageBehaviourSection"
+                                         x:Uid="TranscriptionPageBehaviourSection"
                                          HasReset="True"
                                          ResetRequested="ResetBehaviour_Click">
                     <StackPanel x:Name="BehaviourHost"
@@ -61,7 +61,7 @@
                     restart. No section reset: the three hosts are separate
                     composers, so no single dirtiness could gate one.
                 -->
-                <catalog:SettingsSection x:Uid="WhisperPageModelEngineSection">
+                <catalog:SettingsSection x:Uid="TranscriptionPageModelEngineSection">
                 <StackPanel Spacing="{StaticResource SettingsCardSpacing}">
 
                 <!-- Speech engine — composed. The fold holds what the engine
@@ -92,7 +92,7 @@
                      LexiconPage and StreamingPage, nested under this module in the
                      rail. The dictation's dataset consents (latency, audio corpus)
                      live on Settings > Diagnostics, the one editor of what Deckle
-                     records (WhisperTelemetryViewModel, 2026-10-14). -->
+                     records (TranscriptionTelemetryViewModel, 2026-10-14). -->
 
             </StackPanel>
             </Grid>
@@ -111,9 +111,9 @@
                         HorizontalAlignment="Right"
                         VerticalAlignment="Center"
                         Orientation="Horizontal">
-                <Button x:Uid="WhisperRestartDiscard"
+                <Button x:Uid="TranscriptionRestartDiscard"
                         Click="RestartDiscard_Click" />
-                <Button x:Uid="WhisperRestartNow"
+                <Button x:Uid="TranscriptionRestartNow"
                         Margin="8,0,0,0"
                         Style="{StaticResource AccentButtonStyle}"
                         Click="RestartNow_Click" />

@@ -7,7 +7,7 @@ using Deckle.Localization;
 
 namespace Deckle.Transcription.Views;
 
-// ── WhisperViewModel — settings manifest ──────────────────────────────────────
+// ── TranscriptionViewModel — settings manifest ──────────────────────────────────────
 //
 // The declarative half of the module's pages (General, Lexicon, Streaming),
 // kept beside the ViewModel that owns the values rather than in the page
@@ -18,14 +18,14 @@ namespace Deckle.Transcription.Views;
 // each list into cards. No glyph on any card: the rail carries the module's
 // icon, a card carries its words (2026-10-14).
 //
-// The restart footer stays hand-authored on WhisperPage.
+// The restart footer stays hand-authored on TranscriptionPage.
 //
 // Single-source defaults on EVERY descriptor read the POCO initializer (new
 // SpeechTrimSettings().<Field>, new EnergySegmenterSettings().<Field>) — the
 // same literal SettingsService persists — so each card's reset goes active
 // exactly when the value leaves that default. The Seg* fields are int in the
 // POCO; the int→double widening into the Func<double> default is implicit.
-public partial class WhisperViewModel
+public partial class TranscriptionViewModel
 {
     // Dictation experience — the overlay HUD group, relocated from
     // GeneralPage. The overlay is a Group (master OverlayEnabled +
@@ -75,7 +75,7 @@ public partial class WhisperViewModel
     // toggle still trips the footer.
     public IReadOnlyList<SettingDescriptor> UseGpuSettingsManifest =>
     [
-        Setting.Toggle("WhisperUseGpuCard",
+        Setting.Toggle("TranscriptionUseGpuCard",
             () => UseGpu,
             value => UseGpu = value,
             defaultValue: () => new EngineSettings().UseGpu),
@@ -91,7 +91,7 @@ public partial class WhisperViewModel
     // when the user has repointed the folder.
     public IReadOnlyList<SettingDescriptor> ModelsDirectorySettingsManifest =>
     [
-        Setting.Path("WhisperModelsDirCard",
+        Setting.Path("TranscriptionModelsDirCard",
             () => ModelsDirectory,
             value => ModelsDirectory = value,
             new PathArgs(FolderPickerMode.Editable, DefaultPath: () => AppPaths.ModelsDirectory),
@@ -122,19 +122,19 @@ public partial class WhisperViewModel
     // one utterance, and the utterances of a file or a recovered take.
     public IReadOnlyList<SettingDescriptor> SilenceGuardSettings =>
     [
-        Setting.Section("WhisperSilenceGuardsFold",
+        Setting.Section("TranscriptionSilenceGuardsFold",
             [
-                Setting.Toggle("WhisperVadEnabledCard",
+                Setting.Toggle("TranscriptionVadEnabledCard",
                     () => VadEnabled,
                     value => VadEnabled = value,
                     defaultValue: () => new SpeechTrimSettings().Enabled),
-                Setting.Magnitude("WhisperVadThresholdCard",
+                Setting.Magnitude("TranscriptionVadThresholdCard",
                     () => VadThreshold,
                     value => VadThreshold = value,
                     new MagnitudeArgs(0.1, 0.9),
                     visibleWhen: () => VadEnabled,
                     defaultValue: () => new SpeechTrimSettings().Threshold),
-                Setting.Magnitude("WhisperVadMinSilenceCard",
+                Setting.Magnitude("TranscriptionVadMinSilenceCard",
                     () => Seconds(VadMinSilenceDurationMs),
                     value => VadMinSilenceDurationMs = Milliseconds(value),
                     new MagnitudeArgs(0, 1, Unit: "s"),
@@ -142,7 +142,7 @@ public partial class WhisperViewModel
                     defaultValue: () => Seconds(new SpeechTrimSettings().MinSilenceDurationMs)),
                 // 0..0.4 s, not 0..0.2: the grain follows the span, and 0.01 s
                 // is the one that writes the 0.03 s default exactly.
-                Setting.Magnitude("WhisperVadSpeechPadCard",
+                Setting.Magnitude("TranscriptionVadSpeechPadCard",
                     () => Seconds(VadSpeechPadMs),
                     value => VadSpeechPadMs = Milliseconds(value),
                     new MagnitudeArgs(0, 0.4, Unit: "s"),
@@ -163,7 +163,7 @@ public partial class WhisperViewModel
     // is the single source — no hand-copied bool.
     public IReadOnlyList<SettingDescriptor> StreamingSwitch =>
     [
-        Setting.Toggle("WhisperStreamingEnabledCard",
+        Setting.Toggle("TranscriptionStreamingEnabledCard",
             () => StreamingEnabled,
             value => StreamingEnabled = value,
             defaultValue: () => new StreamingSettings().Strategy == PipelineStrategyKind.Streaming),
@@ -194,7 +194,7 @@ public partial class WhisperViewModel
     // reset.
     public IReadOnlyList<SettingDescriptor> SegmentationSettings =>
     [
-        Setting.Curve("WhisperCutCurveCard",
+        Setting.Curve("TranscriptionCutCurveCard",
             () => new CurvePoints(SegCurveX1, SegCurveY1, SegCurveX2, SegCurveY2),
             p => { SegCurveX1 = p.X1; SegCurveY1 = p.Y1; SegCurveX2 = p.X2; SegCurveY2 = p.Y2; },
             new CurveArgs(
@@ -202,35 +202,35 @@ public partial class WhisperViewModel
                 Describe: _ => CutCurveSentence(),
                 Anchors:
                 [
-                    new CurveAnchor("WhisperSegHangoverMaxCard",
+                    new CurveAnchor("TranscriptionSegHangoverMaxCard",
                         () => Seconds(SegHangoverMaxMs), value => SegHangoverMaxMs = Milliseconds(value),
                         0.5, 15,
                         Default: () => Seconds(new EnergySegmenterSettings().HangoverMaxMs),
                         Role: CurveAnchorRole.OriginY),
-                    new CurveAnchor("WhisperSegHangoverMinCard",
+                    new CurveAnchor("TranscriptionSegHangoverMinCard",
                         () => Seconds(SegHangoverMinMs), value => SegHangoverMinMs = Milliseconds(value),
                         0.1, 2,
                         Default: () => Seconds(new EnergySegmenterSettings().HangoverMinMs),
                         Role: CurveAnchorRole.EndY),
-                    new CurveAnchor("WhisperSegHangoverRampStartCard",
+                    new CurveAnchor("TranscriptionSegHangoverRampStartCard",
                         () => Seconds(SegHangoverRampStartMs), value => SegHangoverRampStartMs = Milliseconds(value),
                         0, 200, Integer: true, // a 200 s span gives the 5 s grain
                         Default: () => Seconds(new EnergySegmenterSettings().HangoverRampStartMs),
                         Role: CurveAnchorRole.OriginX),
-                    new CurveAnchor("WhisperSegHangoverRampEndCard",
+                    new CurveAnchor("TranscriptionSegHangoverRampEndCard",
                         () => Seconds(SegHangoverRampEndMs), value => SegHangoverRampEndMs = Milliseconds(value),
                         30, 230, Integer: true, // same 200 s span, same 5 s grain
                         Default: () => Seconds(new EnergySegmenterSettings().HangoverRampEndMs),
                         Role: CurveAnchorRole.EndX),
                 ],
-                Pause: new PauseStripArgs("WhisperCutPauseStrip",
+                Pause: new PauseStripArgs("TranscriptionCutPauseStrip",
                     // 0..1 s: the grain is 0.05 s, which writes both defaults
                     // (0.25, 0.15) exactly.
-                    MinimumSpeech: new CurveAnchor("WhisperMinSpeechCard",
+                    MinimumSpeech: new CurveAnchor("TranscriptionMinSpeechCard",
                         () => Seconds(MinSpeechMs), value => MinSpeechMs = Milliseconds(value),
                         0, 1,
                         Default: () => Seconds(new StreamingSettings().MinSpeechMs)),
-                    Margin: new CurveAnchor("WhisperSegMarginCard",
+                    Margin: new CurveAnchor("TranscriptionSegMarginCard",
                         () => Seconds(SegMarginMs), value => SegMarginMs = Milliseconds(value),
                         0, 1,
                         Default: () => Seconds(new EnergySegmenterSettings().MarginMs)),
@@ -276,7 +276,7 @@ public partial class WhisperViewModel
     // missing entry falls back to the card's static description.
     private string? CutCurveSentence()
     {
-        string? format = Loc.GetFromOptional("Deckle.Transcription.Views", "WhisperCutCurveSentence_Format");
+        string? format = Loc.GetFromOptional("Deckle.Transcription.Views", "TranscriptionCutCurveSentence_Format");
         if (format is null) return null;
         double start = SegHangoverRampStartMs / 1000.0;
         double end = Math.Max(start, SegHangoverRampEndMs / 1000.0);
