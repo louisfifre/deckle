@@ -82,8 +82,8 @@ public sealed partial class TranscriptionEngine
             if (result.ErrorReason == "file_not_found")
             {
                 EmitUserFeedback(FB_ERROR,
-                    Loc.Get("Engine_WhisperModelNotFound_Title"),
-                    Loc.Format("Engine_WhisperModelNotFound_Body_Format", SettingsPageLabel()),
+                    Loc.Get("Engine_SpeechModelNotFound_Title"),
+                    Loc.Format("Engine_SpeechModelNotFound_Body_Format", SettingsPageLabel()),
                     FB_REPLACEMENT);
             }
             else

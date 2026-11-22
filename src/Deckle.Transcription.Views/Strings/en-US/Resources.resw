@@ -168,10 +168,10 @@
        error or warning is worth surfacing in the HUD. Each pair maps
        to one (Severity, Role) combination decided in code, not here.
        Naming: Engine_<Reason>_Title and Engine_<Reason>_Body. -->
-  <data name="Engine_WhisperModelNotFound_Title" xml:space="preserve">
+  <data name="Engine_SpeechModelNotFound_Title" xml:space="preserve">
     <value>Speech model not found</value>
   </data>
-  <data name="Engine_WhisperModelNotFound_Body_Format" xml:space="preserve">
+  <data name="Engine_SpeechModelNotFound_Body_Format" xml:space="preserve">
     <value>Get it in Settings › {0}.</value>
   </data>
   <data name="Engine_ModelLoadFailed_Title" xml:space="preserve">

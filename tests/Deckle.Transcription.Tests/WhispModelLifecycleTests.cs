@@ -138,7 +138,7 @@ public sealed class WhispModelLifecycleTests
     [Fact]
     public async Task AModelThatCannotLoadIsAUserIncidentUntilALoadSucceeds()
     {
-        UserIncidentRegistry.Instance.Close(UserIncidents.WhisperModel);
+        UserIncidentRegistry.Instance.Close(UserIncidents.SpeechModel);
         using var listener = new TestEventListener(Provider);
         var backend = new ScriptedBackend(loadFails: true);
         using var engine = new TranscriptionEngine(new FakeHost(), backend);
@@ -146,13 +146,13 @@ public sealed class WhispModelLifecycleTests
         await RunColdBatchAsync(engine, listener);
 
         UserIncident incident = Assert.Single(
-            UserIncidentRegistry.Instance.Snapshot(), i => i.Id == UserIncidents.WhisperModel);
+            UserIncidentRegistry.Instance.Snapshot(), i => i.Id == UserIncidents.SpeechModel);
         Assert.Equal("file_not_found", incident.Reason);
 
         backend.LoadFails = false;
         await RunColdBatchAsync(engine, listener);
 
-        Assert.False(UserIncidentRegistry.Instance.IsOpen(UserIncidents.WhisperModel));
+        Assert.False(UserIncidentRegistry.Instance.IsOpen(UserIncidents.SpeechModel));
     }
 
     [Fact]

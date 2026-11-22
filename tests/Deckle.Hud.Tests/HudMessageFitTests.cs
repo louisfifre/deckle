@@ -53,7 +53,7 @@ public sealed partial class HudMessageFitTests
         // ten characters of hex, wider than a PortAudio error (-10000).
         ["MicError_Unavailable_Body_Format"] = ["0x8889000A"],
         ["Feedback_SpeechNotSetUp_Body_Format"] = [TranscriptionPageLabel()],
-        ["Engine_WhisperModelNotFound_Body_Format"] = [TranscriptionPageLabel()],
+        ["Engine_SpeechModelNotFound_Body_Format"] = [TranscriptionPageLabel()],
         ["Engine_ModelLoadFailed_Body_Format"] = [TranscriptionPageLabel()],
     };
 

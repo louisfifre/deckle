@@ -26,13 +26,13 @@ public sealed class TrayIncidentLinesTests
     {
         IReadOnlyList<TrayIncidentLines.Line> lines = TrayIncidentLines.Fold(
         [
-            Declared(UserIncidents.WhisperModel),
+            Declared(UserIncidents.SpeechModel),
             Declared(UserIncidents.VadModel),
         ]);
 
         var line = Assert.Single(lines);
         Assert.Equal(ModuleIds.Transcription, line.Module);
-        Assert.Equal(PageOf(UserIncidents.WhisperModel), line.PageTag);
+        Assert.Equal(PageOf(UserIncidents.SpeechModel), line.PageTag);
     }
 
     [Fact]

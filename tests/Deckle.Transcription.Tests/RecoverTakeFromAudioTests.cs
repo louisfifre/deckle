@@ -202,7 +202,7 @@ public sealed class RecoverTakeFromAudioTests : IDisposable
         finally
         {
             // The failed load opened a process-wide incident.
-            UserIncidentRegistry.Instance.Close(UserIncidents.WhisperModel);
+            UserIncidentRegistry.Instance.Close(UserIncidents.SpeechModel);
         }
     }
 

@@ -89,7 +89,7 @@ public partial class App
             // is composed only at start, so what fixes it is the restart that
             // follows provisioning.
             if (engineSkip != SkipNotPresent)
-                UserIncidentRegistry.Instance.Open(UserIncidents.WhisperModel, engineSkip);
+                UserIncidentRegistry.Instance.Open(UserIncidents.SpeechModel, engineSkip);
             // A model that is not (all) there is what a first start or an
             // interrupted download leaves, so it earns the setup window at the
             // end of startup (App.SpeechRepair.cs).

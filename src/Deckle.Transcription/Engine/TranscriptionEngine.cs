@@ -247,7 +247,7 @@ public sealed partial class TranscriptionEngine : IDisposable
         DeckleWhispSource.Log.ModelUnavailable(workId, reason, modelPath, useGpu, exType, exMessage);
         // A load_exception (GPU, driver) is not always the person's to fix, but
         // the next good load closes it and the Whisper page is still where to look.
-        UserIncidentRegistry.Instance.Open(UserIncidents.WhisperModel, reason);
+        UserIncidentRegistry.Instance.Open(UserIncidents.SpeechModel, reason);
     }
 
     // The id of the load whose failure opened the incident, which its recovery
@@ -255,7 +255,7 @@ public sealed partial class TranscriptionEngine : IDisposable
     private string? CloseModelIncident()
     {
         if (Interlocked.Exchange(ref _modelIncidentOpen, 0) == 0) return null;
-        UserIncidentRegistry.Instance.Close(UserIncidents.WhisperModel);
+        UserIncidentRegistry.Instance.Close(UserIncidents.SpeechModel);
         return _modelIncidentWorkId;
     }
 
