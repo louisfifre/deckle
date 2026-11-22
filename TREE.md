@@ -2441,6 +2441,7 @@ _Generated from `git ls-files` — do not edit by hand._
 │   │   │   └── en-US/
 │   │   │       └── Resources.resw
 │   │   ├── ViewModels/
+│   │   │   ├── LexiconWordRow.cs
 │   │   │   ├── WhisperTelemetryViewModel.cs
 │   │   │   ├── WhisperViewModel.cs
 │   │   │   ├── WhisperViewModel.DictationExperience.cs

@@ -99,7 +99,7 @@ public static class SettingsSearch
     [
         new SettingSearchEntry
         {
-            LabelKey = "LexiconTermsCard",
+            LabelKey = "LexiconAddCard",
             Keywords = ["vocabulary", "words", "names", "proper nouns", "dictionary",
                         "capital", "case", "hotwords"],
         },

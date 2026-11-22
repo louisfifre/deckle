@@ -153,7 +153,6 @@ public partial class App
             // registered on its own so the search index resolves page
             // coordinates per page. Lexicon comes first: every Parakeet user
             // needs it, Decoding is for experts.
-            Transcription.Views.WhisperSettingsModule.AutocorrectPresent = context.AutocorrectPresent;
             RegisterSettingsModule(Transcription.Views.WhisperSettingsModule.Describe(order: 100), Transcription.Views.SettingsSearch.Entries);
             RegisterSettingsModule(Transcription.Views.WhisperSettingsModule.DescribeLexicon(order: 105), Transcription.Views.SettingsSearch.LexiconEntries);
             RegisterSettingsModule(Transcription.Views.WhisperSettingsModule.DescribeDecoding(order: 110), Transcription.Views.SettingsSearch.DecodingEntries);

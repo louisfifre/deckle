@@ -421,37 +421,28 @@
     <value>Lexicon</value>
   </data>
   <data name="LexiconPageHeader.Description" xml:space="preserve">
-    <value>Your own words and names, so dictation hears them and writes them the way you do.</value>
+    <value>Words dictation writes exactly as you type them.</value>
   </data>
   <data name="LexiconPageWhisperInfoBar.Title" xml:space="preserve">
-    <value>Whisper doesn't use this list</value>
+    <value>Only Parakeet uses this list</value>
   </data>
-  <data name="LexiconPageWhisperInfoBar.Message" xml:space="preserve">
-    <value>Whisper reads the initial prompt on the Transcription page instead. Choose Parakeet as the speech engine to have these words favored and written with their capitals.</value>
+  <data name="LexiconAddCard.Header" xml:space="preserve">
+    <value>Add a word</value>
   </data>
-  <data name="LexiconPageWordsSection.Title" xml:space="preserve">
-    <value>My words</value>
-  </data>
-  <data name="LexiconPageWordsSection.Caption" xml:space="preserve">
-    <value>Parakeet writes each word with the capitals you type, everywhere it occurs. Leave out a word you also use in lowercase.</value>
-  </data>
-  <data name="LexiconTermsCard.Header" xml:space="preserve">
-    <value>Words</value>
-  </data>
-  <data name="LexiconTermsCard.Description" xml:space="preserve">
-    <value>One word or name per line. Duplicates, including the same word with different capitals, and single letters are dropped when you leave the field.</value>
-  </data>
-  <data name="LexiconTermsBox.PlaceholderText" xml:space="preserve">
+  <data name="LexiconWordBox.PlaceholderText" xml:space="preserve">
     <value>Deckle</value>
+  </data>
+  <data name="LexiconAddButton.Content" xml:space="preserve">
+    <value>Add</value>
+  </data>
+  <data name="LexiconRemoveButton.AutomationProperties.Name" xml:space="preserve">
+    <value>Remove</value>
+  </data>
+  <data name="LexiconRemoveButton.ToolTipService.ToolTip" xml:space="preserve">
+    <value>Remove</value>
   </data>
   <data name="LexiconBoostCard.Header" xml:space="preserve">
     <value>Favor these words when listening</value>
-  </data>
-  <data name="LexiconBoostCard.Description" xml:space="preserve">
-    <value>When a word sounds close to one of yours, dictation picks yours. Off, dictation only fixes their capitals.</value>
-  </data>
-  <data name="LexiconPageAutocorrectNote.Text" xml:space="preserve">
-    <value>Autocorrect treats each one-word entry as yours, whatever the engine: it never corrects it away and can correct a typo to it. To stop autocorrect from ever producing a word, exclude it on the Autocorrect page.</value>
   </data>
   <data name="WhisperUseGpuCard.Header" xml:space="preserve">
     <value>GPU acceleration</value>
