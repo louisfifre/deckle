@@ -28,11 +28,17 @@ namespace Deckle.Core;
 //      the caller's Cancel stops the transfer in milliseconds, not at the
 //      next megabyte boundary.
 //
+//   4. Bounded silence — a link that goes quiet ends the download after
+//      StallTimeout with a readable message instead of hanging until the
+//      person cancels. The timer is re-armed on every chunk, so a slow but
+//      live transfer is never cut. A retry starts the file over: the
+//      .partial is not resumed.
+//
 // HttpClient is reused as a static field (Microsoft Learn guidance:
 // instantiating per-call exhausts sockets under load). The default 100 s
 // timeout is overridden to Infinite because large model files routinely
-// exceed it on slow links — cancellation is the right escape hatch, not
-// the timeout.
+// exceed it on slow links — the stall timer bounds silence, and the
+// caller's cancellation is the escape hatch for the rest.
 public static class Downloader
 {
     private const int BufferSize = 81920; // 80 KB, matches Stream.CopyToAsync default
@@ -41,6 +47,9 @@ public static class Downloader
     // dispatcher when a page created the Progress instance), and a post for
     // every buffer saturates the message pump enough to freeze the window.
     private const int ProgressReportThrottleMs = 200;
+
+    // Silence, not duration: re-armed after every chunk received.
+    internal static readonly TimeSpan StallTimeout = TimeSpan.FromMinutes(2);
 
     private static readonly HttpClient _http = CreateHttpClient();
 
@@ -62,7 +71,18 @@ public static class Downloader
         public static DownloadResult Fail(string message)    => new(false, null, message);
     }
 
-    public static async Task<DownloadResult> DownloadAsync(
+    public static Task<DownloadResult> DownloadAsync(
+        string url,
+        string destPath,
+        string? expectedSha256,
+        IProgress<DownloadProgress>? progress,
+        CancellationToken ct)
+        => DownloadAsync(_http, StallTimeout, url, destPath, expectedSha256, progress, ct);
+
+    // The seam the tests use: their own HttpClient and a short silence limit.
+    internal static async Task<DownloadResult> DownloadAsync(
+        HttpClient http,
+        TimeSpan stallTimeout,
         string url,
         string destPath,
         string? expectedSha256,
@@ -73,20 +93,22 @@ public static class Downloader
             return DownloadResult.Fail("download URL is empty");
 
         string partialPath = destPath + ".partial";
+        using var stall = CancellationTokenSource.CreateLinkedTokenSource(ct);
+        long downloaded = 0;
 
         try
         {
             Directory.CreateDirectory(Path.GetDirectoryName(destPath)!);
 
-            using var response = await _http.GetAsync(url, HttpCompletionOption.ResponseHeadersRead, ct)
+            stall.CancelAfter(stallTimeout);
+            using var response = await http.GetAsync(url, HttpCompletionOption.ResponseHeadersRead, stall.Token)
                 .ConfigureAwait(false);
             response.EnsureSuccessStatusCode();
 
             long? total = response.Content.Headers.ContentLength;
 
-            using var network = await response.Content.ReadAsStreamAsync(ct).ConfigureAwait(false);
+            using var network = await response.Content.ReadAsStreamAsync(stall.Token).ConfigureAwait(false);
             using var hash = IncrementalHash.CreateHash(HashAlgorithmName.SHA256);
-            long downloaded = 0;
             using (var file = new FileStream(partialPath,
                 FileMode.Create, FileAccess.Write, FileShare.None,
                 BufferSize, useAsync: true))
@@ -94,9 +116,10 @@ public static class Downloader
                 byte[] buffer = new byte[BufferSize];
                 long lastReportTicks = Environment.TickCount64;
                 int read;
-                while ((read = await network.ReadAsync(buffer.AsMemory(0, BufferSize), ct).ConfigureAwait(false)) > 0)
+                while ((read = await network.ReadAsync(buffer.AsMemory(0, BufferSize), stall.Token).ConfigureAwait(false)) > 0)
                 {
-                    await file.WriteAsync(buffer.AsMemory(0, read), ct).ConfigureAwait(false);
+                    stall.CancelAfter(stallTimeout);
+                    await file.WriteAsync(buffer.AsMemory(0, read), stall.Token).ConfigureAwait(false);
                     hash.AppendData(buffer, 0, read);
                     downloaded += read;
 
@@ -127,10 +150,30 @@ public static class Downloader
 
             return DownloadResult.Ok(actualSha);
         }
+        catch (OperationCanceledException) when (!ct.IsCancellationRequested)
+        {
+            // Only the silence timer fired: the person did not cancel.
+            TryDelete(partialPath);
+            return DownloadResult.Fail(
+                $"The download stalled: no data for {stallTimeout.TotalSeconds:0} s after {downloaded} bytes. Check the connection and try again.");
+        }
         catch (OperationCanceledException)
         {
             TryDelete(partialPath);
             throw;
+        }
+        catch (HttpRequestException ex)
+        {
+            TryDelete(partialPath);
+            return DownloadResult.Fail(ex.StatusCode is { } code
+                ? $"The server refused the download (HTTP {(int)code})."
+                : $"The connection failed: {ex.InnerException?.Message ?? ex.Message}. Check the connection and try again.");
+        }
+        catch (IOException ex) when (ex.InnerException is not null)
+        {
+            // A cut socket surfaces as an IOException wrapping the transport error.
+            TryDelete(partialPath);
+            return DownloadResult.Fail($"The connection was interrupted: {ex.InnerException.Message}. Check the connection and try again.");
         }
         catch (Exception ex)
         {
