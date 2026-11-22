@@ -518,7 +518,7 @@
     <value>Data folder</value>
   </data>
   <data name="GeneralDataFolderCard.Description" xml:space="preserve">
-    <value>Settings, telemetry, models and native libraries.</value>
+    <value>Settings, telemetry and models.</value>
   </data>
   <data name="GeneralRerunSetupCard.Header" xml:space="preserve">
     <value>Setup wizard</value>
