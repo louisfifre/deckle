@@ -19,11 +19,4 @@ public interface ITranscriptionEngineHost
     // The speech model directory: TranscriptionSettings.ModelsDirectory when
     // set, else AppPaths.ModelsDirectory.
     string ResolveModelsDirectory();
-
-    // The lexicon the dictation applies: the person's own terms, then what
-    // other modules learned (the App adds the autocorrect's proper nouns),
-    // merged by LexiconTerms. Read at each call, so an edit applies to the
-    // next take.
-    IReadOnlyList<string> ResolveLexiconTerms() =>
-        Lexicon.LexiconTerms.Merge(Transcription.Lexicon.Terms);
 }

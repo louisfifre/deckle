@@ -2,10 +2,9 @@ using System.Text;
 
 namespace Deckle.Transcription.Lexicon;
 
-// The one list every consumer of the lexicon reads: the person's own entries
-// first, then the words other modules learned (the autocorrect's proper nouns).
-// Two entries that differ only by case are one word, and the first keeps its
-// spelling, so an entry the person typed always wins over a learned one.
+// The one list every consumer of the lexicon reads: the person's entries,
+// cleaned. Two entries that differ only by case are one word, and the first
+// keeps its spelling.
 
 /// <summary>Cleans and merges lexicon entries into one list of distinct terms.</summary>
 public static class LexiconTerms
