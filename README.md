@@ -66,6 +66,8 @@ Smaller touches outside the module list: a **taskbar cover** that masks the task
 2. Run it and choose the modules you want.
 3. Deckle installs per user, fetches any missing assets those modules require, and starts in the tray.
 
+Deckle is not code-signed yet, so Windows may show **Windows protected your PC** (SmartScreen) when you run Setup. Choose **More info**, then **Run anyway**. On a managed PC or with some antivirus software, Windows can block Setup outright; Setup then says so, and you need to allow it in your antivirus or ask your administrator. The download's SHA-256 is checked against the one published with the release, which catches a corrupted file but does not prove who made it.
+
 There is no administrator prompt. To start Deckle at login, enable **Settings → General → Start with Windows**.
 
 ## Build from source
