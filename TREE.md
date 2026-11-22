@@ -2363,6 +2363,9 @@ _Generated from `git ls-files` — do not edit by hand._
 │   │   │   ├── TranscriptionEngine.Take.cs
 │   │   │   ├── TranscriptionEngine.TakeAudio.cs
 │   │   │   └── TranscriptionEngine.Utterances.cs
+│   │   ├── Lexicon/
+│   │   │   ├── LexiconRecaser.cs
+│   │   │   └── LexiconTerms.cs
 │   │   ├── Recovery/
 │   │   │   ├── DictationRecoveryStore.cs
 │   │   │   ├── TakeAudioRecorder.cs
@@ -3405,6 +3408,9 @@ _Generated from `git ls-files` — do not edit by hand._
 │   │   ├── Deckle.Transcription.Parakeet.Tests.csproj
 │   │   └── ParakeetModelFilesTests.cs
 │   ├── Deckle.Transcription.Tests/
+│   │   ├── Lexicon/
+│   │   │   ├── LexiconRecaserTests.cs
+│   │   │   └── LexiconTermsTests.cs
 │   │   ├── CorpusRecordSkippedTests.cs
 │   │   ├── Deckle.Transcription.Tests.csproj
 │   │   ├── DeckleLlmSourceTests.cs

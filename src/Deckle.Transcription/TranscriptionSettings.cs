@@ -19,6 +19,34 @@ public sealed class TranscriptionSettings
     public DecodingSettings        Decoding        { get; set; } = new();
     public ContextSettings         Context         { get; set; } = new();
     public StreamingSettings       Streaming       { get; set; } = new();
+    public LexiconSettings         Lexicon         { get; set; } = new();
+}
+
+// The person's own words: names, product names, jargon the speech model does
+// not know or writes in the wrong case. A transducer such as Parakeet has no
+// text prompt to carry them the way Whisper's initial_prompt did, so they act
+// in two places instead: the decoder gives the tokens that spell them a bonus
+// (Boost), and the final text takes their exact casing (always on, it only
+// changes letter case). The autocorrect reads the same list and never corrects
+// these words away.
+public sealed class LexiconSettings
+{
+    // One word or phrase per entry, written the way it must appear: "Deckle",
+    // "WinUI", "Louis Fifre". Order carries no meaning.
+    public List<string> Terms { get; set; } = [];
+
+    // Whether the decoder favors the terms. Off keeps only the casing pass.
+    public bool BoostEnabled { get; set; } = true;
+
+    // Bonus added to a token's logit when it completes a term, in natural-log
+    // units: 2 multiplies the odds of that token by e² ≈ 7.4. A token that only
+    // starts a term gets the share of that bonus the characters it covers
+    // represent. Too high, and a term appears where it was not said.
+    public double BoostStrength { get; set; } = DefaultBoostStrength;
+
+    public const double DefaultBoostStrength = 2.0;
+    public const double MinBoostStrength = 0.5;
+    public const double MaxBoostStrength = 5.0;
 }
 
 // Which pipeline runs a dictation. Monolithic captures the whole take, then one
