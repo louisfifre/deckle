@@ -16,7 +16,7 @@
 .PARAMETER Repeat
     How many times the clip is repeated to make the test audio. Six gives about fifteen seconds.
 .PARAMETER SkipDictation
-    Leave the dictation take out. It needs the maintainer's native and models folders, which the run links read-only; without them it is reported skipped.
+    Leave the dictation take out. It needs the maintainer's models folder, which the run links read-only; without it it is reported skipped.
 .PARAMETER Only
     Measure one window or view of the self-check instead of the whole walk (see self-check.ps1). The dictation take is left out of such a pass, and its figures compare only with passes of the same target.
 .PARAMETER TimeoutSeconds
@@ -232,7 +232,7 @@ $result | ConvertTo-Json -Depth 6 | Set-Content -LiteralPath $outPath -Encoding 
 
 # The run's data root held links into the maintainer's folders: they go first,
 # so the removal never follows them (as self-check.ps1 does).
-foreach ($folder in 'native', 'models') {
+foreach ($folder in 'models') {
     $link = Join-Path $dataRoot $folder
     if (Test-Path -LiteralPath $link) { (Get-Item -LiteralPath $link).Delete() }
 }
