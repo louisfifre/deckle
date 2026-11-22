@@ -12,7 +12,6 @@ using Deckle.Shell.Foreground;
 using Deckle.Shell.TaskbarCover;
 using Deckle.Shell.TrayMenu;
 using Deckle.Transcription;
-using Deckle.Transcription.Whisper;
 
 namespace Deckle.App;
 

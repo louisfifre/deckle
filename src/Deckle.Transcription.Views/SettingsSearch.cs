@@ -16,11 +16,8 @@ namespace Deckle.Transcription.Views;
 // means constructing a ViewModel, which pulls in its boot side effects (settings
 // load, capture-side wiring) and which the index must never do at boot. So a
 // card's identity travels as its bare LabelKey, the same string the manifest
-// carries and the composer stamps onto the built card's Tag. Composed and
-// bespoke cards declare identically: a LabelKey whose "/Header" and
-// "/Description" resolve from Resources.resw for both — the three hand-authored
-// cards (Language, Initial prompt, Model) carry .resw entries under their x:Uid
-// just like the composed ones, so none needs a LiteralLabel.
+// carries and the composer stamps onto the built card's Tag: a LabelKey whose
+// "/Header" and "/Description" resolve from Resources.resw.
 //
 // Granularity is one entry per TOP-LEVEL card, a fold's header included but not
 // its children: a child sits behind a chevron, and often masked by runtime
@@ -33,11 +30,11 @@ namespace Deckle.Transcription.Views;
 //
 // Maintenance contract: one top-level card on a page, one entry here. Add a
 // card — composed or hand-authored — and it stays invisible to search until it
-// gets a line below; a bespoke card also needs its Tag="<LabelKey>" in the XAML
-// so a hit can scroll to it.
+// gets a line below; a hand-authored card also needs its Tag="<LabelKey>" in
+// the XAML so a hit can scroll to it.
 public static class SettingsSearch
 {
-    // The module's General page: overlay, model and engine.
+    // The module's General page: overlay, engine and models folder.
     public static IReadOnlyList<SettingSearchEntry> Entries { get; } =
     [
         // "Overlay" — the overlay group (fade / position / transcript
@@ -48,42 +45,20 @@ public static class SettingsSearch
             Keywords = ["hud", "indicator", "fade", "position", "transcript", "panel"],
         },
 
-        // "Speech engine" — the Whisper / Parakeet fold (the Parakeet model
-        // folder, the state of its files and the encoder precision ride under it).
+        // "Speech engine" — the engine fold (the Parakeet model folder, the state
+        // of its files and the encoder precision ride under it).
         new SettingSearchEntry
         {
-            LabelKey = "WhisperEngineMode",
-            Keywords = ["whisper", "parakeet", "engine", "backend", "preview", "nvidia",
-                        "model", "folder", "encoder", "precision", "fp16", "fp32"],
-        },
-
-        // Language selector (bespoke — editable ComboBox, Tag'd in the XAML).
-        new SettingSearchEntry
-        {
-            LabelKey = "WhisperLanguageCard",
-            Keywords = ["locale"],
-        },
-
-        // Initial prompt (bespoke expander, Tag'd in the XAML).
-        new SettingSearchEntry
-        {
-            LabelKey = "WhisperInitialPromptCard",
-            Keywords = ["hint", "vocabulary", "bias"],
+            LabelKey = "WhisperSpeechEngineFold",
+            Keywords = ["parakeet", "engine", "nvidia", "model", "folder",
+                        "encoder", "precision", "fp16", "fp32"],
         },
 
         // GPU acceleration (composed toggle).
         new SettingSearchEntry
         {
             LabelKey = "WhisperUseGpuCard",
-            Keywords = ["vulkan", "hardware"],
-        },
-
-        // Whisper model selector (bespoke — disk-enumerated AutoSuggestBox, Tag'd in
-        // the XAML).
-        new SettingSearchEntry
-        {
-            LabelKey = "WhisperModelCard",
-            Keywords = ["weights", "size"],
+            Keywords = ["directml", "hardware"],
         },
 
         // Models folder (composed Path).
@@ -106,75 +81,21 @@ public static class SettingsSearch
         new SettingSearchEntry
         {
             LabelKey = "LexiconBoostCard",
-            Keywords = ["boost", "bias", "favor", "parakeet"],
+            Keywords = ["boost", "bias", "favor"],
         },
     ];
 
-    // The Decoding page: four flat sections, every card top-level.
+    // The Decoding page: the silence and noise guards, one fold (the Silero trim
+    // and its parameters ride under it).
     public static IReadOnlyList<SettingSearchEntry> DecodingEntries { get; } =
     [
         new SettingSearchEntry
         {
-            LabelKey = "WhisperUseBeamSearchCard",
-            Keywords = ["beam", "greedy", "sampling", "decoding"],
-        },
-        new SettingSearchEntry
-        {
-            LabelKey = "WhisperBeamSizeCard",
-            Keywords = ["beam", "width", "candidates", "decoding"],
-        },
-        new SettingSearchEntry
-        {
-            LabelKey = "WhisperTemperatureCard",
-            Keywords = ["randomness", "sampling", "decoding"],
-        },
-        new SettingSearchEntry
-        {
-            LabelKey = "WhisperTemperatureIncrementCard",
-            Keywords = ["fallback", "retry", "step"],
-        },
-        new SettingSearchEntry
-        {
-            LabelKey = "WhisperEntropyCard",
-            Keywords = ["confidence", "hallucination", "retry"],
-        },
-        new SettingSearchEntry
-        {
-            LabelKey = "WhisperLogprobCard",
-            Keywords = ["confidence", "logprob", "probability", "retry"],
-        },
-        new SettingSearchEntry
-        {
-            LabelKey = "WhisperNoSpeechCard",
-            Keywords = ["confidence", "silence", "hallucination"],
-        },
-        new SettingSearchEntry
-        {
-            LabelKey = "WhisperSuppressNstCard",
-            Keywords = ["music", "tags", "brackets", "filter"],
-        },
-        new SettingSearchEntry
-        {
-            LabelKey = "WhisperSuppressBlankCard",
-            Keywords = ["empty", "whitespace", "filter"],
-        },
-        new SettingSearchEntry
-        {
-            LabelKey = "WhisperSuppressRegexCard",
-            Keywords = ["pattern", "remove", "filter"],
-        },
-        new SettingSearchEntry
-        {
-            LabelKey = "WhisperUseContextCard",
-            Keywords = ["history", "conditioning", "context"],
-        },
-        new SettingSearchEntry
-        {
-            LabelKey = "WhisperMaxTokensCard",
-            Keywords = ["length", "limit", "context"],
+            LabelKey = "WhisperSilenceGuardsFold",
+            Keywords = ["silero", "vad", "silence", "noise", "trim", "hallucination",
+                        "threshold", "padding"],
         },
     ];
-
     // The Streaming page: the pipeline switch, speech filtering, segmentation.
     public static IReadOnlyList<SettingSearchEntry> StreamingEntries { get; } =
     [

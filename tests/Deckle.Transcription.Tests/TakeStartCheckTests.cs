@@ -11,7 +11,7 @@ namespace Deckle.Transcription.Tests;
 // prime). A first failure is retried once from a freshly loaded model, without
 // a word; a second failure ends the take, or the file batch, with one message.
 // The conditions of the bug are scripted here: a backend that keeps reporting
-// its model as loaded after a native failure, as WhisperBackend does.
+// its model as loaded after a native failure, as a backend can.
 //
 // In the observability collection because the tests listen to the provider
 // process-wide.
@@ -366,7 +366,7 @@ public sealed class TakeStartCheckTests
     }
 
     // Holds its unload open until released, and keeps reporting the model as
-    // loaded meanwhile, as WhisperBackend does until whisper_free has returned.
+    // loaded meanwhile, as a backend can until its free has returned.
     private sealed class SlowUnloadBackend : IAsrBackend
     {
         private volatile bool _loaded = true;
@@ -416,7 +416,7 @@ public sealed class TakeStartCheckTests
         public void Dispose() { }
     }
 
-    // Fails its first calls the way the Whisper backend does under memory
+    // Fails its first calls the way a backend can under memory
     // pressure, and keeps reporting the model as loaded afterwards: only an
     // unload through the backend clears it. The calls after the failing ones are
     // the passing test, which returns nothing, then one per scripted utterance.

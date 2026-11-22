@@ -9,9 +9,9 @@ namespace Deckle.Transcription.Views;
 // supplies only the Order. Registered from App.OnLaunched via SettingsModuleRegistry.
 //
 // Four pages, one module: the module's own page, which the rail shows as
-// General under the Transcription node (overlay, model and engine,
+// General under the Transcription node (overlay, engine and models folder,
 // diagnostics, the restart footer), then Lexicon (the person's own words),
-// Decoding (the Whisper parameters that apply in both pipelines) and Streaming
+// Decoding (what applies to every recording in both pipelines) and Streaming
 // (the pipeline switch, speech filtering, segmentation) nested under it.
 public static class WhisperSettingsModule
 {

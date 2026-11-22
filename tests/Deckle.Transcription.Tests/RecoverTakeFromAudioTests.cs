@@ -63,9 +63,9 @@ public sealed class RecoverTakeFromAudioTests : IDisposable
         Assert.Equal(1, clipboard.WriteCount);
         Assert.Equal("bonjour\n\nDeckle", clipboard.Text);
         Assert.Equal(3, backend.CallCount);
-        // The dictation prompt primes the first utterance, as in a live take;
+        // The first utterance has nothing to continue, as in a live take;
         // the call before it is the test inference.
-        Assert.Equal("test prompt", backend.Contexts[1].PrimingText);
+        Assert.Equal("", backend.Contexts[1].PrimingText);
 
         // The HUD sees "transcribing", then the engine back to ready, and one
         // Finished with None: the caller announces the recovery itself.

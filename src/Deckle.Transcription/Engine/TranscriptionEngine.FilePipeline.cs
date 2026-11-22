@@ -327,7 +327,6 @@ public sealed partial class TranscriptionEngine
             RaiseStatus(StatusPhase.Transcribing, Loc.Get("Status_Transcribing"));
 
         var policy = new SegmentedTranscriptionPolicy(
-            FixedPrompt: string.Empty,
             ApplyPreprocessing: false,
             RejectIncompleteResults: true);
         SegmentedTranscriptionSession<StreamingConsumeResult> session =

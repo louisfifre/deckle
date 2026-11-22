@@ -3,7 +3,6 @@ using Deckle.Hosting.SelfCheck;
 using Deckle.Core;
 using Deckle.Transcription;
 using Deckle.Transcription.Parakeet;
-using Deckle.Transcription.Whisper;
 
 namespace Deckle.App;
 
@@ -21,7 +20,7 @@ public partial class App
     internal const string BenchDictationEnvVar = "DECKLE_BENCH_DICTATION";
 
     // The engine composed as the resident boot composes it (App.Startup.Modules.cs):
-    // same gates, same backend choice, on the run's own data root. The file takes
+    // same gate, same backend, on the run's own data root. The file takes
     // the road of a tray selection; its phases are logged as PipelineTimings.
     private static async Task<SelfCheckDictation?> MeasureDictationForBenchAsync()
     {
@@ -31,20 +30,12 @@ public partial class App
         if (!File.Exists(audioPath))
             return new(SelfCheckDictation.Failed, "audio_file_missing", null, 0, 0);
 
-        bool useParakeet = TranscriptionSettingsService.Instance.Current.Engine.Backend == AsrBackendKind.Parakeet;
-        string backendName = useParakeet ? "parakeet" : "whisper";
-        string? skip =
-            useParakeet ? (ParakeetModelPresent() ? null : SkipSpeechModelMissing)
-            : !NativeRuntime.IsInstalled() ? SkipNativeRuntimeMissing
-            : !NativeRuntime.CheckLoad().Loads ? SkipNativeRuntimeUnloadable
-            : !SpeechModels.IsAnyModelInstalled() ? SkipSpeechModelMissing
-            : null;
-        if (skip is not null)
-            return new(SelfCheckDictation.Skipped, skip, backendName, 0, 0);
+        const string backendName = "parakeet";
+        if (!ParakeetModelPresent())
+            return new(SelfCheckDictation.Skipped, SkipSpeechModelMissing, backendName, 0, 0);
 
         var host = new AppTranscriptionEngineHost();
-        IAsrBackend backend = useParakeet ? new ParakeetBackend(host) : new WhisperBackend(host);
-        var engine = new TranscriptionEngine(host, backend);
+        var engine = new TranscriptionEngine(host, new ParakeetBackend(host));
         try
         {
             // The tray's road, not the window's: only it closes on the shared

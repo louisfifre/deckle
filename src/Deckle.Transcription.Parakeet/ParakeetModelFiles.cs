@@ -12,7 +12,7 @@ namespace Deckle.Transcription.Parakeet;
 public sealed record ParakeetModelFiles(string Directory)
 {
     /// <summary>Folder name the model takes inside the speech model directory when no folder is configured.</summary>
-    public const string DefaultFolderName = "parakeet-tdt-0.6b-v3-ultra";
+    public const string DefaultFolderName = EngineSettings.DefaultParakeetFolderName;
 
     /// <summary>The configured model folder, or the default one inside the speech model directory.</summary>
     public static ParakeetModelFiles Resolve(string configuredDirectory, string modelsDirectory) =>

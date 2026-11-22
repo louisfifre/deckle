@@ -34,12 +34,11 @@ public sealed partial class TranscriptionEngine
     private const string PageStrings = "Deckle.Transcription.Views";
 
     // A load that fails without a missing file has no cause the engine can
-    // name: whisper_init returns null for a corrupt file, a format it does
-    // not read and a GPU that refuses the allocation alike, and an exception
-    // here is the native runtime itself. The message says what failed and
-    // what the person can try (another model, smaller or freshly downloaded,
-    // from the page that lists them), never a guessed cause; the log carries
-    // the reason.
+    // name: a corrupt file, a format the runtime does not read and a GPU that
+    // refuses the allocation fail alike, and an exception here is the inference
+    // runtime itself. The message says what failed and what the person can try
+    // (a freshly downloaded model, from the page that provisions it), never a
+    // guessed cause; the log carries the reason.
 
     // silentStatus suppresses the "Loading model… → Ready" status transitions.
     // The concurrent prime sets it: the load runs alongside the capture, and
@@ -59,8 +58,8 @@ public sealed partial class TranscriptionEngine
         ModelLoadResult result;
         try
         {
-            // The Whisper backend's load is synchronous in practice
-            // (whisper_init blocks), and the engine never cancels a load.
+            // The backend's load is synchronous in practice (opening the
+            // sessions blocks), and the engine never cancels a load.
             result = _backend.LoadModelAsync(CancellationToken.None)
                 .GetAwaiter().GetResult();
         }
@@ -244,7 +243,7 @@ public sealed partial class TranscriptionEngine
     // It runs on the thread pool, CONCURRENTLY with the capture, so the chrono
     // ticks from the first PCM while the model loads (when cold) and the test
     // inference runs behind it. The first real backend call waits at the gate
-    // until the prime's whisper_full has returned, so the two never overlap.
+    // until the prime's test inference has returned, so the two never overlap.
     //
     // primeCt is the run's DRAIN token (_drainCts), never the producer/Stop token:
     // the prime must SURVIVE a Stop so the model finishes warming even on a take
@@ -283,10 +282,10 @@ public sealed partial class TranscriptionEngine
             FB_REPLACEMENT);
 
     // The gate every pipeline crosses before its first backend call: no real
-    // whisper_full until the prime's test whisper_full has returned. The
-    // backend's _transcribeLock is the hard native guard against a concurrent
-    // call; this gate adds the ordering and the model-loaded guarantee, so the
-    // real call never hits an unloaded context.
+    // inference until the prime's test inference has returned. The backend's
+    // own lock is the hard guard against a concurrent call; this gate adds the
+    // ordering and the model-loaded guarantee, so the real call never hits an
+    // unloaded model.
     // A false means no real call may follow: the prime failed or was cancelled.
     // The gate never throws, whatever happened to the prime task; the cause
     // sits in the log and in ReadPrimeFailure.
@@ -322,7 +321,7 @@ public sealed partial class TranscriptionEngine
     //   1) Load the model silently when it is not resident: the HUD already
     //      shows Recording. A load failure surfaces its own UserFeedback inside
     //      LoadModel and returns false, so the gate reports failure.
-    //   2) Run a test inference on the embedded clip so VAD, whisper_full and
+    //   2) Run a test inference on the embedded clip so the model and
     //      the first-time GPU kernel compile all execute once. A missing or
     //      corrupt clip falls back to 1.6 s of silence, which still compiles
     //      the kernels. A throw or a native error code fails the test: the
@@ -442,15 +441,14 @@ public sealed partial class TranscriptionEngine
     private PrimeTestOutcome RunPrimeTest(float[] warmupBuffer, CancellationToken ct)
     {
         // The discarded result is not enough to keep the prime out of the take.
-        // whisper.cpp keeps the tokens a call decoded in the decoder state of
-        // the context and primes the next call with them unless no_context is
-        // set (checked in v1.9.1, the shipped bundle; see WhisperParamsMapper).
-        // On the silent fallback Whisper decodes a subtitle credit, and on
-        // 2026-10-21 that credit came back in the first real take. Setting
-        // no_context on the prime would not help: it clears the context before
-        // the prime decodes, not after. The isolation sits on the other side,
-        // where it covers the end of a previous take too: the first call of
-        // every take leaves ContinuesPreviousCall false, which sets no_context.
+        // A backend may keep the text a call decoded in its own state and prime
+        // the next call with it, and on the silent fallback a speech model can
+        // decode a subtitle credit: with such a backend that credit came back
+        // in the first real take. Clearing the state before the prime would not
+        // help: it clears before the prime decodes, not after. The isolation
+        // sits on the other side, where it covers the end of a previous take
+        // too: the first call of every take leaves ContinuesPreviousCall false,
+        // which tells the backend to start from nothing.
         try
         {
             TranscriptionResult result = _backend.TranscribeAsync(

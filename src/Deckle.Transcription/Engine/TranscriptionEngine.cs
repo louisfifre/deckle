@@ -21,8 +21,8 @@ public enum TranscriptionOutcome { None, ClipboardOnly, SavedToFile }
 // Pipeline state, manipulated only through Interlocked operations on _state.
 // Every transition is a CAS so rapid double-presses, or a Stop racing the
 // cap-duration stop, rebound cleanly instead of double-spawning a worker or
-// double-calling whisper_full on the same context (whisper.cpp is not
-// thread-safe on one context: a segfault, not a managed exception).
+// double-calling the backend on the same loaded model (an inference session
+// freed under a running call is a crash, not a managed exception).
 //
 // Legal transitions:
 //   Idle         → Starting     (hotkey or file batch, under _lifecycleLock)
@@ -126,8 +126,8 @@ public sealed partial class TranscriptionEngine : IDisposable
 
     private readonly IRewriteService _rewrite;
 
-    // Every call into whisper.cpp goes through this interface; the engine never
-    // touches the backend's P/Invoke, callbacks or native structs.
+    // Every call into the inference runtime goes through this interface; the
+    // engine never touches the backend's sessions, tensors or native handles.
     private readonly IAsrBackend _backend;
 
     // The profile whose own shortcut started the live take, or null when the
@@ -153,7 +153,7 @@ public sealed partial class TranscriptionEngine : IDisposable
     // and the concurrent prime. A user Stop thus drains the queued utterances
     // losslessly and lets the prime finish warming the model even on a short
     // take; Dispose aborts both so the worker join stays bounded and
-    // whisper_free never runs on an active context.
+    // the model is never freed while a call is running on it.
     private CancellationTokenSource? _drainCts;
 
     // Set while Idle, reset on Idle → Starting, set again by the rollback or
@@ -246,7 +246,7 @@ public sealed partial class TranscriptionEngine : IDisposable
         _modelIncidentWorkId = workId;
         DeckleWhispSource.Log.ModelUnavailable(workId, reason, modelPath, useGpu, exType, exMessage);
         // A load_exception (GPU, driver) is not always the person's to fix, but
-        // the next good load closes it and the Whisper page is still where to look.
+        // the next good load closes it and the Transcription page is still where to look.
         UserIncidentRegistry.Instance.Open(UserIncidents.SpeechModel, reason);
     }
 
@@ -406,17 +406,16 @@ public sealed partial class TranscriptionEngine : IDisposable
     // stray hotkey lands on a refusal path; then the worker is joined before
     // the backend is disposed.
     //
-    // What keeps whisper_free off an active context is this ORDERING, NOT a
-    // backend lock: whisper_free runs under the backend's _modelLock and
-    // whisper_full under its _transcribeLock, two locks that never contend. The
-    // join returns only after the worker's teardown has settled the run and
-    // waited the prime task, so a successful join means both the real
-    // inference and the prime's test inference have returned.
+    // What keeps the model from being freed under a running call is this
+    // ORDERING, not a lock of the engine's: the join returns only after the
+    // worker's teardown has settled the run and waited the prime task, so a
+    // successful join means both the real inference and the prime's test
+    // inference have returned.
     //
     // If the join times out the worker leaks, and _backend.Dispose() MUST then
-    // be skipped: freeing the context while that worker may still be inside
-    // whisper_full is the native segfault the join protects against. The
-    // process is exiting, so the OS reclaims both.
+    // be skipped: freeing the model while that worker may still be inside an
+    // inference call is the crash the join protects against. The process is
+    // exiting, so the OS reclaims both.
     private const int DISPOSE_WORKER_JOIN_TIMEOUT_MS = 30_000;
 
     public void Dispose()
@@ -447,8 +446,8 @@ public sealed partial class TranscriptionEngine : IDisposable
         }
         _fileTranscriptionQueue.Complete();
 
-        // Set when the join times out: the leaked worker may still be inside a
-        // whisper_full, so freeing the native context below would race it.
+        // Set when the join times out: the leaked worker may still be inside an
+        // inference call, so freeing the model below would race it.
         bool joinTimedOut = false;
         if (worker is not null && worker.IsAlive)
         {
@@ -475,7 +474,7 @@ public sealed partial class TranscriptionEngine : IDisposable
         // and Dispose'ing the event would turn that into an
         // ObjectDisposedException. The process is exiting anyway.
 
-        // whisper_free: safe only after a successful join (see the ordering note
+        // Freeing the model is safe only after a successful join (see the ordering note
         // on DISPOSE_WORKER_JOIN_TIMEOUT_MS).
         if (!joinTimedOut)
             _backend.Dispose();

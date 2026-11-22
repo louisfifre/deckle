@@ -10,7 +10,6 @@ using Deckle.Setup;
 using Deckle.Shell;
 using Deckle.Shell.TrayMenu;
 using Deckle.Transcription;
-using Deckle.Transcription.Whisper;
 using Deckle.Localization;
 
 namespace Deckle.App;

@@ -2370,8 +2370,6 @@ _Generated from `git ls-files` — do not edit by hand._
 │   │   │   ├── TakeAudioRecorder.cs
 │   │   │   ├── TakeAudioRecovery.cs
 │   │   │   └── TakeAudioRecoveryStore.cs
-│   │   ├── Setup/
-│   │   │   └── ModelEntry.cs
 │   │   ├── Streaming/
 │   │   │   ├── EnergySegmenter.cs
 │   │   │   ├── EnergySegmenterSettings.cs
@@ -2380,7 +2378,6 @@ _Generated from `git ls-files` — do not edit by hand._
 │   │   │   ├── TranscriptSnapshot.cs
 │   │   │   ├── Utterance.cs
 │   │   │   └── UtteranceProgress.cs
-│   │   ├── AsrBackendKind.cs
 │   │   ├── Deckle.Transcription.csproj
 │   │   ├── DeckleWhispSource.cs
 │   │   ├── DeckleWhispSource.Decode.cs
@@ -2399,6 +2396,7 @@ _Generated from `git ls-files` — do not edit by hand._
 │   │   ├── DeckleWhispSource.WarmupModel.cs
 │   │   ├── GLOSSARY.md  — glossary-deckle-transcription Transcription vocabulary. It names the two entry points (dictation, file transc…
 │   │   ├── ITranscriptionEngineHost.cs
+│   │   ├── ParakeetEncoderPrecision.cs
 │   │   ├── TranscriptionSettings.cs
 │   │   └── TranscriptionSettingsService.cs
 │   ├── Deckle.Transcription.Parakeet/
@@ -2459,33 +2457,6 @@ _Generated from `git ls-files` — do not edit by hand._
 │   │   ├── WhisperPage.xaml
 │   │   ├── WhisperPage.xaml.cs
 │   │   └── WhisperSettingsModule.cs
-│   ├── Deckle.Transcription.Whisper/
-│   │   ├── Engine/
-│   │   │   ├── GpuMemoryPreflight.cs
-│   │   │   ├── WhisperContextParamsMapper.cs
-│   │   │   └── WhisperParamsMapper.cs
-│   │   ├── Pinvoke/
-│   │   │   ├── WhisperPInvoke.cs
-│   │   │   └── WhisperStructs.cs
-│   │   ├── Setup/
-│   │   │   ├── NativeRuntime.cs
-│   │   │   ├── NativeRuntimeLoadCheck.cs
-│   │   │   ├── NativeRuntimeLoader.cs
-│   │   │   ├── OnceOnSuccess.cs
-│   │   │   ├── PeImports.cs
-│   │   │   ├── SpeechModelResolver.cs
-│   │   │   ├── SpeechModels.cs
-│   │   │   └── VideoMemoryProbe.cs
-│   │   ├── Deckle.Transcription.Whisper.csproj
-│   │   ├── DeckleWhisperSource.cs
-│   │   ├── KnownHallucinations.cs
-│   │   ├── RepetitionDetector.cs
-│   │   ├── WhisperBackend.cs
-│   │   ├── WhisperBackend.Model.cs
-│   │   ├── WhisperBackend.NativeLogging.cs
-│   │   ├── WhisperBackend.Transcribe.cs
-│   │   ├── WhisperComputeDeviceObserver.cs
-│   │   └── WhisperNativeLogCompactor.cs
 │   ├── Deckle.Vad/
 │   │   ├── Deckle.Vad.csproj
 │   │   ├── DeckleVadSource.cs
@@ -3475,29 +3446,6 @@ _Generated from `git ls-files` — do not edit by hand._
 │   │   ├── WhispEventIdBugNotes.md
 │   │   ├── WhispModelLifecycleBugNotes.md
 │   │   └── WhispModelLifecycleTests.cs
-│   ├── Deckle.Transcription.Whisper.Tests/
-│   │   ├── Deckle.Transcription.Whisper.Tests.csproj
-│   │   ├── GpuMemoryPreflightTests.cs
-│   │   ├── HallucinationBugNotes.md
-│   │   ├── KnownHallucinationsTests.cs
-│   │   ├── MessageTemplateDoctrineTests.cs
-│   │   ├── MilestoneClosersTests.cs
-│   │   ├── NativeRuntimeBugNotes.md
-│   │   ├── NativeRuntimeLoaderTests.cs
-│   │   ├── NativeRuntimeTests.cs
-│   │   ├── OnceOnSuccessTests.cs
-│   │   ├── OperationalObservabilityCollection.cs
-│   │   ├── PeImportsTests.cs
-│   │   ├── RepetitionDetectorTests.cs
-│   │   ├── SpeechModelFilesTests.cs
-│   │   ├── SpeechModelResolverTests.cs
-│   │   ├── TestPeImage.cs
-│   │   ├── WhisperComputeDeviceObserverTests.cs
-│   │   ├── WhisperContextBugNotes.md
-│   │   ├── WhisperContextParamsMapperTests.cs
-│   │   ├── WhisperParamsMapperTests.cs
-│   │   ├── WhisperPathRedactionTests.cs
-│   │   └── WhisperReferenceAudioSystemTests.cs
 │   ├── Deckle.Vad.Tests/
 │   │   ├── Deckle.Vad.Tests.csproj
 │   │   ├── MessageTemplateDoctrineTests.cs

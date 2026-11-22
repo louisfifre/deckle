@@ -25,18 +25,6 @@
             <Setter Property="TextAlignment" Value="Right" />
             <Setter Property="Foreground" Value="{ThemeResource TextFillColorSecondaryBrush}" />
         </Style>
-
-        <!-- Per-setting reset button. Opacity 0 by default, switched to 1 on
-             PointerEntered of the parent SettingsCard (code-behind). -->
-        <Style x:Key="ResetButtonStyle"
-               BasedOn="{StaticResource SubtleButtonStyle}"
-               TargetType="Button">
-            <Setter Property="Opacity" Value="0" />
-            <Setter Property="Width" Value="32" />
-            <Setter Property="Height" Value="32" />
-            <Setter Property="Padding" Value="0" />
-            <Setter Property="VerticalAlignment" Value="Center" />
-        </Style>
     </Page.Resources>
 
     <Grid Background="Transparent"
@@ -88,51 +76,22 @@
 
                 <!-- ── Transcription ───────────────────────────────────────── -->
                 <!--
-                    Order : Initial prompt → Models folder → Language → GPU
-                    acceleration → Whisper model. The two cards with a chevron
-                    lead, since a chevron sits above the plain cards: the
-                    initial prompt's expander, then the models folder, a folder
-                    fold since 2026-10-15 (a standalone Path renders as one).
-                    The model closes the section because it requires a restart.
-                    No section reset: Model / Language / InitialPrompt are
-                    bespoke cards with per-card resets, and GPU / models folder
-                    sit in two separate composers, so no single dirtiness could
-                    gate one.
+                    Order : Speech engine → Models folder → GPU acceleration.
+                    The two cards with a chevron lead, since a chevron sits
+                    above the plain cards: the engine fold, then the models
+                    folder, a folder fold (a standalone Path renders as one).
+                    The GPU switch closes the section because it requires a
+                    restart. No section reset: the three hosts are separate
+                    composers, so no single dirtiness could gate one.
                 -->
                 <catalog:SettingsSection x:Uid="WhisperPageModelEngineSection">
                 <StackPanel Spacing="{StaticResource SettingsCardSpacing}">
 
-                <!-- Speech engine — composed. The Whisper / Parakeet choice heads
-                     the fold, which holds what only Parakeet reads (its model
-                     folder with the state of the files, the encoder precision).
-                     It leads the section because it decides which of the cards
-                     below apply: the initial prompt, the language and the model
-                     are Whisper's, and the page hides them while Parakeet is the
-                     chosen engine. -->
+                <!-- Speech engine — composed. The fold holds what the engine
+                     reads: its model folder with the state of the files, and the
+                     encoder precision. -->
                 <StackPanel x:Name="SpeechEngineHost"
                             Spacing="{StaticResource SettingsCardSpacing}" />
-
-                <controls:SettingsExpander x:Name="InitialPromptCard"
-                                           x:Uid="WhisperInitialPromptCard"
-                                           Tag="WhisperInitialPromptCard">
-                    <Button x:Name="InitialPromptReset"
-                            Style="{StaticResource ResetButtonStyle}"
-                            Click="InitialPromptReset_Click">
-                        <FontIcon Glyph="{StaticResource Icon.Reset}" FontSize="14" />
-                    </Button>
-                    <controls:SettingsExpander.Items>
-                        <controls:SettingsCard ContentAlignment="Vertical">
-                            <StackPanel Spacing="8">
-                                <TextBox x:Name="InitialPromptBox"
-                                         x:Uid="WhisperInitialPromptBox"
-                                         MinHeight="80"
-                                         AcceptsReturn="True"
-                                         TextWrapping="Wrap"
-                                         Text="{x:Bind ViewModel.InitialPrompt, Mode=TwoWay}" />
-                            </StackPanel>
-                        </controls:SettingsCard>
-                    </controls:SettingsExpander.Items>
-                </controls:SettingsExpander>
 
                 <!-- Models folder — composed. The folder fold (its title and
                      sentence in the header, the Location line inside with the
@@ -143,67 +102,12 @@
                 <StackPanel x:Name="ModelsDirectoryHost"
                             Spacing="{StaticResource SettingsCardSpacing}" />
 
-                <controls:SettingsCard x:Name="LanguageCard"
-                                       x:Uid="WhisperLanguageCard"
-                                       Tag="WhisperLanguageCard">
-                    <StackPanel Orientation="Horizontal" Spacing="4">
-                        <ComboBox x:Name="LanguageCombo"
-                                  MinWidth="160"
-                                  IsEditable="True"
-                                  SelectionChanged="LanguageCombo_SelectionChanged"
-                                  LostFocus="LanguageCombo_LostFocus">
-                            <ComboBoxItem Content="auto" />
-                            <ComboBoxItem Content="fr" />
-                            <ComboBoxItem Content="en" />
-                            <ComboBoxItem Content="es" />
-                            <ComboBoxItem Content="de" />
-                            <ComboBoxItem Content="it" />
-                            <ComboBoxItem Content="pt" />
-                            <ComboBoxItem Content="nl" />
-                            <ComboBoxItem Content="ja" />
-                            <ComboBoxItem Content="zh" />
-                        </ComboBox>
-                        <Button x:Name="LanguageReset"
-                                Style="{StaticResource ResetButtonStyle}"
-                                Click="LanguageReset_Click">
-                            <FontIcon Glyph="{StaticResource Icon.Reset}" FontSize="14" />
-                        </Button>
-                    </StackPanel>
-                </controls:SettingsCard>
-
                 <!-- GPU acceleration — composed. The lone toggle (and its per-card
                      reset) is built by ComposeUseGpuSection() into this host; the VM's
                      UseGpu property is the same one the restart footer watches, so
                      flipping the composed toggle still trips the footer. -->
                 <StackPanel x:Name="UseGpuHost"
                             Spacing="{StaticResource SettingsCardSpacing}" />
-
-                <!-- Whisper model — bespoke. The AutoSuggestBox is a runtime-
-                     enumerated, restart-coupled selector (its items are scanned from
-                     disk, and picking a model trips the restart footer), so it stays
-                     hand-authored rather than composed as a flat descriptor. Its
-                     per-card reset is bespoke too, syncing the un-bound AutoSuggestBox
-                     alongside the VM. The models folder that used to nest inside
-                     this expander is its own composed fold above. -->
-                <controls:SettingsCard x:Name="ModelCard"
-                                       x:Uid="WhisperModelCard"
-                                       Tag="WhisperModelCard">
-                    <StackPanel Orientation="Horizontal" Spacing="4">
-                        <AutoSuggestBox x:Name="ModelSuggest"
-                                        x:Uid="WhisperModelSuggest"
-                                        MinWidth="240"
-                                        GotFocus="ModelSuggest_GotFocus"
-                                        TextChanged="ModelSuggest_TextChanged"
-                                        SuggestionChosen="ModelSuggest_SuggestionChosen"
-                                        LostFocus="ModelSuggest_LostFocus" />
-                        <Button x:Name="ModelReset"
-                                Style="{StaticResource ResetButtonStyle}"
-                                Click="ModelReset_Click">
-                            <FontIcon Glyph="{StaticResource Icon.Reset}" FontSize="14" />
-                        </Button>
-                    </StackPanel>
-                </controls:SettingsCard>
-
                 </StackPanel>
                 </catalog:SettingsSection>
 

@@ -3,25 +3,22 @@ using Deckle.Transcription;
 
 namespace Deckle.App;
 
-// ── Self-check: the Transcription pages under Parakeet ───────────────────────
+// ── Self-check: the Transcription pages with a lexicon ───────────────────────
 //
-// A fresh data root chooses Whisper, and the Transcription pages then hide
-// what only Parakeet uses: the switch of the Lexicon page, the Parakeet model
-// files of the General page. A review pass would never see them. So, after the
-// walk, the run chooses Parakeet in its own root, writes a few sample lexicon
-// terms, and photographs both pages again with every fold open
-// (settings-whisper-parakeet, settings-lexicon-parakeet). Only this run's root
-// is written, never the maintainer's, and no engine is composed: the pages
-// only read settings.
+// A fresh data root has an empty lexicon, so the walk photographs the Lexicon
+// page without a single word. After the walk, the run writes a few sample
+// lexicon terms in its own root and photographs the General and Lexicon pages
+// again with every fold open (settings-whisper-parakeet,
+// settings-lexicon-parakeet). Only this run's root is written, never the
+// maintainer's, and no engine is composed: the pages only read settings.
 public partial class App
 {
     // Sample words of no person's: product names a reader recognizes.
     private static readonly string[] SampleLexiconTerms = ["Deckle", "WinUI", "Parakeet", "PowerToys"];
 
-    private static void SeedParakeetSample()
+    private static void SeedLexiconSample()
     {
         TranscriptionSettings transcription = TranscriptionSettingsService.Instance.Current;
-        transcription.Engine.Backend = AsrBackendKind.Parakeet;
         transcription.Lexicon.Terms = [.. SampleLexiconTerms];
         TranscriptionSettingsService.Instance.Save();
     }
@@ -29,7 +26,7 @@ public partial class App
     private static async Task CaptureTranscriptionParakeetAsync(
         SelfCheckReport report, Settings.SettingsWindow settings, string outputFolder, string captures)
     {
-        SeedParakeetSample();
+        SeedLexiconSample();
 
         var clock = System.Diagnostics.Stopwatch.StartNew();
         bool loaded = await settings.ShowPageAsync(typeof(Transcription.Views.WhisperPage));

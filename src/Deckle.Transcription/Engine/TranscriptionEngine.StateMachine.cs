@@ -336,7 +336,7 @@ public sealed partial class TranscriptionEngine
             // AboveNormal, not Normal: this thread runs the WASAPI capture loop,
             // which only needs to be scheduled promptly when the buffer-done event
             // fires (every 50 ms) and sleeps the rest of the time. At Normal it
-            // loses its slot to the concurrent Whisper inference on the thread
+            // loses its slot to the concurrent inference on the thread
             // pool; once a wait overruns the 200 ms ring (4 × 50 ms buffers) the
             // driver has no free buffer and drops incoming audio. The thread is
             // near-idle, so this starves nothing. Highest is avoided: it would

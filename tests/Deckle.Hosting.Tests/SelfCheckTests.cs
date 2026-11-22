@@ -112,7 +112,7 @@ public class SelfCheckTests
         SelfCheckReport report = PassingReport();
         report.Perf = new SelfCheckPerf
         {
-            Dictation = new SelfCheckDictation(SelfCheckDictation.Skipped, "speech_model_missing", "whisper", 0, 0),
+            Dictation = new SelfCheckDictation(SelfCheckDictation.Skipped, "speech_model_missing", "parakeet", 0, 0),
         };
 
         report.Judge();
@@ -128,7 +128,7 @@ public class SelfCheckTests
         SelfCheckReport report = PassingReport();
         report.Perf = new SelfCheckPerf
         {
-            Dictation = new SelfCheckDictation(SelfCheckDictation.Failed, "no_text", "whisper", 900, 0),
+            Dictation = new SelfCheckDictation(SelfCheckDictation.Failed, "no_text", "parakeet", 900, 0),
         };
 
         report.Judge();
@@ -147,7 +147,7 @@ public class SelfCheckTests
         {
             StartupReadyMs = 1234,
             Footprint = new SelfCheckFootprint(1, 2, 3, 4, 5),
-            Dictation = new SelfCheckDictation(SelfCheckDictation.Ok, null, "whisper", 900, 12),
+            Dictation = new SelfCheckDictation(SelfCheckDictation.Ok, null, "parakeet", 900, 12),
         };
 
         string json = report.ToJson();

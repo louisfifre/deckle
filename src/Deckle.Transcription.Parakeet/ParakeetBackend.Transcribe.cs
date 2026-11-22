@@ -9,7 +9,7 @@ namespace Deckle.Transcription.Parakeet;
 public sealed partial class ParakeetBackend
 {
     // Parakeet is a transducer with no text prompt: it has nothing that plays the role of
-    // Whisper's initial_prompt, so TranscriptionContext.PrimingText is ignored on purpose, and
+    // a priming text, so TranscriptionContext.PrimingText is ignored on purpose, and
     // setting it changes nothing. ContinuesPreviousCall is ignored for the same reason in the
     // other direction: the decoder keeps no text between calls (its recurrent state starts from
     // zeros at every chunk, as the reference loop does), so every call is already independent
@@ -171,8 +171,9 @@ public sealed partial class ParakeetBackend
         string fullText = string.Join(" ", segments.Select(s => s.Text)).Trim();
 
         // Every call, not only the first: what this call decoded with, and where its last segment
-        // ended against the audio it was given. Whisper's table, so a take reads the same whichever
-        // engine ran it; the prompt and temperature columns are zero because Parakeet has neither.
+        // ended against the audio it was given. The table is the engine contract's, so a take reads
+        // the same whichever engine ran it; the prompt and temperature columns are zero because
+        // Parakeet has neither.
         DeckleWhispSource.Log.TranscribeDecodeUsed(
             timelineOffsetSec, 0, false, true, 0, 0,
             segments.Count,

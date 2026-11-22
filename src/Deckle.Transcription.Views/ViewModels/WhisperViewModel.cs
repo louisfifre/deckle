@@ -22,26 +22,10 @@ public partial class WhisperViewModel : ObservableObject
 
         ModelsDirectory = "";
         var engine = new EngineSettings();
-        Backend = engine.Backend;
         ParakeetModelDirectory = engine.ParakeetModelDirectory;
         ParakeetEncoder = engine.ParakeetEncoder;
-        Model = "ggml-base.bin";
-        UseGpu = true;
-        Language = "fr";
-        InitialPrompt = "Bonjour. Voici une transcription en français, avec une ponctuation soignée et des phrases complètes.";
+        UseGpu = engine.UseGpu;
         VadEnabled = true;
-        UseBeamSearch = true;
-        BeamSize = 5;
-        Temperature = 0.0;
-        TemperatureIncrement = 0.2;
-        EntropyThreshold = 2.4;
-        LogprobThreshold = -1.0;
-        NoSpeechThreshold = 0.6;
-        SuppressNonSpeechTokens = true;
-        SuppressBlank = true;
-        SuppressRegex = "";
-        UseContext = true;
-        MaxTokens = -1;
         StreamingEnabled = false;
 
         // Speech-trim seeds read from the POCO initializers (their single
@@ -87,29 +71,14 @@ public partial class WhisperViewModel : ObservableObject
         {
             var s = TranscriptionSettingsService.Instance.Current;
             ModelsDirectory = s.ModelsDirectory;
-            Backend = s.Engine.Backend;
             ParakeetModelDirectory = s.Engine.ParakeetModelDirectory;
             ParakeetEncoder = s.Engine.ParakeetEncoder;
-            Model = s.Engine.Model;
             UseGpu = s.Engine.UseGpu;
-            Language = s.Engine.Language;
-            InitialPrompt = s.Engine.InitialPrompt;
             VadEnabled = s.Streaming.SpeechTrim.Enabled;
             VadThreshold = s.Streaming.SpeechTrim.Threshold;
             VadMinSilenceDurationMs = s.Streaming.SpeechTrim.MinSilenceDurationMs;
             VadSpeechPadMs = s.Streaming.SpeechTrim.SpeechPadMs;
-            UseBeamSearch = s.Decoding.UseBeamSearch;
-            BeamSize = s.Decoding.BeamSize;
-            Temperature = s.Decoding.Temperature;
-            TemperatureIncrement = s.Decoding.TemperatureIncrement;
-            EntropyThreshold = s.Confidence.EntropyThreshold;
-            LogprobThreshold = s.Confidence.LogprobThreshold;
-            NoSpeechThreshold = s.Confidence.NoSpeechThreshold;
-            SuppressNonSpeechTokens = s.OutputFilters.SuppressNonSpeechTokens;
-            SuppressBlank = s.OutputFilters.SuppressBlank;
-            SuppressRegex = s.OutputFilters.SuppressRegex;
-            UseContext = s.Context.UseContext;
-            MaxTokens = s.Context.MaxTokens;
+
             StreamingEnabled = s.Streaming.Strategy == PipelineStrategyKind.Streaming;
             SegHangoverMaxMs = s.Streaming.Segmenter.HangoverMaxMs;
             SegHangoverMinMs = s.Streaming.Segmenter.HangoverMinMs;
@@ -141,36 +110,15 @@ public partial class WhisperViewModel : ObservableObject
         var s = TranscriptionSettingsService.Instance.Current;
 
         s.ModelsDirectory = ModelsDirectory;
-        s.Engine.Backend = Backend;
         s.Engine.ParakeetModelDirectory = ParakeetModelDirectory;
         s.Engine.ParakeetEncoder = ParakeetEncoder;
-        s.Engine.Model = Model;
         s.Engine.UseGpu = UseGpu;
-        s.Engine.Language = Language;
-        s.Engine.InitialPrompt = InitialPrompt;
 
         s.Streaming.SpeechTrim.Enabled = VadEnabled;
         s.Streaming.SpeechTrim.Threshold = (float)VadThreshold;
         s.Streaming.SpeechTrim.MinSilenceDurationMs = (int)VadMinSilenceDurationMs;
         s.Streaming.SpeechTrim.SpeechPadMs = (int)VadSpeechPadMs;
 
-        s.Decoding.Temperature = Temperature;
-        s.Decoding.TemperatureIncrement = TemperatureIncrement;
-        s.Decoding.UseBeamSearch = UseBeamSearch;
-        if (!double.IsNaN(BeamSize))
-            s.Decoding.BeamSize = (int)BeamSize;
-
-        s.Confidence.EntropyThreshold = EntropyThreshold;
-        s.Confidence.LogprobThreshold = LogprobThreshold;
-        s.Confidence.NoSpeechThreshold = NoSpeechThreshold;
-
-        s.OutputFilters.SuppressNonSpeechTokens = SuppressNonSpeechTokens;
-        s.OutputFilters.SuppressBlank = SuppressBlank;
-        s.OutputFilters.SuppressRegex = SuppressRegex;
-
-        s.Context.UseContext = UseContext;
-        if (!double.IsNaN(MaxTokens))
-            s.Context.MaxTokens = (int)MaxTokens;
 
         s.Streaming.Strategy = StreamingEnabled
             ? PipelineStrategyKind.Streaming

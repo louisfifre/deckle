@@ -12,7 +12,6 @@ using Deckle.Shell.TaskbarCover;
 using Deckle.Shell.TrayMenu;
 using Deckle.Transcription;
 using Deckle.Transcription.Parakeet;
-using Deckle.Transcription.Whisper;
 
 namespace Deckle.App;
 
@@ -27,8 +26,6 @@ public partial class App
     private const string TaskbarWindowsKeyModule = "taskbar_windows_key";
 
     private const string SkipNotPresent          = "not_present";
-    private const string SkipNativeRuntimeMissing = "native_runtime_missing";
-    private const string SkipNativeRuntimeUnloadable = "native_runtime_unloadable";
     private const string SkipSpeechModelMissing  = "speech_model_missing";
 
     // ForegroundWatcher.Start returns false only when its foreground hook
@@ -46,37 +43,21 @@ public partial class App
     {
         // Without a speech model the engine is not composed and the rest of the
         // app runs normally: provisioning happens through the setup window or
-        // from Settings, never as a hard gate that quits the app. The Whisper
-        // backend also needs its native runtime, whose constructor would throw
-        // DllNotFoundException without it.
-        //
-        // Present is not enough: the catalog is loaded once here, the way the
-        // first take will, so a runtime that does not load on this machine is
-        // named now (the check logs the DLL and the import) instead of at the
-        // first hotkey press. The check frees what it loads, and loading a
-        // backend DLL does not register it: ggml enumerates the GPU only when
-        // the first model load asks it to (NativeRuntimeLoader).
-        //
-        // The engine choice picks which of the two gates applies. Parakeet needs no
-        // native runtime of ours (ONNX Runtime ships inside the app), only its model folder.
-        bool useParakeet = context.TranscriptionPresent
-            && TranscriptionSettingsService.Instance.Current.Engine.Backend == AsrBackendKind.Parakeet;
+        // from Settings, never as a hard gate that quits the app. Parakeet needs
+        // no native runtime of ours (ONNX Runtime ships inside the app), only its
+        // model folder.
         string? engineSkip =
-            !context.TranscriptionPresent         ? SkipNotPresent
-            : useParakeet                         ? (ParakeetModelPresent() ? null : SkipSpeechModelMissing)
-            : !NativeRuntime.IsInstalled()        ? SkipNativeRuntimeMissing
-            : !NativeRuntime.CheckLoad().Loads    ? SkipNativeRuntimeUnloadable
-            : !SpeechModels.IsAnyModelInstalled() ? SkipSpeechModelMissing
-            : null;
+            !context.TranscriptionPresent ? SkipNotPresent
+            : ParakeetModelPresent()      ? null
+            : SkipSpeechModelMissing;
         if (engineSkip is null)
         {
             context.Compose(ModuleIds.Transcription, () =>
             {
                 var host = new AppTranscriptionEngineHost();
-                IAsrBackend backend = useParakeet ? new ParakeetBackend(host) : new WhisperBackend(host);
                 _engine = new TranscriptionEngine(
                     host,
-                    backend,
+                    new ParakeetBackend(host),
                     recovery: new DictationRecoveryStore(AppPaths.DictationRecoveryFilePath),
                     takeAudio: new TakeAudioRecoveryStore(AppPaths.TakeAudioRecoveryFilePath));
             });
@@ -89,14 +70,14 @@ public partial class App
             // is composed only at start, so what fixes it is the restart that
             // follows provisioning.
             if (engineSkip != SkipNotPresent)
+            {
                 UserIncidentRegistry.Instance.Open(UserIncidents.SpeechModel, engineSkip);
-            // A model that is not (all) there is what a first start or an
-            // interrupted download leaves, so it earns the setup window at the
-            // end of startup (App.SpeechRepair.cs).
-            if (useParakeet && engineSkip == SkipSpeechModelMissing)
+                // A model that is not (all) there is what a first start or an
+                // interrupted download leaves, so it earns the setup window at the
+                // end of startup (App.SpeechRepair.cs).
                 _speechRepairReason = engineSkip;
+            }
         }
-
         // Construction does no I/O; the Ambient settings observer starts and
         // stops the engine.
         if (context.AmbientPresent)

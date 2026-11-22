@@ -1,9 +1,7 @@
 using System;
 using System.Collections.Generic;
 using System.ComponentModel;
-using System.IO;
 using System.Linq;
-using CommunityToolkit.WinUI.Controls;
 using Microsoft.UI.Xaml;
 using Microsoft.UI.Xaml.Controls;
 using Microsoft.UI.Xaml.Input;
@@ -12,7 +10,6 @@ using Microsoft.UI.Xaml.Navigation;
 using Deckle.Catalog;
 using Deckle.Settings;
 using Deckle.Transcription;
-using Deckle.Core;
 using Deckle.Diagnostics;
 using Deckle.Localization;
 
@@ -22,34 +19,17 @@ public sealed partial class WhisperPage : Page
 {
     public WhisperViewModel ViewModel { get; } = new();
 
-    // Guards the Language combo's SelectionChanged and the model
-    // AutoSuggestBox's SuggestionChosen during initial sync — these handlers
-    // set VM properties which would trigger PushToSettings() needlessly.
+    // Guards the restart state during the initial sync: Load() sets VM
+    // properties whose change handlers must not read as the person's edits.
     private bool _initializing;
 
-    // Full list of installed Whisper models on disk, scanned once per
-    // page entry. Feeds the model AutoSuggestBox as a filterable source.
-    private List<string> _modelNames = new();
-
     // Values at page load that require a restart. The footer only appears
-    // when the current value differs from the snapshot.
-    private string _startupModel = "";
+    // when the current value differs from the snapshot: the model folder and
+    // the encoder precision are read at each model load, and the GPU switch at
+    // the next load too, so the same footer carries all three.
     private bool _startupUseGpu;
-
-    // The engine choice and the two values only Parakeet reads. The backend is
-    // built once at startup, so a different choice waits for the restart; the
-    // folder and the precision are read at each model load, and the same footer
-    // carries them.
-    private AsrBackendKind _startupBackend;
     private string _startupParakeetFolder = "";
     private ParakeetEncoderPrecision _startupParakeetEncoder;
-
-    // Defaults resolved from the Engine POCO — single source of truth for the
-    // bespoke Model / Language / InitialPrompt resets below.
-    private static readonly EngineSettings _engineDefaults = new();
-    // ModelsDirectory's default no longer has a code-behind home either: its card is
-    // composed now, reading its default (new TranscriptionSettings().ModelsDirectory)
-    // from the manifest, like the OutputFilter / Context / Decoding / Confidence cards.
 
     public WhisperPage()
     {
@@ -76,43 +56,22 @@ public sealed partial class WhisperPage : Page
 
         NavigationCacheMode = NavigationCacheMode.Required;
 
-        // Compose the VAD and Streaming folds before the first Load(). Load() runs
-        // in OnNavigatedTo (after this constructor), so each composer's
-        // PropertyChanged subscription is already in place to catch Load()'s refresh
-        // — the same Compose-before-Load ordering RecordingPage uses. The composers
-        // are held in fields so their subscriptions live as long as the cached page.
+        // Compose every region before the first Load(). Load() runs in
+        // OnNavigatedTo (after this constructor), so each composer's
+        // PropertyChanged subscription is already in place to catch Load()'s
+        // refresh — the same Compose-before-Load ordering RecordingPage uses. The
+        // composers are held in fields so their subscriptions live as long as the
+        // cached page.
         ComposeSettings();
-
-        // The cached page can be loaded again after navigation. Wire these once in
-        // the constructor so hover handlers never accumulate across page entries.
-        WireHover(ModelCard, ModelReset);
-        WireHover(LanguageCard, LanguageReset);
-        InitialPromptCard.PointerEntered += (_, _) => InitialPromptReset.Opacity = 1;
-        InitialPromptCard.PointerExited += (_, _) => InitialPromptReset.Opacity = 0;
-        PrepareResetButton(ModelReset);
-        PrepareResetButton(LanguageReset);
-        PrepareResetButton(InitialPromptReset);
 
         Loaded += (_, _) =>
         {
             DeckleWhispSource.Log.PageLoadedStart();
             try
             {
-                // GPU acceleration and the models directory are composed now — the
-                // composer wires each card's own per-card reset and hover reveal (and
-                // the Path card's AppPaths fallback rides in PathArgs.DefaultPath), so
-                // no WireHover or DefaultPath assignment for those cards here.
-                // The VAD fold (toggle + four Silero parameters) is composed now —
-                // the composer wires its own per-card reset reveal, so no WireHover
-                // for those cards here.
-                // Output filters (SuppressNst / SuppressBlank / SuppressRegex),
-                // Context (UseContext / MaxTokens), Decoding (beam search + temperature)
-                // and Confidence (the three thresholds) are composed now — the composer
-                // wires each card's own per-card reset and hover reveal, so no WireHover
-                // for those cards here.
-
-                // React to VM property changes for side effects (restart
-                // state, model folder re-scan).
+                // React to VM property changes for the restart footer. Every card
+                // is composed, and the composer wires each card's own per-card
+                // reset and hover reveal.
                 ViewModel.PropertyChanged -= OnViewModelPropertyChanged;
                 ViewModel.PropertyChanged += OnViewModelPropertyChanged;
 
@@ -151,8 +110,8 @@ public sealed partial class WhisperPage : Page
         _behaviourComposer = behaviourComposer;
 
         ComposeRegion(SpeechEngineHost, ViewModel.SpeechEngineSettings);
-        ComposeRegion(UseGpuHost, ViewModel.UseGpuSettingsManifest);
         ComposeRegion(ModelsDirectoryHost, ViewModel.ModelsDirectorySettingsManifest);
+        ComposeRegion(UseGpuHost, ViewModel.UseGpuSettingsManifest);
         // The lexicon, decoding and streaming manifests compose on LexiconPage,
         // DecodingPage and StreamingPage, this module's other pages; the dataset consents
         // compose on the Diagnostics page (WhisperTelemetryViewModel).
@@ -174,47 +133,32 @@ public sealed partial class WhisperPage : Page
 
     // The page-level "Reset all" is active-when-dirty: enabled only while some
     // value on the page differs from its default. Re-gated off every composer's
-    // DirtyChanged, off the VM for the three bespoke cards (Model, Language,
-    // Initial prompt, which have no composer and read their defaults from the
-    // engine's), and once after Load() (OnNavigatedTo), since Load() raises no
-    // PropertyChanged on a clean profile. Louis saw the gate stay off while
-    // Language and Initial prompt offered their own reset (2026-10-15).
+    // DirtyChanged, and once after Load() (OnNavigatedTo), since Load() raises no
+    // PropertyChanged on a clean profile.
     private void GateResetAll() =>
-        Header.IsResetAllEnabled =
-            _composers.Any(c => c.IsDirty()) ||
-            ViewModel.Model != _engineDefaults.Model ||
-            ViewModel.Language != _engineDefaults.Language ||
-            ViewModel.InitialPrompt != _engineDefaults.InitialPrompt;
+        Header.IsResetAllEnabled = _composers.Any(c => c.IsDirty());
 
     // NavigationCacheMode.Required reuses the page instance. On every navigation
-    // we reload settings from the POCO via the VM; constructor-time hover wiring
-    // remains unique for the lifetime of the cached page.
+    // we reload settings from the POCO via the VM.
     protected override void OnNavigatedTo(NavigationEventArgs e)
     {
         base.OnNavigatedTo(e);
         _initializing = true;
         ViewModel.Load();
-        RefreshModelNames();
-        SyncLanguageCombo();
-        _startupModel = ViewModel.Model;
         _startupUseGpu = ViewModel.UseGpu;
-        _startupBackend = ViewModel.Backend;
         _startupParakeetFolder = ViewModel.ParakeetModelDirectory;
         _startupParakeetEncoder = ViewModel.ParakeetEncoder;
         _initializing = false;
-        ApplyEngineVisibility();
         UpdateRestartState();
         GateResetAll();
 
-        // Speech isn't provisioned until the runtime + model are on disk. When
-        // they aren't, surface a call-to-action that reopens the setup wizard
-        // rather than leaving the tuning controls implying a working engine.
-        // The App answers the probe (this page can't see the Whisper module);
-        // unwired (tests, previews) reads as provisioned.
+        // Speech isn't provisioned until the model is on disk. When it isn't,
+        // surface a call-to-action that reopens the setup wizard rather than
+        // leaving the tuning controls implying a working engine. The App answers
+        // the probe (this page can't see the Parakeet module); unwired (tests,
+        // previews) reads as provisioned.
         bool speechReady = SettingsHost.IsSpeechProvisioned?.Invoke() ?? true;
-        // The probe answers for Whisper (its runtime and a model); Parakeet needs
-        // neither, and its own card says what its folder lacks.
-        SetupInfoBar.IsOpen = !speechReady && ViewModel.IsWhisperChosen;
+        SetupInfoBar.IsOpen = !speechReady;
     }
 
     private void OnSetupClick(object sender, RoutedEventArgs e) =>
@@ -222,168 +166,20 @@ public sealed partial class WhisperPage : Page
 
     // ── VM PropertyChanged side effects ─────────────────────────────────────
     //
-    // During _initializing (Load + combo population), these are skipped.
-    // After that, user interaction triggers:
-    //   Model / UseGpu → restart footer
-    //   ModelsDirectory → re-scan model combo
+    // During _initializing (Load), these are skipped. After that, user
+    // interaction on a load-time value shows the restart footer.
 
     private void OnViewModelPropertyChanged(object? sender, PropertyChangedEventArgs e)
     {
         if (_initializing) return;
         switch (e.PropertyName)
         {
-            case nameof(WhisperViewModel.Model):
             case nameof(WhisperViewModel.UseGpu):
             case nameof(WhisperViewModel.ParakeetModelDirectory):
             case nameof(WhisperViewModel.ParakeetEncoder):
                 UpdateRestartState();
                 break;
-            case nameof(WhisperViewModel.Backend):
-                ApplyEngineVisibility();
-                UpdateRestartState();
-                SetupInfoBar.IsOpen = SetupInfoBar.IsOpen && ViewModel.IsWhisperChosen;
-                break;
-            case nameof(WhisperViewModel.ModelsDirectory):
-                _initializing = true;
-                try { RefreshModelNames(); } finally { _initializing = false; }
-                break;
         }
-
-        // The bespoke cards feed the Reset all gate through the VM, where the
-        // composed ones feed it through DirtyChanged.
-        if (e.PropertyName is nameof(WhisperViewModel.Model)
-            or nameof(WhisperViewModel.Language)
-            or nameof(WhisperViewModel.InitialPrompt))
-            GateResetAll();
-    }
-
-    // ── Combo handlers (Model, Language) ────────────────────────────────────
-    //
-    // Model is an AutoSuggestBox (no dropdown chevron) populated dynamically
-    // from disk: filtering by substring while typing, full list on focus
-    // when empty. Language is an editable ComboBox with ComboBoxItem children.
-
-    // The hover-revealed reset says the same words as the composed cards' reset
-    // (one shared resource, not a literal in the style), and shows when the
-    // keyboard reaches it: at opacity 0 it stays focusable, so a person tabbing
-    // would land on a button they cannot see.
-    private static void PrepareResetButton(Button resetButton)
-    {
-        string label = Loc.Get("SettingsSection_ResetTooltip");
-        ToolTipService.SetToolTip(resetButton, label);
-        Microsoft.UI.Xaml.Automation.AutomationProperties.SetName(resetButton, label);
-        resetButton.GotFocus += (_, _) => resetButton.Opacity = 1;
-        resetButton.LostFocus += (_, _) => resetButton.Opacity = 0;
-    }
-
-    private static void WireHover(SettingsCard card, Button resetButton)
-    {
-        card.PointerEntered += (_, _) => resetButton.Opacity = 1;
-        card.PointerExited += (_, _) => resetButton.Opacity = 0;
-    }
-
-    private void RefreshModelNames()
-    {
-        var items = new List<string>();
-        try
-        {
-            string dir = TranscriptionSettingsService.Instance.ResolveModelsDirectory();
-            if (Directory.Exists(dir))
-            {
-                items = Directory.EnumerateFiles(dir, "*.bin")
-                    .Select(Path.GetFileName)
-                    .Where(n => n is not null && !n!.Contains("silero", StringComparison.OrdinalIgnoreCase))
-                    .Select(n => n!)
-                    .OrderBy(n => n)
-                    .ToList();
-            }
-        }
-        catch (Exception ex)
-        {
-            DeckleWhispSource.Log.PageModelScanFailed(ex.GetType().Name, ex.Message);
-        }
-
-        string current = ViewModel.Model;
-        if (!string.IsNullOrEmpty(current) && !items.Contains(current))
-            items.Insert(0, current);
-
-        _modelNames = items;
-        ModelSuggest.Text = current ?? "";
-        ModelSuggest.ItemsSource = _modelNames;
-    }
-
-    private void SyncLanguageCombo()
-    {
-        string lang = ViewModel.Language;
-        for (int i = 0; i < LanguageCombo.Items.Count; i++)
-        {
-            if (LanguageCombo.Items[i] is ComboBoxItem item
-                && item.Content is string s && s == lang)
-            {
-                LanguageCombo.SelectedIndex = i;
-                return;
-            }
-        }
-        // Custom language code not in the predefined list.
-        LanguageCombo.SelectedIndex = -1;
-        LanguageCombo.Text = lang;
-    }
-
-    private void ModelSuggest_GotFocus(object sender, RoutedEventArgs e)
-    {
-        // When the field gains focus, show the full list so the user can
-        // browse all available models without typing. Matches the ComboBox
-        // affordance the control replaces.
-        ModelSuggest.ItemsSource = _modelNames;
-        ModelSuggest.IsSuggestionListOpen = true;
-    }
-
-    private void ModelSuggest_TextChanged(AutoSuggestBox sender,
-        AutoSuggestBoxTextChangedEventArgs args)
-    {
-        if (args.Reason != AutoSuggestionBoxTextChangeReason.UserInput) return;
-
-        string query = sender.Text ?? "";
-        if (string.IsNullOrEmpty(query))
-        {
-            sender.ItemsSource = _modelNames;
-            return;
-        }
-
-        sender.ItemsSource = _modelNames
-            .Where(n => n.Contains(query, StringComparison.OrdinalIgnoreCase))
-            .ToList();
-    }
-
-    private void ModelSuggest_SuggestionChosen(AutoSuggestBox sender,
-        AutoSuggestBoxSuggestionChosenEventArgs args)
-    {
-        if (_initializing || args.SelectedItem is not string model) return;
-        ViewModel.Model = model;
-    }
-
-    private void ModelSuggest_LostFocus(object sender, RoutedEventArgs e)
-    {
-        // Free-form text is not a valid model — revert to the current VM
-        // value so the field always shows an installed model name.
-        if (!_modelNames.Contains(ModelSuggest.Text ?? ""))
-            ModelSuggest.Text = ViewModel.Model ?? "";
-    }
-
-    private void LanguageCombo_SelectionChanged(object sender, SelectionChangedEventArgs e)
-    {
-        if (_initializing) return;
-        string text = LanguageCombo.Text ?? "";
-        if (LanguageCombo.SelectedItem is ComboBoxItem item && item.Content is string s)
-            text = s;
-        ViewModel.Language = text;
-    }
-
-    private void LanguageCombo_LostFocus(object sender, RoutedEventArgs e)
-    {
-        string text = (LanguageCombo.Text ?? "").Trim();
-        if (text != ViewModel.Language)
-            ViewModel.Language = text;
     }
 
     // ── Click-to-unfocus ────────────────────────────────────────────────────
@@ -414,9 +210,6 @@ public sealed partial class WhisperPage : Page
     }
 
     // ── Reset handlers ──────────────────────────────────────────────────────
-    //
-    // Set the VM property (or combo for Model/Language) → OnXChanged fires →
-    // PushToSettings. For combos, SelectionChanged fires → handler sets VM.
 
     private void ResetBehaviour_Click(object sender, RoutedEventArgs e)
     {
@@ -425,56 +218,17 @@ public sealed partial class WhisperPage : Page
         DeckleSettingsUxSource.Log.SectionResetDetail("Dictation experience");
     }
 
-    private void ModelReset_Click(object sender, RoutedEventArgs e)
-    {
-        ViewModel.Model = _engineDefaults.Model;
-        ModelSuggest.Text = _engineDefaults.Model;
-    }
-
-    private void LanguageReset_Click(object sender, RoutedEventArgs e)
-    {
-        _initializing = true;
-        LanguageCombo.Text = _engineDefaults.Language;
-        _initializing = false;
-        ViewModel.Language = _engineDefaults.Language;
-    }
-
-    private void InitialPromptReset_Click(object sender, RoutedEventArgs e) =>
-        ViewModel.InitialPrompt = _engineDefaults.InitialPrompt;
-
-    // The output-filter (SuppressNst / SuppressBlank / SuppressRegex), context
-    // (UseContext / MaxTokens), decoding (beam search + temperature) and confidence
-    // (the three thresholds) reset handlers are gone: those cards are composed, and
-    // the composer drives each reset to its POCO-sourced default through the normal
-    // VM setter — the same round-trip these hand-authored handlers performed.
-
     // ── Restart state — highlight + footer ─────────────────────────────────
     //
-    // Model and GPU require a restart. When their current value differs from
-    // the startup snapshot, the footer appears (pattern Windows Terminal).
+    // The model folder, the encoder precision and the GPU switch require a
+    // restart. When their current value differs from the startup snapshot, the
+    // footer appears (pattern Windows Terminal).
 
-    // The cards that configure Whisper alone are hidden while another engine is
-    // chosen: a setting that does not apply is hidden, never greyed. They keep
-    // their values, so choosing Whisper again finds them as they were.
-    private void ApplyEngineVisibility()
-    {
-        Visibility whisper = ViewModel.IsWhisperChosen ? Visibility.Visible : Visibility.Collapsed;
-        InitialPromptCard.Visibility = whisper;
-        LanguageCard.Visibility = whisper;
-        ModelCard.Visibility = whisper;
-    }
-
-    // What needs a restart depends on the engine that will run: the Whisper model
-    // matters to Whisper alone, and the Parakeet folder and precision to Parakeet
-    // alone. The GPU switch and the engine choice itself matter to both.
     private void UpdateRestartState()
     {
-        bool whisper = ViewModel.IsWhisperChosen;
-        bool dirty = ViewModel.Backend != _startupBackend
-                  || ViewModel.UseGpu != _startupUseGpu
-                  || (whisper && ViewModel.Model != _startupModel)
-                  || (!whisper && (ViewModel.ParakeetModelDirectory != _startupParakeetFolder
-                                   || ViewModel.ParakeetEncoder != _startupParakeetEncoder));
+        bool dirty = ViewModel.UseGpu != _startupUseGpu
+                  || ViewModel.ParakeetModelDirectory != _startupParakeetFolder
+                  || ViewModel.ParakeetEncoder != _startupParakeetEncoder;
         RestartFooter.Visibility = dirty
             ? Visibility.Visible : Visibility.Collapsed;
     }
@@ -492,14 +246,9 @@ public sealed partial class WhisperPage : Page
         try
         {
             // Revert the VM properties to the startup snapshot.
-            ViewModel.Model = _startupModel;
             ViewModel.UseGpu = _startupUseGpu;
-            ViewModel.Backend = _startupBackend;
             ViewModel.ParakeetModelDirectory = _startupParakeetFolder;
             ViewModel.ParakeetEncoder = _startupParakeetEncoder;
-
-            // Sync the AutoSuggestBox (not bound).
-            ModelSuggest.Text = _startupModel;
         }
         finally
         {
@@ -507,10 +256,8 @@ public sealed partial class WhisperPage : Page
         }
 
         // The VM's OnChanged handlers are NOT suppressed by _initializing
-        // (they check _isSyncing, not _initializing). But since we set the
-        // VM properties directly, PushToSettings fires and saves. The
-        // _initializing guard only prevents the combo handler from double-
-        // writing. Model and UseGpu are now reverted — update footer.
+        // (they check _isSyncing, not _initializing), so PushToSettings fires and
+        // saves the reverted values. The footer follows.
         UpdateRestartState();
     }
 
@@ -522,17 +269,11 @@ public sealed partial class WhisperPage : Page
         DeckleWhispSource.Log.PageResetAll();
 
         // Resets exactly the cards this page shows, the way DecodingPage and
-        // StreamingPage reset theirs: the composed cards (Dictation experience,
-        // GPU, models folder) through their composers, then the three bespoke
-        // cards (Model, Language, Initial prompt) through their own reset
-        // handlers. The Decoding and Streaming values live in the same
-        // TranscriptionSettings but belong to their own pages, so they stay.
-        // The earlier whole-POCO replace wiped them, and left the overlay
-        // card (which lives in AppSettings) untouched.
+        // StreamingPage reset theirs: every card is composed, so each composer
+        // drives its cards to their POCO-sourced defaults. The lexicon and
+        // streaming values live in the same TranscriptionSettings but belong to
+        // their own pages, so they stay. The overlay card lives in AppSettings.
         foreach (SettingsComposer composer in _composers) composer.ResetAll();
-        ModelReset_Click(sender, e);
-        LanguageReset_Click(sender, e);
-        InitialPromptReset_Click(sender, e);
         UpdateRestartState();
     }
 }

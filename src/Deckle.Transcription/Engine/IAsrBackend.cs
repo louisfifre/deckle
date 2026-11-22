@@ -7,9 +7,9 @@ namespace Deckle.Transcription;
 // ── IAsrBackend ──────────────────────────────────────────────────────────────
 //
 // Contract for an interchangeable ASR inference engine, implemented in child
-// modules (Deckle.Transcription.Whisper). The orchestrator holds one instance
-// and never touches its P/Invoke, native callbacks or C structs. "Backend" is
-// the ML sense (llama.cpp, whisper.cpp): the swappable inference
+// modules (Deckle.Transcription.Parakeet). The orchestrator holds one instance
+// and never touches its inference runtime, native callbacks or tensors.
+// "Backend" is the ML sense (llama.cpp, ONNX Runtime): the swappable inference
 // implementation, not a generic service or provider abstraction.
 //
 // Threading. Every method may be called from a non-UI thread: LoadModelAsync
@@ -19,13 +19,13 @@ namespace Deckle.Transcription;
 // (lifetime aside).
 public interface IAsrBackend : IDisposable
 {
-    // Stable identifier for telemetry and logs ("whisper", ...). Not a display
+    // Stable identifier for telemetry and logs ("parakeet", ...). Not a display
     // name: the Settings UI labels backends from its own catalog.
     string Name { get; }
 
     bool IsModelLoaded { get; }
 
-    // Backend-defined vocabulary ("CPU", "Vulkan", "CUDA", ...); null when no
+    // Backend-defined vocabulary ("CPU", "DirectML", ...); null when no
     // model is loaded.
     string? DetectedAccelerator { get; }
 
@@ -57,17 +57,16 @@ public interface IAsrBackend : IDisposable
 
 // ── TranscriptionContext ─────────────────────────────────────────────────────
 //
-// Optional per-call priming, model-agnostic so the contract outlives Whisper.
-// The streaming pipeline builds it to carry continuity across the separate
-// backend calls of consecutive utterances.
+// Optional per-call priming, model-agnostic so the contract outlives any one
+// engine. The streaming pipeline builds it to carry continuity across the
+// separate backend calls of consecutive utterances. A backend with no text
+// prompt to carry it (Parakeet) ignores PrimingText and ContinuesPreviousCall.
 //
-//   • PrimingText — the Whisper backend maps it onto initial_prompt,
-//     overriding the configured stylistic prompt for that call. Null keeps the
-//     configured prompt; empty explicitly suppresses priming for an
-//     independent file.
+//   • PrimingText — the text a backend may prime the call with: the tail of
+//     the previous utterance. Null or empty means no priming.
 //   • ContinuesPreviousCall — whether this call may build on what the backend
 //     decoded in its previous call. A backend can keep that text in its own
-//     state (Whisper does), so only the caller knows where a take starts: false
+//     state, so only the caller knows where a take starts: false
 //     makes this call start from nothing but its PrimingText. False by default,
 //     so a standalone call, the warm-up and the first call of a take never
 //     inherit text from another take or from the warm-up.
@@ -124,8 +123,8 @@ public sealed record TranscriptionResult(
 // ── TranscriptionSegment ─────────────────────────────────────────────────────
 //
 // One segment emitted by the backend during inference. Timing in centiseconds
-// since the start of the current TranscribeAsync call — matches whisper.cpp's
-// native unit, kept as-is to avoid rounding noise. Confidence is the linear
+// since the start of the current TranscribeAsync call, kept in the unit the
+// segment timestamps have always carried to avoid rounding noise. Confidence is the linear
 // average token probability over text tokens (excludes timestamp tokens);
 // NoSpeechProb is the per-segment probability that the audio is silence.
 // TextTokens counts the text tokens Confidence averages over, and

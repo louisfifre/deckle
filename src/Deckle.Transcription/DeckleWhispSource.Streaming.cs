@@ -75,7 +75,7 @@ public sealed partial class DeckleWhispSource
         if (IsEnabled()) WriteEvent(EvtUtterancesDiscarded, reason, discarded);
     }
 
-    // An utterance Whisper decoded but whose result no speaker could have
+    // An utterance the model decoded but whose result no speaker could have
     // produced from that audio, left out of the text. Milestone: it is work
     // declared as not done, with the numbers that justified it.
     // reason (closed vocabulary): token_rate, low_confidence.

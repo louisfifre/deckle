@@ -4,8 +4,7 @@ namespace Deckle.Transcription.Views;
 
 public partial class WhisperViewModel
 {
-    // The Vad* values drive the Silero ONNX trim (Streaming.SpeechTrim), not
-    // whisper.cpp's own VAD.
+    // The Vad* values drive the Silero ONNX trim (Streaming.SpeechTrim).
     [ObservableProperty]
     public partial bool VadEnabled { get; set; }
 

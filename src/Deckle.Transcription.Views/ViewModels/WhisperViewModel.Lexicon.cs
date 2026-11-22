@@ -13,9 +13,8 @@ namespace Deckle.Transcription.Views;
 // them. Shown on its own page, Transcription > Lexicon (LexiconPage).
 //
 // The words are the person's data, not a setting: they have no default and no
-// reset, so nothing but their own remove gesture takes one away. The list shows
-// under every engine, because the autocorrect reads it whatever the engine;
-// only the switch is gated on Parakeet, the one engine that boosts.
+// reset, so nothing but their own remove gesture takes one away. The
+// autocorrect reads the list too, whether or not the boost is on.
 //
 // An added word goes through LexiconTerms.Merge with the list, the one cleaning
 // rule: a duplicate (any casing) or a one-letter entry adds nothing.
@@ -49,7 +48,6 @@ public partial class WhisperViewModel
         Setting.Toggle("LexiconBoostCard",
             () => LexiconBoostEnabled,
             value => LexiconBoostEnabled = value,
-            visibleWhen: () => !IsWhisperChosen,
             defaultValue: () => new LexiconSettings().BoostEnabled),
     ];
 

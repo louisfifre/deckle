@@ -31,7 +31,6 @@ public sealed partial class LexiconPage : Page
     {
         base.OnNavigatedTo(e);
         ViewModel.Load();
-        WhisperInfoBar.IsOpen = ViewModel.IsWhisperChosen;
     }
 
     // Enter adds what is in the box, the gesture a field with an add button

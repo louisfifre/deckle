@@ -61,7 +61,7 @@ public partial class App
         new("crash supervisor (Program.Main)",
             "The supervisor swallows the child's exit code and relaunches it. The self-check runs unsupervised so a crash exit code reaches the caller."),
         new("transcription engine, speech engine",
-            "They need the native runtime and a model, open the audio device and load the GPU. The Dictation pages must render without them: if one cannot, it fails."),
+            "They need a speech model, open the audio device and load the GPU. The Dictation pages must render without them: if one cannot, it fails."),
         new("ambient engine",
             "Starting it captures the screen and talks to the Hue bridge."),
         new("trackpad, precision scroll, mouse wheel, input host",

@@ -21,8 +21,9 @@ public sealed class TranscriptionObservabilityContractTests : IDisposable
     {
         using var listener = new TestEventListener("Deckle-Whisp");
 
-        DeckleWhispSource.Log.TranscribePromptConfigured(42, carry: true);
-        DeckleWhispSource.Log.TranscribeRepetitionLoopMetrics(streak: 3, period: 1);
+        DeckleWhispSource.Log.TranscribeDecodeUsed(
+            offset_s: 0, prompt_chars: 0, continues_previous: false, no_context: true,
+            temp_start: 0, temp_inc: 0, segments: 1, last_end_s: 1.2, audio_s: 1.3, aborted: false);
         DeckleWhispSource.Log.SegmentRecognized(
             index: 1,
             start_s: 0,
@@ -36,8 +37,9 @@ public sealed class TranscriptionObservabilityContractTests : IDisposable
             characters: 24);
 
         Assert.Collection(listener.Events,
-            prompt => AssertPayloadNames(prompt, "prompt_len", "carry"),
-            repetition => AssertPayloadNames(repetition, "streak", "period"),
+            decode => AssertPayloadNames(decode,
+                "offset_s", "prompt_chars", "continues_previous", "no_context", "temp_start",
+                "temp_inc", "segments", "last_end_s", "audio_s", "aborted"),
             segment => AssertPayloadNames(segment,
                 "index", "start_s", "end_s", "duration_s", "no_speech_probability",
                 "average_probability", "minimum_probability", "text_tokens", "tokens",
@@ -58,9 +60,9 @@ public sealed class TranscriptionObservabilityContractTests : IDisposable
             audio_file: "",
             bucket: "raw",
             tier: "short",
-            backend: "whisper",
+            backend: "parakeet",
             model: "test",
-            language: "fr",
+            language: "",
             prompt_or_instruction: "",
             text: "test",
             text_words: 1,

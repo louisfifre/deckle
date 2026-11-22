@@ -9,7 +9,7 @@ namespace Deckle.Transcription.Views;
 
 // ── WhisperViewModel — settings manifest ──────────────────────────────────────
 //
-// The declarative half of the module's three pages (General, Decoding,
+// The declarative half of the module's pages (General, Lexicon, Decoding,
 // Streaming), kept beside the ViewModel that owns the values rather than in the
 // page code-behind. Each entry declares one setting — its kind, its
 // localization key (the x:Uid the hand-authored card carried, so the composer
@@ -18,8 +18,7 @@ namespace Deckle.Transcription.Views;
 // each list into cards. No glyph on any card: the rail carries the module's
 // icon, a card carries its words (2026-10-14).
 //
-// The flat cards with bespoke chrome (Language, Model with its AutoSuggestBox,
-// the initial prompt, the restart footer) stay hand-authored on WhisperPage.
+// The restart footer stays hand-authored on WhisperPage.
 //
 // Single-source defaults on EVERY descriptor read the POCO initializer (new
 // SpeechTrimSettings().<Field>, new EnergySegmenterSettings().<Field>) — the
@@ -69,7 +68,7 @@ public partial class WhisperViewModel
             defaultValue: () => new OverlaySettings().Enabled),
     ];
 
-    // GPU acceleration — the flat toggle under the "Model & engine" header. The
+    // GPU acceleration — the flat toggle under the "Speech engine" header. The
     // default reads the EngineSettings POCO initializer. UseGpu is
     // restart-coupled, but the RESTART FOOTER stays bespoke: it watches VM.UseGpu
     // directly, and the composer drives that same VM property, so a composed
@@ -99,51 +98,25 @@ public partial class WhisperViewModel
             defaultValue: () => new TranscriptionSettings().ModelsDirectory),
     ];
 
-    // The guards against text from silence and noise — one fold with no master
-    // on the Decoding page, collapsed (2026-11-07 review, change 6; moved there
-    // from the Streaming page on 2026-11-20).
+    // The guard against text from silence and noise: the Silero trim, one fold
+    // with no master on the Decoding page, collapsed. Its values apply to EVERY
+    // recording (the streaming dictation, the monolithic take, a file, a
+    // recovered take), so the page is the module's page for what applies in both
+    // pipelines rather than the Streaming page, whose switch can be off. The fold
+    // stays collapsed: almost nobody moves these values.
     //
-    // Why the Decoding page. These five values apply to EVERY recording, the
-    // streaming dictation, the monolithic take, a file, a recovered take, so a
-    // page named Streaming, whose switch can be off, told the person they were
-    // a streaming detail. Seen from the person who looks for them ("it wrote
-    // words over my silence"), the candidates were: Streaming (misleading, the
-    // reason for the move); General (its header is the overlay, the model and
-    // the engine, nothing about the text); the Recording page of the Audio
-    // module (the Silero trim does act on the captured signal, but Whisper's
-    // no-speech cut-off acts on the model's output, and a setting is found under
-    // the module that acts on it, here Transcription); a page of their own
-    // (five values, and a page is earned only once a surface no longer fits one,
-    // deckle-settings-ux). The Decoding page is the module's page for what
-    // applies in both pipelines, its Output filters section already answers
-    // "what Whisper may never write" and its Confidence section already holds
-    // the neighbour of the no-speech cut-off, Minimum confidence. It is not
-    // decoding in the strict sense, and the fold's own name says what it is for.
-    // The fold stays collapsed: almost nobody moves these values. Two of the
-    // five guards the pipeline runs are settings: the Silero trim before the
-    // model, and Whisper's no-speech cut-off after it; for a person both answer
-    // "there was no voice there", so they share one fold named for that. The
-    // other three stay where they are or stay hidden: the minimum speech is
-    // also the segmenter's floor and lives with the cut, the phantom filter and
-    // the known-hallucination catalog are not settings. A Section, not a Group
-    // inside a fold: folds never nest, so the Silero switch is a plain child and
-    // its three parameters hide while it is off through their own VisibleWhen.
-    // The no-speech cut-off left the Decoding page's Confidence section; it
-    // still works with Minimum confidence, which stays there, and its
-    // description says so.
-    //
-    // The Silero trim. The bounds are the former hand-authored sliders'.
-    //
-    // Back on the page after the 2026-10-14 triage removed them: the Silero trim
-    // is the second detector of the streaming chain, not a detail of the
-    // segmenter. The energy segmenter cuts the live stream on volume alone; the
-    // neural VAD then keeps the speech inside each finished utterance and drops
-    // an utterance with none (docs/transcription-audio-chain.md, "Why two
-    // detectors"). Its threshold and paddings decide what reaches the model, so
-    // they are the module's own parameters, exposed with the switch. Its minimum
-    // speech is not among them: it is the shared floor the segmenter reads too
-    // (MinSpeechMs), in the Segmentation section, since it must stay visible
-    // while this fold is closed.
+    // The Silero trim is the second detector of the streaming chain, not a
+    // detail of the segmenter. The energy segmenter cuts the live stream on
+    // volume alone; the neural VAD then keeps the speech inside each finished
+    // utterance and drops an utterance with none
+    // (docs/transcription-audio-chain.md, "Why two detectors"). Its threshold
+    // and paddings decide what reaches the model, so they are the module's own
+    // parameters, exposed with the switch. Its minimum speech is not among them:
+    // it is the shared floor the segmenter reads too (MinSpeechMs), in the
+    // Segmentation section, since it must stay visible while this fold is closed.
+    // A Section, not a Group inside a fold: folds never nest, so the Silero
+    // switch is a plain child and its three parameters hide while it is off
+    // through their own VisibleWhen.
     //
     // The fold shows whatever the strategy: the Silero trim runs on every
     // recording, the streaming dictation's utterances, the monolithic take as
@@ -176,15 +149,6 @@ public partial class WhisperViewModel
                     new MagnitudeArgs(0, 0.4, Unit: "s"),
                     visibleWhen: () => VadEnabled,
                     defaultValue: () => Seconds(new SpeechTrimSettings().SpeechPadMs)),
-                // Bounds verbatim from the Confidence section it left: 0.05..0.80.
-                Setting.Magnitude("WhisperNoSpeechCard",
-                    () => NoSpeechThreshold,
-                    value => NoSpeechThreshold = value,
-                    new MagnitudeArgs(0.05, 0.80, Slider: false),
-                    // Whisper's own cut-off: Parakeet does not read it, so the
-                    // card is hidden while another engine is chosen.
-                    visibleWhen: () => IsWhisperChosen,
-                    defaultValue: () => new ConfidenceSettings().NoSpeechThreshold),
             ]),
     ];
 
@@ -320,111 +284,4 @@ public partial class WhisperViewModel
         return string.Format(System.Globalization.CultureInfo.CurrentCulture, format,
             SegHangoverMaxMs / 1000.0, start, SegHangoverMinMs / 1000.0, end);
     }
-
-    // Decoding — four flat cards under the page's "Decoding" section: beam
-    // search, its size (hidden by its VisibleWhen while beam search is off:
-    // mask, never grey), the temperature and the fallback step. No fold: every
-    // card of the page is always shown, so a fold would only hide what the page
-    // is for (2026-10-14). TemperatureIncrement carries the fallback-disabled
-    // warning as an Advisory, rendered as a note row under the card when the
-    // step is 0. All defaults read the DecodingSettings POCO initializer.
-    //
-    // Fields alone on this page, no slider: these are figures one types after
-    // reading, nothing moves on screen while they change, unlike the Ambient
-    // tuning where the light answers the thumb (2026-10-14).
-    public IReadOnlyList<SettingDescriptor> DecodingSettingsManifest =>
-    [
-        Setting.Toggle("WhisperUseBeamSearchCard",
-            () => UseBeamSearch,
-            value => UseBeamSearch = value,
-            defaultValue: () => new DecodingSettings().UseBeamSearch),
-        Setting.Magnitude("WhisperBeamSizeCard",
-            () => BeamSize,
-            value => BeamSize = value,
-            new MagnitudeArgs(1, 10, Slider: false, Integer: true),
-            visibleWhen: () => UseBeamSearch,
-            defaultValue: () => new DecodingSettings().BeamSize),
-        Setting.Magnitude("WhisperTemperatureCard",
-            () => Temperature,
-            value => Temperature = value,
-            new MagnitudeArgs(0, 1, Slider: false),
-            defaultValue: () => new DecodingSettings().Temperature),
-        Setting.Magnitude("WhisperTemperatureIncrementCard",
-            () => TemperatureIncrement,
-            value => TemperatureIncrement = value,
-            new MagnitudeArgs(0, 1, Slider: false),
-            defaultValue: () => new DecodingSettings().TemperatureIncrement,
-            advisory: () => TemperatureIncrement == 0
-                ? Loc.GetFromOptional("Deckle.Transcription.Views", "WhisperTemperatureIncrementWarning/Message")
-                : null),
-    ];
-
-    // Confidence — two flat cards under the page's "Confidence" section, the
-    // two triggers of a retry. The no-speech cut-off moved to the silence
-    // guards' fold (SilenceGuardSettings, 2026-11-07), on this same page. The Min/Max
-    // live in MagnitudeArgs, where a code-built control sets them without the
-    // WinUI XAML parser ever seeing a Minimum above a default. Bounds verbatim:
-    // Entropy 1.5..3.5; Logprob -1.5..-0.4. Defaults read the
-    // ConfidenceSettings POCO initializer. Fields alone, as in the Decoding
-    // manifest above.
-    public IReadOnlyList<SettingDescriptor> ConfidenceSettingsManifest =>
-    [
-        Setting.Magnitude("WhisperEntropyCard",
-            () => EntropyThreshold,
-            value => EntropyThreshold = value,
-            new MagnitudeArgs(1.5, 3.5, Slider: false),
-            defaultValue: () => new ConfidenceSettings().EntropyThreshold),
-        Setting.Magnitude("WhisperLogprobCard",
-            () => LogprobThreshold,
-            value => LogprobThreshold = value,
-            new MagnitudeArgs(-1.5, -0.4, Slider: false),
-            defaultValue: () => new ConfidenceSettings().LogprobThreshold),
-    ];
-
-    // Output filters — three flat cards under the page's "Output filters"
-    // section, after Decoding and Confidence. Despite the title they remove
-    // nothing after the fact: whisper.cpp applies all three to the decoder's
-    // tokens, forbidding some before they are written (upstream documentation,
-    // not checked in the shipped v1.9.1 source; their descriptions say so since
-    // the 2026-11-07 review). SuppressRegex is a one-line
-    // free-text field; its placeholder reuses the WhisperSuppressRegexBox
-    // .PlaceholderText entry. Defaults read the OutputFilterSettings POCO
-    // initializer.
-    public IReadOnlyList<SettingDescriptor> OutputFilterSettingsManifest =>
-    [
-        Setting.Toggle("WhisperSuppressNstCard",
-            () => SuppressNonSpeechTokens,
-            value => SuppressNonSpeechTokens = value,
-            defaultValue: () => new OutputFilterSettings().SuppressNonSpeechTokens),
-        Setting.Toggle("WhisperSuppressBlankCard",
-            () => SuppressBlank,
-            value => SuppressBlank = value,
-            defaultValue: () => new OutputFilterSettings().SuppressBlank),
-        Setting.Text("WhisperSuppressRegexCard",
-            () => SuppressRegex,
-            value => SuppressRegex = value,
-            new TextArgs(Placeholder: Loc.GetFromOptional("Deckle.Transcription.Views", "WhisperSuppressRegexBox/PlaceholderText")),
-            defaultValue: () => new OutputFilterSettings().SuppressRegex),
-    ];
-
-    // Context — two flat cards under the page's "Context" section, last:
-    // whether each segment primes the next and how many tokens of the previous
-    // text prime it (whisper.cpp's n_max_text_ctx, WhisperParamsMapper). UseContext
-    // is a Toggle; MaxTokens is a field-only magnitude over the -1..448 range
-    // (the VM's OnMaxTokensChanged NaN-guard is the same guard the composer
-    // applies, so a cleared field never persists), whose -1 sentinel, "leave
-    // whisper.cpp's default", the field shows as Auto. Defaults read the
-    // ContextSettings POCO initializer.
-    public IReadOnlyList<SettingDescriptor> ContextSettingsManifest =>
-    [
-        Setting.Toggle("WhisperUseContextCard",
-            () => UseContext,
-            value => UseContext = value,
-            defaultValue: () => new ContextSettings().UseContext),
-        Setting.Magnitude("WhisperMaxTokensCard",
-            () => MaxTokens,
-            value => MaxTokens = value,
-            new MagnitudeArgs(-1, 448, Slider: false, Integer: true, Auto: -1),
-            defaultValue: () => new ContextSettings().MaxTokens),
-    ];
 }

@@ -10,7 +10,6 @@ using Deckle.Shell;
 using Deckle.Shell.TaskbarCover;
 using Deckle.Shell.TrayMenu;
 using Deckle.Transcription;
-using Deckle.Transcription.Whisper;
 using Deckle.Localization;
 
 namespace Deckle.App;
@@ -70,12 +69,12 @@ public partial class App
                     : null);
         };
 
-        // The Dictation page lives in Deckle.Transcription, which cannot see the
-        // Whisper child module, so the App, which composes both, answers here.
-        Settings.SettingsHost.IsSpeechProvisioned =
-            () => NativeRuntime.IsUsable() && SpeechModels.IsAnyModelInstalled();
+        // The Dictation page lives in Deckle.Transcription.Views, which cannot see
+        // the Parakeet child module, so the App, which composes both, answers
+        // here: whether the model folder holds every file the engine needs.
+        Settings.SettingsHost.IsSpeechProvisioned = ParakeetModelPresent;
 
-        // Same reason for the Parakeet model folder: the layout lives in the
+        // Same reason for the state of the model folder: the layout lives in the
         // Parakeet child module, which only the App references.
         Settings.SettingsHost.InspectParakeetModelFolder = configured =>
         {
