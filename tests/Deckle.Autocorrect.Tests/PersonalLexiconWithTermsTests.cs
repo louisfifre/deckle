@@ -37,9 +37,9 @@ public class PersonalLexiconWithTermsTests
     [Fact]
     public void APhraseDoesNotTakePart()
     {
-        var lexicon = new PersonalLexiconWithTerms(Empty, () => ["Louis Fifre"]);
+        var lexicon = new PersonalLexiconWithTerms(Empty, () => ["Ada Lovelace"]);
 
-        Assert.False(lexicon.IsAdopted("louis fifre"));
+        Assert.False(lexicon.IsAdopted("ada lovelace"));
         Assert.Empty(lexicon.AdoptedWords);
     }
 

@@ -6,8 +6,8 @@ namespace Deckle.Transcription.Parakeet.Decoding;
 public sealed class LexiconBoostTreeTests
 {
     // A small cased vocabulary in the detokenizer's form: a leading space opens a word.
-    private static readonly string[] Texts = ["", " de", " De", "ck", "le", " dé", "s", " la", " Louis", " Fi", "fre", " "];
-    private const int De = 1, DeUpper = 2, Ck = 3, Le = 4, DeAccent = 5, S = 6, La = 7, Louis = 8, Fi = 9, Fre = 10, Space = 11;
+    private static readonly string[] Texts = ["", " de", " De", "ck", "le", " dé", "s", " la", " Ada", " Love", "lace", " "];
+    private const int De = 1, DeUpper = 2, Ck = 3, Le = 4, DeAccent = 5, S = 6, La = 7, Ada = 8, Love = 9, Lace = 10, Space = 11;
     private const float Strength = 2f;
 
     private static LexiconBoostTree Tree(params string[] terms) => LexiconBoostTree.Build(terms, Texts, Strength)!;
@@ -87,12 +87,12 @@ public sealed class LexiconBoostTreeTests
     [Fact]
     public void APhraseCrossesTheSpaceBetweenItsWords()
     {
-        var tree = Tree("Louis Fifre");
+        var tree = Tree("Ada Lovelace");
 
-        int state = tree.Advance(LexiconBoostTree.Root, Louis);
-        Assert.True(tree.BonusOf(state, Fi) > 0);
-        state = tree.Advance(state, Fi);
-        Assert.Equal(Strength, tree.BonusOf(state, Fre), 5);
+        int state = tree.Advance(LexiconBoostTree.Root, Ada);
+        Assert.True(tree.BonusOf(state, Love) > 0);
+        state = tree.Advance(state, Love);
+        Assert.Equal(Strength, tree.BonusOf(state, Lace), 5);
     }
 
     [Fact]
