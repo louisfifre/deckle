@@ -5,11 +5,5 @@ anytype-id | .push-guard-allow | bafyreinameaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa
 windows-user-path | tests/Deckle.Hosting.Tests/SelfCheckTests.cs | someone | invented test value, describes no real machine or account
 windows-user-path | tests/Deckle.Hosting.Tests/SelfCheckTests.cs | SOMEONE | invented test value, describes no real machine or account
 windows-user-path | tests/Deckle.Core.Tests/AppIdentityTests.cs | someone | invented test value, describes no real machine or account
-drive-path | tests/Deckle.Core.Tests/FolderPathsTests.cs | D:\Photos | invented test value, describes no real machine or account
-drive-path | tests/Deckle.Core.Tests/FolderPathsTests.cs | D:\Photos2\a | invented test value, describes no real machine or account
-drive-path | tests/Deckle.Core.Tests/FolderPathsTests.cs | d:\photos\2026 | invented test value, describes no real machine or account
 windows-user-path | .push-guard-allow | someone | the line above names the value it accepts
 windows-user-path | .push-guard-allow | SOMEONE | the line above names the value it accepts
-drive-path | .push-guard-allow | D:\Photos | the line above names the value it accepts
-drive-path | .push-guard-allow | D:\Photos2\a | the line above names the value it accepts
-drive-path | .push-guard-allow | d:\photos\2026 | the line above names the value it accepts

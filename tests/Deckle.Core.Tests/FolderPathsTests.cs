@@ -9,15 +9,15 @@ public sealed class FolderPathsTests
     [Fact]
     public void AFolderWhoseNameStartsLikeTheRootIsNotInsideIt()
     {
-        Assert.False(FolderPaths.IsInside(@"D:\Photos", @"D:\Photos2\a"));
-        Assert.True(FolderPaths.IsInside(@"D:\Photos", @"d:\photos\2026\"));
-        Assert.True(FolderPaths.IsInside(@"D:\", @"D:\Photos"));
+        Assert.False(FolderPaths.IsInside(@"C:\Photos", @"C:\Photos2\a"));
+        Assert.True(FolderPaths.IsInside(@"C:\Photos", @"c:\photos\2026\"));
+        Assert.True(FolderPaths.IsInside(@"C:\", @"C:\Photos"));
     }
 
     [Fact]
     public void ADriveRootIsNamedByItsLetter()
     {
-        Assert.Equal("D:", FolderPaths.DisplayName(@"D:\"));
-        Assert.Equal("Photos", FolderPaths.DisplayName(@"D:\Photos\"));
+        Assert.Equal("C:", FolderPaths.DisplayName(@"C:\"));
+        Assert.Equal("Photos", FolderPaths.DisplayName(@"C:\Photos\"));
     }
 }
