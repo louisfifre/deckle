@@ -124,9 +124,9 @@ Run one with `pwsh -NoProfile -File scripts/<path> [arguments]`. An action names
 - `setup/scaffold.ps1` — **Scaffold repository files.** Creates the standard folders and files a repository starts with, and never overwrites what exists: whatever is already there is kept as it is.
   - Actions: Scaffold / preview · Scaffold / apply `-Apply`
   - Parameters: -Target <string>, -Apply, -Folders <string[]>, -License <string>, -Name <string>, -Holder <string>
-- `setup/setup-assets.ps1` — **Set up runtime assets.** Populates the native and models folders under the user data root with the whisper.cpp DLLs, the Visual C++ runtime they import and the Whisper models the app needs at runtime.
+- `setup/setup-assets.ps1` — **Set up runtime assets.** Populates the models folder under the user data root with the Parakeet speech model (FP32, into parakeet-tdt-0.6b-v3-ultra, about 2.4 GB) and the Silero VAD model the app needs at runtime.
   - Actions: Runtime assets / set up
-  - Parameters: -DataRoot <string>, -FromRelease <string>, -WhisperRepo <string>, -WhisperBuildDir <string>, -WithLarge, -Force
+  - Parameters: -DataRoot <string>, -Force
 - `setup/update-inventory.ps1` — Regenerate scripts/INVENTORY.md. (not in the menu)
   - Parameters: -Target <string>, -Apply
 - `setup/update-tree.ps1` — Regenerate TREE.md. (not in the menu)

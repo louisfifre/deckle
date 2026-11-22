@@ -82,12 +82,10 @@ public sealed partial class DeckleAppSource
 
     // ── Speech engine repair ────────────────────────────────────────────
     //
-    // The app found the speech engine missing or not loading at startup and
+    // The app found the speech model missing or incomplete at startup and
     // opened the setup wizard on its install step, which downloads nothing
     // before the person's click. reason is the startup skip reason:
-    // native_runtime_missing, native_runtime_unloadable. notice (closed
-    // vocabulary): changed (files of an older bundle are there), does_not_load,
-    // missing. Paired by work_id with SpeechRepairEnded (outcome: completed,
+    // speech_model_missing. notice (closed vocabulary): missing. Paired by work_id with SpeechRepairEnded (outcome: completed,
     // the app restarts; cancelled, the app runs on without transcription) or
     // with SpeechRepairFailed.
 

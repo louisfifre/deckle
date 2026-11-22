@@ -228,8 +228,6 @@ public partial class App
             CleanupDirectory = cleanup,
             PredecessorProcessId = predecessor,
             // Presence as recorded — an update never changes the module choice.
-            // SelectedModel stays null: the continuation resolves the configured
-            // model from settings, so nothing new is downloaded by default.
             SelectedModules  = ModulePresence.Choice
                 ?? ModuleRegistry.Modules.Select(m => m.Id).ToHashSet(StringComparer.Ordinal),
         };

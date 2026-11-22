@@ -373,9 +373,9 @@ if ($IncludeAssets -and -not $SkipAssets) {
         Write-Fail "setup-assets.ps1 not found at $setup"
         $RuntimeAssetsStatus = 'Failed: setup-assets.ps1 missing'
     } else {
-        Write-Step "Invoking setup-assets.ps1 -FromRelease $AssetsRelease"
-        & $setup -FromRelease $AssetsRelease
-        $RuntimeAssetsStatus = "Requested from native-v$AssetsRelease"
+        Write-Step "Invoking setup-assets.ps1"
+        & $setup
+        $RuntimeAssetsStatus = 'Provisioned by setup-assets.ps1'
     }
 } else {
     Write-Section "Runtime assets"

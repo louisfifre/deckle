@@ -161,6 +161,11 @@ The autocorrect module (`Deckle.Autocorrect`) ships compact derived lexicons und
 
 Whisper model weights downloaded from [ggerganov/whisper.cpp on Hugging Face](https://huggingface.co/ggerganov/whisper.cpp) are distributed under the original Whisper license (MIT). They are not redistributed in this repository.
 
+### Parakeet TDT 0.6B v3 Ultra
+
+- Models : NVIDIA `nvidia/parakeet-tdt-0.6b-v3` (https://huggingface.co/nvidia/parakeet-tdt-0.6b-v3), post-trained by moondream as `moondream/parakeet-ultra` (https://huggingface.co/moondream/parakeet-ultra), exported to ONNX by Olicorne as `Olicorne/parakeet-tdt-0.6b-v3-ultra-onnx` (https://huggingface.co/Olicorne/parakeet-tdt-0.6b-v3-ultra-onnx).
+- License : CC-BY-4.0 (https://creativecommons.org/licenses/by/4.0/). Attribution to NVIDIA for the base model, to moondream for the post-training and to Olicorne for the ONNX export. The weights are unchanged by Deckle.
+- Used as : the speech model of the Parakeet backend. Downloaded on demand into `parakeet-tdt-0.6b-v3-ultra` under the models directory, from the repository's commit `db1fd7a2d89672e8e52383505f0149076faab6f7`, each file checked against the SHA-256 pinned in `src/Deckle.Transcription.Parakeet/Setup/ParakeetModelCatalog.cs`. Not redistributed in this repository.
 ### Silero VAD
 
 - Repository : https://github.com/snakers4/silero-vad

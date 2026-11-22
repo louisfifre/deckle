@@ -44,11 +44,11 @@ public partial class App
 
     private void InitializeStartupModules(StartupContext context)
     {
-        // Without the native runtime and a speech model the engine is not
-        // composed and the rest of the app runs normally: provisioning happens
-        // on demand from Settings, never as a hard gate that quits the app. The
-        // WhisperBackend constructor installs the native log hook and would throw
-        // DllNotFoundException without the runtime.
+        // Without a speech model the engine is not composed and the rest of the
+        // app runs normally: provisioning happens through the setup window or
+        // from Settings, never as a hard gate that quits the app. The Whisper
+        // backend also needs its native runtime, whose constructor would throw
+        // DllNotFoundException without it.
         //
         // Present is not enough: the catalog is loaded once here, the way the
         // first take will, so a runtime that does not load on this machine is
@@ -57,7 +57,7 @@ public partial class App
         // backend DLL does not register it: ggml enumerates the GPU only when
         // the first model load asks it to (NativeRuntimeLoader).
         //
-        // The hidden engine choice picks which of the two gates applies. Parakeet needs no
+        // The engine choice picks which of the two gates applies. Parakeet needs no
         // native runtime of ours (ONNX Runtime ships inside the app), only its model folder.
         bool useParakeet = context.TranscriptionPresent
             && TranscriptionSettingsService.Instance.Current.Engine.Backend == AsrBackendKind.Parakeet;
@@ -85,14 +85,15 @@ public partial class App
         {
             context.Skip(ModuleIds.Transcription, engineSkip);
             // A present module that cannot run is the person's to fix, from the
-            // Whisper page that provisions the runtime and the models. Nothing
-            // closes it in this process: the engine is composed only at start,
-            // so what fixes it is the restart that follows provisioning.
+            // Transcription page. Nothing closes it in this process: the engine
+            // is composed only at start, so what fixes it is the restart that
+            // follows provisioning.
             if (engineSkip != SkipNotPresent)
                 UserIncidentRegistry.Instance.Open(UserIncidents.WhisperModel, engineSkip);
-            // The runtime is what a bundle change breaks, so it alone earns the
-            // setup window at the end of startup (App.SpeechRepair.cs).
-            if (engineSkip is SkipNativeRuntimeMissing or SkipNativeRuntimeUnloadable)
+            // A model that is not (all) there is what a first start or an
+            // interrupted download leaves, so it earns the setup window at the
+            // end of startup (App.SpeechRepair.cs).
+            if (useParakeet && engineSkip == SkipSpeechModelMissing)
                 _speechRepairReason = engineSkip;
         }
 

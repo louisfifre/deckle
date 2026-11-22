@@ -254,7 +254,7 @@ _Generated from `git ls-files` — do not edit by hand._
 │   │   ├── install-hooks.ps1  — Install git hooks Installs the repository's git hooks from their versioned sources and registers…
 │   │   ├── README.md  — Setup Standard files and hooks of a repository.
 │   │   ├── scaffold.ps1  — Scaffold repository files Creates the standard folders and files a repository starts with, and never over…
-│   │   ├── setup-assets.ps1  — Set up runtime assets Populates the native and models folders under the user data root with the whisp…
+│   │   ├── setup-assets.ps1  — Set up runtime assets Populates the models folder under the user data root with the Parakeet speech m…
 │   │   ├── update-inventory.ps1
 │   │   └── update-tree.ps1
 │   ├── tests/
@@ -2142,10 +2142,7 @@ _Generated from `git ls-files` — do not edit by hand._
 │   │   ├── Update/
 │   │   │   └── UpdateService.cs
 │   │   ├── ByteSizeFormatter.cs
-│   │   ├── ChoicesPage.xaml
-│   │   ├── ChoicesPage.xaml.cs
 │   │   ├── Deckle.Setup.csproj
-│   │   ├── DeckleSetupSource.Choices.cs
 │   │   ├── DeckleSetupSource.cs
 │   │   ├── DeckleSetupSource.Deploy.cs
 │   │   ├── DeckleSetupSource.Provisioning.cs
@@ -2161,7 +2158,6 @@ _Generated from `git ls-files` — do not edit by hand._
 │   │   ├── InstallingPage.xaml.cs
 │   │   ├── InstallItem.cs
 │   │   ├── InstallPlan.cs
-│   │   ├── ModelFileImport.cs
 │   │   ├── ModulesPage.xaml
 │   │   ├── ModulesPage.xaml.cs
 │   │   ├── RelocatePage.xaml
@@ -2426,6 +2422,8 @@ _Generated from `git ls-files` — do not edit by hand._
 │   │   ├── Segments/
 │   │   │   ├── DecodedToken.cs
 │   │   │   └── SegmentBuilder.cs
+│   │   ├── Setup/
+│   │   │   └── ParakeetModelCatalog.cs
 │   │   ├── Tokenization/
 │   │   │   ├── ParakeetDetokenizer.cs
 │   │   │   └── ParakeetVocabulary.cs
@@ -3293,12 +3291,11 @@ _Generated from `git ls-files` — do not edit by hand._
 │   │   ├── DataRootTreeTests.cs
 │   │   ├── Deckle.Setup.Tests.csproj
 │   │   ├── DeckleSetupSourceTests.cs
+│   │   ├── InstallPlanTests.cs
 │   │   ├── LocMirrorBugNotes.md
 │   │   ├── MessageTemplateDoctrineTests.cs
-│   │   ├── ModelFileImportTests.cs
 │   │   ├── PayloadDeploymentTests.cs
 │   │   ├── SetupCancellationLogTests.cs
-│   │   ├── SetupPathRedactionTests.cs
 │   │   ├── SetupStringMirrorTests.cs
 │   │   ├── UpdateHandoffBugNotes.md
 │   │   ├── UpdatePredecessorTests.cs
@@ -3416,6 +3413,8 @@ _Generated from `git ls-files` — do not edit by hand._
 │   │   │   └── TdtGreedyDecoderTests.cs
 │   │   ├── Segments/
 │   │   │   └── SegmentBuilderTests.cs
+│   │   ├── Setup/
+│   │   │   └── ParakeetModelCatalogTests.cs
 │   │   ├── Tokenization/
 │   │   │   ├── ParakeetDetokenizerTests.cs
 │   │   │   └── ParakeetVocabularySystemTests.cs

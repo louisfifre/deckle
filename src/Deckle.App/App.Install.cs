@@ -2,8 +2,6 @@ using Deckle.Core;
 using Deckle.Install;
 using Deckle.Modules;
 using Deckle.Setup;
-using Deckle.Transcription;
-using Deckle.Transcription.Whisper;
 
 namespace Deckle.App;
 
@@ -119,7 +117,6 @@ public partial class App
             CleanupDirectory = cleanup,
             InstallDirectory = installDir,
             DataDirectory    = UserEnvironment.GetDataRoot() ?? InstallPaths.DefaultDataDir,
-            SelectedModel    = SpeechModels.DefaultWhisperModel,
             SelectedModules  = ModulePresence.Choice
                 ?? ModuleRegistry.Modules.Select(m => m.Id).ToHashSet(StringComparer.Ordinal),
         };
@@ -141,11 +138,10 @@ public partial class App
         AppDiagnosticsBootstrap.InitializeLocalSinks(AppPaths.DiagnosticsDirectory);
         AppModules.RegisterAll();
 
-        string? modelId = ArgumentValue(args, "--model");
         string? cleanup = ArgumentValue(args, "--cleanup");
         bool afterUpdate = Array.IndexOf(args, "--after-update") >= 0;
         DeckleAppSource.Log.InstallModeEntered();
-        DeckleAppSource.Log.InstallModeEnteredDetail(ContinuationMode, "", cleanup ?? "", modelId ?? "");
+        DeckleAppSource.Log.InstallModeEnteredDetail(ContinuationMode, "", cleanup ?? "", "");
 
         var context = new SetupContext
         {
@@ -153,13 +149,6 @@ public partial class App
             // without the step rail or a Location step the person never saw.
             UpdateMode     = afterUpdate,
             ResumesInstall = !afterUpdate,
-            // Without --model (an update's continuation), the configured model
-            // from settings wins over the catalog default: the plan must ask
-            // for what this install actually uses, not schedule the default's
-            // download onto an install that never chose it.
-            SelectedModel = SpeechModelResolver.ResolveSelection(
-                modelId,
-                TranscriptionSettingsService.Instance.Current.Engine.Model),
             SelectedModules = ModulePresence.Choice
                 ?? ModuleRegistry.Modules.Select(m => m.Id).ToHashSet(StringComparer.Ordinal),
         };

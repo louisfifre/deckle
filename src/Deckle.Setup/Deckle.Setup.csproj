@@ -40,11 +40,11 @@
          each backend owns detection, download, placement and validation. -->
     <ProjectReference Include="..\Deckle.Vad\Deckle.Vad.csproj" />
     <ProjectReference Include="..\Deckle.Anytype\Deckle.Anytype.csproj" />
-    <!-- Transcription parent owns the wizard-agnostic primitives (ModelEntry,
-         Downloader) and the EventSource provider. -->
+    <!-- Transcription parent owns the transcription settings the plan reads
+         (where the model folder is). -->
     <ProjectReference Include="..\Deckle.Transcription\Deckle.Transcription.csproj" />
-    <!-- Whisper catalogs (SpeechModels) and the whisper.cpp native runtime
-         descriptor drive the wizard pages. -->
-    <ProjectReference Include="..\Deckle.Transcription.Whisper\Deckle.Transcription.Whisper.csproj" />
+    <!-- The Parakeet model catalog (files, hashes, download) the install plan
+         composes, and the folder layout that says when it is complete. -->
+    <ProjectReference Include="..\Deckle.Transcription.Parakeet\Deckle.Transcription.Parakeet.csproj" />
   </ItemGroup>
 </Project>

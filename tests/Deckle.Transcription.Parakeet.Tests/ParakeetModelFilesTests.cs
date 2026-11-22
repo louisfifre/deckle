@@ -24,7 +24,10 @@ public sealed class ParakeetModelFilesTests : IDisposable
     private static readonly string[] RequiredFiles =
     [
         Path.Combine("fp32", "encoder-model.onnx"),
+        Path.Combine("fp32", "encoder-model.onnx.data.000"),
+        Path.Combine("fp32", "encoder-model.onnx.data.001"),
         Path.Combine("fp32", "decoder_joint-model.onnx"),
+        Path.Combine("fp32", "decoder_joint-model.onnx.data"),
         "vocab.txt",
     ];
 
@@ -52,12 +55,25 @@ public sealed class ParakeetModelFilesTests : IDisposable
     [InlineData(0)]
     [InlineData(1)]
     [InlineData(2)]
+    [InlineData(3)]
+    [InlineData(4)]
+    [InlineData(5)]
     public void AnyMissingRequiredFileBreaksCompleteness(int missingIndex)
     {
         for (int i = 0; i < RequiredFiles.Length; i++)
         {
             if (i != missingIndex) Touch(RequiredFiles[i]);
         }
+
+        Assert.False(new ParakeetModelFiles(_root).IsComplete);
+    }
+
+    [Fact]
+    public void TheGraphsWithoutTheirExternalWeightsAreNotComplete()
+    {
+        Touch(Path.Combine("fp32", "encoder-model.onnx"));
+        Touch(Path.Combine("fp32", "decoder_joint-model.onnx"));
+        Touch("vocab.txt");
 
         Assert.False(new ParakeetModelFiles(_root).IsComplete);
     }
@@ -93,5 +109,8 @@ public sealed class ParakeetModelFilesTests : IDisposable
 
         Assert.Equal(Path.Combine(_root, "fp16", "encoder-model.fp16.onnx"), files.EncoderFp16);
         Assert.Equal(Path.Combine(_root, "vocab.txt"), files.Vocabulary);
+        Assert.Equal(Path.Combine(_root, "fp32", "encoder-model.onnx.data.000"), files.EncoderFp32Data000);
+        Assert.Equal(Path.Combine(_root, "fp32", "encoder-model.onnx.data.001"), files.EncoderFp32Data001);
+        Assert.Equal(Path.Combine(_root, "fp32", "decoder_joint-model.onnx.data"), files.DecoderJointData);
     }
 }

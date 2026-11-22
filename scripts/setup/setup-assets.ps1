@@ -2,47 +2,25 @@
 .SYNOPSIS
     Set up runtime assets
 .DESCRIPTION
-    Populates the native and models folders under the user data root with the
-    whisper.cpp DLLs, the Visual C++ runtime they import and the Whisper
-    models the app needs at runtime. Idempotent: skips a downloaded file that
+    Populates the models folder under the user data root with the Parakeet
+    speech model (FP32, into parakeet-tdt-0.6b-v3-ultra, about 2.4 GB) and the
+    Silero VAD model the app needs at runtime. Idempotent: skips a file that
     already carries the SHA-256 pinned in the C# code (a wrong or truncated one
-    is deleted and fetched again) and a copied DLL of the same size, unless
-    -Force. Every download is checked against its pinned SHA-256 before it
-    takes its place.
+    is deleted and fetched again), unless -Force. Every download is checked
+    against its pinned SHA-256 before it takes its place.
 .NOTES
     order: 130
     action: Runtime assets / set up |
 #>
 
-[CmdletBinding(DefaultParameterSetName = 'WhisperRepo')]
+[CmdletBinding()]
 param(
     # Override of the target UserDataRoot. Highest priority, ahead of
     # DECKLE_DATA_ROOT and %LOCALAPPDATA%\Deckle\.
     [string]$DataRoot,
 
-    # Native runtime — fetch the published bundle from the Deckle GitHub
-    # Release tagged native-v<Version>. Default for non-rebuilders.
-    # Mutually exclusive with -WhisperRepo.
-    [Parameter(ParameterSetName = 'FromRelease')]
-    [ValidatePattern('^\d+\.\d+\.\d+$')]
-    [string]$FromRelease,
-
-    # Native runtime — copy DLLs from a local whisper.cpp build tree built
-    # with MSVC; the Visual C++ runtime comes from the same Visual Studio.
-    # Mutually exclusive with -FromRelease.
-    [Parameter(ParameterSetName = 'WhisperRepo')]
-    [string]$WhisperRepo,
-
-    # Build folder under the whisper.cpp repo (output of `cmake --build`).
-    [Parameter(ParameterSetName = 'WhisperRepo')]
-    [string]$WhisperBuildDir = 'build',
-
-    # Download ggml-large-v3.bin (~3 GB) on top of ggml-base.bin. Off by
-    # default to keep first-time setup fast.
-    [switch]$WithLarge,
-
-    # Re-copy / re-download even if the destination already exists with
-    # the matching size (DLLs) or SHA-256 (downloads).
+    # Re-download even if the destination already carries the pinned
+    # SHA-256.
     [switch]$Force
 )
 
@@ -50,7 +28,6 @@ $ErrorActionPreference = 'Stop'
 $ScriptDir = $PSScriptRoot
 $LibDir = Join-Path (Split-Path -Parent $ScriptDir) 'lib'
 . (Join-Path $LibDir 'action-summary.ps1')
-Import-Module (Join-Path $LibDir 'native-runtime-release.psm1') -Force
 Import-Module (Join-Path $LibDir 'download-integrity.psm1') -Force
 
 $Repo = Split-Path -Parent (Split-Path -Parent $PSScriptRoot)
@@ -60,14 +37,13 @@ if ($DataRoot)                 { $TargetRoot = $DataRoot }
 elseif ($env:DECKLE_DATA_ROOT) { $TargetRoot = $env:DECKLE_DATA_ROOT }
 else                           { $TargetRoot = Join-Path $env:LOCALAPPDATA 'Deckle' }
 
-$TargetNative = Join-Path $TargetRoot 'native'
 $TargetModels = Join-Path $TargetRoot 'models'
+# ParakeetModelFiles.DefaultFolderName.
+$TargetParakeet = Join-Path $TargetModels 'parakeet-tdt-0.6b-v3-ultra'
 
 $WorkflowOutput = New-WorkflowOutput -Category 'setup'
 
 $Workflow = 'Set up runtime assets'
-$NativeSource = $null
-$NativeRuntimeStatus = 'Pending'
 $ModelStatus = 'Pending'
 
 trap {
@@ -76,43 +52,19 @@ trap {
         -Result Failed `
         -Sentence "Runtime asset setup failed before completion." `
         -Details ([ordered]@{
-            'Data root'      = $TargetRoot
-            Native          = $NativeRuntimeStatus
-            'Native source' = $NativeSource
-            Models          = $ModelStatus
-            Error           = $_.Exception.Message
+            'Data root' = $TargetRoot
+            Models      = $ModelStatus
+            Error       = $_.Exception.Message
         })
     throw
 }
 
-# NativeRuntime.cs owns the catalog the app, this script and the release
-# packager consume, so a dependency change stays one edit.
-$NativeRuntimeSource = Join-Path $Repo 'src\Deckle.Transcription.Whisper\Setup\NativeRuntime.cs'
-$NativeRuntimeCatalog = Get-DeckleNativeRuntimeCatalog -SourcePath $NativeRuntimeSource
-$CatalogDlls = @($NativeRuntimeCatalog.Names)
-
-# The SHA-256 of every download is read where the app's setup wizard reads it,
-# so the two cannot drift apart.
-$SpeechModelsSource = Join-Path $Repo 'src\Deckle.Transcription.Whisper\Setup\SpeechModels.cs'
+# The file list and the SHA-256 of every download are read where the app's setup
+# wizard reads them, so the two cannot drift apart.
+$ParakeetCatalogSource = Join-Path $Repo 'src\Deckle.Transcription.Parakeet\Setup\ParakeetModelCatalog.cs'
 $SileroVadSource = Join-Path $Repo 'src\Deckle.Vad\SileroVadModel.cs'
-$ModelHashes = Get-DeckleSpeechModelHashes -SourcePath $SpeechModelsSource
+$ParakeetFiles = Get-DeckleParakeetModelFiles -SourcePath $ParakeetCatalogSource
 $SileroSha256 = Get-DeckleSileroVadHash -SourcePath $SileroVadSource
-
-# Must match NativeRuntime.CurrentBundle.Url.
-$DeckleRepoSlug = 'louisfifre/deckle'
-
-# Same size counts as present: cheaper than a hash, and enough for a dev setup
-# script.
-function CopyIdempotent($src, $dst) {
-    $name = Split-Path $src -Leaf
-    if (-not $Force -and (Test-Path $dst) -and ((Get-Item $dst).Length -eq (Get-Item $src).Length)) {
-        Write-WorkflowMessage -Output $WorkflowOutput -Message "skip  $name (same size)"
-        return
-    }
-    Copy-Item $src $dst -Force
-    $size = [math]::Round((Get-Item $dst).Length / 1MB, 1)
-    Write-WorkflowMessage -Output $WorkflowOutput -Message "copy  $name ($size MB)"
-}
 
 # curl.exe ships with Windows and beats Invoke-WebRequest on large files.
 # The file lands under a .part name and takes its place only once its SHA-256
@@ -128,6 +80,7 @@ function Download($url, $dst, $expectedSha256) {
         }
         Write-WorkflowMessage -Output $WorkflowOutput -Message "$name does not match its pinned SHA-256, downloading it again" -Role Warning
     }
+    New-Item -ItemType Directory -Path (Split-Path $dst -Parent) -Force | Out-Null
     $part = "$dst.part"
     if (Test-Path $part) { Remove-Item $part -Force }
     Write-Host "         downloading $name ..."
@@ -150,7 +103,7 @@ function Download($url, $dst, $expectedSha256) {
 Write-WorkflowStep -Output $WorkflowOutput -Message "target root: $TargetRoot"
 
 Write-WorkflowStep -Output $WorkflowOutput -Message 'create folders'
-foreach ($d in @($TargetNative, $TargetModels)) {
+foreach ($d in @($TargetModels, $TargetParakeet)) {
     if (-not (Test-Path $d)) {
         New-Item -ItemType Directory -Path $d -Force | Out-Null
         Write-WorkflowMessage -Output $WorkflowOutput -Message "created $d"
@@ -159,107 +112,9 @@ foreach ($d in @($TargetNative, $TargetModels)) {
     }
 }
 
-Write-WorkflowStep -Output $WorkflowOutput -Message 'native runtime'
-
-if ($FromRelease) {
-    # The zip is checked against NativeRuntime.CurrentBundle, as the wizard
-    # does. That pins one version, so any other cannot be verified.
-    $bundle = Get-DeckleNativeRuntimeBundle -SourcePath $NativeRuntimeSource
-    if ($FromRelease -ne $bundle.Version) {
-        throw "-FromRelease $FromRelease cannot be verified: the app pins native runtime $($bundle.Version) (NativeRuntime.CurrentBundle)."
-    }
-    $url = "https://github.com/$DeckleRepoSlug/releases/download/native-v$FromRelease/deckle-native-$FromRelease.zip"
-    $tmpZip = Join-Path ([System.IO.Path]::GetTempPath()) "deckle-native-$FromRelease.zip"
-    $NativeSource = "GitHub Release native-v$FromRelease"
-
-    if ($Force -and (Test-Path $tmpZip)) { Remove-Item $tmpZip -Force }
-    Write-WorkflowMessage -Output $WorkflowOutput -Message "url $url"
-    & curl.exe -L --fail --retry 3 --progress-bar -o $tmpZip $url
-    $curlExitCode = $LASTEXITCODE
-    Write-Host ''
-    if ($curlExitCode -ne 0) { throw "curl failed for $url" }
-    Write-WorkflowMessage -Output $WorkflowOutput -Message "downloaded $(Split-Path $tmpZip -Leaf) ($([math]::Round((Get-Item $tmpZip).Length/1MB,1)) MB)"
-
-    # Size and SHA-256 of the whole zip, then each DLL against the zip's own
-    # SHA256SUMS, all before anything is extracted. A bad zip is deleted.
-    try {
-        $null = Assert-DeckleNativeRuntimeArtifact -Bundle $bundle -ArtifactPath $tmpZip
-        Assert-DeckleNativeRuntimeArchive -ArchivePath $tmpZip -DllNames $CatalogDlls
-    } catch {
-        Remove-Item $tmpZip -Force -ErrorAction SilentlyContinue
-        throw "Native runtime bundle refused and deleted: $($_.Exception.Message)"
-    }
-    Write-WorkflowMessage -Output $WorkflowOutput -Message "verified $(Split-Path $tmpZip -Leaf) (SHA-256 matches NativeRuntime.CurrentBundle)"
-
-    # Extract only the catalog entries — same defense-in-depth filter the
-    # C# side applies in NativeRuntime.InstallFromZipAsync.
-    Add-Type -AssemblyName System.IO.Compression.FileSystem | Out-Null
-    $archive = [System.IO.Compression.ZipFile]::OpenRead($tmpZip)
-    try {
-        foreach ($name in $CatalogDlls) {
-            $entry = $archive.Entries | Where-Object { $_.Name -eq $name } | Select-Object -First 1
-            if (-not $entry) {
-                Write-WorkflowMessage -Output $WorkflowOutput -Message "MISSING $name in bundle" -Role Warning
-                continue
-            }
-            $dst = Join-Path $TargetNative $name
-            [System.IO.Compression.ZipFileExtensions]::ExtractToFile($entry, $dst, $true)
-            $size = [math]::Round((Get-Item $dst).Length / 1MB, 1)
-            Write-WorkflowMessage -Output $WorkflowOutput -Message "extract $name ($size MB)"
-        }
-    } finally {
-        $archive.Dispose()
-    }
-    Remove-Item $tmpZip -Force
-    $NativeRuntimeStatus = "Extracted from $NativeSource"
-}
-else {
-    # Without a build tree the native step is skipped with a warning, which
-    # suits a models-only refresh.
-    if ($WhisperRepo)                  { $resolved = $WhisperRepo }
-    elseif ($env:DECKLE_WHISPER_REPO)  { $resolved = $env:DECKLE_WHISPER_REPO }
-    else                               { $resolved = Join-Path (Split-Path $Repo -Parent) 'whisper.cpp' }
-
-    $whisperBin = Join-Path (Join-Path $resolved $WhisperBuildDir) 'bin'
-    if (Test-Path $whisperBin) {
-        # The same resolution the release packager uses: whisper.cpp output
-        # from the build tree, the Visual C++ runtime from the Visual Studio
-        # that compiled it. A MinGW tree or an incomplete build is refused
-        # with its reason rather than copied in part.
-        $build = Get-DeckleNativeRuntimeBuild -WhisperRepo $resolved -BuildDir $WhisperBuildDir
-        $NativeSource = $build.Bin
-        Write-WorkflowMessage -Output $WorkflowOutput -Message "whisper.cpp build : $($build.Bin)"
-        Write-WorkflowMessage -Output $WorkflowOutput -Message "VC++ runtime      : Redist $($build.RedistVersion)"
-        $sources = Resolve-DeckleNativeRuntimeDllSources -Build $build -Catalog $NativeRuntimeCatalog
-        foreach ($name in $CatalogDlls) {
-            CopyIdempotent $sources[$name] (Join-Path $TargetNative $name)
-        }
-        $NativeRuntimeStatus = "Copied from $NativeSource"
-    } else {
-        $NativeSource = $resolved
-        $NativeRuntimeStatus = 'Skipped: no native source found'
-        Write-WorkflowMessage -Output $WorkflowOutput -Message "no native source found" -Role Warning
-        Write-WorkflowMessage -Output $WorkflowOutput -Message "  tried -WhisperRepo, DECKLE_WHISPER_REPO, $resolved" -Role Warning
-        Write-WorkflowMessage -Output $WorkflowOutput -Message "  pass -FromRelease <X.Y.Z> to fetch the published bundle, or" -Role Warning
-        Write-WorkflowMessage -Output $WorkflowOutput -Message "  point -WhisperRepo at your whisper.cpp build tree" -Role Warning
-    }
-}
-
-Write-WorkflowStep -Output $WorkflowOutput -Message 'download Whisper models'
-$baseDst = Join-Path $TargetModels 'ggml-base.bin'
-Download `
-    'https://huggingface.co/ggerganov/whisper.cpp/resolve/main/ggml-base.bin' `
-    $baseDst `
-    $ModelHashes['ggml-base.bin']
-
-if ($WithLarge) {
-    $largeDst = Join-Path $TargetModels 'ggml-large-v3.bin'
-    Download `
-        'https://huggingface.co/ggerganov/whisper.cpp/resolve/main/ggml-large-v3.bin' `
-        $largeDst `
-        $ModelHashes['ggml-large-v3.bin']
-} else {
-    Write-WorkflowMessage -Output $WorkflowOutput -Message 'skipped ggml-large-v3.bin (pass -WithLarge to fetch ~3 GB model)'
+Write-WorkflowStep -Output $WorkflowOutput -Message 'download the Parakeet speech model'
+foreach ($file in $ParakeetFiles) {
+    Download $file.Url (Join-Path $TargetParakeet ($file.Path -replace '/', '\')) $file.Sha256
 }
 
 Write-WorkflowStep -Output $WorkflowOutput -Message 'download Silero VAD'
@@ -268,38 +123,25 @@ Download `
     'https://raw.githubusercontent.com/snakers4/silero-vad/v6.2/src/silero_vad/data/silero_vad.onnx' `
     $vadDst `
     $SileroSha256
-$ModelStatus = if ($WithLarge) { 'Base, large, and Silero VAD present' } else { 'Base and Silero VAD present; large skipped' }
+$ModelStatus = 'Parakeet and Silero VAD present'
 
-$nativeCount = (Get-ChildItem $TargetNative -File -ErrorAction SilentlyContinue | Measure-Object).Count
-$modelCount  = (Get-ChildItem $TargetModels -File -ErrorAction SilentlyContinue | Measure-Object).Count
-$nativeCatalogCount = @($CatalogDlls | Where-Object { Test-Path (Join-Path $TargetNative $_) }).Count
+$parakeetCount = @($ParakeetFiles | Where-Object { Test-Path (Join-Path $TargetParakeet ($_.Path -replace '/', '\')) }).Count
 Write-WorkflowStep -Output $WorkflowOutput -Message 'done'
-Write-Host "         $TargetNative : $nativeCount file(s)"
-Write-Host "         $TargetModels : $modelCount file(s)"
+Write-Host "         $TargetParakeet : $parakeetCount / $($ParakeetFiles.Count) file(s)"
 Write-OutputLine -Segments @()
 Write-OutputLine -Segments @(
     New-OutputSegment -Text 'Next: ' -Role Category
     New-OutputSegment -Text 'scripts\menu.ps1 (Build & run)' -Role Body
 )
 
-$summaryResult = if ($nativeCatalogCount -lt $CatalogDlls.Count) { 'Partial' } else { 'Success' }
-$summarySentence = if ($summaryResult -eq 'Partial') {
-    "Runtime asset setup finished, but the native runtime catalog is incomplete."
-} else {
-    "Runtime assets were set up under $TargetRoot."
-}
-
 Write-ActionSummary `
     -Workflow $Workflow `
-    -Result $summaryResult `
-    -Sentence $summarySentence `
+    -Result Success `
+    -Sentence "Runtime assets were set up under $TargetRoot." `
     -Details ([ordered]@{
-        'Data root'      = $TargetRoot
-        Native          = $NativeRuntimeStatus
-        'Native catalog' = "$nativeCatalogCount / $($CatalogDlls.Count)"
-        'Native files'  = $nativeCount
+        'Data root'     = $TargetRoot
         Models          = $ModelStatus
-        'Model files'   = $modelCount
+        'Parakeet files' = "$parakeetCount / $($ParakeetFiles.Count)"
         Force           = $(if ($Force) { 'Yes' } else { 'No' })
     }) `
     -Next @("Run scripts\menu.ps1 and choose Build & run.")

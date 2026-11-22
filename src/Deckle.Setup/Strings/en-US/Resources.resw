@@ -181,9 +181,6 @@
   <data name="Setup_Step_Location_Label" xml:space="preserve">
     <value>Folders</value>
   </data>
-  <data name="Setup_Step_Transcription_Label" xml:space="preserve">
-    <value>Transcription</value>
-  </data>
   <data name="Setup_Step_Install_Label" xml:space="preserve">
     <value>Install</value>
   </data>
@@ -200,79 +197,27 @@
     <value>Next</value>
   </data>
 
-  <!-- ─── Setup wizard — choices page ────────────────────────────────
-       Step header text is set programmatically by ChoicesPage via
-       SetStepHeader. Cards in XAML use x:Uid for header/description. -->
-  <data name="Setup_StepTitle_Choices" xml:space="preserve">
-    <value>Set up transcription</value>
-  </data>
-  <data name="Setup_StepSubtitle_Choices" xml:space="preserve">
-    <value>Check the speech engine, then choose the speech model transcription runs on.</value>
-  </data>
+  <!-- ─── Setup wizard — footer labels ───────────────────────────────
+       Set programmatically by the pages. -->
   <data name="Setup_NextLabel_Install" xml:space="preserve">
     <value>Install</value>
-  </data>
-  <data name="SetupChoicesInstallLocation.Header" xml:space="preserve">
-    <value>Data folder</value>
-  </data>
-  <data name="SetupChoicesInstallLocation.Description" xml:space="preserve">
-    <value>Models, settings and logs. You can move it later in Settings.</value>
-  </data>
-  <data name="SetupChoicesSpeechRuntime.Header" xml:space="preserve">
-    <value>Speech engine</value>
-  </data>
-  <data name="SetupChoicesSpeechRuntime.Description" xml:space="preserve">
-    <value>The whisper.cpp libraries transcription runs on.</value>
-  </data>
-  <data name="SetupChoicesSpeechModel.Header" xml:space="preserve">
-    <value>Speech model</value>
-  </data>
-  <data name="SetupChoicesSpeechModel.Description" xml:space="preserve">
-    <value>The Whisper model transcription runs on. You can change it later in Settings.</value>
   </data>
   <data name="SetupTotalEstimateBar.Title" xml:space="preserve">
     <value>Download size</value>
   </data>
-  <data name="Setup_Native_Installed" xml:space="preserve">
-    <value>Installed</value>
-  </data>
-  <data name="Setup_Native_Replace" xml:space="preserve">
-    <value>Replace…</value>
-  </data>
-  <data name="Setup_Native_BrowseLocal" xml:space="preserve">
-    <value>Use local copy…</value>
-  </data>
-  <data name="Setup_Native_Missing_Format" xml:space="preserve">
-    <value>Missing files: {0}</value>
-  </data>
-  <data name="Setup_Native_WillDownload_Format" xml:space="preserve">
-    <value>Will be downloaded (~{0})</value>
-  </data>
-  <data name="Setup_Native_ImportFailed_Format" xml:space="preserve">
-    <value>Could not import: {0}</value>
-  </data>
   <!-- ─── Setup wizard — repair ──────────────────────────────────────
        The install step when the running app opened the wizard on its own
-       because the speech engine is missing or does not load. The subtitle
+       because the speech model is missing or incomplete. The subtitle
        is one of the Setup_Repair_* sentences; nothing downloads before the
        Download click. -->
   <data name="Setup_StepTitle_Repair" xml:space="preserve">
-    <value>Download the speech engine</value>
-  </data>
-  <data name="Setup_Repair_Changed" xml:space="preserve">
-    <value>Deckle's speech engine changed version. Download it again to keep using transcription.</value>
-  </data>
-  <data name="Setup_Repair_DoesNotLoad" xml:space="preserve">
-    <value>The speech engine doesn't load on this PC. Download it again to repair transcription.</value>
+    <value>Download the speech model</value>
   </data>
   <data name="Setup_Repair_Missing" xml:space="preserve">
-    <value>Transcription needs its speech engine. Download it to start using transcription.</value>
+    <value>Transcription needs its speech model. Download it to use transcription.</value>
   </data>
   <data name="Setup_NextLabel_Download" xml:space="preserve">
     <value>Download</value>
-  </data>
-  <data name="Setup_Native_DoesNotLoad_Format" xml:space="preserve">
-    <value>Doesn't load here, will be downloaded again. {0}</value>
   </data>
 
   <!-- ─── Setup wizard — installing page ─────────────────────────────
@@ -492,6 +437,9 @@
   </data>
   <data name="Setup_Module_NoDownload" xml:space="preserve">
     <value>No download</value>
+  </data>
+  <data name="Setup_Item_ParakeetModel" xml:space="preserve">
+    <value>Speech model (Parakeet)</value>
   </data>
   <data name="Setup_Item_SileroVad" xml:space="preserve">
     <value>Voice detection model (Silero VAD)</value>

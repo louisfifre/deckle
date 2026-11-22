@@ -7,7 +7,7 @@ using Deckle.Anytype;
 using Deckle.Core;
 using Deckle.Modules;
 using Deckle.Transcription;
-using Deckle.Transcription.Whisper;
+using Deckle.Transcription.Parakeet;
 using Deckle.Vad;
 using Deckle.Localization;
 
@@ -20,7 +20,7 @@ namespace Deckle.Setup;
 // gesture; this plan only composes them.
 public static class InstallPlan
 {
-    public const string NativeRuntimeItemId = "native-runtime";
+    public const string ParakeetModelItemId = "parakeet-model";
     public const string SileroItemId        = "silero-vad";
     public const string AnytypeItemId       = "anytype-cli";
 
@@ -104,10 +104,7 @@ public static class InstallPlan
 
         if (moduleId == ModuleIds.Transcription)
         {
-            items.Add(NativeRuntimeItem());
-            // The wizard host seeds SelectedModel; the guard covers a host
-            // that did not.
-            if (context.SelectedModel is { } model) items.Add(WhisperModelItem(model));
+            items.Add(ParakeetModelItem());
             items.Add(SileroItem());
         }
         else if (moduleId == ModuleIds.Anytype)
@@ -120,25 +117,27 @@ public static class InstallPlan
 
     // ── Transcription ─────────────────────────────────────────────────────────
 
-    // Usable, not merely present: a catalog whose files are all there but do
-    // not load on this machine is reinstalled like a missing one, which is
-    // what brings an install back after the bundle changed version.
-    private static InstallItem NativeRuntimeItem() => new()
-    {
-        Id          = NativeRuntimeItemId,
-        DisplayName = NativeRuntime.CurrentBundle.DisplayName,
-        SizeBytes   = NativeRuntime.CurrentBundle.SizeBytes,
-        IsInstalled = NativeRuntime.IsUsable,
-        RunAsync    = NativeRuntime.ProvisionAsync,
-    };
+    // The folder the engine reads (the configured one, else the default inside
+    // the models directory), so a repair fills the folder the startup gate
+    // checks. Resolved each time an item is asked, so building a plan reads no
+    // settings.
+    internal static string ParakeetModelFolder() =>
+        ParakeetModelFiles.Resolve(
+            TranscriptionSettingsService.Instance.Current.Engine.ParakeetModelDirectory,
+            TranscriptionSettingsService.Instance.ResolveModelsDirectory()).Directory;
 
-    private static InstallItem WhisperModelItem(ModelEntry model) => new()
+    // All the files the default configuration reads, not only the model: a
+    // folder holding the graphs without their weights is reinstalled like an
+    // empty one.
+    internal static InstallItem ParakeetModelItem() => ParakeetModelItem(ParakeetModelFolder);
+
+    internal static InstallItem ParakeetModelItem(Func<string> modelFolder) => new()
     {
-        Id          = model.Id,
-        DisplayName = model.DisplayName,
-        SizeBytes   = model.SizeBytes,
-        IsInstalled = () => SpeechModels.IsInstalled(model),
-        RunAsync    = (progress, ct) => SpeechModels.ProvisionAsync(model, progress, ct),
+        Id          = ParakeetModelItemId,
+        DisplayName = Loc.Get("Setup_Item_ParakeetModel"),
+        SizeBytes   = ParakeetModelCatalog.TotalBytes,
+        IsInstalled = () => ParakeetModelCatalog.IsInstalled(modelFolder()),
+        RunAsync    = (progress, ct) => ParakeetModelCatalog.ProvisionAsync(modelFolder(), progress, ct),
     };
 
     // The Silero model is also lazily fetched by VadService at first use —

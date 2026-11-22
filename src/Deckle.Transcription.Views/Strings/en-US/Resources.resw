@@ -311,10 +311,6 @@
        SetupWindow shell strings: window title, footer buttons. The
        footer buttons reuse Common_* via x:Uid in XAML. -->
 
-  <!-- ─── Setup wizard — choices page ────────────────────────────────
-       Step header text is set programmatically by ChoicesPage via
-       SetStepHeader. Cards in XAML use x:Uid for header/description. -->
-
   <!-- ─── Setup wizard — installing page ─────────────────────────────
        Inline Cancel install button in XAML uses x:Uid. All progress
        and status strings are emitted from C# during the run. -->
