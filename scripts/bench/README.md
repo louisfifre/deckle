@@ -23,7 +23,7 @@ The pass runs `scripts/self-check.ps1` underneath: the built `Deckle.exe` of the
 
 The test audio is the speech clip the repository already ships (`src/Deckle.App/Assets/Sounds/speech.wav`, synthetic, no personal data) repeated six times, about fifteen seconds. `-AudioFile` swaps it; never give it a recording of a person.
 
-The dictation take needs the native runtime and a speech model. The run links the maintainer's `native\` and `models\` folders into its fresh root (the self-check's `-LinkRuntime`, read only in practice) and the engine is composed as the resident boot composes it, so the take uses the speech engine chosen in Settings, Whisper by default, and the largest installed model. On a machine without them the take is reported skipped in the pass's `notes`, and the rest of the pass is still good. `-SkipDictation` leaves it out, and then nothing of the maintainer's is linked.
+The dictation take needs the Parakeet speech model. The run links the maintainer's `models\` folder into its fresh root (the self-check's `-LinkModels`, read only in practice) and the engine is composed as the resident boot composes it. On a machine without the model the take is reported skipped in the pass's `notes`, and the rest of the pass is still good. `-SkipDictation` leaves it out, and then nothing of the maintainer's is linked.
 
 ## Taking a before and after for a fix
 

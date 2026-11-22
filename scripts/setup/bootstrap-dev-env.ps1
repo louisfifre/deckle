@@ -12,20 +12,18 @@
     action: Dev environment / bootstrap | -Yes | danger | Installs tools on this machine with winget and scoop.
 #>
 
-# Left out on purpose: cloning whisper.cpp (its location is a per-dev choice)
-# and pulling Ollama models (the model is a per-deployment choice). With -Full
-# the script prints both commands instead.
+# Left out on purpose: pulling Ollama models (the model is a per-deployment
+# choice). With -Full the script prints the commands instead.
 
 [CmdletBinding()]
 param(
     # Probe + report only. No install, no env var change, no asset download.
     [switch]$DryRun,
 
-    # Include the native recompile toolchain (CMake, Ninja, Vulkan SDK, and
-    # MinGW for the Anytype backend's cgo build) and Ollama. whisper.cpp
-    # itself is built with the MSVC toolset of the Visual Studio install
-    # above. Required to rebuild native DLLs or to use the local LLM rewrite
-    # path. Off by default to keep first setup lean.
+    # Include the native toolchain (CMake for the PortAudio rebuild, MinGW for
+    # the Anytype backend's cgo build) and Ollama. Required to rebuild those
+    # native pieces or to use the local LLM rewrite path. Off by default to
+    # keep first setup lean.
     [switch]$Full,
 
     # Also invoke scripts/setup/setup-assets.ps1 after environment bootstrap.
@@ -36,11 +34,6 @@ param(
     # Deprecated. Runtime assets are skipped unless -IncludeAssets; this switch
     # only cancels -IncludeAssets.
     [switch]$SkipAssets,
-
-    # Release tag passed to setup-assets.ps1 -FromRelease. Pins which
-    # native-vX.Y.Z bundle gets downloaded. Bump this default whenever a
-    # new native-vX.Y.Z release ships on GitHub.
-    [string]$AssetsRelease = '1.9.1',
 
     # Skip the confirmation prompt before installing.
     [switch]$Yes
@@ -159,8 +152,6 @@ $state = [ordered]@{
     Scoop       = Test-Command 'scoop'
     Gcc         = Test-Command 'gcc'
     Cmake       = Test-Command 'cmake'
-    Ninja       = Test-Command 'ninja'
-    VulkanSdk   = if ($env:VULKAN_SDK -and (Test-Path $env:VULKAN_SDK)) { $env:VULKAN_SDK } else { $null }
     Ollama      = Test-Command 'ollama'
     VsCodium    = Test-Command 'codium'
 }
@@ -253,21 +244,11 @@ if ($Full) {
         }
     }
 
-    Add-Plan 'Scoop extras bucket' 'Provides the Vulkan SDK package' {
-        scoop bucket add extras 2>$null
-    }
-
     if (-not $state.Gcc) {
-        Add-Plan 'MinGW (GCC 15.2.0)'  'GCC toolchain for the Anytype backend cgo build (whisper.cpp uses MSVC)' { scoop install mingw }
+        Add-Plan 'MinGW (GCC 15.2.0)'  'GCC toolchain for the Anytype backend cgo build' { scoop install mingw }
     }
     if (-not $state.Cmake) {
-        Add-Plan 'CMake' 'Build system for whisper.cpp' { scoop install cmake }
-    }
-    if (-not $state.Ninja) {
-        Add-Plan 'Ninja' 'Fast generator used by the whisper.cpp CMake preset' { scoop install ninja }
-    }
-    if (-not $state.VulkanSdk) {
-        Add-Plan 'Vulkan SDK (LunarG)' 'Headers + loader for ggml-vulkan.dll' { scoop install vulkan }
+        Add-Plan 'CMake' 'Build system for the PortAudio rebuild' { scoop install cmake }
     }
 
     if (-not $state.Ollama) {
@@ -353,19 +334,6 @@ if ($plan.Count -gt 0) {
     }
 }
 
-Write-Section "Environment variables"
-
-# Scoop's vulkan package does not always set VULKAN_SDK.
-if ($Full -and -not $env:VULKAN_SDK) {
-    $scoopVulkan = "$env:USERPROFILE\scoop\apps\vulkan\current"
-    if (Test-Path $scoopVulkan) {
-        [Environment]::SetEnvironmentVariable('VULKAN_SDK', $scoopVulkan, 'User')
-        Write-Good "VULKAN_SDK = $scoopVulkan (User)"
-    } else {
-        Write-Skip "VULKAN_SDK — scoop vulkan path not found; set manually if you installed elsewhere"
-    }
-}
-
 if ($IncludeAssets -and -not $SkipAssets) {
     Write-Section "Runtime assets"
     $setup = Join-Path $ScriptDir 'setup-assets.ps1'
@@ -391,8 +359,6 @@ $finalState = [ordered]@{
     Scoop     = Test-Command 'scoop'
     Gcc       = Test-Command 'gcc'
     Cmake     = Test-Command 'cmake'
-    Ninja     = Test-Command 'ninja'
-    VulkanSdk = if ($env:VULKAN_SDK -and (Test-Path $env:VULKAN_SDK)) { $env:VULKAN_SDK } else { $null }
     Ollama    = Test-Command 'ollama'
 }
 
@@ -428,8 +394,8 @@ if ($plan.Count -gt 0) {
 
 Write-Section "Next steps"
 
-Write-Host "  1. Open a new PowerShell terminal so VULKAN_SDK and any" -ForegroundColor White
-Write-Host "     freshly-installed tool become visible." -ForegroundColor White
+Write-Host "  1. Open a new PowerShell terminal so any freshly-installed" -ForegroundColor White
+Write-Host "     tool becomes visible." -ForegroundColor White
 Write-Host ""
 Write-Host "  2. Verify nothing is missing:" -ForegroundColor White
 Write-Host "       scripts\setup\bootstrap-dev-env.ps1 -DryRun" -ForegroundColor DarkGray
@@ -441,13 +407,7 @@ Write-Host "       scripts\menu.ps1" -ForegroundColor DarkGray
 
 if ($Full) {
     Write-Host ""
-    Write-Host "  4. (-Full only) Clone whisper.cpp for native rebuilds:" -ForegroundColor White
-    $repoRoot = Split-Path -Parent (Split-Path -Parent $ScriptDir)
-    $whisperRepo = [IO.Path]::GetFullPath((Join-Path $repoRoot '..\whisper.cpp'))
-    Write-Host "       git clone https://github.com/ggerganov/whisper.cpp `"$whisperRepo`"" -ForegroundColor DarkGray
-    Write-Host "     Then build whisper.cpp with Vulkan before publishing a native bundle." -ForegroundColor DarkGray
-    Write-Host ""
-    Write-Host "  5. (-Full only) Pull an Ollama model for the rewrite feature:" -ForegroundColor White
+    Write-Host "  4. (-Full only) Pull an Ollama model for the rewrite feature:" -ForegroundColor White
     Write-Host "       ollama pull llama3.2:3b      # ~2 GB, fast on CPU-only laptops" -ForegroundColor DarkGray
     Write-Host "       ollama pull phi3:mini        # ~2 GB, comparable" -ForegroundColor DarkGray
 }

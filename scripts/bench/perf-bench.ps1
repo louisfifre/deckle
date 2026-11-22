@@ -124,7 +124,7 @@ $arguments = @{
     KeepData      = $true
     TimeoutSeconds = $TimeoutSeconds
 }
-if ($audioPath) { $arguments.LinkRuntime = $true; $env:DECKLE_BENCH_DICTATION = $audioPath }
+if ($audioPath) { $arguments.LinkModels = $true; $env:DECKLE_BENCH_DICTATION = $audioPath }
 if ($Only) { $arguments.Only = $Only }
 
 Write-Host "perf-bench: $Configuration pass of $RepoRoot"

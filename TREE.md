@@ -219,8 +219,6 @@ _Generated from `git ls-files` — do not edit by hand._
 │   │   ├── download-integrity.psm1
 │   │   ├── manifest.ps1
 │   │   ├── native-console.ps1
-│   │   ├── native-runtime-release.psm1
-│   │   ├── pe-imports.psm1
 │   │   ├── release-validation.psm1
 │   │   ├── repository-inventory.psm1
 │   │   ├── resource-inventory.psm1
@@ -231,7 +229,6 @@ _Generated from `git ls-files` — do not edit by hand._
 │   │   └── version.ps1
 │   ├── maintenance/
 │   │   ├── apply-anytype-schema.ps1  — Apply a schema manifest or a space plan to an Anytype space, or read a space into a plan With -Plan, builds a whole space from one plan file, in creation order: propert…
-│   │   ├── clean-native.ps1  — Clean the native folder Brings the whisper.cpp native folder under the user data root back to the curre…
 │   │   ├── clean.ps1  — Clean build outputs Removes the build output folders of every language present in the repository, e…
 │   │   ├── README.md  — Maintenance Previews and cleanups of the build outputs, the machine's .NET build servers an…
 │   │   ├── reset-agent-state.ps1  — Inspect or reset local AI sessions Builds a cleanup plan for the local Claude Code session data of the current acc…
@@ -242,8 +239,7 @@ _Generated from `git ls-files` — do not edit by hand._
 │   ├── release/
 │   │   ├── build-anytype-backend.ps1  — Build the Anytype backend Rebuilds one anytype-cli release tag from source for Windows with the tantivy-g…
 │   │   ├── publish-app.ps1  — Prepare or publish the app release Builds the two artifacts a Deckle GitHub Release carries: the installer stub an…
-│   │   ├── publish-native-runtime.ps1  — Prepare or publish the native runtime Packages a versioned zip of the native DLLs that Deckle's first-run wizard down…
-│   │   └── README.md  — Release Prepare and publish the app and the native runtime.
+│   │   └── README.md  — Release Prepare and publish the app.
 │   ├── settings/
 │   │   ├── check-scripts.ps1  — Check scripts Reads every script the menu could offer and reports the ones it would hide or t…
 │   │   ├── README.md  — Settings The launcher's own folder, installed with it: its update and its script check.
@@ -271,7 +267,6 @@ _Generated from `git ls-files` — do not edit by hand._
 │   │   │   ├── inspect-context.tests.ps1
 │   │   │   ├── InspectContextBugNotes.md
 │   │   │   ├── perf-compare.tests.ps1
-│   │   │   ├── publish-native-runtime.tests.ps1
 │   │   │   └── read-log.tests.ps1
 │   │   └── lib/
 │   │       ├── agent-skills-layout.tests.ps1
@@ -279,9 +274,6 @@ _Generated from `git ls-files` — do not edit by hand._
 │   │       ├── context-inventory.tests.ps1
 │   │       ├── deckle-process.tests.ps1
 │   │       ├── download-integrity.tests.ps1
-│   │       ├── native-runtime-release.tests.ps1
-│   │       ├── pe-fixture.ps1
-│   │       ├── pe-imports.tests.ps1
 │   │       ├── release-validation.tests.ps1
 │   │       ├── repository-inventory.tests.ps1
 │   │       ├── resource-inventory.tests.ps1
