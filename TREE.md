@@ -2408,6 +2408,7 @@ _Generated from `git ls-files` — do not edit by hand._
 │   │   │   └── LongAudioChunker.cs
 │   │   ├── Decoding/
 │   │   │   ├── ITdtJoint.cs
+│   │   │   ├── LexiconBoostTree.cs
 │   │   │   ├── TdtGreedyDecoder.cs
 │   │   │   └── TdtToken.cs
 │   │   ├── Inference/
@@ -2428,6 +2429,7 @@ _Generated from `git ls-files` — do not edit by hand._
 │   │   ├── Deckle.Transcription.Parakeet.csproj
 │   │   ├── DeckleParakeetSource.cs
 │   │   ├── ParakeetBackend.cs
+│   │   ├── ParakeetBackend.Lexicon.cs
 │   │   ├── ParakeetBackend.Model.cs
 │   │   ├── ParakeetBackend.Transcribe.cs
 │   │   └── ParakeetModelFiles.cs
@@ -3399,6 +3401,8 @@ _Generated from `git ls-files` — do not edit by hand._
 │   │   ├── Chunking/
 │   │   │   └── LongAudioChunkerTests.cs
 │   │   ├── Decoding/
+│   │   │   ├── LexiconBoostTreeTests.cs
+│   │   │   ├── TdtGreedyDecoderBoostTests.cs
 │   │   │   └── TdtGreedyDecoderTests.cs
 │   │   ├── Segments/
 │   │   │   └── SegmentBuilderTests.cs
