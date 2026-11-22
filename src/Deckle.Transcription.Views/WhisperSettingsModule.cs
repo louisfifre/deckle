@@ -8,11 +8,11 @@ namespace Deckle.Transcription.Views;
 // declares its pages, their icons and their label keys here; the composition root
 // supplies only the Order. Registered from App.OnLaunched via SettingsModuleRegistry.
 //
-// Three pages, one module: the module's own page, which the rail shows as
+// Four pages, one module: the module's own page, which the rail shows as
 // General under the Transcription node (overlay, model and engine,
-// diagnostics, the restart footer), then Decoding (the Whisper parameters that
-// apply in both pipelines) and Streaming (the pipeline switch, speech
-// filtering, segmentation) nested under it.
+// diagnostics, the restart footer), then Lexicon (the person's own words),
+// Decoding (the Whisper parameters that apply in both pipelines) and Streaming
+// (the pipeline switch, speech filtering, segmentation) nested under it.
 public static class WhisperSettingsModule
 {
     // The PRI subtree of the nav labels and the search entries: the pages'
@@ -22,10 +22,17 @@ public static class WhisperSettingsModule
     // The shell resolves these with Type.GetType, so they name the assembly
     // that compiles the pages.
     public const string PageTag = "Deckle.Transcription.Views.WhisperPage, Deckle.Transcription.Views";
-    public const string DecodingPageTag = "Deckle.Transcription.Views.DecodingPage, Deckle.Transcription.Views";
+    public const string LexiconPageTag = "Deckle.Transcription.Views.LexiconPage, Deckle.Transcription.Views";
+    public const string DecodingPageTag ="Deckle.Transcription.Views.DecodingPage, Deckle.Transcription.Views";
     public const string StreamingPageTag = "Deckle.Transcription.Views.StreamingPage, Deckle.Transcription.Views";
 
     private const string ModuleId = "whisp";
+
+    // Whether the autocorrect module is present, so the Lexicon page says what
+    // the autocorrect does with the list. That module is one this one does not
+    // reference; the App, which knows both, sets it. Unset, the page says
+    // nothing about the autocorrect.
+    public static bool AutocorrectPresent { get; set; }
 
     public static SettingsModuleDescriptor Describe(int order) => new()
     {
@@ -39,6 +46,17 @@ public static class WhisperSettingsModule
     // The children carry a Glyph like any module because the search index shows one
     // beside a hit; the rail renders them without it (the node's icon names the
     // module, indentation names the rest).
+    public static SettingsModuleDescriptor DescribeLexicon(int order) => new()
+    {
+        Id = "whisp-lexicon",
+        ParentId = ModuleId,
+        PageTag = LexiconPageTag,
+        OwningAssembly = ResourceLibrary,
+        LabelKey = "SettingsModuleNavLabel_Lexicon",
+        Glyph = Glyphs.Speech,
+        Order = order,
+    };
+
     public static SettingsModuleDescriptor DescribeDecoding(int order) => new()
     {
         Id = "whisp-decoding",

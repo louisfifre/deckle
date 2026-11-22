@@ -317,9 +317,9 @@ public partial class App
                 await CaptureDiagnosticsOpenAsync(report, settings, outputFolder, captures);
             }
 
-            // The Transcription page again under Parakeet, with sample lexicon
-            // terms (App.SelfCheck.Transcription.cs).
-            if (onlyPage is null or "whisper")
+            // The Transcription and Lexicon pages again under Parakeet, with
+            // sample lexicon terms (App.SelfCheck.Transcription.cs).
+            if (onlyPage is null or "whisper" or "lexicon")
             {
                 Step("settings/whisper-parakeet");
                 await CaptureTranscriptionParakeetAsync(report, settings, outputFolder, captures);
