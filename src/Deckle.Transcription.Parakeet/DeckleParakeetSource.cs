@@ -32,6 +32,7 @@ public sealed class DeckleParakeetSource : DeckleEventSource
     public const int EvtSegmentCallbackRecovered   = 12;
     public const int EvtTranscribeSummary          = 13;
     public const int EvtChunkDecoded               = 14;
+    public const int EvtLexiconUnavailable         = 15;
 
     // ── Model load ──────────────────────────────────────────────────────
 
@@ -185,19 +186,33 @@ public sealed class DeckleParakeetSource : DeckleEventSource
     // The one record every call leaves, kept by the always-on log. encode_ms is the
     // mel front end plus the encoder, decode_ms the transducer loop, summed over
     // the chunks; aborted says the call stopped on cancellation, chunks_done how
-    // many of the chunks it had were finished.
+    // many of the chunks it had were finished. boosted_tokens counts the tokens the
+    // lexicon made the decoder pick over the model's own first choice.
     [Event(EvtTranscribeSummary,
            Level = EventLevel.Informational,
            Keywords = (EventKeywords)Keywords.Pipeline,
            Tags = ObservationTags.Summary,
+           Version = 1,
            Message = "Parakeet transcribed the audio")]
     public void TranscribeSummary(
         double audio_s, int chunks, int chunks_done, int frames, int tokens, int segments,
-        long encode_ms, long decode_ms, bool aborted)
+        long encode_ms, long decode_ms, bool aborted, int boosted_tokens)
     {
         if (IsEnabled())
             WriteEvent(EvtTranscribeSummary, audio_s, chunks, chunks_done, frames, tokens, segments,
-                encode_ms, decode_ms, aborted);
+                encode_ms, decode_ms, aborted, boosted_tokens);
+    }
+
+    // The lexicon could not be prepared: this call decodes without it, as if the
+    // list were empty, and the next call tries again. Only the exception type and
+    // message: the terms are the person's own words.
+    [Event(EvtLexiconUnavailable,
+           Level = EventLevel.Warning,
+           Keywords = (EventKeywords)Keywords.Pipeline,
+           Message = "The dictation lexicon could not be prepared, this take runs without it\nex_type={0} | ex_message={1}")]
+    public void LexiconUnavailable(string ex_type, string ex_message)
+    {
+        if (IsEnabled()) WriteEvent(EvtLexiconUnavailable, ex_type, PathRedaction.Redact(ex_message));
     }
 
     // A table row: one per chunk, so the chunks of a long take compare column by

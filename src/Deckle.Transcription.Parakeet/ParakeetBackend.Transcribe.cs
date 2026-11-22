@@ -63,9 +63,12 @@ public sealed partial class ParakeetBackend
         double timelineOffsetSec = context?.TimelineOffsetSec ?? 0;
         double audioSec = (double)pcmSamples.Length / LongAudioChunker.SampleRate;
         bool detail = DetailEnabled();
+        var totalSw = Stopwatch.StartNew();
+        LexiconSnapshot? lexicon = TryResolveLexicon(model);
 
         // A standalone call and the first utterance of a streaming take log the configuration;
-        // the rest skip it, since it is identical across the take.
+        // the rest skip it, since it is identical across the take. The lexicon appears as counts
+        // only: its terms are the person's own words.
         if (context?.EmitPreamble ?? true)
         {
             DeckleWhispSource.Log.TranscribeStarted();
@@ -74,16 +77,16 @@ public sealed partial class ParakeetBackend
                 DeckleWhispSource.Log.TranscribeStartDetail(audioSec, pcmSamples.Length, "greedy_tdt");
                 DeckleWhispSource.Log.TranscribeParams(
                     $"engine=parakeet | accelerator={model.Accelerator} | max_tokens_per_step={TdtGreedyDecoder.DefaultMaxTokensPerStep}" +
-                    $" | chunk_max_s={LongAudioChunker.MaxChunkSamples / LongAudioChunker.SampleRate}");
+                    $" | chunk_max_s={LongAudioChunker.MaxChunkSamples / LongAudioChunker.SampleRate}" +
+                    $" | lexicon_terms={lexicon?.Terms.Count ?? 0} | boost={(lexicon?.Boost is { } b ? $"{lexicon.Strength:0.##}x{b.TermCount}" : "off")}");
             }
         }
 
-        var totalSw = Stopwatch.StartNew();
         var segments = new List<TranscriptionSegment>();
-        var decoder = new TdtGreedyDecoder(model.Joint, model.Vocabulary.BlankId);
+        var decoder = new TdtGreedyDecoder(model.Joint, model.Vocabulary.BlankId, boost: lexicon?.Boost);
         IReadOnlyList<AudioChunk> chunks = LongAudioChunker.Split(pcmSamples.Span);
 
-        int chunksDone = 0, totalFrames = 0, totalTokens = 0, sinkFailures = 0;
+        int chunksDone = 0, totalFrames = 0, totalTokens = 0, boostedTokens = 0, sinkFailures = 0;
         long encodeMs = 0, decodeMs = 0;
         bool aborted = false;
         string step = "encode";
@@ -131,8 +134,9 @@ public sealed partial class ParakeetBackend
 
                 // The chunk's offset in centiseconds, so segments of a long take share one timeline.
                 long offsetCs = (long)chunk.Offset * 100 / LongAudioChunker.SampleRate;
-                foreach (TranscriptionSegment segment in SegmentBuilder.Build(decoded, offsetCs))
+                foreach (TranscriptionSegment built in SegmentBuilder.Build(decoded, offsetCs))
                 {
+                    TranscriptionSegment segment = lexicon is null ? built : built with { Text = lexicon.Recaser.Apply(built.Text) };
                     segments.Add(segment);
                     DeliverSegment(segment, segmentSink, ref sinkFailures);
                     if (detail) LogSegment(segments.Count, segment, timelineOffsetSec);
@@ -140,6 +144,7 @@ public sealed partial class ParakeetBackend
 
                 totalFrames += frames.Count;
                 totalTokens += tokens.Count;
+                boostedTokens += decoder.BoostedTokens;
                 chunksDone++;
                 DeckleParakeetSource.Log.ChunkDecoded(
                     c + 1, chunks.Count, (double)chunk.Offset / LongAudioChunker.SampleRate,
@@ -175,7 +180,7 @@ public sealed partial class ParakeetBackend
             audioSec,
             aborted);
         DeckleParakeetSource.Log.TranscribeSummary(
-            audioSec, chunks.Count, chunksDone, totalFrames, totalTokens, segments.Count, encodeMs, decodeMs, aborted);
+            audioSec, chunks.Count, chunksDone, totalFrames, totalTokens, segments.Count, encodeMs, decodeMs, aborted, boostedTokens);
 
         return new TranscriptionResult(segments, fullText, totalMs, 0, aborted, 0);
     }

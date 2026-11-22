@@ -57,6 +57,15 @@ public static class SettingsSearch
                         "model", "folder", "encoder", "precision", "fp16", "fp32"],
         },
 
+        // "Lexicon" — the fold of the person's words (the boost switch and its
+        // strength ride under it).
+        new SettingSearchEntry
+        {
+            LabelKey = "WhisperLexiconFold",
+            Keywords = ["vocabulary", "words", "names", "proper nouns", "dictionary",
+                        "capital", "case", "boost", "bias", "hotwords"],
+        },
+
         // Language selector (bespoke — editable ComboBox, Tag'd in the XAML).
         new SettingSearchEntry
         {

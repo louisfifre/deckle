@@ -151,6 +151,7 @@ public sealed partial class WhisperPage : Page
         _behaviourComposer = behaviourComposer;
 
         ComposeRegion(SpeechEngineHost, ViewModel.SpeechEngineSettings);
+        ComposeRegion(LexiconHost, ViewModel.LexiconSettingsManifest);
         ComposeRegion(UseGpuHost, ViewModel.UseGpuSettingsManifest);
         ComposeRegion(ModelsDirectoryHost, ViewModel.ModelsDirectorySettingsManifest);
         // The decoding and streaming manifests compose on DecodingPage and

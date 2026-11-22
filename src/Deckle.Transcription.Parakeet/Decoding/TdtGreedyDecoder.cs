@@ -15,8 +15,14 @@ internal sealed class TdtGreedyDecoder
     private readonly ITdtJoint _joint;
     private readonly int _blankId;
     private readonly int _maxTokensPerStep;
+    private readonly LexiconBoostTree? _boost;
 
-    public TdtGreedyDecoder(ITdtJoint joint, int blankId, int maxTokensPerStep = DefaultMaxTokensPerStep)
+    /// <param name="boost">
+    /// The lexicon to favor, or null to decode exactly as the reference does. The boost only chooses
+    /// among tokens once the model has decided to emit one: when the blank wins, nothing is emitted,
+    /// so a term can replace a word the model heard but never appear in a silence.
+    /// </param>
+    public TdtGreedyDecoder(ITdtJoint joint, int blankId, int maxTokensPerStep = DefaultMaxTokensPerStep, LexiconBoostTree? boost = null)
     {
         ArgumentNullException.ThrowIfNull(joint);
         ArgumentOutOfRangeException.ThrowIfNegative(blankId);
@@ -24,7 +30,11 @@ internal sealed class TdtGreedyDecoder
         _joint = joint;
         _blankId = blankId;
         _maxTokensPerStep = maxTokensPerStep;
+        _boost = boost;
     }
+
+    /// <summary>How many emitted tokens the boost changed during the last <see cref="Decode"/> call.</summary>
+    public int BoostedTokens { get; private set; }
 
     /// <summary>Decodes the frames in order and returns the emitted tokens with their frame and confidence.</summary>
     /// <exception cref="OperationCanceledException">Raised between two joint steps.</exception>
@@ -37,6 +47,8 @@ internal sealed class TdtGreedyDecoder
         int lastToken = _blankId;
         int t = 0;
         int emittedAtFrame = 0;
+        int boostState = LexiconBoostTree.Root;
+        BoostedTokens = 0;
 
         while (t < frames.Count)
         {
@@ -45,6 +57,14 @@ internal sealed class TdtGreedyDecoder
             TdtJointOutput output = _joint.Step(frames[t], lastToken, committed);
             int token = ArgMax(output.TokenLogits);
             int step = ArgMax(output.DurationLogits);
+
+            if (token != _blankId && _boost is not null)
+            {
+                int boosted = BoostedArgMax(output.TokenLogits, token, boostState);
+                if (boosted != token) BoostedTokens++;
+                token = boosted;
+                boostState = _boost.Advance(boostState, token);
+            }
 
             if (token != _blankId)
             {
@@ -69,6 +89,41 @@ internal sealed class TdtGreedyDecoder
         }
 
         return tokens;
+    }
+
+    /// <summary>
+    /// The token with the best logit once the lexicon bonuses are added, starting from the model's own
+    /// choice. The bonuses come from the current match and from the root, since a match in progress
+    /// may be the wrong one; a token in both takes the larger. The blank is never a candidate here.
+    /// </summary>
+    private int BoostedArgMax(float[] logits, int modelChoice, int boostState)
+    {
+        int best = modelChoice;
+        float bestScore = logits[modelChoice] + BonusOf(modelChoice, boostState);
+
+        Consider(_boost!.From(boostState));
+        if (boostState != LexiconBoostTree.Root) Consider(_boost.From(LexiconBoostTree.Root));
+        return best;
+
+        void Consider(ReadOnlySpan<LexiconBoostTree.Transition> steps)
+        {
+            foreach (LexiconBoostTree.Transition s in steps)
+            {
+                if (s.Token == _blankId || (uint)s.Token >= (uint)logits.Length) continue;
+                float score = logits[s.Token] + BonusOf(s.Token, boostState);
+                if (score > bestScore)
+                {
+                    bestScore = score;
+                    best = s.Token;
+                }
+            }
+        }
+    }
+
+    private float BonusOf(int token, int boostState)
+    {
+        float bonus = _boost!.BonusOf(boostState, token);
+        return boostState == LexiconBoostTree.Root ? bonus : Math.Max(bonus, _boost.BonusOf(LexiconBoostTree.Root, token));
     }
 
     /// <summary>First index of the maximum, like numpy's argmax.</summary>

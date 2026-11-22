@@ -413,6 +413,33 @@
   <data name="WhisperInitialPromptBox.PlaceholderText" xml:space="preserve">
     <value>Je parle en français, je dis parfois des mots anglais. Claude, pas cloud.</value>
   </data>
+  <data name="WhisperLexiconFold.Header" xml:space="preserve">
+    <value>Lexicon</value>
+  </data>
+  <data name="WhisperLexiconFold.Description" xml:space="preserve">
+    <value>Your own words and names, so dictation hears them and writes them the way you do. Autocorrect never corrects them away.</value>
+  </data>
+  <data name="WhisperLexiconTermsCard.Header" xml:space="preserve">
+    <value>Words</value>
+  </data>
+  <data name="WhisperLexiconTermsCard.Description" xml:space="preserve">
+    <value>One word or name per line, with its capitals. Names that autocorrect learned from your typing are added on their own.</value>
+  </data>
+  <data name="WhisperLexiconTermsBox.PlaceholderText" xml:space="preserve">
+    <value>Deckle</value>
+  </data>
+  <data name="WhisperLexiconBoostCard.Header" xml:space="preserve">
+    <value>Favor these words when listening</value>
+  </data>
+  <data name="WhisperLexiconBoostCard.Description" xml:space="preserve">
+    <value>When a word sounds close to one of yours, dictation picks yours. Off, dictation only fixes their capitals.</value>
+  </data>
+  <data name="WhisperLexiconStrengthCard.Header" xml:space="preserve">
+    <value>Strength</value>
+  </data>
+  <data name="WhisperLexiconStrengthCard.Description" xml:space="preserve">
+    <value>Higher finds your words more often, but can write one where you said something else.</value>
+  </data>
   <data name="WhisperUseGpuCard.Header" xml:space="preserve">
     <value>GPU acceleration</value>
   </data>

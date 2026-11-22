@@ -524,6 +524,7 @@ _Generated from `git ls-files` — do not edit by hand._
 │   │   ├── App.Input.cs
 │   │   ├── App.Install.cs
 │   │   ├── App.InterfaceCapture.cs
+│   │   ├── App.Lexicon.cs
 │   │   ├── App.Lifetime.cs
 │   │   ├── app.manifest
 │   │   ├── App.Orchestration.cs
@@ -710,6 +711,7 @@ _Generated from `git ls-files` — do not edit by hand._
 │   │   │   ├── MistouchFamilyStore.cs
 │   │   │   ├── PersonalDictionary.cs
 │   │   │   ├── PersonalDictionaryData.cs
+│   │   │   ├── PersonalLexiconWithTerms.cs
 │   │   │   ├── PersonalWordAdmission.cs
 │   │   │   └── SurfaceProfileStore.cs
 │   │   ├── Lexicon/
@@ -2363,6 +2365,9 @@ _Generated from `git ls-files` — do not edit by hand._
 │   │   │   ├── TranscriptionEngine.Take.cs
 │   │   │   ├── TranscriptionEngine.TakeAudio.cs
 │   │   │   └── TranscriptionEngine.Utterances.cs
+│   │   ├── Lexicon/
+│   │   │   ├── LexiconRecaser.cs
+│   │   │   └── LexiconTerms.cs
 │   │   ├── Recovery/
 │   │   │   ├── DictationRecoveryStore.cs
 │   │   │   ├── TakeAudioRecorder.cs
@@ -2405,6 +2410,7 @@ _Generated from `git ls-files` — do not edit by hand._
 │   │   │   └── LongAudioChunker.cs
 │   │   ├── Decoding/
 │   │   │   ├── ITdtJoint.cs
+│   │   │   ├── LexiconBoostTree.cs
 │   │   │   ├── TdtGreedyDecoder.cs
 │   │   │   └── TdtToken.cs
 │   │   ├── Inference/
@@ -2425,6 +2431,7 @@ _Generated from `git ls-files` — do not edit by hand._
 │   │   ├── Deckle.Transcription.Parakeet.csproj
 │   │   ├── DeckleParakeetSource.cs
 │   │   ├── ParakeetBackend.cs
+│   │   ├── ParakeetBackend.Lexicon.cs
 │   │   ├── ParakeetBackend.Model.cs
 │   │   ├── ParakeetBackend.Transcribe.cs
 │   │   └── ParakeetModelFiles.cs
@@ -2437,6 +2444,7 @@ _Generated from `git ls-files` — do not edit by hand._
 │   │   │   ├── WhisperViewModel.cs
 │   │   │   ├── WhisperViewModel.DictationExperience.cs
 │   │   │   ├── WhisperViewModel.Engine.cs
+│   │   │   ├── WhisperViewModel.Lexicon.cs
 │   │   │   ├── WhisperViewModel.Settings.cs
 │   │   │   ├── WhisperViewModel.SpeechEngine.cs
 │   │   │   └── WhisperViewModel.Streaming.cs
@@ -2731,6 +2739,7 @@ _Generated from `git ls-files` — do not edit by hand._
 │   │   ├── MorphalouReaderTests.cs
 │   │   ├── PairModelTrainerTests.cs
 │   │   ├── PersonalDictionaryTests.cs
+│   │   ├── PersonalLexiconWithTermsTests.cs
 │   │   ├── PersonalWordAdmissionTests.cs
 │   │   ├── RestorationEvaluatorTests.cs
 │   │   ├── SimulatedTextSurface.cs
@@ -3390,12 +3399,16 @@ _Generated from `git ls-files` — do not edit by hand._
 │   ├── Deckle.Transcription.Parakeet.Tests/
 │   │   ├── Backend/
 │   │   │   ├── ParakeetBackendFakes.cs
+│   │   │   ├── ParakeetBackendLexiconTests.cs
 │   │   │   ├── ParakeetBackendObservabilityTests.cs
 │   │   │   ├── ParakeetBackendSystemTests.cs
-│   │   │   └── ParakeetBackendTests.cs
+│   │   │   ├── ParakeetBackendTests.cs
+│   │   │   └── ParakeetLexiconSystemTests.cs
 │   │   ├── Chunking/
 │   │   │   └── LongAudioChunkerTests.cs
 │   │   ├── Decoding/
+│   │   │   ├── LexiconBoostTreeTests.cs
+│   │   │   ├── TdtGreedyDecoderBoostTests.cs
 │   │   │   └── TdtGreedyDecoderTests.cs
 │   │   ├── Segments/
 │   │   │   └── SegmentBuilderTests.cs
@@ -3405,6 +3418,9 @@ _Generated from `git ls-files` — do not edit by hand._
 │   │   ├── Deckle.Transcription.Parakeet.Tests.csproj
 │   │   └── ParakeetModelFilesTests.cs
 │   ├── Deckle.Transcription.Tests/
+│   │   ├── Lexicon/
+│   │   │   ├── LexiconRecaserTests.cs
+│   │   │   └── LexiconTermsTests.cs
 │   │   ├── CorpusRecordSkippedTests.cs
 │   │   ├── Deckle.Transcription.Tests.csproj
 │   │   ├── DeckleLlmSourceTests.cs

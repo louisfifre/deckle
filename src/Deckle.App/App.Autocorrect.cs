@@ -84,6 +84,11 @@ public partial class App
             var mistouchFamilies = MistouchFamilyStore.Load(Path.Combine(
                 AppPaths.GetModuleDirectory("autocorrect"), MistouchFamilyStore.FileName));
 
+            // The correctors see the dictionary plus the dictation lexicon, so a
+            // word the person declared for dictation is never corrected away
+            // when typed, and a typo can be corrected to it.
+            var personal = new PersonalLexiconWithTerms(dictionary, DeclaredLexiconTerms);
+
             // One shared production composition: the same policy order and
             // optional lexical knowledge are exercised by the quality tests.
             AutocorrectPolicySet policies = AutocorrectPolicySet.Create(
@@ -91,8 +96,8 @@ public partial class App
                 english,
                 index,
                 context,
-                dictionary,
-                BuildAutocorrectPersonalVariants(dictionary));
+                personal,
+                BuildAutocorrectPersonalVariants(personal));
 
             engine = new AutocorrectEngine(
                 host: host,
@@ -196,12 +201,12 @@ public partial class App
     // The personal counterpart of the accent index. Rebuilt per lookup because
     // adoption shifts with the decay clock, not only with mutations.
     private static Func<string, IReadOnlyList<AccentVariant>> BuildAutocorrectPersonalVariants(
-        PersonalDictionary dictionary)
+        IPersonalLexicon personal)
     {
         return key =>
         {
             List<AccentVariant>? match = null;
-            foreach (string word in dictionary.AdoptedWords)
+            foreach (string word in personal.AdoptedWords)
             {
                 if (AccentFolding.Fold(word) != key)
                     continue;
