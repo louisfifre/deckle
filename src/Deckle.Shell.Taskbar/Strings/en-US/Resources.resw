@@ -88,7 +88,7 @@
     <value>Custom taskbar thickness</value>
   </data>
   <data name="TaskbarPage_BarThicknessCard.Description" xml:space="preserve">
-    <value>Makes the taskbar thinner or thicker, on any edge of the screen. Maximized windows stay against it.</value>
+    <value>Makes the taskbar thinner or thicker, on any edge of the screen. Maximized windows stay against it. The first time, for each version of Windows, this downloads Microsoft's public symbols.</value>
   </data>
   <data name="TaskbarPage_BarThicknessValueCard.Header" xml:space="preserve">
     <value>Thickness</value>
@@ -118,7 +118,7 @@
     <value>Larger thumbnails</value>
   </data>
   <data name="TaskbarPage_LargerThumbnailsCard.Description" xml:space="preserve">
-    <value>Enlarges the window previews that appear when you point at an app on the taskbar. Each preview keeps the shape of its window and grows until it reaches the largest width or the largest height below, whichever comes first.</value>
+    <value>Enlarges the window previews that appear when you point at an app on the taskbar. Each preview keeps the shape of its window and grows until it reaches the largest width or the largest height below, whichever comes first. The first time, for each version of Windows, this downloads Microsoft's public symbols.</value>
   </data>
   <data name="TaskbarPage_ThumbnailMaxWidthCard.Header" xml:space="preserve">
     <value>Largest width</value>
@@ -191,6 +191,9 @@
   </data>
   <data name="TaskbarPage_ProblemError" xml:space="preserve">
     <value>Deckle could not apply this.</value>
+  </data>
+  <data name="TaskbarPage_ProblemNeedsDownload" xml:space="preserve">
+    <value>This needs a one-time download of Microsoft's public symbols for this version of Windows. Connect to the internet and try again in a few minutes.</value>
   </data>
   <data name="TaskbarPageTraySection.Title" xml:space="preserve">
     <value>System tray</value>

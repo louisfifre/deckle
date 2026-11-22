@@ -11,4 +11,7 @@ public enum TaskbarProblem
 
     /// <summary>The engine could not apply the part, or could not be started at all.</summary>
     Error,
+
+    /// <summary>Microsoft's public symbols, needed once per Windows build, could not be downloaded.</summary>
+    NeedsDownload,
 }

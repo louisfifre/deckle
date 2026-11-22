@@ -160,6 +160,7 @@ public sealed class TaskbarCustomizer : IAsyncDisposable
         {
             patch.Lookup = lookup.Function is not null ? null
                 : lookup.FunctionGone ? TaskbarProblem.NotApplied
+                : lookup.DownloadFailed ? TaskbarProblem.NeedsDownload
                 : TaskbarProblem.Error;
         }
         return lookup.Function;
@@ -347,6 +348,7 @@ public sealed class TaskbarCustomizer : IAsyncDisposable
     {
         TaskbarProblem.NotApplied => "not_applied",
         TaskbarProblem.Contested => "contested",
+        TaskbarProblem.NeedsDownload => "needs_download",
         _ => "error",
     };
 
