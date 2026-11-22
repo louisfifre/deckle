@@ -72,3 +72,9 @@ scripts/lib/hooks/commit-msg text eol=lf
 # (`git config merge.ours.driver true`), done by scripts/setup/install-hooks.ps1.
 TREE.md merge=ours
 *.onnx binary
+
+# ── GitHub language statistics ─────────────────────────────────────────────
+# The logo's generator and the contact sheet it writes are design tooling, not
+# Deckle's code: they stay out of the language bar on the repository page.
+logo/generate.mjs linguist-detectable=false
+logo/sheet.html   linguist-generated
