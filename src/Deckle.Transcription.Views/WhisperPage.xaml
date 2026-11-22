@@ -112,6 +112,13 @@
                 <StackPanel x:Name="SpeechEngineHost"
                             Spacing="{StaticResource SettingsCardSpacing}" />
 
+                <!-- Lexicon — composed fold, under the engine it serves: the
+                     person's words, the decoder boost and its strength. Shown
+                     while Parakeet is chosen (its VisibleWhen), the place the
+                     initial prompt holds for Whisper. -->
+                <StackPanel x:Name="LexiconHost"
+                            Spacing="{StaticResource SettingsCardSpacing}" />
+
                 <controls:SettingsExpander x:Name="InitialPromptCard"
                                            x:Uid="WhisperInitialPromptCard"
                                            Tag="WhisperInitialPromptCard">

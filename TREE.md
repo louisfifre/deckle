@@ -2444,6 +2444,7 @@ _Generated from `git ls-files` — do not edit by hand._
 │   │   │   ├── WhisperViewModel.cs
 │   │   │   ├── WhisperViewModel.DictationExperience.cs
 │   │   │   ├── WhisperViewModel.Engine.cs
+│   │   │   ├── WhisperViewModel.Lexicon.cs
 │   │   │   ├── WhisperViewModel.Settings.cs
 │   │   │   ├── WhisperViewModel.SpeechEngine.cs
 │   │   │   └── WhisperViewModel.Streaming.cs

@@ -64,6 +64,7 @@ public partial class WhisperViewModel : ObservableObject
         SegCurveX2 = segmenter.HangoverCurveX2;
         SegCurveY2 = segmenter.HangoverCurveY2;
         MinSpeechMs = new StreamingSettings().MinSpeechMs;
+        SeedLexicon();
 
         // Dictation-experience seeds from the shell POCO initializers (the single
         // source the shell's SettingsService persists), overwritten by Load().
@@ -120,6 +121,7 @@ public partial class WhisperViewModel : ObservableObject
             SegCurveY2 = s.Streaming.Segmenter.HangoverCurveY2;
             SegMarginMs = s.Streaming.Segmenter.MarginMs;
             MinSpeechMs = s.Streaming.MinSpeechMs;
+            LoadLexicon(s);
 
             // The shell's SettingsService persists these, not TranscriptionSettings.
             var shell = SettingsService.Instance.Current;
@@ -183,6 +185,8 @@ public partial class WhisperViewModel : ObservableObject
         if (!double.IsNaN(SegCurveY2))             s.Streaming.Segmenter.HangoverCurveY2     = SegCurveY2;
         if (!double.IsNaN(SegMarginMs))           s.Streaming.Segmenter.MarginMs            = (int)SegMarginMs;
         if (!double.IsNaN(MinSpeechMs))            s.Streaming.MinSpeechMs                   = (int)MinSpeechMs;
+
+        PushLexicon(s);
 
         TranscriptionSettingsService.Instance.Save();
     }
