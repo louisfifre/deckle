@@ -72,7 +72,7 @@ public partial class App
         {
             context.Compose(ModuleIds.Transcription, () =>
             {
-                var host = new AppTranscriptionEngineHost(LearnedProperNouns);
+                var host = new AppTranscriptionEngineHost();
                 IAsrBackend backend = useParakeet ? new ParakeetBackend(host) : new WhisperBackend(host);
                 _engine = new TranscriptionEngine(
                     host,

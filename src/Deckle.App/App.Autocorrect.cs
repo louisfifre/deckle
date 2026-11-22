@@ -110,7 +110,8 @@ public partial class App
                 dictionary: dictionary,
                 french: french,
                 english: english,
-                mistouchFamilies: mistouchFamilies);
+                mistouchFamilies: mistouchFamilies,
+                adopted: personal);
 
             // Raised on the engine's input thread: the prompt is detached so it
             // never blocks typing.

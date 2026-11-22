@@ -27,6 +27,12 @@ public static class AutocorrectSettingsModule
 
     private const string ModuleId = "autocorrect";
 
+    // Whether the transcription module, which holds the person's lexicon, is
+    // present, so the Excluded words section can point to it. That module is
+    // one this one does not reference; the App, which knows both, sets it.
+    // Unset, the page says nothing about the lexicon.
+    public static bool TranscriptionLexiconPresent { get; set; }
+
     public static SettingsModuleDescriptor Describe(int order) => new()
     {
         Id = ModuleId,

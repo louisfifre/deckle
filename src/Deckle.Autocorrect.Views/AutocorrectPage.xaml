@@ -41,6 +41,16 @@
                                          Tag="AutocorrectPage_Section_Exclusions">
                     <StackPanel Spacing="{StaticResource SettingsCardSpacing}">
 
+                        <!-- Where the words to keep live: Transcription > Lexicon,
+                             shown only when that module is present
+                             (AutocorrectSettingsModule.TranscriptionLexiconPresent). -->
+                        <TextBlock x:Name="DeclaredWordsNote"
+                                   x:Uid="AutocorrectPage_DeclaredWordsNote"
+                                   Style="{StaticResource BodyTextBlockStyle}"
+                                   Foreground="{ThemeResource TextFillColorSecondaryBrush}"
+                                   TextWrapping="Wrap"
+                                   Visibility="Collapsed" />
+
                         <controls:SettingsCard x:Uid="AutocorrectPage_ExcludeCard">
                             <StackPanel Orientation="Horizontal"
                                         Spacing="8"

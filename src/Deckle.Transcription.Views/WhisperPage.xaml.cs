@@ -151,11 +151,10 @@ public sealed partial class WhisperPage : Page
         _behaviourComposer = behaviourComposer;
 
         ComposeRegion(SpeechEngineHost, ViewModel.SpeechEngineSettings);
-        ComposeRegion(LexiconHost, ViewModel.LexiconSettingsManifest);
         ComposeRegion(UseGpuHost, ViewModel.UseGpuSettingsManifest);
         ComposeRegion(ModelsDirectoryHost, ViewModel.ModelsDirectorySettingsManifest);
-        // The decoding and streaming manifests compose on DecodingPage and
-        // StreamingPage, this module's other two pages; the dataset consents
+        // The lexicon, decoding and streaming manifests compose on LexiconPage,
+        // DecodingPage and StreamingPage, this module's other pages; the dataset consents
         // compose on the Diagnostics page (WhisperTelemetryViewModel).
     }
 

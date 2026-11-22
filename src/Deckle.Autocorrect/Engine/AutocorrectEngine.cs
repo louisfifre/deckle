@@ -30,6 +30,12 @@ public sealed partial class AutocorrectEngine : IDisposable
     private readonly ICorrectionPolicy _policy;
     private readonly ITextInjector _injector;
     private readonly PersonalDictionary? _dictionary;
+
+    // What counts as the person's own word when a corrector asks: the
+    // dictionary's adopted words, plus whatever the composition root adds
+    // (the declared lexicon). The policies get the same view, so no corrector
+    // can correct away a word another one protects.
+    private readonly IPersonalLexicon? _adopted;
     private readonly Func<AutocorrectSettings> _settings;
     private readonly IFrequencyLexicon? _french;
     private readonly IFrequencyLexicon? _english;
@@ -105,7 +111,8 @@ public sealed partial class AutocorrectEngine : IDisposable
         PersonalDictionary? dictionary = null,
         IFrequencyLexicon? french = null,
         IFrequencyLexicon? english = null,
-        IReadOnlyList<MistouchFamilyRecord>? mistouchFamilies = null)
+        IReadOnlyList<MistouchFamilyRecord>? mistouchFamilies = null,
+        IPersonalLexicon? adopted = null)
     {
         _host = host;
         _decoder = decoder;
@@ -115,6 +122,7 @@ public sealed partial class AutocorrectEngine : IDisposable
         _injector = injector;
         _settings = settings;
         _dictionary = dictionary;
+        _adopted = adopted ?? dictionary;
         _french = french;
         _english = english;
         _mistouch = mistouchFamilies is { Count: > 0 }

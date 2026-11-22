@@ -47,6 +47,9 @@ public sealed partial class AutocorrectPage : Page
         // page that sat cached reflects the live model.
         ViewModel.Load();
         RefreshExclusionsVisibility();
+        DeclaredWordsNote.Visibility = AutocorrectSettingsModule.TranscriptionLexiconPresent
+            ? Visibility.Visible
+            : Visibility.Collapsed;
     }
 
     // ── No whole-page "Reset all" ─────────────────────────────────────────────

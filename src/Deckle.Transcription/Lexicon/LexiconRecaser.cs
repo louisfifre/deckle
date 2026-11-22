@@ -18,7 +18,7 @@ public sealed class LexiconRecaser
     {
         ArgumentNullException.ThrowIfNull(terms);
 
-        // Longest first, so a phrase ("Louis Fifre") is fixed as a whole before its parts are.
+        // Longest first, so a phrase ("Ada Lovelace") is fixed as a whole before its parts are.
         _terms = terms
             .Where(LexiconTerms.HasCapital)
             .OrderByDescending(t => t.Length)

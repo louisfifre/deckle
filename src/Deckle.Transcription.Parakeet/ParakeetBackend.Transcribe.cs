@@ -78,7 +78,7 @@ public sealed partial class ParakeetBackend
                 DeckleWhispSource.Log.TranscribeParams(
                     $"engine=parakeet | accelerator={model.Accelerator} | max_tokens_per_step={TdtGreedyDecoder.DefaultMaxTokensPerStep}" +
                     $" | chunk_max_s={LongAudioChunker.MaxChunkSamples / LongAudioChunker.SampleRate}" +
-                    $" | lexicon_terms={lexicon?.Terms.Count ?? 0} | boost={(lexicon?.Boost is { } b ? $"{lexicon.Strength:0.##}x{b.TermCount}" : "off")}");
+                    $" | lexicon_terms={lexicon?.Terms.Count ?? 0} | boost={(lexicon?.Boost is { } b ? $"{BoostStrength:0.##}x{b.TermCount}" : "off")}");
             }
         }
 

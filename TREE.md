@@ -542,6 +542,7 @@ _Generated from `git ls-files` — do not edit by hand._
 │   │   ├── App.SelfCheck.Projects.Home.cs
 │   │   ├── App.SelfCheck.Projects.Project.cs
 │   │   ├── App.SelfCheck.Rewriting.cs
+│   │   ├── App.SelfCheck.Transcription.cs
 │   │   ├── App.SpeechRepair.cs
 │   │   ├── App.Startup.CommandLine.cs
 │   │   ├── App.Startup.CrashDumps.cs
@@ -2451,6 +2452,8 @@ _Generated from `git ls-files` — do not edit by hand._
 │   │   ├── Deckle.Transcription.Views.csproj
 │   │   ├── DecodingPage.xaml
 │   │   ├── DecodingPage.xaml.cs
+│   │   ├── LexiconPage.xaml
+│   │   ├── LexiconPage.xaml.cs
 │   │   ├── SettingsSearch.cs
 │   │   ├── StreamingPage.xaml
 │   │   ├── StreamingPage.xaml.cs
@@ -3419,7 +3422,9 @@ _Generated from `git ls-files` — do not edit by hand._
 │   │   └── ParakeetModelFilesTests.cs
 │   ├── Deckle.Transcription.Tests/
 │   │   ├── Lexicon/
+│   │   │   ├── LexiconBugNotes.md
 │   │   │   ├── LexiconRecaserTests.cs
+│   │   │   ├── LexiconSettingsFileTests.cs
 │   │   │   └── LexiconTermsTests.cs
 │   │   ├── CorpusRecordSkippedTests.cs
 │   │   ├── Deckle.Transcription.Tests.csproj

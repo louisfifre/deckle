@@ -57,15 +57,6 @@ public static class SettingsSearch
                         "model", "folder", "encoder", "precision", "fp16", "fp32"],
         },
 
-        // "Lexicon" — the fold of the person's words (the boost switch and its
-        // strength ride under it).
-        new SettingSearchEntry
-        {
-            LabelKey = "WhisperLexiconFold",
-            Keywords = ["vocabulary", "words", "names", "proper nouns", "dictionary",
-                        "capital", "case", "boost", "bias", "hotwords"],
-        },
-
         // Language selector (bespoke — editable ComboBox, Tag'd in the XAML).
         new SettingSearchEntry
         {
@@ -100,6 +91,22 @@ public static class SettingsSearch
         {
             LabelKey = "WhisperModelsDirCard",
             Keywords = ["directory", "path", "storage"],
+        },
+    ];
+
+    // The Lexicon page: the person's words and the switch of the boost.
+    public static IReadOnlyList<SettingSearchEntry> LexiconEntries { get; } =
+    [
+        new SettingSearchEntry
+        {
+            LabelKey = "LexiconTermsCard",
+            Keywords = ["vocabulary", "words", "names", "proper nouns", "dictionary",
+                        "capital", "case", "hotwords"],
+        },
+        new SettingSearchEntry
+        {
+            LabelKey = "LexiconBoostCard",
+            Keywords = ["boost", "bias", "favor", "parakeet"],
         },
     ];
 

@@ -194,7 +194,7 @@ public sealed partial class AutocorrectEngine
     private bool IsProtectedWord(string lowerForm) =>
         _french?.Contains(lowerForm) == true
         || _english?.Contains(lowerForm) == true
-        || _dictionary?.IsAdopted(lowerForm) == true;
+        || _adopted?.IsAdopted(lowerForm) == true;
 
     private void OnWordEdited(WordEdit edit)
     {

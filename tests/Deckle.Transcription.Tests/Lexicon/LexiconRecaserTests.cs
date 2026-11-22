@@ -17,7 +17,7 @@ public sealed class LexiconRecaserTests
     [Fact]
     public void APhraseIsRecasedAsAWhole()
     {
-        Assert.Equal("merci Louis Fifre.", Recase("merci louis fifre.", "Louis Fifre"));
+        Assert.Equal("merci Ada Lovelace.", Recase("merci ada lovelace.", "Ada Lovelace"));
     }
 
     [Fact]

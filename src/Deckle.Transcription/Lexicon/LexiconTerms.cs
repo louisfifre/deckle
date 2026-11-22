@@ -2,10 +2,9 @@ using System.Text;
 
 namespace Deckle.Transcription.Lexicon;
 
-// The one list every consumer of the lexicon reads: the person's own entries
-// first, then the words other modules learned (the autocorrect's proper nouns).
-// Two entries that differ only by case are one word, and the first keeps its
-// spelling, so an entry the person typed always wins over a learned one.
+// The one list every consumer of the lexicon reads: the person's entries,
+// cleaned. Two entries that differ only by case are one word, and the first
+// keeps its spelling.
 
 /// <summary>Cleans and merges lexicon entries into one list of distinct terms.</summary>
 public static class LexiconTerms
@@ -14,7 +13,14 @@ public static class LexiconTerms
     public const int MaxTermLength = 64;
 
     /// <summary>
-    /// Trims each entry, collapses inner whitespace to one space, drops empty and over-long
+    /// A one-letter term is dropped: the casing pass would rewrite every occurrence of that
+    /// letter (« A » would turn each French « a » into « A »), and the decoder boost would
+    /// push it on every word start.
+    /// </summary>
+    public const int MinTermLength = 2;
+
+    /// <summary>
+    /// Trims each entry, collapses inner whitespace to one space, drops one-letter and over-long
     /// entries, and keeps the first spelling of each case-insensitive duplicate, in input order.
     /// </summary>
     public static IReadOnlyList<string> Merge(params IEnumerable<string>?[] sources)
@@ -27,7 +33,7 @@ public static class LexiconTerms
             foreach (string? raw in source)
             {
                 string term = Clean(raw);
-                if (term.Length == 0 || term.Length > MaxTermLength) continue;
+                if (term.Length < MinTermLength || term.Length > MaxTermLength) continue;
                 if (seen.Add(term)) terms.Add(term);
             }
         }

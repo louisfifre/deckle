@@ -8,18 +8,18 @@ using Deckle.Transcription.Lexicon;
 namespace Deckle.Transcription.Views;
 
 // The dictation lexicon (TranscriptionSettings.Lexicon): the person's own
-// words, one per line, the decoder boost that favors them and its strength.
+// words, one per line, and the switch of the decoder boost that favors them.
+// Composed on its own page, Transcription > Lexicon (LexiconPage).
 //
-// One fold with no master on the General page, under the speech engine: the
-// list stands on its own (its casing pass always runs), and the strength only
-// shows while the boost is on. The fold shows while Parakeet is the chosen
-// engine, since Whisper reads its initial prompt instead; the autocorrect reads
-// the same list whatever the engine.
+// The Words card declares no default: the list is the person's data, not a
+// setting, so no reset (of the card or of a page) can ever empty it. The list
+// shows under every engine, because the autocorrect reads it whatever the
+// engine; only the switch is gated on Parakeet, the one engine that boosts.
 //
 // The list is held as one text, a term per line, the shape the multi-line field
 // edits. It is cleaned on the way to the settings (LexiconTerms.Merge) and
-// shown back as stored, so a duplicate or a blank line disappears once the
-// field is committed.
+// shown back as stored, so a duplicate, a one-letter entry or a blank line
+// disappears once the field is committed; the card's description says so.
 public partial class WhisperViewModel
 {
     [ObservableProperty]
@@ -28,17 +28,12 @@ public partial class WhisperViewModel
     [ObservableProperty]
     public partial bool LexiconBoostEnabled { get; set; }
 
-    [ObservableProperty]
-    public partial double LexiconBoostStrength { get; set; }
-
     // Seeds from the POCO initializer, its single source; called by the
     // constructor while _isSyncing holds, overwritten by Load().
     private void SeedLexicon()
     {
-        var lexicon = new LexiconSettings();
         LexiconText = "";
-        LexiconBoostEnabled = lexicon.BoostEnabled;
-        LexiconBoostStrength = lexicon.BoostStrength;
+        LexiconBoostEnabled = new LexiconSettings().BoostEnabled;
     }
 
     partial void OnLexiconTextChanged(string value)
@@ -53,36 +48,19 @@ public partial class WhisperViewModel
         PushToSettings();
     }
 
-    partial void OnLexiconBoostStrengthChanged(double value)
-    {
-        if (_isSyncing || double.IsNaN(value)) return;
-        PushToSettings();
-    }
-
     public IReadOnlyList<SettingDescriptor> LexiconSettingsManifest =>
     [
-        Setting.Section("WhisperLexiconFold",
-            [
-                Setting.Text("WhisperLexiconTermsCard",
-                    () => LexiconText,
-                    value => LexiconText = value,
-                    new TextArgs(
-                        Placeholder: Loc.GetFromOptional("Deckle.Transcription.Views", "WhisperLexiconTermsBox/PlaceholderText"),
-                        Multiline: true),
-                    defaultValue: () => ""),
-                Setting.Toggle("WhisperLexiconBoostCard",
-                    () => LexiconBoostEnabled,
-                    value => LexiconBoostEnabled = value,
-                    defaultValue: () => new LexiconSettings().BoostEnabled),
-                // 0.5..5: the grain is 0.2, which writes the default 2 exactly.
-                Setting.Magnitude("WhisperLexiconStrengthCard",
-                    () => LexiconBoostStrength,
-                    value => LexiconBoostStrength = value,
-                    new MagnitudeArgs(LexiconSettings.MinBoostStrength, LexiconSettings.MaxBoostStrength),
-                    visibleWhen: () => LexiconBoostEnabled,
-                    defaultValue: () => LexiconSettings.DefaultBoostStrength),
-            ],
-            visibleWhen: () => !IsWhisperChosen),
+        Setting.Text("LexiconTermsCard",
+            () => LexiconText,
+            value => LexiconText = value,
+            new TextArgs(
+                Placeholder: Loc.GetFromOptional("Deckle.Transcription.Views", "LexiconTermsBox/PlaceholderText"),
+                Multiline: true)),
+        Setting.Toggle("LexiconBoostCard",
+            () => LexiconBoostEnabled,
+            value => LexiconBoostEnabled = value,
+            visibleWhen: () => !IsWhisperChosen,
+            defaultValue: () => new LexiconSettings().BoostEnabled),
     ];
 
     private void LoadLexicon(TranscriptionSettings s)
@@ -90,7 +68,6 @@ public partial class WhisperViewModel
         LexiconSettings lexicon = s.Lexicon ?? new LexiconSettings();
         LexiconText = string.Join(Environment.NewLine, LexiconTerms.Merge(lexicon.Terms));
         LexiconBoostEnabled = lexicon.BoostEnabled;
-        LexiconBoostStrength = lexicon.BoostStrength;
     }
 
     private void PushLexicon(TranscriptionSettings s)
@@ -99,7 +76,5 @@ public partial class WhisperViewModel
         s.Lexicon.Terms = [.. LexiconTerms.Merge(
             (LexiconText ?? "").Split(['\r', '\n'], StringSplitOptions.RemoveEmptyEntries))];
         s.Lexicon.BoostEnabled = LexiconBoostEnabled;
-        if (!double.IsNaN(LexiconBoostStrength))
-            s.Lexicon.BoostStrength = LexiconBoostStrength;
     }
 }

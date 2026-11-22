@@ -9,7 +9,17 @@ public sealed class LexiconTermsTests
     [Fact]
     public void EntriesAreTrimmedAndInnerSpacesCollapsed()
     {
-        Assert.Equal(["Louis Fifre"], LexiconTerms.Merge(["  Louis \t  Fifre "]));
+        Assert.Equal(["Ada Lovelace"], LexiconTerms.Merge(["  Ada \t  Lovelace "]));
+    }
+
+    [Fact]
+    [Trait("Category", "regression")]
+    public void AOneLetterTermIsDropped()
+    {
+        // « A » in the list used to recase every French « a » in the dictation.
+        string oneLetter = new('A', LexiconTerms.MinTermLength - 1);
+
+        Assert.Equal(["Deckle"], LexiconTerms.Merge([oneLetter, "Deckle"]));
     }
 
     [Fact]

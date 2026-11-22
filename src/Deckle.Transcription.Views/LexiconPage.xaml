@@ -1,0 +1,53 @@
+<Page
+    x:Class="Deckle.Transcription.Views.LexiconPage"
+    xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+    xmlns:catalog="using:Deckle.Catalog">
+
+    <!-- The Lexicon page of the Transcription module: the person's own words.
+         The list shows under every engine, because the autocorrect reads it
+         whatever the engine; the switch of the boost is Parakeet's alone and is
+         gated in the manifest (WhisperViewModel.Lexicon.cs). No Reset all: the
+         list is the person's data, not a setting with a default, and the switch
+         has its own reset. -->
+    <ScrollViewer Padding="32,24,32,24"
+                  VerticalScrollBarVisibility="Auto"
+                  HorizontalScrollBarVisibility="Disabled">
+        <Grid>
+            <StackPanel MaxWidth="1000"
+                        HorizontalAlignment="Stretch"
+                        Spacing="{StaticResource SettingsCardSpacing}">
+
+                <catalog:SettingsPageHeader x:Name="Header"
+                                            x:Uid="LexiconPageHeader"
+                                            HasResetAll="False" />
+
+                <!-- Shown while Whisper is the chosen engine: it reads its initial
+                     prompt instead of this list. -->
+                <InfoBar x:Name="WhisperInfoBar"
+                         x:Uid="LexiconPageWhisperInfoBar"
+                         Severity="Informational"
+                         IsClosable="False"
+                         IsOpen="False"
+                         catalog:InfoBarLayout.CollapseWhenClosed="True" />
+
+                <catalog:SettingsSection x:Uid="LexiconPageWordsSection">
+                    <StackPanel Spacing="{StaticResource SettingsCardSpacing}">
+                        <StackPanel x:Name="WordsHost"
+                                    Spacing="{StaticResource SettingsCardSpacing}" />
+                        <!-- What the autocorrect does with the list, shown only
+                             when the autocorrect module is present
+                             (WhisperSettingsModule.AutocorrectPresent). -->
+                        <TextBlock x:Name="AutocorrectNote"
+                                   x:Uid="LexiconPageAutocorrectNote"
+                                   Style="{StaticResource BodyTextBlockStyle}"
+                                   Foreground="{ThemeResource TextFillColorSecondaryBrush}"
+                                   TextWrapping="Wrap"
+                                   Visibility="Collapsed" />
+                    </StackPanel>
+                </catalog:SettingsSection>
+
+            </StackPanel>
+        </Grid>
+    </ScrollViewer>
+</Page>
