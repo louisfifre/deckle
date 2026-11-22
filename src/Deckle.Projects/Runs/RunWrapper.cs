@@ -45,7 +45,7 @@ public static class RunWrapper
         string started = Quote(Path.Combine(input.RunFolder, StartedFile));
         string temporary = Quote(Path.Combine(input.RunFolder, ResultTemporaryFile));
         string result = Quote(Path.Combine(input.RunFolder, ResultFile));
-        string run = $"& {Quote(input.Shell)} -NoProfile -File {Quote(input.MenuScript)} -Run {Quote(input.ActionId)}";
+        string run = $"& {Quote(input.Shell)} -NoProfile -ExecutionPolicy Bypass -File {Quote(input.MenuScript)} -Run {Quote(input.ActionId)}";
         if (input.Variant is not null) run += $" -Variant {Quote(input.Variant)}";
 
         return string.Join("\n",
@@ -63,7 +63,7 @@ public static class RunWrapper
     // A script that only opens the menu in a terminal: not an action, nothing
     // is followed.
     public static string BuildMenu(string shell, string menuScript) =>
-        $"& {Quote(shell)} -NoProfile -File {Quote(menuScript)}";
+        $"& {Quote(shell)} -NoProfile -ExecutionPolicy Bypass -File {Quote(menuScript)}";
 
     // A PowerShell single-quoted string. Inside one, only a quote ends the
     // string and a doubled quote is a literal one. PowerShell reads the typographic

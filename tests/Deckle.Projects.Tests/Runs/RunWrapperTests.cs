@@ -21,7 +21,7 @@ public sealed class RunWrapperTests
         Assert.Equal(expected, RunWrapper.Quote(value));
     }
 
-    private static RunWrapperInput Input(string project = @"D:\sample\alpha", string id = "build-run.1", string? variant = null) =>
+    private static RunWrapperInput Input(string project = @"C:\sample\alpha", string id = "build-run.1", string? variant = null) =>
         new("Build & run \u00B7 alpha (1a2b)", @"C:\data\runs\7-1a2b", @"C:\Program Files\PowerShell\7\pwsh.exe",
             Path.Combine(project, "scripts", "menu.ps1"), id, variant);
 
@@ -32,7 +32,7 @@ public sealed class RunWrapperTests
 
         Assert.Equal("$Host.UI.RawUI.WindowTitle = 'Build & run \u00B7 alpha (1a2b)'", lines[0]);
         Assert.Equal(@"[IO.File]::WriteAllText('C:\data\runs\7-1a2b\started.txt', [string]$PID)", lines[1]);
-        Assert.Equal(@"& 'C:\Program Files\PowerShell\7\pwsh.exe' -NoProfile -File 'D:\sample\alpha\scripts\menu.ps1' -Run 'build-run.1'", lines[2]);
+        Assert.Equal(@"& 'C:\Program Files\PowerShell\7\pwsh.exe' -NoProfile -ExecutionPolicy Bypass -File 'C:\sample\alpha\scripts\menu.ps1' -Run 'build-run.1'", lines[2]);
         Assert.StartsWith("$code = $LASTEXITCODE;", lines[3]);
         Assert.Contains(@"result.tmp", lines[4]);
         Assert.Contains(@"Move-Item 'C:\data\runs\7-1a2b\result.tmp' 'C:\data\runs\7-1a2b\result.txt' -Force", lines[4]);
@@ -51,12 +51,12 @@ public sealed class RunWrapperTests
     [Fact]
     public void ApostrophesSemicolonsAmpersandsAndNonAsciiInThePathAndTheIdArriveIntact()
     {
-        string project = "D:\\O'Brien; Caf\u00E9 & Co\u00FC";
+        string project = "C:\\O'Brien; Caf\u00E9 & Co\u00FC";
         var input = Input(project, id: "a;b'c.0", variant: "it's \"v\"");
 
         string[] lines = RunWrapper.Build(input).Split('\n');
 
-        Assert.Contains("'D:\\O''Brien; Caf\u00E9 & Co\u00FC\\scripts\\menu.ps1'", lines[2]);
+        Assert.Contains("'C:\\O''Brien; Caf\u00E9 & Co\u00FC\\scripts\\menu.ps1'", lines[2]);
         Assert.Contains("-Run 'a;b''c.0'", lines[2]);
         Assert.Contains("-Variant 'it''s \"v\"'", lines[2]);
     }
@@ -73,7 +73,7 @@ public sealed class RunWrapperTests
     [Fact]
     public void TheEncodedFormIsBase64OfUtf16AndRoundTrips()
     {
-        string script = RunWrapper.Build(Input(@"D:\O'Brien; x"));
+        string script = RunWrapper.Build(Input(@"C:\O'Brien; x"));
 
         string encoded = RunWrapper.Encode(script);
 
@@ -84,7 +84,7 @@ public sealed class RunWrapperTests
     [Fact]
     public void TheMenuScriptOnlyOpensTheMenu()
     {
-        Assert.Equal(@"& 'C:\p\pwsh.exe' -NoProfile -File 'D:\a\scripts\menu.ps1'",
-            RunWrapper.BuildMenu(@"C:\p\pwsh.exe", @"D:\a\scripts\menu.ps1"));
+        Assert.Equal(@"& 'C:\p\pwsh.exe' -NoProfile -ExecutionPolicy Bypass -File 'C:\a\scripts\menu.ps1'",
+            RunWrapper.BuildMenu(@"C:\p\pwsh.exe", @"C:\a\scripts\menu.ps1"));
     }
 }

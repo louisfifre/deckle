@@ -57,6 +57,8 @@ public sealed class ScriptMenuReader : IScriptMenuReader
             StandardErrorEncoding = Encoding.UTF8,
         };
         start.ArgumentList.Add("-NoProfile");
+        start.ArgumentList.Add("-ExecutionPolicy");
+        start.ArgumentList.Add("Bypass");
         start.ArgumentList.Add("-EncodedCommand");
         start.ArgumentList.Add(RunWrapper.Encode(script));
 

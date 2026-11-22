@@ -5,7 +5,7 @@ namespace Deckle.Projects;
 
 // Opens a new Windows Terminal window:
 //
-//   wt.exe -w new --title <title> --suppressApplicationTitle -d <dir> <shell> -NoProfile -EncodedCommand <b64>
+//   wt.exe -w new --title <title> --suppressApplicationTitle -d <dir> <shell> -NoProfile -ExecutionPolicy Bypass -EncodedCommand <b64>
 //
 // `-w new` forces a window of its own under the default settings (measured; a
 // person's own windowingBehavior setting may still override it, not verified).
@@ -59,6 +59,8 @@ public sealed class WindowsTerminalLauncher(IProcessStarter starter) : ITerminal
         {
             arguments.Add(command.Shell ?? "powershell.exe");
             arguments.Add("-NoProfile");
+            arguments.Add("-ExecutionPolicy");
+            arguments.Add("Bypass");
             arguments.Add("-EncodedCommand");
             arguments.Add(RunWrapper.Encode(command.ScriptText));
         }
