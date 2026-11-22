@@ -62,7 +62,7 @@ Measured on 16 typed-style samples: with `ministral-3:14b`, 11 offers and 1 iden
 
 Question: which Claude model and which wording of the Lissage system prompt best keep a dictation's meaning when the profile rewrites it whole? Method: a model by prompt matrix on real dictations, a stronger reasoning call (effort high) listing meaning changes per rewrite (term substitutions, meaning inversions, dropped hedges, omissions, additions), plus deterministic marker deltas (negations with and without « ne », hedges per 100 words).
 
-The study is kept and still in use; its later campaigns are in `docs/research/research--prompts-de-reecriture--2026-11-07.md`. No result table was kept from the first matrix, so no model ranking is recorded here. What it established:
+The study is kept and still in use; its later campaigns are in `docs/research/research--prompts-de-reecriture--2026-11-07.md`, removed from the tree with the other working notes and kept in git history. No result table was kept from the first matrix, so no model ranking is recorded here. What it established:
 
 - The judge is a lead, not ground truth: read the flagged spans before trusting a count.
 - Marker deltas are blunt. Restoring a dropped « ne » is normal cleaning, so watch the negation column without « ne ».

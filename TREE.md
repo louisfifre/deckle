@@ -73,91 +73,16 @@ _Generated from `git ls-files` — do not edit by hand._
 │   │   ├── board-dictation.png
 │   │   ├── board-hero.png
 │   │   └── board-rewrite.png
-│   ├── proposals/
-│   │   └── diagnostics-rework.md
 │   ├── research/
-│   │   ├── folders-boards/
-│   │   │   ├── P12-01-fichiers.dc.html
-│   │   │   ├── P12-02-volet.dc.html
-│   │   │   ├── P12-03-personnaliser.dc.html
-│   │   │   ├── P12-04-photos.dc.html
-│   │   │   ├── P12-05-photo.dc.html
-│   │   │   ├── P12-06-appliquer.dc.html
-│   │   │   ├── P12-07-tailles.dc.html
-│   │   │   ├── P12-08a-carte-sections.dc.html
-│   │   │   ├── P12-08b-carte-plat.dc.html
-│   │   │   ├── P12-08c-carte-toujours-lu.dc.html
-│   │   │   ├── P12-09-grand-graphe.dc.html
-│   │   │   ├── P12-10-graphe-3d.dc.html
-│   │   │   ├── P12-11-vide.dc.html
-│   │   │   ├── P12-12a-adresse-chevron.dc.html
-│   │   │   ├── P12-12b-adresse-saisie.dc.html
-│   │   │   ├── P12-13-recherche-absente.dc.html
-│   │   │   ├── P12-14-carte-vide.dc.html
-│   │   │   ├── P12-15-fichiers-photo.dc.html
-│   │   │   ├── P12-16-grandes-lignes.dc.html
-│   │   │   ├── P12-17-galerie.dc.html
-│   │   │   ├── P12-18-fichiers-meme-dossier.dc.html
-│   │   │   ├── P12-19-photos-description.dc.html
-│   │   │   ├── P12-20-dossier-ajoute.dc.html
-│   │   │   ├── P12-21-tailles-fichier-lourd.dc.html
-│   │   │   ├── P12-22-photos-apres-appliquer.dc.html
-│   │   │   ├── P12-23-tailles-analyse.dc.html
-│   │   │   └── P12-24-photo-description.dc.html
 │   │   ├── taskbar-briefs-2026-10-18/
 │   │   │   ├── brief-csharp-socle.md
-│   │   │   ├── brief-native-foundation.md
-│   │   │   ├── brief-tier2-xaml.md
-│   │   │   ├── brief-tier3-symbols.md
 │   │   │   └── taskbar-research-2026-10-17.md
-│   │   ├── taskbar-probes/
-│   │   │   ├── bar-2026-10-18-native-small-left.webp
-│   │   │   ├── clock-uia.ps1
-│   │   │   ├── explorer-restart.ps1
-│   │   │   ├── feature-flags.ps1
-│   │   │   ├── late-inject-repro.ps1
-│   │   │   ├── logon-capture.ps1
-│   │   │   ├── native-test.ps1
-│   │   │   ├── pe-keys2.ps1
-│   │   │   ├── README.md
-│   │   │   ├── taskbar-accent.ps1
-│   │   │   ├── taskbar-icon-size-native-vertical.patch
-│   │   │   ├── taskbar-probe.ps1
-│   │   │   ├── taskbar-strings.ps1
-│   │   │   ├── tray-uia.ps1
-│   │   │   ├── windhawk-build-mod.ps1
-│   │   │   └── windhawk-install-mod.ps1
-│   │   ├── wheel-probes/
-│   │   │   ├── curves-2026-10-29/
-│   │   │   │   ├── build_curves_data.py
-│   │   │   │   ├── curves-page.html
-│   │   │   │   ├── README.md
-│   │   │   │   ├── wheel_events_20261029.csv
-│   │   │   │   └── wheel_summary_20261029.csv
-│   │   │   ├── hidpp_probe.py
-│   │   │   ├── README.md
-│   │   │   ├── wheel-session.ps1
-│   │   │   └── wheel_analysis.py
-│   │   ├── workspace-map/
-│   │   │   ├── .gitignore
-│   │   │   ├── index.html
-│   │   │   ├── inventory.ps1
-│   │   │   └── README.md
 │   │   ├── benchmark-conclusions.md
-│   │   ├── research--cerveau-llm--2026-10-13.md  — Cadrage vérifié (2026-10-13) — un cerveau LLM dans Deckle.Llm : les crédits API…
 │   │   ├── research--courbe-manipulation-directe--2026-11-07.md  — Note de conception du changement 7 de la revue de cohérence des pages audio (20…
 │   │   ├── research--cout-de-capture--2026-11-07.md  — Mesure (2026-11-07) : ce que coûte la capture Ambient à 60 Hz et au-delà sur l'…
-│   │   ├── research--fin-de-prise--2026-11-21.md  — Mesure (2026-11-21) du délai de fin de prise de 400 ms : Whisper rejoué sur 196…
-│   │   ├── research--prompts-de-reecriture--2026-11-07.md  — Ce que la boucle d'optimisation des prompts de réécriture et la campagne « prom…
-│   │   ├── research--settings-ux--2026-10-13.md  — Recherche vérifiée (2026-10-13), la direction Settings de Louis passée au cribl…
-│   │   ├── research--seuils-voix--2026-11-06.md  — Cadrage vérifié (2026-11-06) — les seuils de niveau et de détection de voix dup…
-│   │   ├── research--taskbar-sans-windhawk--2026-10-08.md  — Recherche vérifiée (2026-10-08) — remplacer Windhawk par un module Deckle pour…
-│   │   ├── research--temps-de-build--2026-11-07.md  — Où passe le temps de build et de test de Deckle (mesuré le 2026-11-06/07 sur le…
-│   │   └── research--youtube-maison--2026-10-22.md  — Cadrage (2026-10-22) — un client YouTube maison comme module de Deckle : la nou…
+│   │   └── research--fin-de-prise--2026-11-21.md  — Mesure (2026-11-21) du délai de fin de prise de 400 ms : Whisper rejoué sur 196…
 │   ├── anytype-space-plan-coverage.md  — Everything an Anytype space is made of, one row per element, with what Deckle's…
 │   ├── hud-tuning-reference.md  — Every HUD tunable the Playground exposed until its removal on 2026-11-13, group…
-│   ├── inventaire-exposables.csv
-│   ├── inventaire-exposables.md
 │   └── transcription-audio-chain.md  — How a dictation travels from the hotkey to the clipboard — vocabulary, three di…
 ├── logo/
 │   ├── deckle-recording.svg
