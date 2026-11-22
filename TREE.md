@@ -524,6 +524,7 @@ _Generated from `git ls-files` — do not edit by hand._
 │   │   ├── App.Input.cs
 │   │   ├── App.Install.cs
 │   │   ├── App.InterfaceCapture.cs
+│   │   ├── App.Lexicon.cs
 │   │   ├── App.Lifetime.cs
 │   │   ├── app.manifest
 │   │   ├── App.Orchestration.cs
