@@ -19,8 +19,56 @@ public sealed class ParakeetBackendTests
         return backend;
     }
 
-    // ── Loading ──────────────────────────────────────────────────────
+    // ── GPU failing during a take ────────────────────────────────────
 
+    [Fact]
+    [Trait("Category", "regression")]
+    public async Task ADirectMlFailureDuringATakeRestartsTheChunkOnTheCpuOnce()
+    {
+        var gpuEncoder = new FakeEncoder { Failure = new InvalidOperationException("device lost") };
+        var cpuEncoder = new FakeEncoder();
+        FakeLoader? loader = null;
+        loader = new FakeLoader(() => ParakeetLoadOutcome.Loaded(new ParakeetLoadedModel(
+            FakeVocabulary.Create(),
+            loader!.LastUseGpu == true ? gpuEncoder : cpuEncoder,
+            new FakeJoint { Script = [FakeVocabulary.Hello, FakeVocabulary.World, FakeVocabulary.Period] },
+            loader.LastUseGpu == true ? ParakeetAccelerators.DirectMl : ParakeetAccelerators.Cpu)));
+        using var backend = await LoadedAsync(loader);
+        Assert.Equal("DirectML", backend.DetectedAccelerator);
+
+        TranscriptionResult result = await backend.TranscribeAsync(Audio(1), null, Ct);
+
+        Assert.Equal(0, result.ResultCode);
+        Assert.NotEmpty(result.Segments);
+        Assert.Equal(1, gpuEncoder.Calls);
+        Assert.Equal(1, cpuEncoder.Calls);
+        Assert.Equal(2, loader.Loads);
+        Assert.False(loader.LastUseGpu);
+        Assert.Equal("CPU", backend.DetectedAccelerator);
+
+        // The next take stays on the CPU without loading again.
+        TranscriptionResult next = await backend.TranscribeAsync(Audio(1), null, Ct);
+        Assert.Equal(0, next.ResultCode);
+        Assert.Equal(2, loader.Loads);
+    }
+
+    [Fact]
+    [Trait("Category", "regression")]
+    public async Task ACpuFailureDuringATakeIsNotRetried()
+    {
+        var encoder = new FakeEncoder { Failure = new InvalidOperationException("boom") };
+        var loader = FakeLoader.Succeeding(encoder, accelerator: ParakeetAccelerators.Cpu);
+        using var backend = await LoadedAsync(loader);
+
+        TranscriptionResult result = await backend.TranscribeAsync(Audio(1), null, Ct);
+
+        Assert.Equal(-1, result.ResultCode);
+        Assert.Equal("inference_failed", result.ErrorReason);
+        Assert.Equal(1, loader.Loads);
+        Assert.Equal(1, encoder.Calls);
+    }
+
+    // ── Loading ──────────────────────────────────────────────────────
     [Fact]
     public async Task LoadReportsTheAcceleratorAndIsIdempotent()
     {
