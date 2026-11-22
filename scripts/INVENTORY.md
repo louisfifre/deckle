@@ -36,9 +36,6 @@ Run one with `pwsh -NoProfile -File scripts/<path> [arguments]`. An action names
 - `stats.ps1` — **Repository statistics.** Walk every project under src\ and build one file inventory per Deckle module, with line counts.
   - Actions: Statistics / repository
   - Parameters: -Target <string>, -WatchThreshold <int>, -TooLargeThreshold <int>, -CSharpWatchThreshold <int>, -CSharpTooLargeThreshold <int>, -ResourceWatchThreshold <int>, -ResourceTooLargeThreshold <int>, -Json <string>, -PassThru
-- `update-readme-stats.ps1` — **Update the README pulse.** Regenerate the small "Development pulse" section in README.md from the local Git history.
-  - Actions: README pulse / update `-Commit`
-  - Parameters: -Target <string>, -ReadmePath <string>, -Commit
 - `verify-branch-server.ps1` — The half of verify-branch.ps1 that runs on the verification machine. (not in the menu)
   - Parameters: -Sha <string> (required), -Branch <string>, -Root <string>, -KeepRuns <int>
 - `verify-branch.ps1` — **Verify a branch on win-serv.** Sends a committed branch to the verification machine, win-serv, which builds it, runs every automatic test and answers green or red for that exact commit.
