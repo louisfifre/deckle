@@ -710,6 +710,7 @@ _Generated from `git ls-files` — do not edit by hand._
 │   │   │   ├── MistouchFamilyStore.cs
 │   │   │   ├── PersonalDictionary.cs
 │   │   │   ├── PersonalDictionaryData.cs
+│   │   │   ├── PersonalLexiconWithTerms.cs
 │   │   │   ├── PersonalWordAdmission.cs
 │   │   │   └── SurfaceProfileStore.cs
 │   │   ├── Lexicon/
@@ -2736,6 +2737,7 @@ _Generated from `git ls-files` — do not edit by hand._
 │   │   ├── MorphalouReaderTests.cs
 │   │   ├── PairModelTrainerTests.cs
 │   │   ├── PersonalDictionaryTests.cs
+│   │   ├── PersonalLexiconWithTermsTests.cs
 │   │   ├── PersonalWordAdmissionTests.cs
 │   │   ├── RestorationEvaluatorTests.cs
 │   │   ├── SimulatedTextSurface.cs
