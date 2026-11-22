@@ -13,6 +13,23 @@ internal static class GatewayRuntime
     // The host drains active tool calls for at most this long before exiting.
     private static readonly TimeSpan DrainBudget = TimeSpan.FromSeconds(5);
 
+    // Home joins the generic clients only when its space alias exists. An
+    // unreadable aliases file leaves it out too: the other surfaces must not
+    // depend on a maintainer-only one.
+    private static IReadOnlyList<McpClientProfile> ClientsFor(AnytypeApiClient api)
+    {
+        try
+        {
+            return HomeMcp.IsConnected(AnytypeSpaceAliases.Load(api.SpaceId))
+                ? [.. McpClients.All, HomeMcp.Client]
+                : [.. McpClients.All];
+        }
+        catch (InvalidOperationException)
+        {
+            return [.. McpClients.All];
+        }
+    }
+
     public static (int ExitCode, string Outcome) Run()
     {
         // The key (vault entry `anytype-api-key`) is written by a script outside
@@ -46,7 +63,7 @@ internal static class GatewayRuntime
         bool drained = true;
         try
         {
-            IReadOnlyList<McpClientProfile> clients = [.. McpClients.All, HomeMcp.Client];
+            IReadOnlyList<McpClientProfile> clients = ClientsFor(api);
             var tokens = new McpClientTokens(SecretVault.CreateDefault(), clients);
             try
             {

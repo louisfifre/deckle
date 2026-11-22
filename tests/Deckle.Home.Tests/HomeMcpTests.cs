@@ -18,6 +18,20 @@ public class HomeMcpTests
     }
 
     [Fact]
+    public void HomeIsConnectedOnlyWhenTheHomeAliasExists()
+    {
+        var without = new AnytypeSpaceAliases(new Dictionary<string, string> { ["dev"] = "dev-space" });
+        var with = new AnytypeSpaceAliases(new Dictionary<string, string>
+        {
+            ["dev"] = "dev-space",
+            ["Home"] = "home-space",
+        });
+
+        Assert.False(HomeMcp.IsConnected(without));
+        Assert.True(HomeMcp.IsConnected(with));
+    }
+
+    [Fact]
     public void SurfaceOpensWithOnlyHomeToolsWithoutResolvingRuntimeConfiguration()
     {
         using var api = new AnytypeApiClient(new AnytypeCredentials(
