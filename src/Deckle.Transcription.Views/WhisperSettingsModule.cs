@@ -28,12 +28,6 @@ public static class WhisperSettingsModule
 
     private const string ModuleId = "whisp";
 
-    // Whether the autocorrect module is present, so the Lexicon page says what
-    // the autocorrect does with the list. That module is one this one does not
-    // reference; the App, which knows both, sets it. Unset, the page says
-    // nothing about the autocorrect.
-    public static bool AutocorrectPresent { get; set; }
-
     public static SettingsModuleDescriptor Describe(int order) => new()
     {
         Id = ModuleId,

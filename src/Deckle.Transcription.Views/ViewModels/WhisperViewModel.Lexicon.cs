@@ -1,29 +1,32 @@
-using System;
 using System.Collections.Generic;
+using System.Collections.ObjectModel;
+using System.Linq;
 using CommunityToolkit.Mvvm.ComponentModel;
+using CommunityToolkit.Mvvm.Input;
 using Deckle.Catalog;
-using Deckle.Localization;
 using Deckle.Transcription.Lexicon;
 
 namespace Deckle.Transcription.Views;
 
 // The dictation lexicon (TranscriptionSettings.Lexicon): the person's own
-// words, one per line, and the switch of the decoder boost that favors them.
-// Composed on its own page, Transcription > Lexicon (LexiconPage).
+// words, added one at a time, and the switch of the decoder boost that favors
+// them. Shown on its own page, Transcription > Lexicon (LexiconPage).
 //
-// The Words card declares no default: the list is the person's data, not a
-// setting, so no reset (of the card or of a page) can ever empty it. The list
-// shows under every engine, because the autocorrect reads it whatever the
-// engine; only the switch is gated on Parakeet, the one engine that boosts.
+// The words are the person's data, not a setting: they have no default and no
+// reset, so nothing but their own remove gesture takes one away. The list shows
+// under every engine, because the autocorrect reads it whatever the engine;
+// only the switch is gated on Parakeet, the one engine that boosts.
 //
-// The list is held as one text, a term per line, the shape the multi-line field
-// edits. It is cleaned on the way to the settings (LexiconTerms.Merge) and
-// shown back as stored, so a duplicate, a one-letter entry or a blank line
-// disappears once the field is committed; the card's description says so.
+// An added word goes through LexiconTerms.Merge with the list, the one cleaning
+// rule: a duplicate (any casing) or a one-letter entry adds nothing.
 public partial class WhisperViewModel
 {
+    public ObservableCollection<LexiconWordRow> LexiconWords { get; } = new();
+
+    // What the person is typing into the add field. Not persisted: it becomes a
+    // word only on the add gesture.
     [ObservableProperty]
-    public partial string LexiconText { get; set; }
+    public partial string NewLexiconWord { get; set; } = string.Empty;
 
     [ObservableProperty]
     public partial bool LexiconBoostEnabled { get; set; }
@@ -32,14 +35,7 @@ public partial class WhisperViewModel
     // constructor while _isSyncing holds, overwritten by Load().
     private void SeedLexicon()
     {
-        LexiconText = "";
         LexiconBoostEnabled = new LexiconSettings().BoostEnabled;
-    }
-
-    partial void OnLexiconTextChanged(string value)
-    {
-        if (_isSyncing) return;
-        PushToSettings();
     }
 
     partial void OnLexiconBoostEnabledChanged(bool value)
@@ -50,12 +46,6 @@ public partial class WhisperViewModel
 
     public IReadOnlyList<SettingDescriptor> LexiconSettingsManifest =>
     [
-        Setting.Text("LexiconTermsCard",
-            () => LexiconText,
-            value => LexiconText = value,
-            new TextArgs(
-                Placeholder: Loc.GetFromOptional("Deckle.Transcription.Views", "LexiconTermsBox/PlaceholderText"),
-                Multiline: true)),
         Setting.Toggle("LexiconBoostCard",
             () => LexiconBoostEnabled,
             value => LexiconBoostEnabled = value,
@@ -63,18 +53,36 @@ public partial class WhisperViewModel
             defaultValue: () => new LexiconSettings().BoostEnabled),
     ];
 
+    [RelayCommand]
+    private void AddLexiconWord()
+    {
+        var merged = LexiconTerms.Merge(LexiconWords.Select(row => row.Word), [NewLexiconWord ?? ""]);
+        NewLexiconWord = string.Empty;
+        if (merged.Count == LexiconWords.Count) return;
+
+        LexiconWords.Add(new LexiconWordRow(merged[^1], OnLexiconWordRemoved));
+        PushToSettings();
+    }
+
+    private void OnLexiconWordRemoved(LexiconWordRow row)
+    {
+        LexiconWords.Remove(row);
+        PushToSettings();
+    }
+
     private void LoadLexicon(TranscriptionSettings s)
     {
         LexiconSettings lexicon = s.Lexicon ?? new LexiconSettings();
-        LexiconText = string.Join(Environment.NewLine, LexiconTerms.Merge(lexicon.Terms));
+        LexiconWords.Clear();
+        foreach (string word in LexiconTerms.Merge(lexicon.Terms))
+            LexiconWords.Add(new LexiconWordRow(word, OnLexiconWordRemoved));
         LexiconBoostEnabled = lexicon.BoostEnabled;
     }
 
     private void PushLexicon(TranscriptionSettings s)
     {
         s.Lexicon ??= new LexiconSettings();
-        s.Lexicon.Terms = [.. LexiconTerms.Merge(
-            (LexiconText ?? "").Split(['\r', '\n'], StringSplitOptions.RemoveEmptyEntries))];
+        s.Lexicon.Terms = [.. LexiconWords.Select(row => row.Word)];
         s.Lexicon.BoostEnabled = LexiconBoostEnabled;
     }
 }
