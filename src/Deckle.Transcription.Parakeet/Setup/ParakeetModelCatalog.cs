@@ -16,8 +16,9 @@ namespace Deckle.Transcription.Parakeet;
 // file, so its hash was computed on the downloaded bytes. Take both together from
 // the new revision when the pin moves.
 //
-// Only the FP32 files are fetched: the encoder runs in FP32 unless the person opts
-// into FP16 (ParakeetEncoderPrecision), which costs fidelity on French. The mel
+// What is fetched follows the encoder precision (ParakeetEncoderPrecision): the FP32 files by
+// default, and for the person who opts into FP16 (which costs fidelity on French) the FP16
+// encoder in place of the FP32 one, with the same vocabulary and decoder-joint. The mel
 // front end of the repository is not used, Deckle ships its own (ParakeetModelFiles),
 // and the quantized variants are left out on purpose.
 
@@ -47,7 +48,7 @@ public static class ParakeetModelCatalog
     /// <summary>The repository at the pinned commit, for a person who downloads the files by hand.</summary>
     public const string BrowseUrl = RepositoryUrl + "/tree/" + Revision;
 
-    /// <summary>The files the default configuration needs: vocabulary and FP32 encoder and decoder-joint with their weights.</summary>
+    /// <summary>The files the default (FP32) configuration needs: vocabulary and FP32 encoder and decoder-joint with their weights.</summary>
     public static IReadOnlyList<ParakeetModelFile> Files { get; } =
     [
         new("vocab.txt", 93_939, "d58544679ea4bc6ac563d1f545eb7d474bd6cfa467f0a6e2c1dc1c7d37e3c35d"),
@@ -58,18 +59,43 @@ public static class ParakeetModelCatalog
         new("fp32/decoder_joint-model.onnx.data", 72_514_072, "5d6873a9bf49b704270a3e3dcc6c71090e1edd3248c6499b5d3cadd9f23dbcec"),
     ];
 
-    /// <summary>The lighter encoder, for the person who opts into FP16. Not part of <see cref="Files"/>: nothing downloads it by default.</summary>
+    /// <summary>The lighter encoder, for the person who opts into FP16. Not part of <see cref="Files"/>: only <see cref="FilesFor"/> at FP16 downloads it.</summary>
     public static ParakeetModelFile Fp16Encoder { get; } =
         new("fp16/encoder-model.fp16.onnx", 1_218_170_745, "f8353ed512daff07a3ca60e0845af2893c435325911fa8b4d21f9d63aa80250b");
 
-    /// <summary>Size of <see cref="Files"/>, for the wizard's download estimate.</summary>
+    /// <summary>The files a load at <paramref name="precision"/> needs, with the weights the graphs keep outside the .onnx file.</summary>
+    public static IReadOnlyList<ParakeetModelFile> FilesFor(ParakeetEncoderPrecision precision) =>
+        precision == ParakeetEncoderPrecision.Fp16
+            ? [.. Files.Where(file => !file.Path.StartsWith("fp32/encoder-model", StringComparison.Ordinal)), Fp16Encoder]
+            : Files;
+
+    /// <summary>Size of <see cref="FilesFor"/>, for the wizard's download estimate.</summary>
+    public static long TotalBytesFor(ParakeetEncoderPrecision precision) => FilesFor(precision).Sum(file => file.SizeBytes);
+
+    /// <summary>Size of <see cref="Files"/>.</summary>
     public static long TotalBytes { get; } = Files.Sum(file => file.SizeBytes);
 
-    /// <summary>True when every file the default configuration needs is in <paramref name="modelFolder"/>.</summary>
-    public static bool IsInstalled(string modelFolder) =>
-        new ParakeetModelFiles(modelFolder).IsComplete;
+    /// <summary>
+    /// True when the folder Deckle provisions holds every file of <see cref="FilesFor"/> at its pinned size: a
+    /// download cut short is not taken as installed, and the repair fetches it again.
+    /// </summary>
+    public static bool IsInstalled(string modelFolder, ParakeetEncoderPrecision precision) =>
+        new ParakeetModelFiles(modelFolder).IsCompleteFor(precision)
+        && FilesFor(precision).All(file => HasPinnedSize(file.LocalPath(modelFolder), file));
 
-    /// <summary>Fetches the missing files of <see cref="Files"/> into <paramref name="modelFolder"/>, each verified against its hash.</summary>
+    /// <summary>
+    /// Whether the speech model can be loaded: for a folder the person configured, the files the loader opens are
+    /// there (the rest is ONNX Runtime's business); for the default folder, the pinned files are there at their size.
+    /// </summary>
+    public static bool IsPresent(string configuredDirectory, string modelsDirectory, ParakeetEncoderPrecision precision)
+    {
+        ParakeetModelFiles files = ParakeetModelFiles.Resolve(configuredDirectory, modelsDirectory);
+        return string.IsNullOrWhiteSpace(configuredDirectory)
+            ? IsInstalled(files.Directory, precision)
+            : files.IsCompleteFor(precision);
+    }
+
+    /// <summary>Fetches the missing files of <see cref="FilesFor"/> into <paramref name="modelFolder"/>, each verified against its hash.</summary>
     /// <remarks>
     /// A file already there at its pinned size stays: the downloader renames a file into place only after its
     /// hash verified, so a retry after a failure resumes at the first file that is not on disk instead of
@@ -77,9 +103,10 @@ public static class ParakeetModelCatalog
     /// </remarks>
     public static Task<ProvisioningResult> ProvisionAsync(
         string modelFolder,
+        ParakeetEncoderPrecision precision,
         IProgress<Downloader.DownloadProgress>? progress,
         CancellationToken ct) =>
-        ProvisionAsync(modelFolder, Files, progress, Downloader.DownloadAsync, ct);
+        ProvisionAsync(modelFolder, FilesFor(precision), progress, Downloader.DownloadAsync, ct);
 
     // The file list and the download step are parameters so tests run the
     // sequencing on a small list without a network.

@@ -52,20 +52,20 @@ public sealed record ParakeetModelFiles(string Directory)
     /// <summary>Token vocabulary, one entry per line.</summary>
     public string Vocabulary => Path.Combine(Directory, "vocab.txt");
 
-    /// <summary>Every file the default (all-FP32) configuration needs.</summary>
-    public IReadOnlyList<string> RequiredFiles =>
-    [
-        Vocabulary,
-        EncoderFp32,
-        EncoderFp32Data000,
-        EncoderFp32Data001,
-        DecoderJoint,
-        DecoderJointData,
-    ];
+    /// <summary>The encoder of the chosen precision.</summary>
+    public string EncoderFor(ParakeetEncoderPrecision precision) =>
+        precision == ParakeetEncoderPrecision.Fp16 ? EncoderFp16 : EncoderFp32;
 
-    /// <summary>True when the default (all-FP32) configuration can run: every file it needs is present in the model folder.</summary>
-    public bool IsComplete => RequiredFiles.All(File.Exists);
+    // What the loader opens (OnnxParakeetModelLoader): the vocabulary, the encoder of the chosen
+    // precision and the decoder-joint. The weights the graphs keep in external files are named by
+    // the graphs themselves and read by ONNX Runtime, so a folder the person assembled by hand is
+    // judged on these three; the files Deckle downloads are checked by ParakeetModelCatalog.
+    /// <summary>The files a load at <paramref name="precision"/> opens.</summary>
+    public IReadOnlyList<string> RequiredFor(ParakeetEncoderPrecision precision) =>
+        [Vocabulary, EncoderFor(precision), DecoderJoint];
 
+    /// <summary>True when every file a load at <paramref name="precision"/> opens is present.</summary>
+    public bool IsCompleteFor(ParakeetEncoderPrecision precision) => RequiredFor(precision).All(File.Exists);
     /// <summary>True when the optional FP16 encoder is also present.</summary>
     public bool HasFp16Encoder => File.Exists(EncoderFp16);
 }

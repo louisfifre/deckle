@@ -32,12 +32,15 @@ public partial class App
     // could not be set; same spelling as the watcher's own reason.
     private const string RefuseForegroundHookFailed = "foreground_hook_failed";
 
-    // Whether the configured (or default) Parakeet model folder holds every file the default
-    // configuration needs.
-    private static bool ParakeetModelPresent() =>
-        ParakeetModelFiles.Resolve(
-            TranscriptionSettingsService.Instance.Current.Engine.ParakeetModelDirectory,
-            TranscriptionSettingsService.Instance.ResolveModelsDirectory()).IsComplete;
+    // Whether the model folder holds what the loader opens at the chosen precision; the folder
+    // Deckle provisions is also held to its pinned file sizes (ParakeetModelCatalog.IsPresent).
+    private static bool ParakeetModelPresent()
+    {
+        TranscriptionSettingsService settings = TranscriptionSettingsService.Instance;
+        EngineSettings engine = settings.Current.Engine;
+        return ParakeetModelCatalog.IsPresent(
+            engine.ParakeetModelDirectory, settings.ResolveModelsDirectory(), engine.ParakeetEncoder);
+    }
 
     private void InitializeStartupModules(StartupContext context)
     {

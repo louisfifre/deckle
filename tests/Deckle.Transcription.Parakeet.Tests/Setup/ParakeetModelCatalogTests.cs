@@ -8,17 +8,34 @@ namespace Deckle.Transcription.Parakeet.Tests.Setup;
 [Trait("Category", "unit")]
 public sealed class ParakeetModelCatalogTests
 {
-    [Fact]
-    public void The_catalog_names_exactly_the_files_the_completeness_check_requires()
+    [Theory]
+    [InlineData(ParakeetEncoderPrecision.Fp32)]
+    [InlineData(ParakeetEncoderPrecision.Fp16)]
+    public void The_catalog_downloads_every_file_the_loader_opens_at_each_precision(ParakeetEncoderPrecision precision)
     {
         const string root = @"C:\models\parakeet";
 
-        var fromCatalog = ParakeetModelCatalog.Files.Select(file => file.LocalPath(root)).Order().ToList();
-        var required = new ParakeetModelFiles(root).RequiredFiles.Order().ToList();
+        var fromCatalog = ParakeetModelCatalog.FilesFor(precision).Select(file => file.LocalPath(root)).ToHashSet();
+        var required = new ParakeetModelFiles(root).RequiredFor(precision);
 
-        Assert.Equal(required, fromCatalog);
+        Assert.All(required, path => Assert.Contains(path, fromCatalog));
     }
 
+    [Fact]
+    public void FP16_swaps_the_encoder_and_leaves_the_rest()
+    {
+        var fp32 = ParakeetModelCatalog.FilesFor(ParakeetEncoderPrecision.Fp32).Select(file => file.Path).ToList();
+        var fp16 = ParakeetModelCatalog.FilesFor(ParakeetEncoderPrecision.Fp16).Select(file => file.Path).ToList();
+
+        Assert.Contains(ParakeetModelCatalog.Fp16Encoder.Path, fp16);
+        Assert.DoesNotContain(fp16, path => path.StartsWith("fp32/encoder-model", StringComparison.Ordinal));
+        Assert.Equal(
+            fp32.Where(path => !path.StartsWith("fp32/encoder-model", StringComparison.Ordinal)).Order(),
+            fp16.Where(path => path != ParakeetModelCatalog.Fp16Encoder.Path).Order());
+        Assert.Equal(
+            ParakeetModelCatalog.FilesFor(ParakeetEncoderPrecision.Fp16).Sum(file => file.SizeBytes),
+            ParakeetModelCatalog.TotalBytesFor(ParakeetEncoderPrecision.Fp16));
+    }
     [Fact]
     public void Every_url_is_pinned_to_the_revision_and_ends_with_the_file_path()
     {
@@ -68,6 +85,84 @@ public sealed class ParakeetModelCatalogTests
     }
 }
 
+// What counts as installed: the pinned files at their sizes in the folder Deckle provisions,
+// the files the loader opens in a folder the person configured. Sparse stand-ins give the files
+// their real sizes without writing gigabytes.
+[Trait("Category", "integration")]
+public sealed class ParakeetModelPresenceTests : IDisposable
+{
+    private readonly string _root = Path.Combine(Path.GetTempPath(), $"deckle-parakeet-presence-{Guid.NewGuid():N}");
+
+    public void Dispose()
+    {
+        try { Directory.Delete(_root, recursive: true); } catch { }
+    }
+
+    private static void Create(string path, long length)
+    {
+        Directory.CreateDirectory(Path.GetDirectoryName(path)!);
+        using var stream = new FileStream(path, FileMode.Create);
+        stream.SetLength(length);
+    }
+
+    private void Provision(string folder, ParakeetEncoderPrecision precision)
+    {
+        foreach (ParakeetModelFile file in ParakeetModelCatalog.FilesFor(precision))
+            Create(file.LocalPath(folder), file.SizeBytes);
+    }
+
+    [Theory]
+    [InlineData(ParakeetEncoderPrecision.Fp32)]
+    [InlineData(ParakeetEncoderPrecision.Fp16)]
+    public void The_provisioned_files_at_their_pinned_sizes_are_installed(ParakeetEncoderPrecision precision)
+    {
+        Provision(_root, precision);
+
+        Assert.True(ParakeetModelCatalog.IsInstalled(_root, precision));
+    }
+
+    [Fact]
+    public void A_truncated_weight_file_is_not_installed()
+    {
+        Provision(_root, ParakeetEncoderPrecision.Fp32);
+        ParakeetModelFile weights = ParakeetModelCatalog.Files.Single(file => file.Path.EndsWith("encoder-model.onnx.data.000", StringComparison.Ordinal));
+        Create(weights.LocalPath(_root), weights.SizeBytes - 1);
+
+        Assert.False(ParakeetModelCatalog.IsInstalled(_root, ParakeetEncoderPrecision.Fp32));
+    }
+
+    [Fact]
+    public void FP32_files_alone_are_not_an_FP16_install()
+    {
+        Provision(_root, ParakeetEncoderPrecision.Fp32);
+
+        Assert.False(ParakeetModelCatalog.IsInstalled(_root, ParakeetEncoderPrecision.Fp16));
+    }
+
+    [Fact]
+    public void A_configured_folder_is_judged_on_the_files_the_loader_opens_whatever_their_size()
+    {
+        string configured = Path.Combine(_root, "mine");
+        foreach (string relative in new[] { "vocab.txt", Path.Combine("fp32", "encoder-model.onnx"), Path.Combine("fp32", "decoder_joint-model.onnx") })
+            Create(Path.Combine(configured, relative), 3);
+
+        Assert.True(ParakeetModelCatalog.IsPresent(configured, _root, ParakeetEncoderPrecision.Fp32));
+        Assert.False(ParakeetModelCatalog.IsPresent(configured, _root, ParakeetEncoderPrecision.Fp16));
+    }
+
+    [Fact]
+    public void The_default_folder_is_held_to_the_pinned_sizes()
+    {
+        string folder = Path.Combine(_root, ParakeetModelFiles.DefaultFolderName);
+        foreach (string relative in new[] { "vocab.txt", Path.Combine("fp32", "encoder-model.onnx"), Path.Combine("fp32", "decoder_joint-model.onnx") })
+            Create(Path.Combine(folder, relative), 3);
+
+        Assert.False(ParakeetModelCatalog.IsPresent("", _root, ParakeetEncoderPrecision.Fp32));
+
+        Provision(folder, ParakeetEncoderPrecision.Fp32);
+        Assert.True(ParakeetModelCatalog.IsPresent("", _root, ParakeetEncoderPrecision.Fp32));
+    }
+}
 // The provisioning sequence on a temporary folder, with a stand-in for the HTTP download.
 [Trait("Category", "integration")]
 public sealed class ParakeetModelProvisioningTests : IDisposable

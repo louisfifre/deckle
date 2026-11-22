@@ -42,7 +42,7 @@ public sealed class ParakeetLexiconSystemTests(ITestOutputHelper output)
     public async Task ALargeUnrelatedLexiconLeavesTheTextAndTheSpeedAlone()
     {
         var files = new ParakeetModelFiles(ModelFolder);
-        Assert.SkipUnless(files.IsComplete, $"No complete Parakeet model at {ModelFolder}.");
+        Assert.SkipUnless(files.IsCompleteFor(ParakeetEncoderPrecision.Fp32), $"No complete Parakeet model at {ModelFolder}.");
 
         float[] speech = ReadReferenceSpeech();
         float[] pcm = Repeat(speech, copies: 6);
@@ -82,7 +82,7 @@ public sealed class ParakeetLexiconSystemTests(ITestOutputHelper output)
     public async Task ATermWithCapitalsIsWrittenWithThem()
     {
         var files = new ParakeetModelFiles(ModelFolder);
-        Assert.SkipUnless(files.IsComplete, $"No complete Parakeet model at {ModelFolder}.");
+        Assert.SkipUnless(files.IsCompleteFor(ParakeetEncoderPrecision.Fp32), $"No complete Parakeet model at {ModelFolder}.");
 
         var host = new FakeHost();
         host.Transcription.Engine.ParakeetModelDirectory = ModelFolder;

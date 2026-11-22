@@ -78,9 +78,13 @@ public partial class App
         // Parakeet child module, which only the App references.
         Settings.SettingsHost.InspectParakeetModelFolder = configured =>
         {
-            var files = Deckle.Transcription.Parakeet.ParakeetModelFiles.Resolve(
-                configured, TranscriptionSettingsService.Instance.ResolveModelsDirectory());
-            return new Settings.ParakeetModelFolderState(files.Directory, files.IsComplete, files.HasFp16Encoder);
+            string modelsDirectory = TranscriptionSettingsService.Instance.ResolveModelsDirectory();
+            var files = Deckle.Transcription.Parakeet.ParakeetModelFiles.Resolve(configured, modelsDirectory);
+            return new Settings.ParakeetModelFolderState(
+                files.Directory,
+                Deckle.Transcription.Parakeet.ParakeetModelCatalog.IsPresent(
+                    configured, modelsDirectory, TranscriptionSettingsService.Instance.Current.Engine.ParakeetEncoder),
+                files.HasFp16Encoder);
         };
 
         WireUpdaterHooks();

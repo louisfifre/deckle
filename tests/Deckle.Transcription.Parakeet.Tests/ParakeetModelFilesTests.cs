@@ -21,76 +21,82 @@ public sealed class ParakeetModelFilesTests : IDisposable
         File.WriteAllText(full, "x");
     }
 
-    private static readonly string[] RequiredFiles =
+    private const ParakeetEncoderPrecision Fp32 = ParakeetEncoderPrecision.Fp32;
+    private const ParakeetEncoderPrecision Fp16 = ParakeetEncoderPrecision.Fp16;
+
+    // What the loader opens at FP32: the external weight files are ONNX Runtime's business.
+    private static readonly string[] Fp32Files =
     [
-        Path.Combine("fp32", "encoder-model.onnx"),
-        Path.Combine("fp32", "encoder-model.onnx.data.000"),
-        Path.Combine("fp32", "encoder-model.onnx.data.001"),
-        Path.Combine("fp32", "decoder_joint-model.onnx"),
-        Path.Combine("fp32", "decoder_joint-model.onnx.data"),
         "vocab.txt",
+        Path.Combine("fp32", "encoder-model.onnx"),
+        Path.Combine("fp32", "decoder_joint-model.onnx"),
+    ];
+
+    private static readonly string[] Fp16Files =
+    [
+        "vocab.txt",
+        Path.Combine("fp16", "encoder-model.fp16.onnx"),
+        Path.Combine("fp32", "decoder_joint-model.onnx"),
     ];
 
     [Fact]
     public void EmptyDirectoryIsNotComplete()
     {
-        Assert.False(new ParakeetModelFiles(_root).IsComplete);
+        Assert.False(new ParakeetModelFiles(_root).IsCompleteFor(Fp32));
     }
 
     [Fact]
     public void MissingDirectoryIsNotComplete()
     {
-        Assert.False(new ParakeetModelFiles(Path.Combine(_root, "absent")).IsComplete);
+        Assert.False(new ParakeetModelFiles(Path.Combine(_root, "absent")).IsCompleteFor(Fp32));
     }
 
     [Fact]
-    public void AllRequiredFilesMakeItComplete()
+    public void TheFilesTheLoaderOpensMakeItComplete()
     {
-        foreach (string file in RequiredFiles) Touch(file);
+        foreach (string file in Fp32Files) Touch(file);
 
-        Assert.True(new ParakeetModelFiles(_root).IsComplete);
+        Assert.True(new ParakeetModelFiles(_root).IsCompleteFor(Fp32));
     }
 
     [Theory]
     [InlineData(0)]
     [InlineData(1)]
     [InlineData(2)]
-    [InlineData(3)]
-    [InlineData(4)]
-    [InlineData(5)]
-    public void AnyMissingRequiredFileBreaksCompleteness(int missingIndex)
+    public void AnyMissingFileTheLoaderOpensBreaksCompleteness(int missingIndex)
     {
-        for (int i = 0; i < RequiredFiles.Length; i++)
+        for (int i = 0; i < Fp32Files.Length; i++)
         {
-            if (i != missingIndex) Touch(RequiredFiles[i]);
+            if (i != missingIndex) Touch(Fp32Files[i]);
         }
 
-        Assert.False(new ParakeetModelFiles(_root).IsComplete);
+        Assert.False(new ParakeetModelFiles(_root).IsCompleteFor(Fp32));
     }
 
     [Fact]
-    public void TheGraphsWithoutTheirExternalWeightsAreNotComplete()
+    public void TheFp16EncoderIsRequiredAtFp16AndTheFp32OneIsNot()
     {
-        Touch(Path.Combine("fp32", "encoder-model.onnx"));
-        Touch(Path.Combine("fp32", "decoder_joint-model.onnx"));
-        Touch("vocab.txt");
-
-        Assert.False(new ParakeetModelFiles(_root).IsComplete);
-    }
-
-    [Fact]
-    public void Fp16EncoderIsOptionalForCompleteness()
-    {
-        foreach (string file in RequiredFiles) Touch(file);
+        foreach (string file in Fp32Files) Touch(file);
         var files = new ParakeetModelFiles(_root);
         Assert.False(files.HasFp16Encoder);
+        Assert.False(files.IsCompleteFor(Fp16));
 
         Touch(Path.Combine("fp16", "encoder-model.fp16.onnx"));
 
         Assert.True(files.HasFp16Encoder);
-        Assert.True(files.IsComplete);
+        Assert.True(files.IsCompleteFor(Fp16));
+        Assert.True(files.IsCompleteFor(Fp32));
     }
 
+    [Fact]
+    public void AtFp16TheFp32EncoderIsNotNeeded()
+    {
+        foreach (string file in Fp16Files) Touch(file);
+
+        var files = new ParakeetModelFiles(_root);
+        Assert.True(files.IsCompleteFor(Fp16));
+        Assert.False(files.IsCompleteFor(Fp32));
+    }
     [Fact]
     public void TheMelFrontEndIsShippedWithTheAppNotReadFromTheModelFolder()
     {
