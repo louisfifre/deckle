@@ -54,69 +54,6 @@ _Generated from `git ls-files` — do not edit by hand._
 ├── .claude/
 │   ├── settings.json
 │   └── skills
-├── benchmark/
-│   ├── capture-tail/
-│   │   ├── .gitignore
-│   │   ├── CaptureTail.csproj
-│   │   ├── EnergyProfile.cs
-│   │   ├── Program.cs
-│   │   ├── RawTakeCatalog.cs
-│   │   ├── Stats.cs
-│   │   ├── TailReplay.cs
-│   │   ├── WavSamples.cs
-│   │   └── WordMetrics.cs
-│   ├── rewrite/
-│   │   ├── model-compare/
-│   │   │   ├── campaigns/
-│   │   │   │   ├── lissage-lean.json
-│   │   │   │   ├── profiles-v2.json
-│   │   │   │   └── reasoning-lissage.json
-│   │   │   ├── optimize/
-│   │   │   │   ├── affinage-sonnet-v2.json
-│   │   │   │   ├── affinage-sonnet.json
-│   │   │   │   ├── arrangement-sonnet-v2.json
-│   │   │   │   ├── arrangement-sonnet-v3.json
-│   │   │   │   ├── arrangement-sonnet.json
-│   │   │   │   ├── lissage-opus-v2.json
-│   │   │   │   └── lissage-opus.json
-│   │   │   ├── prompts/
-│   │   │   │   ├── affinage-court.md
-│   │   │   │   ├── affinage-opt1.md
-│   │   │   │   ├── affinage-opt2.md
-│   │   │   │   ├── arrangement-court.md
-│   │   │   │   ├── arrangement-opt1.md
-│   │   │   │   ├── arrangement-opt2.md
-│   │   │   │   ├── arrangement-opt3.md
-│   │   │   │   ├── lissage-bref.md
-│   │   │   │   ├── lissage-court.md
-│   │   │   │   ├── lissage-current.md
-│   │   │   │   ├── lissage-libre.md
-│   │   │   │   ├── lissage-literal.md
-│   │   │   │   ├── lissage-opt1.md
-│   │   │   │   └── lissage-opt2.md
-│   │   │   ├── .gitignore
-│   │   │   ├── BatchJudge.cs
-│   │   │   ├── CacheProbe.cs
-│   │   │   ├── Campaign.cs
-│   │   │   ├── CampaignRun.cs
-│   │   │   ├── Corpus.cs
-│   │   │   ├── Export.cs
-│   │   │   ├── Judge.cs
-│   │   │   ├── ModelCompare.csproj
-│   │   │   ├── Optimize.cs
-│   │   │   ├── Program.cs
-│   │   │   ├── README.md
-│   │   │   ├── Shared.cs
-│   │   │   └── Summary.cs
-│   │   └── paragraph-gate/
-│   │       ├── .gitignore
-│   │       ├── ParagraphGate.csproj
-│   │       ├── Program.cs
-│   │       ├── README.md
-│   │       └── samples.jsonl
-│   ├── Directory.Build.props
-│   ├── Directory.Packages.props
-│   └── README.md  — readme-benchmark Index for Deckle's remaining benchmark workspace: the rewrite evaluations, kept…
 ├── docs/
 │   ├── adr/
 │   │   ├── 0000-template.md  — Fill-in template for a Deckle ADR — copy it to start one, record no decision he…

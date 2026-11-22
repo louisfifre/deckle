@@ -1,6 +1,6 @@
 # What the benchmarks and offline probes concluded
 
-The `benchmark/` workspace, `src/Deckle.Autocorrect.Probe` and `src/Deckle.Autocorrect.Mlm` are removed (branch `chore/remove-benchmarks`), except `benchmark/rewrite`, which still serves the rewrite prompts and stays in the repository. A bench is cheap to rewrite: a prompt, a corpus, a judge model beside it. This note keeps what each one asked and what is still worth knowing. It is written from the READMEs, the commit bodies and the headers of the removed code.
+The `benchmark/` workspace, `src/Deckle.Autocorrect.Probe` and `src/Deckle.Autocorrect.Mlm` are removed (branch `chore/remove-benchmarks`). `benchmark/rewrite` and `benchmark/capture-tail` left the repository later (branch `chore/repo-cleanup`) and live on as local, untracked tools on the maintainer's machine. A bench is cheap to rewrite: a prompt, a corpus, a judge model beside it. This note keeps what each one asked and what is still worth knowing. It is written from the READMEs, the commit bodies and the headers of the removed code.
 
 **Limit of this record.** Raw runs, corpora and result tables were local and never versioned. For most campaigns no result table survives in the repository, so only the figures quoted below are established. Anything else would be a guess. The removed code stays reachable in git history (last commit before the removal: the parent of the commit that deletes `benchmark/`).
 
