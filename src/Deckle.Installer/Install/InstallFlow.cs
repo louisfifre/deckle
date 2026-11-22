@@ -146,7 +146,7 @@ internal static class InstallFlow
             string status = ex is HttpRequestException { StatusCode: { } code } ? $" | status={(int)code}" : string.Empty;
             InstallLog.Error($"Install failed | reason={step}_failed | step={step}{status} | {InstallLog.Cause(ex)}");
             if (tempDir is not null) TryDeleteTree(tempDir);
-            MessageDialog.Error(window.Handle, FriendlyError(ex));
+            MessageDialog.Error(window.Handle, InstallFailureText.For(ex));
             return 1;
         }
     }
@@ -158,15 +158,6 @@ internal static class InstallFlow
             ? $"Downloading Deckle {version}…  ({Mb(done):0} MB of {Mb(total.Value):0} MB)"
             : $"Downloading Deckle {version}…  ({Mb(done):0} MB)";
     }
-
-    private static string FriendlyError(Exception ex) => ex switch
-    {
-        HttpRequestException =>
-            "Could not reach GitHub to download Deckle.\n\nCheck your internet connection and try again.",
-        TimeoutException =>
-            "The download stopped receiving data.\n\nCheck your internet connection and try again.",
-        _ => "Deckle Setup could not complete:\n\n" + ex.Message,
-    };
 
     // Locates Deckle.exe in the extracted tree — flat at the root, but tolerant
     // of a wrapping folder by taking the shallowest match.
