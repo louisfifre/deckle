@@ -316,6 +316,14 @@ public partial class App
                 Step("settings/diagnostics-open");
                 await CaptureDiagnosticsOpenAsync(report, settings, outputFolder, captures);
             }
+
+            // The Transcription page again under Parakeet, with sample lexicon
+            // terms (App.SelfCheck.Transcription.cs).
+            if (onlyPage is null or "whisper")
+            {
+                Step("settings/whisper-parakeet");
+                await CaptureTranscriptionParakeetAsync(report, settings, outputFolder, captures);
+            }
         }
 
         if (Wants("log"))
