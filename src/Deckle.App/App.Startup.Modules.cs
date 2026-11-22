@@ -68,18 +68,13 @@ public partial class App
         else
         {
             context.Skip(ModuleIds.Transcription, engineSkip);
-            // A present module that cannot run is the person's to fix, from the
-            // Transcription page. Nothing closes it in this process: the engine
-            // is composed only at start, so what fixes it is the restart that
-            // follows provisioning.
+            // A present module that cannot run is the person's to fix. The
+            // incident opens the Transcription page, whose setup bar starts the
+            // download, so startup opens no window of its own at each launch.
+            // Nothing closes it in this process: the engine is composed only at
+            // start, so what fixes it is the restart that follows provisioning.
             if (engineSkip != SkipNotPresent)
-            {
                 UserIncidentRegistry.Instance.Open(UserIncidents.SpeechModel, engineSkip);
-                // A model that is not (all) there is what a first start or an
-                // interrupted download leaves, so it earns the setup window at the
-                // end of startup (App.SpeechRepair.cs).
-                _speechRepairReason = engineSkip;
-            }
         }
         // Construction does no I/O; the Ambient settings observer starts and
         // stops the engine.

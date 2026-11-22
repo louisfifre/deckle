@@ -80,45 +80,6 @@ public sealed partial class DeckleAppSource
         if (IsEnabled()) WriteEvent(EvtDataRootCleanupFailed, ex_type, ex_message, elapsed_ms);
     }
 
-    // ── Speech engine repair ────────────────────────────────────────────
-    //
-    // The app found the speech model missing or incomplete at startup and
-    // opened the setup wizard on its install step, which downloads nothing
-    // before the person's click. reason is the startup skip reason:
-    // speech_model_missing. notice (closed vocabulary): missing. Paired by work_id with SpeechRepairEnded (outcome: completed,
-    // the app restarts; cancelled, the app runs on without transcription) or
-    // with SpeechRepairFailed.
-
-    [Event(EvtSpeechRepairOffered,
-           Level = EventLevel.Informational,
-           Keywords = (EventKeywords)Keywords.Lifecycle,
-           Tags = ObservationTags.Milestone,
-           Message = "Deckle opened setup to download the speech engine again")]
-    public void SpeechRepairOffered(string work_id, string reason, string notice)
-    {
-        if (IsEnabled()) WriteEvent(EvtSpeechRepairOffered, work_id, reason, notice);
-    }
-
-    [Event(EvtSpeechRepairEnded,
-           Level = EventLevel.Informational,
-           Keywords = (EventKeywords)Keywords.Lifecycle,
-           Tags = ObservationTags.Milestone,
-           Message = "The speech engine setup Deckle opened ended")]
-    public void SpeechRepairEnded(string work_id, string outcome)
-    {
-        if (IsEnabled()) WriteEvent(EvtSpeechRepairEnded, work_id, outcome);
-    }
-
-    [Event(EvtSpeechRepairFailed,
-           Level = EventLevel.Warning,
-           Keywords = (EventKeywords)Keywords.Lifecycle,
-           Tags = ObservationTags.Milestone,
-           Message = "The speech engine setup Deckle opened stopped on an error, so transcription stays off\nwork_id={0} | ex_type={1} | ex_message={2}")]
-    public void SpeechRepairFailed(string work_id, string ex_type, string ex_message)
-    {
-        if (IsEnabled()) WriteEvent(EvtSpeechRepairFailed, work_id, ex_type, ex_message);
-    }
-
     // ── Update checks and the in-app update flow ────────────────────────
 
     [Event(EvtUpdateChecksStarted,

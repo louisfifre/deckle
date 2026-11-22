@@ -534,7 +534,6 @@ _Generated from `git ls-files` — do not edit by hand._
 │   │   ├── App.SelfCheck.Projects.Home.cs
 │   │   ├── App.SelfCheck.Projects.Project.cs
 │   │   ├── App.SelfCheck.Rewriting.cs
-│   │   ├── App.SpeechRepair.cs
 │   │   ├── App.Startup.CommandLine.cs
 │   │   ├── App.Startup.CrashDumps.cs
 │   │   ├── App.Startup.DictationRecovery.cs
