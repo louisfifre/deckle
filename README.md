@@ -20,10 +20,10 @@ Voice dictation is the first module and the most established one. Press the hotk
 - **A countdown before each cut.** While you pause, the HUD outline shows how much of the pause is left before the utterance is cut, and draws back when you speak again.
 - **A pause becomes a paragraph.** Each utterance cut on a pause starts a new paragraph in the text.
 - **Clipboard only.** The text always goes to the clipboard and Deckle never pastes it for you: you press Ctrl+V where you want it.
-- **Optional rewrite.** A language model can clean up the transcript before it is delivered. You pick the provider on the **Rewriting** page: a local [Ollama](https://ollama.com/) or [LM Studio](https://lmstudio.ai/), any OpenAI-compatible endpoint, or Claude through its API. Nothing is rewritten until you choose a profile, and a hosted provider receives the transcript text. With **Rewrite while you speak** on, the dictation is rewritten in batches while you are still recording.
-- **No length limit by default.** A **Maximum recording length** can be set on the **Recording** page.
+- **Optional rewrite.** A language model can clean up the transcript before it is delivered. You pick the provider on the **Rewriting** page: a local [Ollama](https://ollama.com/) or [LM Studio](https://lmstudio.ai/), any OpenAI-compatible endpoint, or Claude through its API. Nothing is rewritten until you choose a profile, and a hosted provider receives the transcript text. With **Rewrite while I speak** on, the dictation is rewritten in batches while you are still recording.
+- **No length limit by default.** **Limit recording duration**, on the **Recording** page, sets a maximum length.
 
-Cutting into utterances is the Streaming pipeline, the **Transcribe as you speak** switch in **Settings › Transcription › Streaming**. With it off, the default for now, Deckle records the whole take and transcribes it in one pass after you press stop.
+Cutting into utterances is the Streaming pipeline, the **Transcribe as you speak** switch in **Settings › Transcription › Streaming**. It is on by default. With it off, Deckle records the whole take and transcribes it in one pass after you press stop.
 
 The full chain, step by step, is described in [docs/transcription-audio-chain.md](docs/transcription-audio-chain.md).
 
@@ -46,21 +46,11 @@ Deckle is one app with several modules. You choose them at setup and can change 
 
 <img src="docs/media/board-ambient.png" alt="Ambient light, in progress: the Ambient Light settings page with the Hue bridge paired and the brightness response curve." width="100%">
 
-A left click on the tray icon opens a menu with a switch per background feature, Ambient Light, Record and Transcribe and rewrite, then Settings and Quit. Transcribe and rewrite opens one window for a text or for audio files: one file is transcribed into its text field, several at once into a list where each gets its own text file beside its audio. A right click opens the same menu, or, with Developer mode on, a developer menu with the features still in preview. A double click opens Settings.
+A left click on the tray icon opens a menu with a switch per background feature (precision scrolling, trackpad, taskbar cover, autocorrect, rewrite, ambient light), then Paste to folder, Record, and Transcribe and rewrite, then Settings and Quit. Paste to folder saves what you copied as a file in a folder. Transcribe and rewrite opens one window for a text or for audio files: one file is transcribed into its text field, several at once into a list where each gets its own text file beside its audio. A right click opens the same menu, or, with Developer mode on, a developer menu with the features still in preview. A double click opens Settings.
 
-Smaller touches outside the module list: a **taskbar cover** that masks the taskbar with an opaque band (in progress); an **Apps and games** page, still foundations: a registry of your apps, filled by hand or from your Steam libraries and chosen folders, with an HDR rule per monitor applied while an app runs; **read-aloud**, scaffolded but dormant; and **smooth scrolling** for the mouse wheel, still groundwork.
+Smaller touches outside the module list: a **taskbar cover** that masks the taskbar with an opaque band (in progress); an **Apps and games** page, still foundations: a registry of your apps, filled by hand or from your Steam libraries and chosen folders, with an HDR rule per monitor applied while an app runs; and **precision scrolling**, a smooth scrolling engine for the mouse wheel with its own settings page.
 
 ---
-
-<!-- deckle-stats:start -->
-## Development pulse
-
-| First commit | Commits | Active days | Lines added | Lines touched | Current tracked lines |
-|---:|---:|---:|---:|---:|---:|
-| 2026-04-01 | 4,987 | 138 | 704,341 | 1,045,930 | 363,460 |
-
-<sub>Generated from Git history on 2026-11-17. Counts include tracked text files only for the current line total.</sub>
-<!-- deckle-stats:end -->
 
 ## Privacy and network use
 

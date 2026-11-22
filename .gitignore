@@ -148,17 +148,10 @@ crashdumps/
 # temporary by doctrine, never committed.
 /logs/
 
-# Only benchmark/rewrite and benchmark/capture-tail (a measurement tool that
-# prints aggregates, never text) stay in the repository. A checkout that ran the
-# removed benches still holds their local runs, which may contain
-# dictations: everything else under benchmark/ is ignored so it can never be
-# committed. Drop the first rule once no checkout keeps those folders.
-/benchmark/*
-!/benchmark/rewrite/
-!/benchmark/capture-tail/
-!/benchmark/Directory.Build.props
-!/benchmark/Directory.Packages.props
-!/benchmark/README.md
+# Local measurement tools (rewrite prompts, capture-tail), kept on the
+# maintainer's machine and never committed: their runs read dictations.
+# Their last tracked version stays in git history.
+/benchmark/
 
 # ─────────────────────────────────────────────────────────────────────────
 #  Python tooling — caches and virtualenvs (ad hoc scripts)
