@@ -43,7 +43,8 @@ internal sealed class AutocorrectEngineHarness : IDisposable
         PersonalDictionary? dictionary = null,
         IFrequencyLexicon? french = null,
         IFrequencyLexicon? english = null,
-        IReadOnlyList<MistouchFamilyRecord>? mistouchFamilies = null)
+        IReadOnlyList<MistouchFamilyRecord>? mistouchFamilies = null,
+        IPersonalLexicon? adopted = null)
     {
         Policy = policy ?? NeverCorrects;
         Injector = new RecordingInjector(Surface);
@@ -62,7 +63,7 @@ internal sealed class AutocorrectEngineHarness : IDisposable
         Engine = new AutocorrectEngine(
             Host, _decoder, Tracker, Prober, Policy, Injector,
             () => Settings, dictionary, french, english,
-            mistouchFamilies: mistouchFamilies);
+            mistouchFamilies: mistouchFamilies, adopted: adopted);
 
         Engine.SurfaceChanged += (s, e) => SurfaceChanges.Add((s, e));
         Engine.CorrectionApplied += d => Applied.Add(d);

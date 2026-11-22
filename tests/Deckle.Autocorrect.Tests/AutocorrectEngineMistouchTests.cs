@@ -113,6 +113,33 @@ public class AutocorrectEngineMistouchTests
         Assert.Equal(("qu;il ", "qu'il "), call);
     }
 
+    [Fact]
+    [Trait("Category", "regression")]
+    public void ADeclaredWordCountsAsAWordForTheRepair()
+    {
+        // The engine used to ask only the personal dictionary, so a word the
+        // person declared in the lexicon left « fait,Deckle » unrepaired while
+        // the policies already treated it as theirs.
+        using var h = new AutocorrectEngineHarness(
+            french: new StubFrequencyLexicon(new() { ["fait"] = 1000 }),
+            mistouchFamilies: Families,
+            adopted: new PersonalLexiconWithTerms(new NoAdoptedWords(), () => ["Deckle"]));
+        h.Prober.Surface = AutocorrectEngineHarness.Editable();
+        Assert.True(h.Start());
+
+        h.Type("fait,Deckle ");
+
+        var call = Assert.Single(h.Injector.Calls);
+        Assert.Equal(("fait,Deckle ", "fait, Deckle "), call);
+    }
+
+    private sealed class NoAdoptedWords : IPersonalLexicon
+    {
+        public bool IsAdopted(string word) => false;
+        public bool IsSuppressed(string original, string replacement) => false;
+        public IReadOnlyCollection<string> AdoptedWords => [];
+    }
+
     private sealed class StubFrequencyLexicon(Dictionary<string, double> entries) : IFrequencyLexicon
     {
         public bool Contains(string lowerForm) => entries.ContainsKey(lowerForm);
