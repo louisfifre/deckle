@@ -147,14 +147,11 @@ public partial class App
             // The microphone level, a developer capture, is the Diagnostics
             // page's own card under Detailed logs, no longer a contribution.
             RegisterSettingsModule(Audio.Views.RecordingSettingsModule.Describe(order: 50), Audio.Views.SettingsSearch.Entries);
-            // One module, four rail entries: the module's page (General under the
-            // node) then Lexicon, Decoding and Streaming nested under it, each
-            // registered on its own so the search index resolves page
-            // coordinates per page. Lexicon comes first: every Parakeet user
-            // needs it, Decoding is for experts.
+            // One module, three rail entries: the module's page (General under the
+            // node) then Lexicon and Streaming nested under it, each registered
+            // on its own so the search index resolves page coordinates per page.
             RegisterSettingsModule(Transcription.Views.WhisperSettingsModule.Describe(order: 100), Transcription.Views.SettingsSearch.Entries);
             RegisterSettingsModule(Transcription.Views.WhisperSettingsModule.DescribeLexicon(order: 105), Transcription.Views.SettingsSearch.LexiconEntries);
-            RegisterSettingsModule(Transcription.Views.WhisperSettingsModule.DescribeDecoding(order: 110), Transcription.Views.SettingsSearch.DecodingEntries);
             RegisterSettingsModule(Transcription.Views.WhisperSettingsModule.DescribeStreaming(order: 120), Transcription.Views.SettingsSearch.StreamingEntries);
             ContributeDiagnostics(
                 Transcription.Views.WhisperTelemetryViewModel.Contribution(order: 100),

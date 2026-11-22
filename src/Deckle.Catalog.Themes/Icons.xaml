@@ -68,13 +68,7 @@
     <x:String x:Key="Icon.OpenExternal">&#xE8A7;</x:String>
     <x:String x:Key="Icon.Cancel">&#xE711;</x:String>
 
-    <!-- ─── Whisper transcription specifics ──────────────────────── -->
-    <x:String x:Key="Icon.Language">&#xF2B7;</x:String>
-    <x:String x:Key="Icon.Prompt">&#xE932;</x:String>
-    <x:String x:Key="Icon.Gpu">&#xE950;</x:String>
-    <x:String x:Key="Icon.Filter">&#xE74F;</x:String>
-    <x:String x:Key="Icon.Pattern">&#xE71C;</x:String>
-    <x:String x:Key="Icon.Context">&#xE895;</x:String>
+    <!-- ─── Transcription specifics ──────────────────────── -->
     <x:String x:Key="Icon.Tokens">&#xE8B2;</x:String>
     <x:String x:Key="Icon.Tuning">&#xE9CA;</x:String>
 

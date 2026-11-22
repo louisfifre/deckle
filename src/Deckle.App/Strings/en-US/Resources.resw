@@ -1010,7 +1010,7 @@
 
   <!-- WhisperPage Reset all dialog -->
   <data name="Settings_ResetWhisperDialog_Detail" xml:space="preserve">
-    <value>The Decoding and Streaming pages keep their own values.</value>
+    <value>The Lexicon and Streaming pages keep their own values.</value>
   </data>
 
   <!-- DiagnosticsPage Telemetry + whole-page reset dialogs -->

@@ -10,9 +10,9 @@
          pause strip the cut margin and the minimum speech). Everything shows
          whatever the switch says: it picks only the dictation pipeline, while
          files and recovered takes are always cut with these settings. The
-         guards against text from silence and noise are not here: they apply to
-         every recording, so they sit on the Decoding page. Every card is
-         composed from WhisperViewModel's manifests. -->
+         silence and noise filtering closes the page: its fold applies to every
+         recording, whatever the switch says. Every card is composed from
+         WhisperViewModel's manifests. -->
     <ScrollViewer Padding="32,24,32,24"
                   VerticalScrollBarVisibility="Auto"
                   HorizontalScrollBarVisibility="Disabled">
@@ -45,6 +45,13 @@
                                     Spacing="{StaticResource SettingsCardSpacing}" />
                     </StackPanel>
                 </catalog:SettingsSection>
+
+                <!-- ── Silence and noise filtering ─────────────────────────
+                     One fold with no master, collapsed: the Silero trim (its
+                     switch, then its three parameters while it is on).
+                     Composed: WhisperViewModel.SilenceGuardSettings. -->
+                <StackPanel x:Name="SilenceGuardsHost"
+                            Spacing="{StaticResource SettingsCardSpacing}" />
 
             </StackPanel>
         </Grid>

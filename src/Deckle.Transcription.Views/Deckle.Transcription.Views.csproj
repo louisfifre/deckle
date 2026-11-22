@@ -5,7 +5,7 @@
     <!-- Neutral language for the lib's PRI fallback. Mirrors Deckle.App.csproj. -->
     <DefaultLanguage>en-US</DefaultLanguage>
     <!-- Generates the lib's own .pri so x:Uid lookups in WhisperPage,
-         DecodingPage and StreamingPage, the composed cards (SettingsComposer
+         LexiconPage and StreamingPage, the composed cards (SettingsComposer
          reads the view model's assembly), the Diagnostics contribution and
          Loc.GetFrom resolve against the Deckle.Transcription.Views/Resources
          subtree (Strings/en-US/Resources.resw). The engine's own code-side
@@ -14,7 +14,7 @@
     <EnableMsixTooling>true</EnableMsixTooling>
   </PropertyGroup>
 
-  <!-- The Transcription settings page and its Decoding and Streaming
+  <!-- The Transcription settings page and its Lexicon and Streaming
        subpages, their view model, the dictation-dataset card it contributes
        to Diagnostics, and the strings they read. Dependencies point one way:
        this project reads Deckle.Transcription, which holds no XAML and knows

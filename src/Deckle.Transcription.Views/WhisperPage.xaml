@@ -2,30 +2,7 @@
     x:Class="Deckle.Transcription.Views.WhisperPage"
     xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
     xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
-    xmlns:controls="using:CommunityToolkit.WinUI.Controls"
-    xmlns:ui="using:CommunityToolkit.WinUI"
     xmlns:catalog="using:Deckle.Catalog">
-
-    <Page.Resources>
-        <!-- Compact slider for bounded continuous values: Windows 11 Settings
-             pattern (mouse sensitivity, volume, etc.). No spinner, no layout
-             shift, value shown on the right through ValueTextBlock. -->
-        <Style x:Key="SettingSliderStyle"
-               TargetType="Slider">
-            <Setter Property="MinWidth" Value="180" />
-            <Setter Property="VerticalAlignment" Value="Center" />
-            <Setter Property="IsThumbToolTipEnabled" Value="True" />
-        </Style>
-
-        <Style x:Key="SliderValueTextStyle"
-               BasedOn="{StaticResource BodyTextBlockStyle}"
-               TargetType="TextBlock">
-            <Setter Property="VerticalAlignment" Value="Center" />
-            <Setter Property="MinWidth" Value="40" />
-            <Setter Property="TextAlignment" Value="Right" />
-            <Setter Property="Foreground" Value="{ThemeResource TextFillColorSecondaryBrush}" />
-        </Style>
-    </Page.Resources>
 
     <Grid Background="Transparent"
           Tapped="OnBackgroundTapped">
@@ -111,11 +88,11 @@
                 </StackPanel>
                 </catalog:SettingsSection>
 
-                <!-- The decoding parameters and the streaming pipeline live on their
-                     own pages, DecodingPage and StreamingPage, nested under this
-                     module in the rail. The dictation's dataset consents (latency,
-                     audio corpus) live on Settings > Diagnostics, the one editor of
-                     what Deckle records (WhisperTelemetryViewModel, 2026-10-14). -->
+                <!-- The lexicon and the streaming pipeline live on their own pages,
+                     LexiconPage and StreamingPage, nested under this module in the
+                     rail. The dictation's dataset consents (latency, audio corpus)
+                     live on Settings > Diagnostics, the one editor of what Deckle
+                     records (WhisperTelemetryViewModel, 2026-10-14). -->
 
             </StackPanel>
             </Grid>

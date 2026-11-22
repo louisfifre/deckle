@@ -512,18 +512,12 @@
   <data name="WhisperPageHeader.Description" xml:space="preserve">
     <value>The on-screen overlay, the model and the engine.</value>
   </data>
-  <!-- The module's two other pages, nested under it in the rail. -->
-  <data name="DecodingPageHeader.Title" xml:space="preserve">
-    <value>Decoding</value>
-  </data>
-  <data name="DecodingPageHeader.Description" xml:space="preserve">
-    <value>What Deckle does with silence and noise in every recording.</value>
-  </data>
+  <!-- The module's other pages, nested under it in the rail. -->
   <data name="StreamingPageHeader.Title" xml:space="preserve">
     <value>Streaming</value>
   </data>
   <data name="StreamingPageHeader.Description" xml:space="preserve">
-    <value>How Deckle cuts each recording into utterances.</value>
+    <value>How Deckle cuts each recording into utterances and filters silence and noise.</value>
   </data>
   <data name="StreamingPageSegmentationSection.Title" xml:space="preserve">
     <value>Segmentation</value>
@@ -532,7 +526,7 @@
     <value>Model and engine</value>
   </data>
   <!-- The one fold of the guards against text from silence and noise, on the
-       Decoding page (WhisperViewModel.SilenceGuardSettings, 2026-11-07 review,
+       Streaming page (WhisperViewModel.SilenceGuardSettings, 2026-11-07 review,
        change 6): named for what it spares the person, not for its detectors. -->
   <data name="WhisperSilenceGuardsFold.Header" xml:space="preserve">
     <value>Silence and noise filtering</value>
@@ -555,7 +549,7 @@
 
   <!-- WhisperPage Reset all dialog -->
   <data name="Settings_ResetWhisperDialog_Detail" xml:space="preserve">
-    <value>The Decoding and Streaming pages keep their own values.</value>
+    <value>The Lexicon and Streaming pages keep their own values.</value>
   </data>
 
   <!-- LlmPage Reset all rewriting dialog + Ollama status -->
@@ -677,9 +671,6 @@
 
   <data name="SettingsModuleNavLabel" xml:space="preserve">
     <value>Transcription</value>
-  </data>
-  <data name="SettingsModuleNavLabel_Decoding" xml:space="preserve">
-    <value>Decoding</value>
   </data>
   <data name="SettingsModuleNavLabel_Streaming" xml:space="preserve">
     <value>Streaming</value>

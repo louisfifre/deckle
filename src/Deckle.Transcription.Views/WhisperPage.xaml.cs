@@ -112,9 +112,9 @@ public sealed partial class WhisperPage : Page
         ComposeRegion(SpeechEngineHost, ViewModel.SpeechEngineSettings);
         ComposeRegion(ModelsDirectoryHost, ViewModel.ModelsDirectorySettingsManifest);
         ComposeRegion(UseGpuHost, ViewModel.UseGpuSettingsManifest);
-        // The lexicon, decoding and streaming manifests compose on LexiconPage,
-        // DecodingPage and StreamingPage, this module's other pages; the dataset consents
-        // compose on the Diagnostics page (WhisperTelemetryViewModel).
+        // The lexicon and streaming manifests compose on LexiconPage and
+        // StreamingPage, this module's other pages; the dataset consents compose
+        // on the Diagnostics page (WhisperTelemetryViewModel).
     }
 
     private SettingsComposer ComposeRegion(
@@ -268,11 +268,11 @@ public sealed partial class WhisperPage : Page
     {
         DeckleWhispSource.Log.PageResetAll();
 
-        // Resets exactly the cards this page shows, the way DecodingPage and
-        // StreamingPage reset theirs: every card is composed, so each composer
-        // drives its cards to their POCO-sourced defaults. The lexicon and
-        // streaming values live in the same TranscriptionSettings but belong to
-        // their own pages, so they stay. The overlay card lives in AppSettings.
+        // Resets exactly the cards this page shows, the way StreamingPage resets
+        // its own: every card is composed, so each composer drives its cards to
+        // their POCO-sourced defaults. The lexicon and streaming values live in
+        // the same TranscriptionSettings but belong to their own pages, so they
+        // stay. The overlay card lives in AppSettings.
         foreach (SettingsComposer composer in _composers) composer.ResetAll();
         UpdateRestartState();
     }

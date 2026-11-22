@@ -8,11 +8,11 @@ namespace Deckle.Transcription.Views;
 // declares its pages, their icons and their label keys here; the composition root
 // supplies only the Order. Registered from App.OnLaunched via SettingsModuleRegistry.
 //
-// Four pages, one module: the module's own page, which the rail shows as
+// Three pages, one module: the module's own page, which the rail shows as
 // General under the Transcription node (overlay, engine and models folder,
-// diagnostics, the restart footer), then Lexicon (the person's own words),
-// Decoding (what applies to every recording in both pipelines) and Streaming
-// (the pipeline switch, speech filtering, segmentation) nested under it.
+// the restart footer), then Lexicon (the person's own words) and Streaming
+// (the pipeline switch, segmentation, silence and noise filtering) nested
+// under it.
 public static class WhisperSettingsModule
 {
     // The PRI subtree of the nav labels and the search entries: the pages'
@@ -23,7 +23,6 @@ public static class WhisperSettingsModule
     // that compiles the pages.
     public const string PageTag = "Deckle.Transcription.Views.WhisperPage, Deckle.Transcription.Views";
     public const string LexiconPageTag = "Deckle.Transcription.Views.LexiconPage, Deckle.Transcription.Views";
-    public const string DecodingPageTag ="Deckle.Transcription.Views.DecodingPage, Deckle.Transcription.Views";
     public const string StreamingPageTag = "Deckle.Transcription.Views.StreamingPage, Deckle.Transcription.Views";
 
     private const string ModuleId = "whisp";
@@ -47,17 +46,6 @@ public static class WhisperSettingsModule
         PageTag = LexiconPageTag,
         OwningAssembly = ResourceLibrary,
         LabelKey = "SettingsModuleNavLabel_Lexicon",
-        Glyph = Glyphs.Speech,
-        Order = order,
-    };
-
-    public static SettingsModuleDescriptor DescribeDecoding(int order) => new()
-    {
-        Id = "whisp-decoding",
-        ParentId = ModuleId,
-        PageTag = DecodingPageTag,
-        OwningAssembly = ResourceLibrary,
-        LabelKey = "SettingsModuleNavLabel_Decoding",
         Glyph = Glyphs.Speech,
         Order = order,
     };

@@ -85,18 +85,8 @@ public static class SettingsSearch
         },
     ];
 
-    // The Decoding page: the silence and noise guards, one fold (the Silero trim
-    // and its parameters ride under it).
-    public static IReadOnlyList<SettingSearchEntry> DecodingEntries { get; } =
-    [
-        new SettingSearchEntry
-        {
-            LabelKey = "WhisperSilenceGuardsFold",
-            Keywords = ["silero", "vad", "silence", "noise", "trim", "hallucination",
-                        "threshold", "padding"],
-        },
-    ];
-    // The Streaming page: the pipeline switch, speech filtering, segmentation.
+    // The Streaming page: the pipeline switch, segmentation, silence and noise
+    // filtering.
     public static IReadOnlyList<SettingSearchEntry> StreamingEntries { get; } =
     [
         // "Streaming pipeline" — the switch, first and alone (the cards under it
@@ -105,14 +95,6 @@ public static class SettingsSearch
         {
             LabelKey = "WhisperStreamingEnabledCard",
             Keywords = ["realtime", "live", "segmenter", "utterance"],
-        },
-
-        // "Voice activity detection" — the VAD group (threshold, minimum silence
-        // and padding ride under it).
-        new SettingSearchEntry
-        {
-            LabelKey = "WhisperVadEnabledCard",
-            Keywords = ["vad", "silero", "silence", "trim", "threshold", "padding"],
         },
 
         // "Pause before cutting" — the curve block: the four hangover anchors,
@@ -124,6 +106,15 @@ public static class SettingsSearch
             Keywords = ["hangover", "pause", "cut", "ramp", "wait",
                         "margin", "silence", "end", "clip", "trailing",
                         "minimum", "speech", "blip", "noise", "short", "word", "drop", "cough"],
+        },
+
+        // "Silence and noise filtering" — the Silero trim fold (its switch, then
+        // threshold, minimum silence and padding ride under it).
+        new SettingSearchEntry
+        {
+            LabelKey = "WhisperSilenceGuardsFold",
+            Keywords = ["silero", "vad", "voice activity", "silence", "noise", "trim",
+                        "threshold", "padding"],
         },
     ];
 

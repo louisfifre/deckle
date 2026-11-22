@@ -9,9 +9,9 @@ namespace Deckle.Transcription.Views;
 
 // ── WhisperViewModel — settings manifest ──────────────────────────────────────
 //
-// The declarative half of the module's pages (General, Lexicon, Decoding,
-// Streaming), kept beside the ViewModel that owns the values rather than in the
-// page code-behind. Each entry declares one setting — its kind, its
+// The declarative half of the module's pages (General, Lexicon, Streaming),
+// kept beside the ViewModel that owns the values rather than in the page
+// code-behind. Each entry declares one setting — its kind, its
 // localization key (the x:Uid the hand-authored card carried, so the composer
 // resolves the identical Header and Description from this module's .resw) and
 // typed selectors onto this VM's own properties — and SettingsComposer turns
@@ -99,11 +99,10 @@ public partial class WhisperViewModel
     ];
 
     // The guard against text from silence and noise: the Silero trim, one fold
-    // with no master on the Decoding page, collapsed. Its values apply to EVERY
-    // recording (the streaming dictation, the monolithic take, a file, a
-    // recovered take), so the page is the module's page for what applies in both
-    // pipelines rather than the Streaming page, whose switch can be off. The fold
-    // stays collapsed: almost nobody moves these values.
+    // with no master at the foot of the Streaming page, collapsed. Its values
+    // apply to EVERY recording (the streaming dictation, the monolithic take, a
+    // file, a recovered take), so the fold shows whatever the streaming switch
+    // says. It stays collapsed: almost nobody moves these values.
     //
     // The Silero trim is the second detector of the streaming chain, not a
     // detail of the segmenter. The energy segmenter cuts the live stream on

@@ -8,7 +8,7 @@
 - Violated invariant: a list the person authors is data, not a setting with a default; no reset ever empties it. The trap lives as a comment in `WhisperViewModel.Lexicon.cs` (the Words card declares no default).
 - Fix: the lexicon moved to its own page, Transcription > Lexicon, with no Reset all, and its Words card declares no default.
 - Recurrence cue: a `Setting.Text` or list card holding the person's own entries with a `defaultValue`; a page Reset all that a person reports « lost my words ».
-- Guard: none automated. `WhisperViewModel` reads `TranscriptionSettingsService.Instance` in `Load`, and no Views test suite exists for this module, so asserting the manifest needs a seam the design does not want. The self-check captures `settings-lexicon` and `settings-lexicon-parakeet` show the page with no Reset all; a reviewer checks the card carries no reset button.
+- Guard: none automated. `WhisperViewModel` reads `TranscriptionSettingsService.Instance` in `Load`, and no Views test suite exists for this module, so asserting the manifest needs a seam the design does not want. The self-check capture `settings-lexicon` shows the page with no Reset all; a reviewer checks the card carries no reset button.
 
 ## A one-letter term recased every occurrence of that letter
 

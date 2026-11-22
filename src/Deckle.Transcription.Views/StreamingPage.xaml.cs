@@ -9,10 +9,11 @@ using Deckle.Localization;
 namespace Deckle.Transcription.Views;
 
 // The Streaming page of the Transcription module: a host-only page over the
-// WhisperViewModel manifests of the streaming pipeline. Everything under the
-// switch shows whatever the strategy: the switch picks only the dictation
-// pipeline, and files and recovered takes are always cut and trimmed with
-// these settings, so hiding them would hide settings still in use. Its own
+// WhisperViewModel manifests of the streaming pipeline and of the silence and
+// noise filtering. Everything under the switch shows whatever the strategy: the
+// switch picks only the dictation pipeline, and files and recovered takes are
+// always cut and trimmed with these settings, so hiding them would hide
+// settings still in use. Its own
 // view model instance reloads from the persisted settings on every navigation, like
 // WhisperPage's, so an edit made on another page of the module is picked up.
 public sealed partial class StreamingPage : Page
@@ -37,6 +38,7 @@ public sealed partial class StreamingPage : Page
         _switchComposer = new SettingsComposer(SwitchHost, ViewModel);
         _switchComposer.Compose(ViewModel.StreamingSwitch);
         Compose(SegmentationHost, ViewModel.SegmentationSettings);
+        Compose(SilenceGuardsHost, ViewModel.SilenceGuardSettings);
     }
 
     private void Compose(Panel host, IReadOnlyList<SettingDescriptor> settings)
