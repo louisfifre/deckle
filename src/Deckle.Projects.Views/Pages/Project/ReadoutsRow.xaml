@@ -9,6 +9,7 @@
          worth a look; it carries no colour. The columns have a minimum width of
          their own, so a project's readouts line up with the next one's and do
          not slide when the info button appears or when the values arrive. -->
+    <StackPanel Spacing="8">
     <Grid ColumnSpacing="48">
         <Grid.ColumnDefinitions>
             <ColumnDefinition Width="Auto" MinWidth="128" />
@@ -61,4 +62,14 @@
             </Grid>
         </StackPanel>
     </Grid>
+
+        <!-- Shown only when git is not installed: the dashes above are not an
+             error, and this says what would fill them in. -->
+        <TextBlock x:Name="GitNote"
+                   Style="{StaticResource CaptionTextBlockStyle}"
+                   Foreground="{ThemeResource TextFillColorSecondaryBrush}"
+                   IsTextSelectionEnabled="True"
+                   TextWrapping="Wrap"
+                   Visibility="Collapsed" />
+    </StackPanel>
 </UserControl>

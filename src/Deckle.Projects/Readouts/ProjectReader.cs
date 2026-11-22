@@ -44,7 +44,8 @@ public sealed class ProjectReader : IProjectReader
         if (!status.Succeeded)
         {
             Unavailable(status);
-            return Compose(projectPath, RepositoryState.Unreadable, tag: null, uncommitted: null, remote: null, candidates: null, hasMenu);
+            return Compose(projectPath, RepositoryState.Unreadable, tag: null, uncommitted: null, remote: null, candidates: null, hasMenu,
+                gitNotInstalled: status.Failure == GitFailure.NotFound);
         }
         Answered();
 
@@ -70,7 +71,7 @@ public sealed class ProjectReader : IProjectReader
 
     private ProjectReading Compose(
         string projectPath, RepositoryState state, string? tag, int? uncommitted, GitRemote? remote,
-        IReadOnlyList<string>? candidates, bool hasMenu)
+        IReadOnlyList<string>? candidates, bool hasMenu, bool gitNotInstalled = false)
     {
         // The manifests are read from the files git listed; with no listing
         // (not a repository, git unreadable) the bounded walk stands in.
@@ -82,7 +83,7 @@ public sealed class ProjectReader : IProjectReader
 
         return new ProjectReading(
             FolderState.Present, state, new VersionReading(tag, sources, scan.More),
-            uncommitted, remote, hasMenu, _clock.GetUtcNow());
+            uncommitted, remote, hasMenu, _clock.GetUtcNow(), gitNotInstalled);
     }
 
     private void Answered()

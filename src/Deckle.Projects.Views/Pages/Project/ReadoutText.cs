@@ -6,6 +6,8 @@ namespace Deckle.Projects.Views;
 //   Version       the highest tag ("v0.131.0"), "No version yet" without one
 //                 (a project whose manifests declare a version still reads so,
 //                 and its info button lists what they say)
+//                 "—" when git could not be read; with no git on the PC a line
+//                 under the readouts says so and how to install it
 //   Uncommitted   "3 files", "1 file", "Nothing", "Not a Git repository"
 //   An agent...   "≈ 1,880 tokens", the thousands separator of en-US
 //
@@ -17,7 +19,14 @@ internal static class ReadoutText
     {
         string unknown = ProjectsText.Get("Project_Unknown");
 
-        string version = reading is null ? "" : reading.Version.Tag ?? ProjectsText.Get("Project_NoVersion");
+        // Without a readable git the tag is not known, which is not the same as
+        // no tag: the version reads "—" rather than "No version yet".
+        string version = reading switch
+        {
+            null => "",
+            { Git: RepositoryState.Unreadable, Version.Tag: null } => unknown,
+            _ => reading.Version.Tag ?? ProjectsText.Get("Project_NoVersion"),
+        };
         VersionReading? detail = reading is { } r && r.Version.ShowsDetail ? r.Version : null;
 
         string uncommitted = reading switch
@@ -38,6 +47,8 @@ internal static class ReadoutText
             : agentRead ? unknown : "";
         string? tooltip = agent?.IsTruncated == true ? ProjectsText.Get("Project_TokensFloor") : null;
 
-        return new ReadoutsModel(version, detail, uncommitted, tokens, tooltip);
+        string? gitNote = reading is { GitNotInstalled: true } ? ProjectsText.Get("Project_GitNotFound") : null;
+
+        return new ReadoutsModel(version, detail, uncommitted, tokens, tooltip, gitNote);
     }
 }

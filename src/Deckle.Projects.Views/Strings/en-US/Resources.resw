@@ -84,6 +84,7 @@
   <data name="Project_Uncommitted" xml:space="preserve"><value>Uncommitted</value></data>
   <data name="Project_AgentReads" xml:space="preserve"><value>An agent always reads</value></data>
   <data name="Project_NoVersion" xml:space="preserve"><value>No version yet</value></data>
+  <data name="Project_GitNotFound" xml:space="preserve"><value>Git was not found on this PC. To install it, run winget install Git.Git in a terminal.</value></data>
   <data name="Project_FilesOne" xml:space="preserve"><value>1 file</value></data>
   <data name="Project_FilesMany_Format" xml:space="preserve"><value>{0} files</value></data>
   <data name="Project_Nothing" xml:space="preserve"><value>Nothing</value></data>
