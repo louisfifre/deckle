@@ -1,5 +1,6 @@
 using Deckle.Core;
 using Deckle.Install;
+using Deckle.Localization;
 using Deckle.Modules;
 using Deckle.Setup;
 
@@ -159,6 +160,11 @@ public partial class App
         bool pendingWork = InstallPlan.HasPendingWork(context);
         if (pendingWork)
         {
+            // An update that finds the speech model to fetch (2.4 GB) waits for the
+            // person's Download click, as the repair does, rather than starting it.
+            if (afterUpdate && InstallPlan.IsParakeetModelPending(context))
+                context.RepairNotice = Loc.Get("Setup_Repair_Missing");
+
             var setup = new SetupWindow(context);
             setup.Body.Navigate(typeof(InstallingPage), setup);
             setup.Activate();
@@ -177,13 +183,15 @@ public partial class App
             }
         }
 
-        // A cancelled provisioning still leaves a complete install — the app
-        // simply doesn't start now; the Start Menu entry is the way back in.
+        // A cancelled provisioning still leaves a complete install. After an
+        // install the app simply doesn't start now (the Start Menu entry is the
+        // way back in); after an update it always restarts, since the person
+        // was running Deckle and an update must not leave it closed.
         ReportTransactionalModeExit(
             ContinuationMode,
             ok ? "completed" : "cancelled",
             pendingWork ? "none" : "nothing_to_provision");
-        if (ok) RestartViaShellExecute();
+        if (ok || afterUpdate) RestartViaShellExecute();
         Environment.Exit(0);
     }
 
