@@ -121,7 +121,8 @@ public partial class TaskbarViewModel
             "TaskbarPage_ShowAllTrayIconsCard",
             () => ShowAllTrayIcons,
             value => ShowAllTrayIcons = value,
-            enabledWhen: () => IsSupported,
+            // No gate: TrayIconPromoter writes the notify-icon registry key and
+            // needs no native engine, so it runs, and stays changeable, everywhere.
             defaultValue: () => new TaskbarSettings().ShowAllTrayIcons,
             advisory: TrayAdvisory),
         Setting.Group(
