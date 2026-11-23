@@ -73,20 +73,9 @@ public partial class TranscriptionViewModel
                         (ParakeetEncoderPrecision.Fp16, "TranscriptionParakeetEncoderFp16"),
                     ],
                     isAdvanced: true,
-                    defaultValue: () => new EngineSettings().ParakeetEncoder,
-                    advisory: ParakeetEncoderAdvisory),
+                    defaultValue: () => new EngineSettings().ParakeetEncoder),
             ]),
     ];
-
-    // FP16 asked, folder known, and no FP16 encoder in it: the load would fail.
-    private string? ParakeetEncoderAdvisory()
-    {
-        if (ParakeetEncoder != ParakeetEncoderPrecision.Fp16) return null;
-        ParakeetModelFolderState? folder = InspectParakeetFolder();
-        return folder is { IsComplete: true, HasFp16Encoder: false }
-            ? Loc.GetFromOptional("Deckle.Transcription.Views", "TranscriptionParakeetEncoderMissing/Message")
-            : null;
-    }
 
     // Wording and meaning of the folder's state. Null when nothing answers: the
     // readout then shows nothing.

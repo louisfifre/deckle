@@ -336,9 +336,6 @@
   <data name="GeneralOverlayPositionCard.Header" xml:space="preserve">
     <value>Position</value>
   </data>
-  <data name="GeneralOverlayPositionCard.Description" xml:space="preserve">
-    <value>Applies on the next recording.</value>
-  </data>
   <data name="GeneralOverlayPositionTop.Content" xml:space="preserve">
     <value>Top</value>
   </data>
@@ -347,9 +344,6 @@
   </data>
   <data name="GeneralTranscriptPanelSideCard.Header" xml:space="preserve">
     <value>Live transcript side</value>
-  </data>
-  <data name="GeneralTranscriptPanelSideCard.Description" xml:space="preserve">
-    <value>Applies on the next recording.</value>
   </data>
   <data name="GeneralTranscriptPanelSideLeft.Content" xml:space="preserve">
     <value>Left</value>
@@ -378,9 +372,6 @@
        is missing or incomplete; the button reopens the first-run setup wizard. -->
   <data name="TranscriptionSetupInfoBar.Title" xml:space="preserve">
     <value>Transcription isn't set up</value>
-  </data>
-  <data name="TranscriptionSetupInfoBar.Message" xml:space="preserve">
-    <value>Download the speech model to start transcribing.</value>
   </data>
   <data name="TranscriptionSetupButton.Content" xml:space="preserve">
     <value>Set up</value>
@@ -417,7 +408,7 @@
     <value>GPU acceleration</value>
   </data>
   <data name="TranscriptionUseGpuCard.Description" xml:space="preserve">
-    <value>Faster transcription on the graphics card. Turn off if you see instability or crashes.</value>
+    <value>Turn off if you see instability or crashes.</value>
   </data>
   <data name="TranscriptionVadEnabledCard.Header" xml:space="preserve">
     <value>Trim silence around speech</value>
@@ -446,16 +437,10 @@
   <data name="TranscriptionModelsDirCard.Header" xml:space="preserve">
     <value>Models folder</value>
   </data>
-  <data name="TranscriptionModelsDirCard.Description" xml:space="preserve">
-    <value>Where the speech models and the Silero model live.</value>
-  </data>
   <!-- The speech engine fold (TranscriptionViewModel.SpeechEngineSettings). Its values
        are read at each model load: a change waits for the restart footer. -->
   <data name="TranscriptionSpeechEngineFold.Header" xml:space="preserve">
     <value>Speech engine</value>
-  </data>
-  <data name="TranscriptionSpeechEngineFold.Description" xml:space="preserve">
-    <value>Where Parakeet, the speech model, is read from, and how precisely it computes.</value>
   </data>
   <data name="TranscriptionParakeetFilesCard.Header" xml:space="preserve">
     <value>Model files</value>
@@ -467,22 +452,19 @@
     <value>Complete model found, with an FP16 encoder.</value>
   </data>
   <data name="TranscriptionParakeetFiles_Incomplete" xml:space="preserve">
-    <value>No complete model in this folder. It must hold vocab.txt and the fp32 folder with the encoder, the decoder and their weight files.</value>
+    <value>No complete model in this folder. It needs vocab.txt and the fp32 folder.</value>
   </data>
   <data name="TranscriptionParakeetEncoderCard.Header" xml:space="preserve">
     <value>Encoder precision</value>
   </data>
   <data name="TranscriptionParakeetEncoderCard.Description" xml:space="preserve">
-    <value>FP16 stores the encoder's numbers on 16 bits instead of 32 (FP32): half the memory, no speed gain on the graphics card, and it can cost accuracy on French. FP32 is the safe choice.</value>
+    <value>FP16 halves the memory but can cost accuracy on French.</value>
   </data>
   <data name="TranscriptionParakeetEncoderFp32.Content" xml:space="preserve">
     <value>FP32</value>
   </data>
   <data name="TranscriptionParakeetEncoderFp16.Content" xml:space="preserve">
     <value>FP16</value>
-  </data>
-  <data name="TranscriptionParakeetEncoderMissing.Message" xml:space="preserve">
-    <value>This folder has no FP16 encoder, so Parakeet cannot load with this precision.</value>
   </data>
   <data name="TranscriptionRestartDiscard.Content" xml:space="preserve">
     <value>Discard</value>
@@ -508,9 +490,6 @@
        Values mirror the raw Surface_Purpose entries for code-behind. -->
   <data name="TranscriptionPageHeader.Title" xml:space="preserve">
     <value>Transcription</value>
-  </data>
-  <data name="TranscriptionPageHeader.Description" xml:space="preserve">
-    <value>The on-screen overlay, the model and the engine.</value>
   </data>
   <!-- The module's other pages, nested under it in the rail. -->
   <data name="StreamingPageHeader.Title" xml:space="preserve">
