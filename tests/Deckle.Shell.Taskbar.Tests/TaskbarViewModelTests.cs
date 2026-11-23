@@ -48,7 +48,8 @@ public sealed class TaskbarViewModelTests : IDisposable
     // An engine is never created: the settings stay off, and a status is raised by hand.
     private TaskbarCustomizer Customizer(TaskbarSettings? settings = null, Func<TaskbarTarget, ITaskbarEngine>? engines = null) =>
         new(() => settings ?? new TaskbarSettings(), () => _vertical,
-            engines ?? (_ => throw new FileNotFoundException("no engine in this test")));
+            engines ?? (_ => throw new FileNotFoundException("no engine in this test")),
+            support: TaskbarSupport.Supported);
 
     private TaskbarViewModel ViewModel(TrayIconPromoter? tray = null, TaskbarCustomizer? customizer = null)
     {

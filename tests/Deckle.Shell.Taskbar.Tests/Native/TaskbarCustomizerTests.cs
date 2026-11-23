@@ -80,13 +80,13 @@ public sealed class TaskbarCustomizerTests
     private FunctionLookup _frameSize = new(new ExplorerFunction(
         "Taskbar.View.dll", 0x6AA3487A, 10055680, 0x451F0, new byte[16]), null);
 
-    private TaskbarCustomizer Customizer() => new(() => _settings, () => _vertical, target =>
+    private TaskbarCustomizer Customizer(TaskbarSupport support = TaskbarSupport.Supported) => new(() => _settings, () => _vertical, target =>
     {
         if (_dllMissing) throw new FileNotFoundException("no dll");
         var engine = new FakeEngine(target);
         _engines.Add(engine);
         return engine;
-    }, (_, _) => Task.FromResult(_frameSize));
+    }, (_, _) => Task.FromResult(_frameSize), support);
 
     private static bool HasConstantReturn(string line)
     {
@@ -109,6 +109,24 @@ public sealed class TaskbarCustomizerTests
         using JsonDocument document = JsonDocument.Parse(line);
         return document.RootElement.GetProperty("doc").GetProperty("rules").EnumerateArray()
             .Any(rule => rule.GetProperty("id").GetString() == id);
+    }
+
+    // The machine is judged by the gate; whatever the machine running this test is,
+    // a refused one never reaches for an engine.
+    [Theory]
+    [InlineData(TaskbarSupport.WindowsTooOld)]
+    [InlineData(TaskbarSupport.UnsupportedArchitecture)]
+    public async Task AnUnsupportedMachineStartsNoEngine(TaskbarSupport support)
+    {
+        _settings.Background = TaskbarBackground.Transparent;
+        _settings.CustomBarThickness = true;
+        TaskbarCustomizer customizer = Customizer(support);
+
+        await customizer.ReconcileAsync("startup");
+        await customizer.ReconcileAsync("settings_changed");
+
+        Assert.Empty(_engines);
+        Assert.Empty(customizer.Problems);
     }
 
     [Fact]
