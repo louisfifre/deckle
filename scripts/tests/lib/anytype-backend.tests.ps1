@@ -27,7 +27,7 @@ function New-Provider([string]$Root, [string[]]$Versions, [string]$Active) {
     return $provider
 }
 
-$official = { param($Executable) 'anytype-cli v0.5.2 (2026-11-05 09:23:09)' }
+$official = { param($Executable) 'anytype-cli v0.5.4 (2026-11-17 21:14:00)' }
 
 $root = Join-Path ([IO.Path]::GetTempPath()) "deckle-anytype-backend-$([guid]::NewGuid())"
 try {
@@ -49,15 +49,15 @@ public static BackendBundle CurrentBundle { get; } = new(
 
     # Each state the deploy summary names.
     $cases = @(
-        @{ Name = 'aligned'; Versions = @('0.5.2'); Active = '0.5.2' }
-        @{ Name = 'staged';  Versions = @('0.5.0', '0.5.2'); Active = '0.5.0' }
+        @{ Name = 'aligned'; Versions = @('0.5.4'); Active = '0.5.4' }
+        @{ Name = 'staged';  Versions = @('0.5.0', '0.5.4'); Active = '0.5.0' }
         @{ Name = 'differs'; Versions = @('0.5.0'); Active = '0.5.0' }
         @{ Name = 'absent';  Versions = @('0.5.0'); Active = $null }
         @{ Name = 'invalid'; Versions = @(); Active = '0.5.0' }
     )
     foreach ($case in $cases) {
         $provider = New-Provider (Join-Path $root "status-$($case.Name)") $case.Versions $case.Active
-        $status = Get-AnytypeBackendPinStatus -PinnedVersion '0.5.2' -ProviderDirectory $provider
+        $status = Get-AnytypeBackendPinStatus -PinnedVersion '0.5.4' -ProviderDirectory $provider
         if ($status.State -cne $case.Name) { throw "Expected state $($case.Name), got $($status.State): $($status.Line)" }
         # The line names the switch script; that script must exist where it says.
         foreach ($named in [regex]::Matches($status.Line, 'scripts/[\w/-]+\.ps1')) {
@@ -67,7 +67,7 @@ public static BackendBundle CurrentBundle { get; } = new(
 
     # A preview writes nothing, even with every blocker running.
     $switchRoot = Join-Path $root 'switch'
-    $provider = New-Provider $switchRoot @('0.5.0', '0.5.2') '0.5.0'
+    $provider = New-Provider $switchRoot @('0.5.0', '0.5.4') '0.5.0'
     $data = Join-Path $switchRoot 'anytype\data'
     $config = Join-Path $switchRoot '.anytype'
     $null = New-Item -ItemType Directory -Force -Path (Join-Path $data 'account'), $config
@@ -76,7 +76,7 @@ public static BackendBundle CurrentBundle { get; } = new(
     $activeBefore = Get-Content -Raw -LiteralPath (Join-Path $provider 'active.json')
     $blockers = @([pscustomobject]@{ Id = 1; Kind = 'bot'; Path = 'x' })
     $arguments = @{
-        Version = '0.5.2'; ProviderDirectory = $provider; DataDirectory = $data
+        Version = '0.5.4'; ProviderDirectory = $provider; DataDirectory = $data
         ConfigDirectory = $config; Stamp = 'test'; ReadVersion = $official
     }
 
@@ -92,12 +92,12 @@ public static BackendBundle CurrentBundle { get; } = new(
     # An executable that is not the version asked for is refused.
     $wrongBuild = $arguments.Clone()
     $wrongBuild.ReadVersion = { param($Executable) 'anytype-cli v0.5.0-dirty (deckle)' }
-    Assert-Throws { Invoke-AnytypeBackendSwitch @wrongBuild -Apply } 'not anytype-cli v0.5.2'
+    Assert-Throws { Invoke-AnytypeBackendSwitch @wrongBuild -Apply } 'not anytype-cli v0.5.4'
 
     $applied = Invoke-AnytypeBackendSwitch @arguments -Apply
     if ($applied.Result -cne 'Success') { throw 'The switch did not succeed' }
     $written = [IO.File]::ReadAllBytes((Join-Path $provider 'active.json'))
-    $expected = [Text.UTF8Encoding]::new($false).GetBytes('{"Version":"0.5.2","RelativeExecutable":"versions/0.5.2/anytype.exe"}')
+    $expected = [Text.UTF8Encoding]::new($false).GetBytes('{"Version":"0.5.4","RelativeExecutable":"versions/0.5.4/anytype.exe"}')
     if ([Convert]::ToBase64String($written) -cne [Convert]::ToBase64String($expected)) {
         throw 'active.json is not the manifest BackendProviderStore writes'
     }

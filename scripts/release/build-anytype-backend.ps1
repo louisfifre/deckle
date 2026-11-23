@@ -36,7 +36,7 @@
 param(
     # anytype-cli release tag to rebuild, without the leading v.
     [ValidatePattern('^\d+\.\d+\.\d+$')]
-    [string]$Version = '0.5.2',
+    [string]$Version = '0.5.4',
 
     # Output directory, holding the zip, its sha256 sidecar, the build
     # report and the work tree. Defaults to

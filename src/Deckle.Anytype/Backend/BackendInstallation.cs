@@ -53,12 +53,12 @@ public static class BackendInstallation
     // same way before it ships: the exe must import api-ms-win-crt-*, never
     // msvcrt.dll, and a serve must open an account on a fresh profile
     // (scripts/release/build-anytype-backend.ps1 stays as the fallback
-    // should a release regress).
+    // should a release regress). 0.5.4 passed that check on 2026-11-23.
     public static BackendBundle CurrentBundle { get; } = new(
-        Version:     "0.5.2",
-        Url:         "https://github.com/anyproto/anytype-cli/releases/download/v0.5.2/anytype-cli-v0.5.2-windows-amd64.zip",
-        Sha256:      "9bd743bb375961e85b0c3ce15355792a3b3526e0a2d48423ef5796e8814d6775",
-        SizeBytes:   50_396_862L,
+        Version:     "0.5.4",
+        Url:         "https://github.com/anyproto/anytype-cli/releases/download/v0.5.4/anytype-cli-v0.5.4-windows-amd64.zip",
+        Sha256:      "7c12a7f804b7477c0828f40fac7de152ad3cb2ed64100442230406dc8a6e4799",
+        SizeBytes:   51_644_922L,
         DisplayName: "Anytype backend (anytype-cli)");
 
     // False means the module stays dormant — never a boot failure — and the
