@@ -146,6 +146,9 @@
   <data name="RecordingMicrophonePropertiesCard.Header" xml:space="preserve">
     <value>Microphone input volume</value>
   </data>
+  <data name="RecordingMicrophonePropertiesCard.AutomationProperties.HelpText" xml:space="preserve">
+    <value>Opens Windows Settings</value>
+  </data>
   <data name="RecordingMicrophonePropertiesCard.Description" xml:space="preserve">
     <value>Keep it just below the point where your loudest speech distorts.</value>
   </data>
@@ -171,10 +174,13 @@
   <data name="RecordingVoiceMeterListenToggle.Content" xml:space="preserve">
     <value>Listen</value>
   </data>
+  <data name="RecordingVoiceMeterListenToggle.AutomationProperties.Name" xml:space="preserve">
+    <value>Listen to the microphone level</value>
+  </data>
   <!-- The slider under the meter writes the voice level: its accessible name
-       is the setting's. -->
+       is the setting's, with its unit. -->
   <data name="RecordingVoiceMeterLevelSlider.[using:Microsoft.UI.Xaml.Automation]AutomationProperties.Name" xml:space="preserve">
-    <value>Voice level</value>
+    <value>Voice level, dBFS</value>
   </data>
   <data name="RecordingVoiceMeterVoiceCaption.Text" xml:space="preserve">
     <value>voice level</value>
@@ -257,6 +263,9 @@
   <data name="RecordingPageMicCheckButton.Content" xml:space="preserve">
     <value>Measure</value>
   </data>
+  <data name="RecordingPageMicCheckButton.AutomationProperties.Name" xml:space="preserve">
+    <value>Measure microphone level</value>
+  </data>
   <data name="RecordingPageMicCheckListening.Title" xml:space="preserve">
     <value>Listening. Speak now…</value>
   </data>
@@ -293,6 +302,9 @@
   <data name="RecordingPageListeningRecordButton.Content" xml:space="preserve">
     <value>Record</value>
   </data>
+  <data name="RecordingPageListeningRecordButton.AutomationProperties.Name" xml:space="preserve">
+    <value>Record a listening test</value>
+  </data>
   <data name="RecordingPageListeningRecording.Title" xml:space="preserve">
     <value>Recording. Speak now…</value>
   </data>
@@ -305,14 +317,26 @@
   <data name="RecordingPageListeningPlayOff.Content" xml:space="preserve">
     <value>Off</value>
   </data>
+  <data name="RecordingPageListeningPlayOff.AutomationProperties.Name" xml:space="preserve">
+    <value>Play back raw microphone</value>
+  </data>
   <data name="RecordingPageListeningPlay25.Content" xml:space="preserve">
     <value>25 %</value>
+  </data>
+  <data name="RecordingPageListeningPlay25.AutomationProperties.Name" xml:space="preserve">
+    <value>Play back 25 % pre-processed</value>
   </data>
   <data name="RecordingPageListeningPlay75.Content" xml:space="preserve">
     <value>75 %</value>
   </data>
+  <data name="RecordingPageListeningPlay75.AutomationProperties.Name" xml:space="preserve">
+    <value>Play back 75 % pre-processed</value>
+  </data>
   <data name="RecordingPageListeningPlayOn.Content" xml:space="preserve">
     <value>On</value>
+  </data>
+  <data name="RecordingPageListeningPlayOn.AutomationProperties.Name" xml:space="preserve">
+    <value>Play back fully pre-processed</value>
   </data>
   <data name="RecordingPageListeningError.Title" xml:space="preserve">
     <value>Couldn't record or play back. Check the microphone above and your output device, then try again.</value>
