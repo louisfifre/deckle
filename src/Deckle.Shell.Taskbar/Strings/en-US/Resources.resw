@@ -63,9 +63,6 @@
   <data name="TaskbarPageHeader.Title" xml:space="preserve">
     <value>Taskbar</value>
   </data>
-  <data name="TaskbarPageBarSection.Title" xml:space="preserve">
-    <value>Taskbar</value>
-  </data>
   <data name="TaskbarPage_BackgroundCard.Header" xml:space="preserve">
     <value>Taskbar background</value>
   </data>
@@ -95,9 +92,6 @@
   </data>
   <data name="TaskbarPage_CompactClockCard.Header" xml:space="preserve">
     <value>Compact clock</value>
-  </data>
-  <data name="TaskbarPage_CompactClockCard.Description" xml:space="preserve">
-    <value>Stacks the month, day, weekday, hours and minutes on separate lines. Always in English.</value>
   </data>
   <data name="TaskbarPage_LargerThumbnailsCard.Header" xml:space="preserve">
     <value>Larger thumbnails</value>
