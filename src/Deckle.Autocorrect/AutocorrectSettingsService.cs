@@ -39,6 +39,7 @@ public sealed class AutocorrectSettingsService
         string path = System.IO.Path.Combine(
             AppPaths.UserDataRoot, "modules", "autocorrect", "settings.json");
         Directory.CreateDirectory(System.IO.Path.GetDirectoryName(path)!);
+        SeedIfMissing(path, SystemLanguages.Current);
 
         _store = new JsonSettingsStore<AutocorrectSettings>(
             path:        path,
