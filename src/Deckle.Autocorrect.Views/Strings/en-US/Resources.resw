@@ -76,12 +76,6 @@
   <data name="AutocorrectPageHeader.Title" xml:space="preserve">
     <value>Autocorrect</value>
   </data>
-  <!-- Says what the feature does, and stops there. Where correction runs belongs
-       to the Apps enrolled page, whose own subtitle states it — each surface
-       describes what it holds, so the sentence is written once. -->
-  <data name="AutocorrectPageHeader.Description" xml:space="preserve">
-    <value>Restore French accents and fix typos as you type.</value>
-  </data>
 
   <!-- Master switch -->
   <data name="AutocorrectPage_MasterCard.Header" xml:space="preserve">
@@ -104,29 +98,23 @@
   <data name="AutocorrectPage_ExcludeCard.Header" xml:space="preserve">
     <value>Exclude a word</value>
   </data>
-  <data name="AutocorrectPage_ExcludeCard.Description" xml:space="preserve">
-    <value>Applies to every vocabulary, lexical domains included.</value>
-  </data>
   <data name="AutocorrectPage_ExclusionBox.PlaceholderText" xml:space="preserve">
     <value>One word</value>
   </data>
   <data name="AutocorrectPage_ExcludeButton.Content" xml:space="preserve">
     <value>Exclude</value>
   </data>
-  <data name="AutocorrectPage_Exclusions_Empty.Text" xml:space="preserve">
-    <value>You haven't excluded any words.</value>
-  </data>
   <data name="AutocorrectPage_DeclaredWordsNote.Text" xml:space="preserve">
     <value>Words to keep as you write them: Transcription &gt; Lexicon.</value>
   </data>
-  <data name="AutocorrectPage_MasterCard.Description" xml:space="preserve">
-    <value>Off corrects nothing, in any app.</value>
+  <data name="AutocorrectPage_IncludeButton_NameFormat" xml:space="preserve">
+    <value>Put back {0}</value>
   </data>
-  <data name="AutocorrectPage_IncludeButton.AutomationProperties.Name" xml:space="preserve">
-    <value>Put this word back</value>
+  <data name="AutocorrectPage_ExclusionBox.AutomationProperties.Name" xml:space="preserve">
+    <value>Exclude a word</value>
   </data>
-  <data name="AppsEnrolledPage_ForgetButton.AutomationProperties.Name" xml:space="preserve">
-    <value>Forget this app</value>
+  <data name="AppsEnrolledPage_ForgetButton_NameFormat" xml:space="preserve">
+    <value>Forget {0}</value>
   </data>
   <data name="AutocorrectPage_IncludeButton.ToolTipService.ToolTip" xml:space="preserve">
     <value>Put this word back</value>
@@ -136,17 +124,14 @@
   <data name="AppsEnrolledPageHeader.Title" xml:space="preserve">
     <value>Apps enrolled</value>
   </data>
-  <data name="AppsEnrolledPageHeader.Description" xml:space="preserve">
-    <value>Autocorrect runs only in the apps you allow. Deckle asks the first time a correction could help in a new app.</value>
-  </data>
   <data name="AppsEnrolledPageAppsSection.Title" xml:space="preserve">
     <value>Apps</value>
   </data>
   <data name="AppsEnrolledPageAppsSection.Caption" xml:space="preserve">
-    <value>Turn correction on or off for each app, or forget one to be asked again.</value>
+    <value>Forget an app to be asked again.</value>
   </data>
   <data name="AppsEnrolledPage_Empty.Text" xml:space="preserve">
-    <value>No apps yet. Deckle will offer to turn autocorrect on the first time a correction could help in an app. Your choices show up here.</value>
+    <value>No apps yet. Deckle asks the first time a correction could help in an app.</value>
   </data>
   <data name="AppsEnrolledPage_ForgetButton.ToolTipService.ToolTip" xml:space="preserve">
     <value>Forget this app</value>
@@ -155,7 +140,7 @@
        these rows applies then, so they are hidden rather than greyed, and this
        line says where to change that. -->
   <data name="AppsEnrolledPage_Disabled.Text" xml:space="preserve">
-    <value>Autocorrect is off, so nothing is corrected anywhere. Turn it on in Autocorrect to choose where it runs.</value>
+    <value>Turn on Autocorrect to choose where it runs.</value>
   </data>
 
   <!-- ── Lexical domains (child page) ─────────────────────────────────────── -->
@@ -165,19 +150,12 @@
   <data name="LexicalDomainsPageHeader.Title" xml:space="preserve">
     <value>Lexical domains</value>
   </data>
-  <data name="LexicalDomainsPageHeader.Description" xml:space="preserve">
-    <value>Vocabularies for the fields you write about. Pick a domain, then the languages you write in.</value>
-  </data>
 
-  <!-- One pair per shipped domain, keyed by LexicalDomain.ResourceKey. Built in
-       code (the tabs are enumerated from LexicalDomain.Shipped), so these resolve
-       through Loc.GetFrom rather than x:Uid; the "<key>/Header" shape matches a
-       SettingsCard's so the two paths read alike. -->
+  <!-- One label per shipped domain, keyed by LexicalDomain.ResourceKey. Built in
+       code (the tabs are enumerated from LexicalDomain.Shipped), so it resolves
+       through Loc.GetFrom rather than x:Uid. -->
   <data name="AutocorrectDomain_Computing.Header" xml:space="preserve">
     <value>Computing</value>
-  </data>
-  <data name="AutocorrectDomain_Computing.Description" xml:space="preserve">
-    <value>Terms from computing, programming and the Internet.</value>
   </data>
 
   <!-- A language row names itself: the language as Windows spells it, and how
@@ -185,18 +163,12 @@
   <data name="LexicalDomainsPage_LanguageRow_Format" xml:space="preserve">
     <value>{0} ({1:N0} terms)</value>
   </data>
-  <!-- The indications block, in prose under the list: what the domain ships and
-       what fabrication turned away to keep base corrections working. The counts
-       come from each shipped manifest, so the line is formatted at runtime. -->
-  <data name="LexicalDomainsPage_Indications_Format" xml:space="preserve">
-    <value>{0:N0} {1} terms included. {2:N0} more left out, to protect everyday words.</value>
-  </data>
 
   <!-- Shown instead of the whole section while the master switch is off: no
        domain reaches the corrector then, so the rows are hidden rather than
        greyed, and this line says where to change that. -->
   <data name="LexicalDomainsPage_Disabled.Text" xml:space="preserve">
-    <value>Autocorrect is off, so no vocabulary is used. Turn it on in Autocorrect to pick your domains.</value>
+    <value>Turn on Autocorrect to pick your domains.</value>
   </data>
 
   <!-- Rail labels: the module's own entry, then its two nested children. -->

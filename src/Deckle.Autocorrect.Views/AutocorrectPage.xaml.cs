@@ -79,14 +79,9 @@ public sealed partial class AutocorrectPage : Page
 
     // Mask-never-grey: with the master off the whole exclusion section is
     // collapsed — a declined feature hides its dependents, it does not grey them.
-    // When on, the list and the "nothing excluded yet" line trade places.
     private void RefreshExclusionsVisibility()
     {
         ExclusionsSection.Visibility =
             ViewModel.Enabled ? Visibility.Visible : Visibility.Collapsed;
-
-        bool any = ViewModel.ExcludedWords.Count > 0;
-        ExclusionsList.Visibility = any ? Visibility.Visible : Visibility.Collapsed;
-        ExclusionsEmptyState.Visibility = any ? Visibility.Collapsed : Visibility.Visible;
     }
 }

@@ -10,8 +10,9 @@
     <!-- Child page of the Autocorrect family. While the master switch is off the
          domain section is collapsed and one line says why: the door on the
          parent page and the rail entry stay, so the page must answer for itself.
-         No SettingsSection block: the page carries a single section and its tabs
-         name it, so a title would add nothing. -->
+         No SettingsSection block: the page carries a single section. With several
+         domains the tabs name it; with one, a tab strip offers no choice, so the
+         bar gives way to the domain's name as a title. -->
 
     <ScrollViewer Padding="32,24,32,24"
                   VerticalScrollBarVisibility="Auto"
@@ -49,11 +50,11 @@
                                  Margin="0,4,0,12"
                                  SelectionChanged="OnDomainChanged" />
 
-                    <TextBlock Text="{x:Bind ViewModel.SelectedDomain.Description, Mode=OneWay}"
-                               Style="{StaticResource BodyTextBlockStyle}"
-                               Foreground="{ThemeResource TextFillColorSecondaryBrush}"
-                               TextWrapping="Wrap"
-                               Margin="0,0,0,8" />
+                    <!-- Stands in for the bar while a single domain ships. -->
+                    <TextBlock x:Name="DomainTitle"
+                               Style="{StaticResource BodyStrongTextBlockStyle}"
+                               Margin="1,4,0,4"
+                               Visibility="Collapsed" />
 
                     <!-- Bespoke rather than composed: the rows are enumerated from
                          DomainPack.Shipped and each carries its own term count,
@@ -67,20 +68,12 @@
                         <ItemsControl.ItemTemplate>
                             <DataTemplate x:DataType="vm:DomainLanguageRow">
                                 <controls:SettingsCard Header="{x:Bind Label}">
-                                    <ToggleSwitch IsOn="{x:Bind Active, Mode=TwoWay}" />
+                                    <ToggleSwitch AutomationProperties.Name="{x:Bind Label}"
+                                              IsOn="{x:Bind Active, Mode=TwoWay}" />
                                 </controls:SettingsCard>
                             </DataTemplate>
                         </ItemsControl.ItemTemplate>
                     </ItemsControl>
-
-                    <!-- What the domain ships against what fabrication turned away,
-                         in plain prose on purpose: no InfoBar, no severity ladder. -->
-                    <TextBlock Text="{x:Bind ViewModel.SelectedDomain.Indications, Mode=OneWay}"
-                               Visibility="{x:Bind ViewModel.SelectedDomain.IndicationsVisibility, Mode=OneWay}"
-                               Style="{StaticResource BodyTextBlockStyle}"
-                               Foreground="{ThemeResource TextFillColorSecondaryBrush}"
-                               TextWrapping="Wrap"
-                               Margin="0,8,0,0" />
 
                 </StackPanel>
 
