@@ -1,5 +1,6 @@
 using Deckle.Autocorrect;
 using Deckle.Core;
+using Deckle.Llm;
 using Deckle.Input;
 using Deckle.Llm.Rewrite;
 using Deckle.Llm.Rewrite.Views;
@@ -17,6 +18,9 @@ namespace Deckle.App;
 // module, a non-editable or password surface drops it). It also probes the
 // focused surface and restores the captured target before an accepted offer
 // is injected.
+//
+// The host is held only while paragraph rewriting is on and Ollama holds the
+// pinned model on this PC (ReconcileParagraphRewrite).
 public partial class App
 {
     private ParagraphDraft? _paragraphDraft;
@@ -33,9 +37,22 @@ public partial class App
     private volatile bool _paragraphOfferVisible;
     private bool _paragraphRewriteStarted;
 
+    // Paragraph rewriting needs the local Ollama and the pinned model on this
+    // PC (ParagraphRewriteAvailabilityMonitor). The shared keyboard and mouse
+    // host is held only while that is true and the module is switched on;
+    // everything else on this file is built once and sleeps in between.
+    private Microsoft.UI.Dispatching.DispatcherQueue? _paragraphUi;
+    private Microsoft.UI.Dispatching.DispatcherQueueTimer? _paragraphProbeRetry;
+    private string? _paragraphProbedProvider;
+    private bool _paragraphHostFailureReported;
+
+    // A PC where Ollama starts after Deckle, or where it is installed later,
+    // finds the feature without a restart; an available PC is not polled.
+    private static readonly TimeSpan ParagraphProbeRetryInterval = TimeSpan.FromSeconds(30);
+
     private void InitializeParagraphRewrite()
     {
-        if (_keyboardMouseHost is null || _paragraphRewriteStarted) return;
+        if (_keyboardMouseHost is null || _paragraphRewriteCoordinator is not null) return;
 
         _paragraphDraft = new ParagraphDraft();
         _paragraphKeyDecoder = new KeyDecoder();
@@ -50,22 +67,118 @@ public partial class App
         _paragraphRewriteWindow.ApplyRequested += ApplyParagraphOffer;
         _paragraphRewriteWindow.KeptOriginal += KeepParagraphOriginal;
 
+        _paragraphUi = Microsoft.UI.Dispatching.DispatcherQueue.GetForCurrentThread();
+        _paragraphProbeRetry = _paragraphUi.CreateTimer();
+        _paragraphProbeRetry.Interval = ParagraphProbeRetryInterval;
+        _paragraphProbeRetry.Tick += OnParagraphProbeRetry;
+
+        LlmSettingsService.Instance.Changed += OnParagraphSettingsChanged;
+        ParagraphRewriteAvailabilityMonitor.Instance.Changed += OnParagraphAvailabilityChanged;
+
+        ReconcileParagraphRewrite();
+    }
+
+    // Both notifications arrive on any thread; the reconcile runs on the UI
+    // thread, where the host and the offer window are handled.
+    private void OnParagraphSettingsChanged() =>
+        _paragraphUi?.TryEnqueueOrLog(ReconcileParagraphRewrite, "REWRITE", "paragraph rewrite settings");
+
+    private void OnParagraphAvailabilityChanged() =>
+        _paragraphUi?.TryEnqueueOrLog(ReconcileParagraphRewrite, "REWRITE", "paragraph rewrite availability");
+
+    private void OnParagraphProbeRetry(Microsoft.UI.Dispatching.DispatcherQueueTimer sender, object args) =>
+        ProbeParagraphAvailability();
+
+    // Start and Stop of the host are paired through _paragraphRewriteStarted,
+    // so a reconcile that changes nothing costs nothing.
+    private void ReconcileParagraphRewrite()
+    {
+        if (_paragraphRewriteCoordinator is null) return;
+
+        bool enabled = LlmSettingsService.Instance.Current.Enabled;
+        ParagraphRewriteAvailabilityMonitor monitor = ParagraphRewriteAvailabilityMonitor.Instance;
+
+        // The answer is stale when the provider's address changed or nothing
+        // has been asked yet (null); a switched-off module asks nothing.
+        string provider = ParagraphProviderKey();
+        if (enabled && provider != _paragraphProbedProvider)
+            ProbeParagraphAvailability();
+
+        switch (ParagraphRewriteHostPlan.Next(_paragraphRewriteStarted, enabled, monitor.Current))
+        {
+            case ParagraphRewriteHostAction.Start: StartParagraphHost(); break;
+            case ParagraphRewriteHostAction.Stop:  StopParagraphHost();  break;
+        }
+
+        bool retrying = enabled && monitor.Current != ParagraphRewriteAvailability.Available;
+        if (retrying && !_paragraphProbeRetry!.IsRunning) _paragraphProbeRetry.Start();
+        else if (!retrying && _paragraphProbeRetry!.IsRunning) _paragraphProbeRetry.Stop();
+    }
+
+    private static string ParagraphProviderKey()
+    {
+        LlmProvider? provider = OllamaParagraphRewriteProbe.FindProvider(
+            LlmSettingsService.Instance.Current.Providers);
+        return provider is null ? "" : provider.Endpoint;
+    }
+
+    // The probe is an HTTP call on the loopback: it runs off the UI thread and
+    // answers through the monitor's Changed event.
+    private void ProbeParagraphAvailability()
+    {
+        _paragraphProbedProvider = ParagraphProviderKey();
+        _ = Task.Run(() => ParagraphRewriteAvailabilityMonitor.Instance.RefreshAsync());
+    }
+
+    private void StartParagraphHost()
+    {
+        if (_keyboardMouseHost is null || _paragraphRewriteStarted) return;
+
         _keyboardMouseHost.KeyReceived += OnParagraphKey;
         _keyboardMouseHost.PointerInteraction += OnParagraphPointerInteraction;
         _keyboardMouseHost.FocusChanged += OnParagraphFocusChanged;
         _keyboardMouseHost.DrainRequested += OnParagraphDrainRequested;
         if (!_keyboardMouseHost.Start())
         {
-            // Init runs once per process: the module stays dead until restart.
-            DeckleAppSource.Log.InputConsumerUnavailable("paragraph-rewrite", "host_start_failed");
-            ShutdownParagraphRewrite();
+            // Every later reconcile tries again; the log names it once until
+            // a start succeeds.
+            DetachParagraphHandlers();
+            if (!_paragraphHostFailureReported)
+            {
+                DeckleAppSource.Log.InputConsumerUnavailable("paragraph-rewrite", "host_start_failed");
+                _paragraphHostFailureReported = true;
+            }
             return;
         }
 
+        _paragraphHostFailureReported = false;
         _paragraphRewriteStarted = true;
-        _paragraphSurface = _paragraphSurfaceProber.Probe();
+        _paragraphSurface = _paragraphSurfaceProber?.Probe() ?? FocusedSurface.Unknown;
     }
 
+    private void StopParagraphHost()
+    {
+        if (!_paragraphRewriteStarted) return;
+
+        DetachParagraphHandlers();
+        _keyboardMouseHost?.Stop();
+        _paragraphRewriteStarted = false;
+
+        Interlocked.Increment(ref _paragraphRecoveryRevision);
+        _paragraphDraft?.Invalidate();
+        _paragraphRewriteCoordinator?.Invalidate();
+        HideParagraphOffer();
+        _paragraphSurface = FocusedSurface.Unknown;
+    }
+
+    private void DetachParagraphHandlers()
+    {
+        if (_keyboardMouseHost is null) return;
+        _keyboardMouseHost.KeyReceived -= OnParagraphKey;
+        _keyboardMouseHost.PointerInteraction -= OnParagraphPointerInteraction;
+        _keyboardMouseHost.FocusChanged -= OnParagraphFocusChanged;
+        _keyboardMouseHost.DrainRequested -= OnParagraphDrainRequested;
+    }
     private void OnParagraphKey(KeyboardKeyEvent e)
     {
         if (e.IsInjected || _paragraphKeyDecoder is null || _paragraphDraft is null
@@ -272,15 +385,12 @@ public partial class App
 
     private void ShutdownParagraphRewrite()
     {
-        if (_keyboardMouseHost is not null)
-        {
-            _keyboardMouseHost.KeyReceived -= OnParagraphKey;
-            _keyboardMouseHost.PointerInteraction -= OnParagraphPointerInteraction;
-            _keyboardMouseHost.FocusChanged -= OnParagraphFocusChanged;
-            _keyboardMouseHost.DrainRequested -= OnParagraphDrainRequested;
-            if (_paragraphRewriteStarted)
-                _keyboardMouseHost.Stop();
-        }
+        LlmSettingsService.Instance.Changed -= OnParagraphSettingsChanged;
+        ParagraphRewriteAvailabilityMonitor.Instance.Changed -= OnParagraphAvailabilityChanged;
+        _paragraphProbeRetry?.Stop();
+        _paragraphProbeRetry = null;
+
+        StopParagraphHost();
 
         _paragraphRewriteCoordinator?.Dispose();
         _paragraphRewriteWindow?.Hide();
@@ -288,9 +398,7 @@ public partial class App
         _paragraphRewriteWindow = null;
         _paragraphCaretTextReader = null;
         Interlocked.Increment(ref _paragraphRecoveryRevision);
-        _paragraphRewriteStarted = false;
     }
-
     private readonly record struct ParagraphCaretRecovery(
         int Revision,
         bool Succeeded,

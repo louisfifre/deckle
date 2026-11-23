@@ -126,5 +126,6 @@ public sealed partial class DeckleLlmSource : DeckleEventSource
     public const int EvtBatchRewriteReadingIgnored       = 87;
     // 88 retired.
     // 89 retired.
+    public const int EvtParagraphRewriteAvailabilityChanged = 90;
 
 }
