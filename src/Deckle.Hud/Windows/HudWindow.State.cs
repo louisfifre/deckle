@@ -126,9 +126,13 @@ public sealed partial class HudWindow : Window
     // why the HUD changed state.
     private void SetState(HudState next, MessagePayload? msg = null, string reason = "unspecified")
     {
-        // Overlay disabled in Settings → no-op for any *visible* state. Hidden
-        // still runs so an in-flight HUD gets cleared if the user toggles.
-        if (next != HudState.Hidden && !Settings.SettingsService.Instance.Current.Overlay.Enabled)
+        // Overlay disabled in Settings → no-op for any *visible* state, except a
+        // warning or an error: switching the HUD off for a cleaner screen must not
+        // make a failed dictation look like nothing happened. Hidden still runs so
+        // an in-flight HUD gets cleared if the user toggles.
+        if (next != HudState.Hidden
+            && !Settings.SettingsService.Instance.Current.Overlay.Enabled
+            && !(msg is not null && SeverityOf(msg.Kind) >= 1))
         {
             // Traced so a feedback emitted upstream and never seen is told
             // apart from one the HUD lost.
