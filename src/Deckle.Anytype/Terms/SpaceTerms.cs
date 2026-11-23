@@ -11,6 +11,9 @@ namespace Deckle.Anytype;
 // One display language names what Deckle writes and shows. Reading what a
 // person or a model typed accepts the words of every shipped language, so an
 // English name works on a French space and the reverse.
+//
+// A file may also hold `texts`, the free text of a space plan keyed by its
+// English text; PlanLocalizer reads it, this class does not.
 public sealed class SpaceTerms
 {
     private readonly Dto _dto;

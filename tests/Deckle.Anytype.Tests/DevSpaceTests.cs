@@ -167,7 +167,7 @@ public class DevSpaceTests
     public void TryResolvePropertyResolvesTheReportTasksLabel()
     {
         bool ok = DevSpace.TryResolveProperty(
-            DevSpace.Types.Report, "Tâches", out string key, out _);
+            DevSpace.Types.Report, "Tâche(s) liée(s)", out string key, out _);
 
         Assert.True(ok);
         Assert.Equal("tasks", key);

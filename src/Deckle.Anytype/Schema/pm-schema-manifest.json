@@ -109,14 +109,14 @@
       {"key": "training", "name": "Entraînement"}]},
     {"key": "time_estimated", "name": "Temps estimé", "format": "number"},
     {"key": "time_actual", "name": "Temps réel", "format": "number"},
-    {"key": "files", "name": "Fichiers liés", "format": "files"},
+    {"key": "files", "name": "Fichier(s) lié(s)", "format": "files"},
     {"key": "document_type", "name": "Type de document", "format": "select",
       "tags": [
       {"key": "tip", "name": "Astuce"}, {"key": "nomenclature", "name": "Nomenclature"},
       {"key": "reference", "name": "Référence"}, {"key": "specification", "name": "Spécification"},
       {"key": "instructions", "name": "Instructions"}, {"key": "research_note", "name": "Recherche"},
-      {"key": "architecture", "name": "Architecture"}, {"key": "resume", "name": "Reprise"}]},
-    {"key": "document_global", "name": "Document global", "format": "checkbox"},
+      {"key": "architecture", "name": "Architecture"}, {"key": "resume", "name": "Reprise"}, {"key": "proposal", "name": "Proposition"}, {"key": "minutes", "name": "Compte rendu"}, {"key": "procedure", "name": "Procédure"}]},
+    {"key": "document_global", "name": "Mis en avant", "format": "checkbox"},
     {"key": "version", "name": "Version", "format": "text"},
     {"key": "role", "name": "Rôle", "format": "select",
       "tags": [
@@ -128,14 +128,14 @@
     {"key": "website", "name": "Site web", "format": "url"},
     {"key": "address", "name": "Adresse", "format": "text"},
     {"key": "due_date", "name": "Date cible", "format": "date"},
-    {"key": "epic", "name": "Epic", "format": "objects"},
+    {"key": "epic", "name": "Epic(s) lié(s)", "format": "objects"},
     {"key": "depends_on", "name": "Dépend de", "format": "objects"},
-    {"key": "projects", "name": "Projets", "format": "objects"},
+    {"key": "projects", "name": "Projet(s) lié(s)", "format": "objects"},
     {"key": "orchestrated_by", "name": "Orchestré par", "format": "objects"},
-    {"key": "tasks", "name": "Tâches", "format": "objects"},
-    {"key": "documents", "name": "Documents", "format": "objects"},
-    {"key": "contacts", "name": "Contacts", "format": "objects"},
-    {"key": "company", "name": "Entreprise", "format": "objects"},
+    {"key": "tasks", "name": "Tâche(s) liée(s)", "format": "objects"},
+    {"key": "documents", "name": "Document(s) lié(s)", "format": "objects"},
+    {"key": "contacts", "name": "Contact(s) lié(s)", "format": "objects"},
+    {"key": "company", "name": "Entreprise(s) liée(s)", "format": "objects"},
     {"key": "archive", "name": "Archivé", "format": "checkbox"}
   ]
 }

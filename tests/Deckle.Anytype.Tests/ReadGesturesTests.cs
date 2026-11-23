@@ -105,10 +105,10 @@ public class ReadGesturesTests
                 "Priorité : 4",
                 "Date cible : 2026-07-21",
                 "Définition de fini : Aucune action manuelle requise.",
-                "Projets : Deckle",
+                "Projet(s) lié(s) : Deckle",
                 "Temps estimé : 3",
                 "Temps réel : 1.5",
-                "Fichiers liés : 2 fichier(s)",
+                "Fichier(s) lié(s) : 2 fichier(s)",
                 "Archivé : oui"),
             digest);
 
@@ -203,7 +203,7 @@ public class ReadGesturesTests
         string digest = await NewGestures(v2).TaskPropertiesAsync(TaskId, Ct);
 
         Assert.Equal(
-            Lines($"id : {TaskId}", "[ ] Ma tâche", "Projets : Deckle, Autre chantier"),
+            Lines($"id : {TaskId}", "[ ] Ma tâche", "Projet(s) lié(s) : Deckle, Autre chantier"),
             digest);
         Assert.Equal(3, v2.Requests.Count);
     }
@@ -830,7 +830,7 @@ public class ReadGesturesTests
                 $"id : {DocId}",
                 "Doc",
                 "Type de document : Référence",
-                "Document global : oui",
+                "Mis en avant : oui",
                 "Version : 1.2",
                 "Préambule : 13 car.",
                 "## Alpha (19 car.)",

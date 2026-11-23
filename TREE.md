@@ -401,8 +401,10 @@ _Generated from `git ls-files` — do not edit by hand._
 │   │   │   ├── example.space-plan.json
 │   │   │   ├── PlanApi.cs
 │   │   │   ├── PlanJson.cs
+│   │   │   ├── PlanLocalizer.cs
 │   │   │   ├── PlanViews.cs
 │   │   │   ├── PlanViewsDiff.cs
+│   │   │   ├── pm.space-plan.json
 │   │   │   ├── SpacePlan.cs
 │   │   │   ├── SpacePlanExecutor.cs
 │   │   │   ├── SpacePlanFragments.cs
@@ -1224,11 +1226,14 @@ _Generated from `git ls-files` — do not edit by hand._
 │   │   ├── FoldersWindow.xaml
 │   │   └── FoldersWindow.xaml.cs
 │   ├── Deckle.Home/
+│   │   ├── Plan/
+│   │   │   └── home.space-plan.json
 │   │   ├── Schema/
 │   │   │   ├── README.md
 │   │   │   ├── schema-annotations.json
 │   │   │   └── schema-manifest.json
 │   │   ├── Terms/
+│   │   │   ├── terms.en.json
 │   │   │   └── terms.fr.json
 │   │   ├── Deckle.Home.csproj
 │   │   ├── DeckleHomeSource.cs
@@ -2596,6 +2601,7 @@ _Generated from `git ls-files` — do not edit by hand._
 │   │   ├── NameResolverTests.cs
 │   │   ├── OperationRecoveryBugNotes.md
 │   │   ├── PagedReadLogTests.cs
+│   │   ├── PlanLocalizerTests.cs
 │   │   ├── PmSchemaManifestTests.cs
 │   │   ├── PmSchemaTrialTests.cs
 │   │   ├── PmTermsTests.cs

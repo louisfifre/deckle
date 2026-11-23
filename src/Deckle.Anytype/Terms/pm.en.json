@@ -1,14 +1,38 @@
 {
   "language": "en",
   "types": {
-    "epic": { "name": "Epic", "plural": "Epics" },
-    "project": { "name": "Project", "plural": "Projects" },
-    "task": { "name": "Task", "plural": "Tasks" },
-    "report": { "name": "Report", "plural": "Reports" },
-    "idea": { "name": "Idea", "plural": "Ideas" },
-    "document": { "name": "Document", "plural": "Documents" },
-    "person": { "name": "Person", "plural": "People" },
-    "company": { "name": "Company", "plural": "Companies" }
+    "epic": {
+      "name": "Epic",
+      "plural": "Epics"
+    },
+    "project": {
+      "name": "Project",
+      "plural": "Projects"
+    },
+    "task": {
+      "name": "Task",
+      "plural": "Tasks"
+    },
+    "report": {
+      "name": "Report",
+      "plural": "Reports"
+    },
+    "idea": {
+      "name": "Idea",
+      "plural": "Ideas"
+    },
+    "document": {
+      "name": "Document",
+      "plural": "Documents"
+    },
+    "person": {
+      "name": "Person",
+      "plural": "People"
+    },
+    "company": {
+      "name": "Company",
+      "plural": "Companies"
+    }
   },
   "properties": {
     "status": "State",
@@ -44,8 +68,20 @@
     "company": "Linked company(ies)"
   },
   "options": {
-    "status": { "ready": "Ready", "doing": "In progress", "paused": "Paused", "dormant": "Dormant" },
-    "priority": { "p_0": "0", "p_1": "1", "p_2": "2", "p_3": "3", "p_4": "4", "p_5": "5" },
+    "status": {
+      "ready": "Ready",
+      "doing": "In progress",
+      "paused": "Paused",
+      "dormant": "Dormant"
+    },
+    "priority": {
+      "p_0": "0",
+      "p_1": "1",
+      "p_2": "2",
+      "p_3": "3",
+      "p_4": "4",
+      "p_5": "5"
+    },
     "task_type": {
       "orchestration": "Orchestrate",
       "research": "Research",
@@ -55,7 +91,11 @@
       "management": "Manage",
       "monitoring": "Monitor"
     },
-    "slot": { "cap": "Focus", "passion": "Passion", "training": "Practice" },
+    "slot": {
+      "cap": "Focus",
+      "passion": "Passion",
+      "training": "Practice"
+    },
     "document_type": {
       "tip": "Tip",
       "nomenclature": "Nomenclature",
@@ -64,7 +104,10 @@
       "instructions": "Instructions",
       "research_note": "Investigation",
       "architecture": "Architecture",
-      "resume": "Handover"
+      "resume": "Handover",
+      "proposal": "Proposal",
+      "minutes": "Minutes",
+      "procedure": "Procedure"
     },
     "role": {
       "administrative": "Administrative",

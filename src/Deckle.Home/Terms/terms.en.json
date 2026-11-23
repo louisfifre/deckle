@@ -1,0 +1,530 @@
+{
+  "language": "en",
+  "types": {
+    "floor": {
+      "name": "Zone",
+      "plural": "Zones"
+    },
+    "room": {
+      "name": "Room",
+      "plural": "Rooms"
+    },
+    "point": {
+      "name": "Point",
+      "plural": "Points"
+    },
+    "circuit": {
+      "name": "Circuit",
+      "plural": "Circuits"
+    },
+    "panel": {
+      "name": "Panel",
+      "plural": "Panels"
+    },
+    "system": {
+      "name": "System",
+      "plural": "Systems"
+    },
+    "device": {
+      "name": "Device",
+      "plural": "Devices"
+    },
+    "component": {
+      "name": "Component",
+      "plural": "Components"
+    },
+    "utensil": {
+      "name": "Kitchen utensil",
+      "plural": "Kitchen utensils"
+    },
+    "plant": {
+      "name": "Plant",
+      "plural": "Plants"
+    },
+    "idea": {
+      "name": "Idea",
+      "plural": "Ideas"
+    },
+    "errand": {
+      "name": "Product",
+      "plural": "Products"
+    },
+    "worksite": {
+      "name": "Work",
+      "plural": "Works"
+    },
+    "todo": {
+      "name": "Task",
+      "plural": "Tasks"
+    },
+    "product": {
+      "name": "Product",
+      "plural": "Products"
+    },
+    "zone": {
+      "name": "Zone",
+      "plural": "Zones"
+    }
+  },
+  "properties": {
+    "code": "Code",
+    "notes": "Notes",
+    "documents": "Manual",
+    "location": "Location",
+    "installed_in": "Installed in",
+    "stored_in": "Stored in",
+    "floor": "Zone",
+    "category": "Category",
+    "condition": "Condition",
+    "circuit": "Linked circuit(s)",
+    "panel": "Linked panel(s)",
+    "outlet_count": "Outlet count",
+    "earthed": "Earth",
+    "light_nature": "Light kind",
+    "switch_kind": "Switch kind",
+    "controls": "Controls",
+    "controlled_by": "Controlled by",
+    "control_link": "Control link",
+    "power_watts": "Power (W)",
+    "measured_quantity": "Measured quantity",
+    "power_supply": "Power supply",
+    "nature": "Nature",
+    "powered_by": "Powered by",
+    "rating": "Rating",
+    "cable": "Cable",
+    "origin_label": "Original label",
+    "panel_position": "Position",
+    "dedicated_rcd": "Dedicated RCD",
+    "rcd_head": "RCD block",
+    "rcd_type": "RCD type",
+    "free_slots": "Free positions",
+    "conduits": "Conduits",
+    "sub_meter": "Submeter",
+    "domain": "Domain",
+    "equipment_category": "Equipment category",
+    "manufacturer": "Manufacturer",
+    "supplier": "Supplier",
+    "model_ref": "Model reference",
+    "serial_number": "Serial number",
+    "purchase_price": "Purchase price (€)",
+    "purchase_date": "Purchase date",
+    "receipt": "Proof of purchase",
+    "part_of": "Part of",
+    "quantity": "Quantity",
+    "battery_capacity": "Battery capacity (mAh)",
+    "storage_capacity": "Storage capacity (GB)",
+    "power_rms": "Power (W RMS)",
+    "impedance": "Impedance (Ohms)",
+    "os": "OS",
+    "weight": "Weight (g)",
+    "plant_family": "Family (botanical)",
+    "plant_genus": "Genus (botanical)",
+    "scientific_name": "Scientific name",
+    "substrate": "Substrate",
+    "plant_exposure": "Exposure",
+    "plant_photo": "Photo(s)",
+    "horizon": "Horizon",
+    "aisle": "Aisle",
+    "about": "Relates to",
+    "state": "State",
+    "target_date": "Target date",
+    "worksite": "Linked work(s)",
+    "connected_to": "Connected to",
+    "upstream_panel": "Upstream panel",
+    "dcl": "DCL outlet",
+    "carries": "Carries",
+    "assignment": "Assignment",
+    "pipe": "Pipe",
+    "poe": "PoE",
+    "rated_input_power": "Rated power input (W)",
+    "rated_output_power": "Rated electrical output power (W)",
+    "bulb_base": "Base",
+    "lighting_capabilities": "Lighting capabilities",
+    "color_temperature_min": "Minimum color temperature (K)",
+    "color_temperature_max": "Maximum color temperature (K)",
+    "luminous_flux": "Luminous flux (lm)",
+    "luminous_flux_reference_temperature": "Luminous flux reference temperature (K)",
+    "supported_protocols": "Supported protocols",
+    "environment": "Environment",
+    "acquisition_date": "Acquisition date",
+    "last_repotting": "Last repotting",
+    "needed": "Needed",
+    "errand_category": "Product category",
+    "priority": "Priority",
+    "depends_on": "Depends on",
+    "estimated_budget": "Estimated budget (€)",
+    "actual_budget": "Actual budget (€)",
+    "estimated_effort": "Estimated effort (days)",
+    "actual_effort": "Actual effort (days)",
+    "definition_of_done": "Definition of done",
+    "memory_size_gb": "Memory size (GB)",
+    "memory_frequency_mhz": "Memory frequency (MHz)",
+    "conduit_diameter": "Conduit diameter (mm)",
+    "duct_diameter": "Ventilation duct diameter (mm)",
+    "socket": "Socket",
+    "chipset": "Chipset",
+    "memory_type": "Memory type",
+    "core_count": "Core count",
+    "thread_count": "Thread count",
+    "technical_interface": "Technical interface",
+    "storage_medium": "Storage medium",
+    "archive": "Archived",
+    "manual": "Manual",
+    "memory_frequency": "Memory frequency (MHz)",
+    "memory_size": "Memory size (GB)",
+    "product_category": "Product category",
+    "switch_nature": "Switch kind",
+    "zone": "Linked zone(s)"
+  },
+  "options": {
+    "category": {
+      "p": "P — 230 V socket",
+      "ps": "PS — standard socket",
+      "pj": "PJ — RJ45 socket",
+      "pf": "PF — fibre socket",
+      "l": "L — light point",
+      "lr": "LR — LED strip",
+      "c": "C — wall control",
+      "v": "V — shutter / opening",
+      "a": "A — fixed installation",
+      "ds": "DS — sensor",
+      "dr": "DR — relay",
+      "dx": "DX — control panel",
+      "de": "DE — ESP32 node",
+      "pp": "PP — power socket",
+      "pn": "PN — network socket",
+      "pc": "PC — cable outlet",
+      "pr": "PR — spare conduit",
+      "lc": "LC — ceiling light",
+      "lw": "LW — wall light",
+      "ls": "LS — spot",
+      "cp": "CP — control panel",
+      "cs": "CS — switch",
+      "sr": "SR — room sensor",
+      "sp": "SP — probe",
+      "sc": "SC — opening contact",
+      "sv": "SV — camera",
+      "sd": "SD — detector",
+      "sl": "SL — leak detector",
+      "af": "AF — fan",
+      "ar": "AR — relay",
+      "ad": "AD — ELV power supply",
+      "ah": "AH — fixed heater",
+      "av": "AV — motorised valve",
+      "ap": "AP — pump",
+      "as": "AS — sounder",
+      "ac": "AC — fixed air conditioner",
+      "al": "AL — electric strike",
+      "or": "OR — roller shutter",
+      "os": "OS — blind",
+      "og": "OG — gate",
+      "ow": "OW — motorised window",
+      "ve": "VE — extract vent",
+      "vs": "VS — air inlet",
+      "vt": "VT — transfer grille",
+      "vf": "VF — flue outlet",
+      "vp": "VP — vacuum inlet",
+      "ws": "WS — water supply",
+      "wt": "WT — tap",
+      "wd": "WD — drain",
+      "category_ad_driver": "AD — driver",
+      "category_ar_relay": "AR — relay",
+      "category_cp_control_panel": "CP — control panel",
+      "category_cs_switch": "CS — switch",
+      "category_lc_ceiling_light": "LC — ceiling light",
+      "category_lr_led_ribbon": "LR — LED ribbon",
+      "category_lw_wall_light": "LW — wall light",
+      "category_pc_cable_outlet": "PC — cable outlet",
+      "category_pf_fiber_socket": "PF — fiber socket",
+      "category_pn_network_socket": "PN — network socket",
+      "category_pp_power_socket": "PP — power socket",
+      "category_pr_reserve_outlet": "PR — reserve outlet",
+      "category_ps_standard_socket": "PS — standard socket",
+      "category_ve_extraction_vent": "VE — extraction vent",
+      "category_vf_flue_terminal": "VF — flue terminal",
+      "category_vp_suction_port": "VP — suction port",
+      "category_vs_supply_vent": "VS — supply vent",
+      "category_vt_transfer_grille": "VT — transfer grille",
+      "category_wd_drain": "WD — drain",
+      "category_ws_water_supply": "WS — water supply",
+      "category_wt_tap": "WT — tap"
+    },
+    "condition": {
+      "bon": "Good",
+      "vetuste": "Worn",
+      "endommage": "Damaged",
+      "hors_service": "Out of order"
+    },
+    "light_nature": {
+      "plafonnier": "Ceiling light",
+      "applique": "Wall light",
+      "spot": "Spotlight",
+      "dcl": "DCL outlet"
+    },
+    "switch_kind": {
+      "interrupteur_simple": "Single switch",
+      "va_et_vient": "Two-way switch",
+      "poussoir": "Push button",
+      "single_switch": "Single switch",
+      "two_way_switch": "Two-way switch",
+      "push_button": "Push button"
+    },
+    "power_supply": {
+      "poe": "PoE",
+      "pile": "Battery",
+      "cinq_volts": "5 V",
+      "vingt_quatre_volts": "24 V",
+      "secteur": "Mains",
+      "battery": "Battery",
+      "v_5": "5 V",
+      "v_24": "24 V",
+      "mains": "Mains"
+    },
+    "rcd_type": {
+      "type_a": "Type A",
+      "type_ac": "Type AC",
+      "inconnu": "Unknown",
+      "unknown": "Unknown"
+    },
+    "domain": {
+      "audio": "Audio",
+      "informatique": "Computing",
+      "electronique": "Electronics",
+      "outillage": "Tools",
+      "cuisine": "Kitchen",
+      "electromenager": "Appliances",
+      "jardin": "Garden",
+      "it": "Computing",
+      "electronics": "Electronics",
+      "tools": "Tools",
+      "kitchen": "Kitchen",
+      "appliances": "Appliances",
+      "garden": "Garden",
+      "domain_home_automation": "Home automation",
+      "domain_lighting": "Lighting"
+    },
+    "horizon": {
+      "maintenant": "Now",
+      "bientot": "Soon",
+      "un_jour": "Someday",
+      "peut_etre": "Maybe",
+      "now": "Now",
+      "soon": "Soon",
+      "someday": "Someday",
+      "maybe": "Maybe"
+    },
+    "aisle": {
+      "alimentaire": "Food",
+      "bricolage": "DIY",
+      "maison": "Household",
+      "jardin": "Garden",
+      "autre": "Other"
+    },
+    "state": {
+      "ouvert": "Open",
+      "en_cours": "In progress",
+      "en_attente": "Waiting",
+      "dormant": "Dormant",
+      "termine": "Finished",
+      "abandonne": "Abandoned",
+      "open": "Open",
+      "in_progress": "In progress",
+      "waiting": "Waiting",
+      "done": "Finished",
+      "abandoned": "Abandoned"
+    },
+    "conduit_diameter": {
+      "mm_16": "16 mm",
+      "mm_20": "20 mm",
+      "mm_25": "25 mm",
+      "mm_32": "32 mm",
+      "mm_40": "40 mm",
+      "mm_50": "50 mm",
+      "mm_63": "63 mm"
+    },
+    "duct_diameter": {
+      "mm_80": "80 mm",
+      "mm_100": "100 mm",
+      "mm_125": "125 mm",
+      "mm_150": "150 mm",
+      "mm_160": "160 mm",
+      "mm_200": "200 mm"
+    },
+    "control_link": {
+      "wired": "Wired",
+      "radio": "Radio",
+      "ethernet": "Ethernet",
+      "wifi": "Wi-Fi",
+      "zigbee": "Zigbee",
+      "bluetooth": "Bluetooth",
+      "pilot_wire": "Pilot wire",
+      "manual": "Manual"
+    },
+    "measured_quantity": {
+      "temperature": "Temperature",
+      "humidity": "Humidity",
+      "presence": "Presence",
+      "motion": "Motion",
+      "opening": "Opening",
+      "light_level": "Brightness",
+      "co2": "CO₂",
+      "consumption": "Consumption",
+      "smoke": "Smoke",
+      "carbon_monoxide": "Carbon monoxide"
+    },
+    "carries": {
+      "lv_230": "LV 230 V",
+      "elv_24": "ELV 24 V",
+      "data": "Data",
+      "air": "Air",
+      "water": "Water",
+      "carries_elv_24_v": "ELV 24 V",
+      "carries_lv_230_v": "LV 230 V"
+    },
+    "assignment": {
+      "lighting": "Lighting",
+      "sockets": "Outlets",
+      "dedicated": "Dedicated"
+    },
+    "rating": {
+      "a_2": "2 A",
+      "a_6": "6 A",
+      "a_10": "10 A",
+      "a_16": "16 A",
+      "a_20": "20 A",
+      "a_25": "25 A",
+      "a_32": "32 A",
+      "a_40": "40 A",
+      "a_63": "63 A"
+    },
+    "cable": {
+      "mm2_1_5": "1.5 mm²",
+      "mm2_2_5": "2.5 mm²",
+      "mm2_4": "4 mm²",
+      "mm2_6": "6 mm²",
+      "mm2_10": "10 mm²",
+      "mm2_16": "16 mm²",
+      "cat_5e": "Cat 5e",
+      "cat_6": "Cat 6",
+      "cat_6a": "Cat 6a",
+      "fibre": "Fibre",
+      "coax": "Coaxial",
+      "cable_o_1_5_mm2": "1.5 mm²",
+      "cable_o_2_5_mm2": "2.5 mm²"
+    },
+    "equipment_category": {
+      "motherboard": "Motherboard",
+      "network_card": "Network card",
+      "speaker": "Speaker",
+      "clock": "Clock",
+      "ram": "RAM",
+      "peripheral": "Peripheral",
+      "processor": "Processor",
+      "cooling": "Cooling",
+      "smartphone": "Smartphone",
+      "storage": "Storage",
+      "bulb": "Bulb",
+      "equipment_category_power_supply": "Power supply",
+      "equipment_category_camera": "Camera",
+      "equipment_category_sensor": "Sensor",
+      "equipment_category_heating": "Heating",
+      "equipment_category_controller": "Controller",
+      "equipment_category_led_strip": "LED strip",
+      "equipment_category_shutter": "Shutter"
+    },
+    "errand_category": {
+      "sweet_products": "Sweet products",
+      "savoury_products": "Savoury products",
+      "dairy_products": "Dairy products",
+      "dry_cereal_products": "Dry cereal products",
+      "dry_plant_products": "Dry plant products",
+      "animal_products": "Animal products",
+      "vegetables": "Vegetables",
+      "fruit": "Fruit",
+      "cooking_ingredients": "Cooking ingredients",
+      "seasonings": "Seasonings",
+      "tins_and_jars": "Tins and jars",
+      "drinks": "Drinks",
+      "cleaning": "Cleaning",
+      "hygiene_and_health": "Hygiene and health"
+    },
+    "priority": {
+      "low": "Low",
+      "normal": "Normal",
+      "high": "High",
+      "urgent": "Urgent"
+    },
+    "earthed": {
+      "yes": "Yes",
+      "no": "No",
+      "earthed_no": "No",
+      "earthed_yes": "Yes"
+    },
+    "dcl": {
+      "yes": "Yes",
+      "no": "No"
+    },
+    "bulb_base": {
+      "e14": "E14",
+      "e27": "E27",
+      "gu10": "GU10"
+    },
+    "lighting_capabilities": {
+      "cct": "CCT",
+      "rgb": "RGB",
+      "dimmable": "Dimmable"
+    },
+    "supported_protocols": {
+      "zigbee": "Zigbee",
+      "bluetooth": "Bluetooth",
+      "supported_protocols_bluetooth": "Bluetooth",
+      "supported_protocols_zigbee": "Zigbee"
+    },
+    "environment": {
+      "environment_indoor": "Indoor",
+      "environment_outdoor": "Outdoor"
+    },
+    "plant_exposure": {
+      "plant_exposure_sun": "Sun",
+      "plant_exposure_partial_shade": "Partial shade",
+      "plant_exposure_shade": "Shade"
+    },
+    "product_category": {
+      "product_category_seasonings": "Seasonings",
+      "product_category_beverages": "Beverages",
+      "product_category_canned_and_jarred_goods": "Canned and jarred goods",
+      "product_category_maintenance": "Maintenance",
+      "product_category_fruits": "Fruits",
+      "product_category_hygiene_and_health": "Hygiene and health",
+      "product_category_cooking_ingredients": "Cooking ingredients",
+      "product_category_vegetables": "Vegetables",
+      "product_category_animal_products": "Animal products",
+      "product_category_dry_grain_products": "Dry grain products",
+      "product_category_dairy_products": "Dairy products",
+      "product_category_savory_products": "Savory products",
+      "product_category_sweet_products": "Sweet products",
+      "product_category_dry_plant_products": "Dry plant products"
+    },
+    "storage_medium": {
+      "storage_medium_external_ssd": "External SSD",
+      "storage_medium_ssd_nvme": "SSD NVMe",
+      "storage_medium_ssd_sata": "SSD SATA"
+    },
+    "substrate": {
+      "substrate_potting_soil": "Potting soil"
+    },
+    "switch_nature": {
+      "switch_nature_single_switch": "Single switch",
+      "switch_nature_push_button": "Push button",
+      "switch_nature_two_way_switch": "Two-way switch"
+    },
+    "technical_interface": {
+      "technical_interface_pcie_3_0_x4": "PCIe 3.0 x4",
+      "technical_interface_pcie_4_0": "PCIe 4.0",
+      "technical_interface_pcie_4_0_x16": "PCIe 4.0 x16",
+      "technical_interface_pcie_5_0_x2": "PCIe 5.0 x2",
+      "technical_interface_pcie_x1": "PCIe x1",
+      "technical_interface_usb_3_2_gen_2": "USB 3.2 Gen 2"
+    }
+  }
+}

@@ -268,6 +268,9 @@ public static class DevSpace
             Opt(Props.DocumentType, "research_note"),
             Opt(Props.DocumentType, "architecture"),
             Opt(Props.DocumentType, "resume"),
+            Opt(Props.DocumentType, "proposal"),
+            Opt(Props.DocumentType, "minutes"),
+            Opt(Props.DocumentType, "procedure"),
         ];
 
         public static string? Resolve(string nameOrKey) => ResolveOption(Props.DocumentType, All, nameOrKey);

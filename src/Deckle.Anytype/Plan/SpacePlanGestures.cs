@@ -45,6 +45,12 @@ public sealed class SpacePlanGestures(AnytypeApiClient api, AnytypeSpaceAliases 
 
     private readonly SchemaAdminGestures _schema = new(api, aliases);
 
+    // A plan is written in English; a terms file puts its words in another
+    // language before anything reads it (PlanLocalizer). Without one, the plan
+    // is built as it is written.
+    public static JsonObject InLanguage(JsonObject plan, JsonObject? terms) =>
+        terms is null ? plan : PlanLocalizer.Localize(plan, terms);
+
     public async Task<SpacePlanPreview> PreviewAsync(
         string space, JsonObject planNode, SpacePlanStages stages, CancellationToken ct = default)
     {

@@ -14,23 +14,23 @@
       "plural": "Points"
     },
     "circuit": {
-      "name": "Circuits",
+      "name": "Circuit",
       "plural": "Circuits"
     },
     "panel": {
-      "name": "Tableaux",
+      "name": "Tableau",
       "plural": "Tableaux"
     },
     "system": {
-      "name": "Systèmes",
+      "name": "Système",
       "plural": "Systèmes"
     },
     "device": {
-      "name": "Appareils",
+      "name": "Appareil",
       "plural": "Appareils"
     },
     "component": {
-      "name": "Composants",
+      "name": "Composant",
       "plural": "Composants"
     },
     "utensil": {
@@ -38,7 +38,7 @@
       "plural": "Ustensiles de cuisine"
     },
     "plant": {
-      "name": "Plantes",
+      "name": "Plante",
       "plural": "Plantes"
     },
     "idea": {
@@ -56,6 +56,14 @@
     "todo": {
       "name": "Tâche",
       "plural": "Tâches"
+    },
+    "product": {
+      "name": "Produit",
+      "plural": "Produits"
+    },
+    "zone": {
+      "name": "Zone",
+      "plural": "Zones"
     }
   },
   "properties": {
@@ -68,8 +76,8 @@
     "floor": "Zone",
     "category": "Catégorie",
     "condition": "État",
-    "circuit": "Circuit",
-    "panel": "Tableau",
+    "circuit": "Circuit(s) lié(s)",
+    "panel": "Tableau(x) lié(s)",
     "outlet_count": "Postes",
     "earthed": "Terre",
     "light_nature": "Nature lumineuse",
@@ -118,9 +126,9 @@
     "horizon": "Horizon",
     "aisle": "Rayon",
     "about": "Concerne",
-    "state": "Statut",
+    "state": "État",
     "target_date": "Date cible",
-    "worksite": "Chantier lié",
+    "worksite": "Chantier(s) lié(s)",
     "connected_to": "Raccordé à",
     "upstream_panel": "Tableau amont",
     "dcl": "Sortie DCL",
@@ -159,7 +167,14 @@
     "core_count": "Nombre de cœurs",
     "thread_count": "Nombre de threads",
     "technical_interface": "Interface technique",
-    "storage_medium": "Support de stockage"
+    "storage_medium": "Support de stockage",
+    "archive": "Archivé",
+    "manual": "Manuel",
+    "memory_frequency": "Fréquence mémoire (MHz)",
+    "memory_size": "Taille mémoire (Go)",
+    "product_category": "Catégorie de produit",
+    "switch_nature": "Sorte d'interrupteur",
+    "zone": "Zone(s) liée(s)"
   },
   "options": {
     "category": {
@@ -211,7 +226,28 @@
       "vp": "VP — prise d'aspiration",
       "ws": "WS — arrivée d'eau",
       "wt": "WT — robinet",
-      "wd": "WD — évacuation"
+      "wd": "WD — évacuation",
+      "category_ad_driver": "AD — driver",
+      "category_ar_relay": "AR — relay",
+      "category_cp_control_panel": "CP — control panel",
+      "category_cs_switch": "CS — switch",
+      "category_lc_ceiling_light": "LC — ceiling light",
+      "category_lr_led_ribbon": "LR — LED ribbon",
+      "category_lw_wall_light": "LW — wall light",
+      "category_pc_cable_outlet": "PC — cable outlet",
+      "category_pf_fiber_socket": "PF — fiber socket",
+      "category_pn_network_socket": "PN — network socket",
+      "category_pp_power_socket": "PP — power socket",
+      "category_pr_reserve_outlet": "PR — reserve outlet",
+      "category_ps_standard_socket": "PS — standard socket",
+      "category_ve_extraction_vent": "VE — extraction vent",
+      "category_vf_flue_terminal": "VF — flue terminal",
+      "category_vp_suction_port": "VP — suction port",
+      "category_vs_supply_vent": "VS — supply vent",
+      "category_vt_transfer_grille": "VT — transfer grille",
+      "category_wd_drain": "WD — drain",
+      "category_ws_water_supply": "WS — water supply",
+      "category_wt_tap": "WT — tap"
     },
     "condition": {
       "bon": "Bon",
@@ -263,7 +299,9 @@
       "tools": "Outillage",
       "kitchen": "Cuisine",
       "appliances": "Électroménager",
-      "garden": "Jardin"
+      "garden": "Jardin",
+      "domain_home_automation": "Domotique",
+      "domain_lighting": "Éclairage"
     },
     "horizon": {
       "maintenant": "Maintenant",
@@ -339,7 +377,9 @@
       "elv_24": "TBT 24 V",
       "data": "Données",
       "air": "Air",
-      "water": "Eau"
+      "water": "Eau",
+      "carries_elv_24_v": "ELV 24 V",
+      "carries_lv_230_v": "LV 230 V"
     },
     "assignment": {
       "lighting": "Éclairage",
@@ -368,7 +408,9 @@
       "cat_6": "Cat 6",
       "cat_6a": "Cat 6a",
       "fibre": "Fibre",
-      "coax": "Coaxial"
+      "coax": "Coaxial",
+      "cable_o_1_5_mm2": "1.5 mm²",
+      "cable_o_2_5_mm2": "2.5 mm²"
     },
     "equipment_category": {
       "motherboard": "Carte mère",
@@ -381,7 +423,14 @@
       "cooling": "Refroidissement",
       "smartphone": "Smartphone",
       "storage": "Stockage",
-      "bulb": "Ampoule"
+      "bulb": "Ampoule",
+      "equipment_category_power_supply": "Alimentation",
+      "equipment_category_camera": "Caméra",
+      "equipment_category_sensor": "Capteur",
+      "equipment_category_heating": "Chauffage",
+      "equipment_category_controller": "Contrôleur",
+      "equipment_category_led_strip": "Ruban LED",
+      "equipment_category_shutter": "Volet"
     },
     "errand_category": {
       "sweet_products": "Produits sucrés",
@@ -407,7 +456,9 @@
     },
     "earthed": {
       "yes": "Oui",
-      "no": "Non"
+      "no": "Non",
+      "earthed_no": "Non",
+      "earthed_yes": "Oui"
     },
     "dcl": {
       "yes": "Oui",
@@ -425,7 +476,113 @@
     },
     "supported_protocols": {
       "zigbee": "Zigbee",
-      "bluetooth": "Bluetooth"
+      "bluetooth": "Bluetooth",
+      "supported_protocols_bluetooth": "Bluetooth",
+      "supported_protocols_zigbee": "Zigbee"
+    },
+    "environment": {
+      "environment_indoor": "Intérieur",
+      "environment_outdoor": "Extérieur"
+    },
+    "plant_exposure": {
+      "plant_exposure_sun": "Soleil",
+      "plant_exposure_partial_shade": "Mi-ombre",
+      "plant_exposure_shade": "Ombre"
+    },
+    "product_category": {
+      "product_category_seasonings": "Assaisonnements",
+      "product_category_beverages": "Boissons",
+      "product_category_canned_and_jarred_goods": "Conserves et bocaux",
+      "product_category_maintenance": "Entretien",
+      "product_category_fruits": "Fruits",
+      "product_category_hygiene_and_health": "Hygiène et santé",
+      "product_category_cooking_ingredients": "Ingrédients culinaires",
+      "product_category_vegetables": "Légumes",
+      "product_category_animal_products": "Produits animaliers",
+      "product_category_dry_grain_products": "Produits céréaliers secs",
+      "product_category_dairy_products": "Produits laitiers",
+      "product_category_savory_products": "Produits salés",
+      "product_category_sweet_products": "Produits sucrés",
+      "product_category_dry_plant_products": "Produits végétaux secs"
+    },
+    "storage_medium": {
+      "storage_medium_external_ssd": "SSD Externe",
+      "storage_medium_ssd_nvme": "SSD NVMe",
+      "storage_medium_ssd_sata": "SSD SATA"
+    },
+    "substrate": {
+      "substrate_potting_soil": "Terreau"
+    },
+    "switch_nature": {
+      "switch_nature_single_switch": "Interrupteur simple",
+      "switch_nature_push_button": "Poussoir",
+      "switch_nature_two_way_switch": "Va-et-vient"
+    },
+    "technical_interface": {
+      "technical_interface_pcie_3_0_x4": "PCIe 3.0 x4",
+      "technical_interface_pcie_4_0": "PCIe 4.0",
+      "technical_interface_pcie_4_0_x16": "PCIe 4.0 x16",
+      "technical_interface_pcie_5_0_x2": "PCIe 5.0 x2",
+      "technical_interface_pcie_x1": "PCIe x1",
+      "technical_interface_usb_3_2_gen_2": "USB 3.2 Gen 2"
     }
+  },
+  "texts": {
+    "**Event**": "**Évènement**",
+    "A bounded set of works on the house.": "Un ensemble de travaux fini sur la maison.",
+    "A concrete action, standalone or within a work.": "Une action concrète, seule ou dans un chantier.",
+    "A feed from the panel and everything it powers.": "Un départ du tableau et tout ce qu'il alimente.",
+    "A fixed connection or control point of the installation, with its fittings.": "Un point de raccordement ou de commande fixe de l'installation, avec son appareillage.",
+    "A grouping of rooms.": "Un regroupement de pièces.",
+    "A panel from which circuits start.": "Un tableau d'où partent des circuits.",
+    "A physical space in the house.": "Un espace physique de la maison.",
+    "A piece of equipment connected to the installation or standalone.": "Un équipement raccordé à l'installation ou autonome.",
+    "A plant in the house and its maintenance.": "Une plante de la maison et son entretien.",
+    "A small piece of kitchen equipment.": "Un petit matériel de cuisine.",
+    "A wish or project jotted down on the fly.": "Une envie ou un projet noté au vol.",
+    "Abandoned": "Abandonnés",
+    "All": "Tous",
+    "All|type:idea": "Toutes",
+    "All|type:plant": "Toutes",
+    "All|type:room": "Toutes",
+    "All|type:todo": "Toutes",
+    "All|type:zone": "Toutes",
+    "An assembly of several devices or components.": "Un assemblage de plusieurs appareils ou composants.",
+    "An everyday product, checked when it needs restocking.": "Un produit du quotidien, coché quand il faut en reprendre.",
+    "An internal technical part of a system.": "Une pièce technique interne d'un système.",
+    "By category": "Par catégorie",
+    "By status": "Par statut",
+    "Completed": "Terminées",
+    "Completed|type:worksite": "Terminés",
+    "Computer": "Ordinateur",
+    "Cooling": "Refroidissement",
+    "Daily life": "Vie quotidienne",
+    "Default component": "Composant par défaut",
+    "Default device": "Appareil par défaut",
+    "Default panel": "Tableau par défaut",
+    "Default plant": "Plante par défaut",
+    "Default room": "Pièce par défaut",
+    "Default system": "Système par défaut",
+    "Default zone": "Zone par défaut",
+    "Devices": "Appareils",
+    "Electricity": "Électricité",
+    "Electronic device": "Appareil électronique",
+    "Equipment": "Équipement",
+    "Features": "Caractéristiques",
+    "Information": "Informations",
+    "Links": "Liens",
+    "Management": "Gestion",
+    "Manuals": "Manuels",
+    "Motherboard": "Carte mère",
+    "Network card": "Carte réseau",
+    "Peripheral": "Périphérique",
+    "Price": "Prix",
+    "Priorities": "Prioritaires",
+    "Processor": "Processeur",
+    "RAM": "Mémoire vive",
+    "Rooms": "Pièces",
+    "Speaker": "Enceinte",
+    "Storage": "Stockage",
+    "Tasks": "Tâches"
   }
 }

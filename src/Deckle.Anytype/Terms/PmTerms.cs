@@ -4,6 +4,12 @@ namespace Deckle.Anytype;
 // by DevSpace. French is the display language: the person's spaces are French,
 // and Deckle names properties and options the way the space shows them. The
 // other shipped languages only widen what a typed name may be.
+//
+// The same files build the space: Plan/pm.space-plan.json is written in
+// English, and PlanLocalizer puts it in a file's language, its schema words by
+// key and its free text through `texts`. One table names the space for the code
+// and for the plan, so the two cannot drift; PlanLocalizerTests hold them
+// together. The French names are those of the person's « PM » space.
 public static class PmTerms
 {
     public const string DisplayLanguage = "fr";

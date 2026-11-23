@@ -1,0 +1,4410 @@
+{
+  "plan_version": 1,
+  "properties": [
+    {
+      "key": "address",
+      "name": "Address",
+      "format": "text"
+    },
+    {
+      "key": "archive",
+      "name": "Archived",
+      "format": "checkbox"
+    },
+    {
+      "key": "budget_actual",
+      "name": "Actual budget",
+      "format": "number"
+    },
+    {
+      "key": "budget_estimated",
+      "name": "Estimated budget",
+      "format": "number"
+    },
+    {
+      "key": "company",
+      "name": "Linked company(ies)",
+      "format": "objects"
+    },
+    {
+      "key": "contacts",
+      "name": "Linked contact(s)",
+      "format": "objects"
+    },
+    {
+      "key": "depends_on",
+      "name": "Depends on",
+      "format": "objects"
+    },
+    {
+      "key": "document_global",
+      "name": "Featured",
+      "format": "checkbox"
+    },
+    {
+      "key": "document_type",
+      "name": "Document type",
+      "format": "select",
+      "tags": [
+        {
+          "key": "resume",
+          "color": "grey",
+          "name": "Handover"
+        },
+        {
+          "key": "research_note",
+          "color": "ice",
+          "name": "Investigation"
+        },
+        {
+          "key": "proposal",
+          "color": "yellow",
+          "name": "Proposal"
+        },
+        {
+          "key": "minutes",
+          "color": "blue",
+          "name": "Minutes"
+        },
+        {
+          "key": "specification",
+          "color": "purple",
+          "name": "Specification"
+        },
+        {
+          "key": "reference",
+          "color": "lime",
+          "name": "Reference"
+        },
+        {
+          "key": "procedure",
+          "color": "orange",
+          "name": "Procedure"
+        },
+        {
+          "key": "tip",
+          "color": "teal",
+          "name": "Tip"
+        }
+      ]
+    },
+    {
+      "key": "documents",
+      "name": "Linked document(s)",
+      "format": "objects"
+    },
+    {
+      "key": "done",
+      "name": "Done",
+      "format": "checkbox"
+    },
+    {
+      "key": "done_definition",
+      "name": "Definition of done",
+      "format": "text"
+    },
+    {
+      "key": "due_date",
+      "name": "Target date",
+      "format": "date"
+    },
+    {
+      "key": "effort_actual",
+      "name": "Actual effort",
+      "format": "number"
+    },
+    {
+      "key": "effort_estimated",
+      "name": "Estimated effort",
+      "format": "number"
+    },
+    {
+      "key": "email",
+      "name": "Email",
+      "format": "email"
+    },
+    {
+      "key": "epic",
+      "name": "Linked epic(s)",
+      "format": "objects"
+    },
+    {
+      "key": "files",
+      "name": "Linked file(s)",
+      "format": "files"
+    },
+    {
+      "key": "orchestrated_by",
+      "name": "Orchestrated by",
+      "format": "objects"
+    },
+    {
+      "key": "phone",
+      "name": "Phone",
+      "format": "phone"
+    },
+    {
+      "key": "priority",
+      "name": "Priority",
+      "format": "select",
+      "tags": [
+        {
+          "key": "p_0",
+          "name": "0",
+          "color": "grey"
+        },
+        {
+          "key": "p_1",
+          "name": "1",
+          "color": "yellow"
+        },
+        {
+          "key": "p_2",
+          "name": "2",
+          "color": "yellow"
+        },
+        {
+          "key": "p_3",
+          "name": "3",
+          "color": "orange"
+        },
+        {
+          "key": "p_4",
+          "name": "4",
+          "color": "orange"
+        },
+        {
+          "key": "p_5",
+          "name": "5",
+          "color": "red"
+        }
+      ]
+    },
+    {
+      "key": "projects",
+      "name": "Linked project(s)",
+      "format": "objects"
+    },
+    {
+      "key": "role",
+      "name": "Role",
+      "format": "select",
+      "tags": [
+        {
+          "key": "administrative",
+          "name": "Administrative",
+          "color": "grey"
+        },
+        {
+          "key": "decision",
+          "name": "Decision",
+          "color": "grey"
+        },
+        {
+          "key": "finance",
+          "name": "Finances",
+          "color": "grey"
+        },
+        {
+          "key": "product",
+          "name": "Product",
+          "color": "grey"
+        },
+        {
+          "key": "technical",
+          "name": "Technical",
+          "color": "grey"
+        }
+      ]
+    },
+    {
+      "key": "slot",
+      "name": "Slot",
+      "format": "select",
+      "tags": [
+        {
+          "key": "cap",
+          "name": "Focus",
+          "color": "grey"
+        },
+        {
+          "key": "training",
+          "name": "Practice",
+          "color": "grey"
+        },
+        {
+          "key": "passion",
+          "name": "Passion",
+          "color": "grey"
+        }
+      ]
+    },
+    {
+      "key": "status",
+      "name": "State",
+      "format": "select",
+      "tags": [
+        {
+          "key": "dormant",
+          "name": "Dormant",
+          "color": "yellow"
+        },
+        {
+          "key": "doing",
+          "name": "In progress",
+          "color": "ice"
+        },
+        {
+          "key": "paused",
+          "name": "Paused",
+          "color": "blue"
+        },
+        {
+          "key": "ready",
+          "name": "Ready",
+          "color": "teal"
+        }
+      ]
+    },
+    {
+      "key": "task_type",
+      "name": "Task type",
+      "format": "select",
+      "tags": [
+        {
+          "key": "orchestration",
+          "name": "Orchestrate",
+          "color": "purple"
+        },
+        {
+          "key": "production",
+          "name": "Produce",
+          "color": "lime"
+        },
+        {
+          "key": "research",
+          "name": "Research",
+          "color": "ice"
+        },
+        {
+          "key": "organizing",
+          "name": "Organize",
+          "color": "orange"
+        },
+        {
+          "key": "management",
+          "name": "Manage",
+          "color": "red"
+        },
+        {
+          "key": "exchange",
+          "name": "Exchange",
+          "color": "purple"
+        },
+        {
+          "key": "monitoring",
+          "name": "Monitor",
+          "color": "pink"
+        }
+      ]
+    },
+    {
+      "key": "tasks",
+      "name": "Linked task(s)",
+      "format": "objects"
+    },
+    {
+      "key": "time_actual",
+      "name": "Actual time",
+      "format": "number"
+    },
+    {
+      "key": "time_estimated",
+      "name": "Estimated time",
+      "format": "number"
+    },
+    {
+      "key": "version",
+      "name": "Version",
+      "format": "text"
+    },
+    {
+      "key": "website",
+      "name": "Website",
+      "format": "url"
+    }
+  ],
+  "types": [
+    {
+      "key": "company",
+      "name": "Company",
+      "plural_name": "Companies",
+      "layout": "profile",
+      "description": "A company we work with.",
+      "icon": {
+        "format": "icon",
+        "name": "business",
+        "color": "grey"
+      },
+      "properties": [
+        "address",
+        "email",
+        "phone",
+        "website",
+        "archive",
+        "links"
+      ],
+      "panel": {
+        "featured": [
+          "address"
+        ],
+        "hidden": []
+      },
+      "default_template": "Default company",
+      "views": [
+        {
+          "name": "All",
+          "type": "list",
+          "hide_icon": true,
+          "filters": [],
+          "sorts": [
+            {
+              "property": "name",
+              "direction": "asc"
+            }
+          ],
+          "columns": [
+            {
+              "property": "name",
+              "width": 200
+            },
+            {
+              "property": "email",
+              "width": 192
+            },
+            {
+              "property": "phone",
+              "width": 192
+            },
+            {
+              "property": "website",
+              "width": 192
+            },
+            {
+              "property": "address",
+              "width": 192
+            },
+            {
+              "property": "description",
+              "width": 192,
+              "hidden": true
+            },
+            {
+              "property": "archive",
+              "width": 192,
+              "hidden": true
+            },
+            {
+              "property": "type",
+              "width": 192,
+              "hidden": true
+            },
+            {
+              "property": "links",
+              "width": 192,
+              "hidden": true
+            },
+            {
+              "property": "backlinks",
+              "width": 192,
+              "hidden": true
+            },
+            {
+              "property": "last_modified_by",
+              "width": 192,
+              "hidden": true
+            },
+            {
+              "property": "last_modified_date",
+              "width": 192,
+              "hidden": true
+            },
+            {
+              "property": "created_date",
+              "width": 192,
+              "hidden": true
+            },
+            {
+              "property": "creator",
+              "width": 192,
+              "hidden": true
+            },
+            {
+              "property": "tag",
+              "width": 192,
+              "hidden": true
+            },
+            {
+              "property": "done",
+              "width": 192,
+              "hidden": true
+            }
+          ]
+        }
+      ],
+      "display": {
+        "header": "list",
+        "width": 0
+      }
+    },
+    {
+      "key": "document",
+      "name": "Document",
+      "plural_name": "Documents",
+      "layout": "basic",
+      "description": "Documentation: instructions, references, investigations, specifications.",
+      "icon": {
+        "format": "icon",
+        "name": "search",
+        "color": "blue"
+      },
+      "properties": [
+        "document_type",
+        "version",
+        "document_global",
+        "archive"
+      ],
+      "panel": {
+        "featured": [
+          "document_type",
+          "version",
+          "document_global"
+        ],
+        "hidden": []
+      },
+      "views": [
+        {
+          "name": "Recent",
+          "type": "list",
+          "hide_icon": true,
+          "wrap_content": true,
+          "filters": [
+            {
+              "value": false,
+              "property": "archive",
+              "condition": "equal"
+            }
+          ],
+          "sorts": [
+            {
+              "property": "last_modified_date",
+              "direction": "desc"
+            }
+          ],
+          "columns": [
+            {
+              "property": "name",
+              "width": 307
+            },
+            {
+              "property": "version",
+              "width": 192
+            },
+            {
+              "property": "document_type",
+              "width": 192
+            },
+            {
+              "property": "document_global",
+              "width": 192,
+              "hidden": true
+            },
+            {
+              "property": "description",
+              "width": 192,
+              "hidden": true
+            },
+            {
+              "property": "archive",
+              "width": 192,
+              "hidden": true
+            },
+            {
+              "property": "type",
+              "width": 192,
+              "hidden": true
+            },
+            {
+              "property": "links",
+              "width": 192,
+              "hidden": true
+            },
+            {
+              "property": "backlinks",
+              "width": 192,
+              "hidden": true
+            },
+            {
+              "property": "last_modified_by",
+              "width": 192,
+              "hidden": true
+            },
+            {
+              "property": "last_modified_date",
+              "width": 192,
+              "hidden": true
+            },
+            {
+              "property": "created_date",
+              "width": 192,
+              "hidden": true
+            },
+            {
+              "property": "creator",
+              "width": 192,
+              "hidden": true
+            },
+            {
+              "property": "tag",
+              "width": 192,
+              "hidden": true
+            },
+            {
+              "property": "done",
+              "width": 192,
+              "hidden": true
+            }
+          ]
+        },
+        {
+          "name": "References",
+          "type": "list",
+          "hide_icon": true,
+          "wrap_content": true,
+          "filters": [
+            {
+              "value": false,
+              "property": "archive",
+              "condition": "equal"
+            },
+            {
+              "value": [
+                "Reference",
+                "Specification",
+                "Procedure",
+                "Tip"
+              ],
+              "property": "document_type",
+              "condition": "in"
+            }
+          ],
+          "sorts": [
+            {
+              "property": "name",
+              "direction": "asc"
+            }
+          ],
+          "columns": [
+            {
+              "property": "name",
+              "width": 307
+            },
+            {
+              "property": "version",
+              "width": 192
+            },
+            {
+              "property": "document_type",
+              "width": 192
+            },
+            {
+              "property": "document_global",
+              "width": 192,
+              "hidden": true
+            },
+            {
+              "property": "description",
+              "width": 192,
+              "hidden": true
+            },
+            {
+              "property": "archive",
+              "width": 192,
+              "hidden": true
+            },
+            {
+              "property": "type",
+              "width": 192,
+              "hidden": true
+            },
+            {
+              "property": "links",
+              "width": 192,
+              "hidden": true
+            },
+            {
+              "property": "backlinks",
+              "width": 192,
+              "hidden": true
+            },
+            {
+              "property": "last_modified_by",
+              "width": 192,
+              "hidden": true
+            },
+            {
+              "property": "last_modified_date",
+              "width": 192,
+              "hidden": true
+            },
+            {
+              "property": "created_date",
+              "width": 192,
+              "hidden": true
+            },
+            {
+              "property": "creator",
+              "width": 192,
+              "hidden": true
+            },
+            {
+              "property": "tag",
+              "width": 192,
+              "hidden": true
+            },
+            {
+              "property": "done",
+              "width": 192,
+              "hidden": true
+            }
+          ]
+        },
+        {
+          "name": "Investigations",
+          "type": "list",
+          "hide_icon": true,
+          "wrap_content": true,
+          "filters": [
+            {
+              "value": false,
+              "property": "archive",
+              "condition": "equal"
+            },
+            {
+              "value": [
+                "Investigation",
+                "Proposal",
+                "Minutes"
+              ],
+              "property": "document_type",
+              "condition": "in"
+            }
+          ],
+          "sorts": [
+            {
+              "property": "last_modified_date",
+              "direction": "desc"
+            }
+          ],
+          "columns": [
+            {
+              "property": "name",
+              "width": 307
+            },
+            {
+              "property": "version",
+              "width": 192
+            },
+            {
+              "property": "document_type",
+              "width": 192
+            },
+            {
+              "property": "document_global",
+              "width": 192,
+              "hidden": true
+            },
+            {
+              "property": "description",
+              "width": 192,
+              "hidden": true
+            },
+            {
+              "property": "archive",
+              "width": 192,
+              "hidden": true
+            },
+            {
+              "property": "type",
+              "width": 192,
+              "hidden": true
+            },
+            {
+              "property": "links",
+              "width": 192,
+              "hidden": true
+            },
+            {
+              "property": "backlinks",
+              "width": 192,
+              "hidden": true
+            },
+            {
+              "property": "last_modified_by",
+              "width": 192,
+              "hidden": true
+            },
+            {
+              "property": "last_modified_date",
+              "width": 192,
+              "hidden": true
+            },
+            {
+              "property": "created_date",
+              "width": 192,
+              "hidden": true
+            },
+            {
+              "property": "creator",
+              "width": 192,
+              "hidden": true
+            },
+            {
+              "property": "tag",
+              "width": 192,
+              "hidden": true
+            },
+            {
+              "property": "done",
+              "width": 192,
+              "hidden": true
+            }
+          ]
+        },
+        {
+          "name": "Archived",
+          "type": "list",
+          "hide_icon": true,
+          "wrap_content": true,
+          "filters": [
+            {
+              "value": true,
+              "property": "archive",
+              "condition": "equal"
+            }
+          ],
+          "sorts": [
+            {
+              "property": "last_modified_date",
+              "direction": "desc"
+            }
+          ],
+          "columns": [
+            {
+              "property": "name",
+              "width": 307
+            },
+            {
+              "property": "version",
+              "width": 192
+            },
+            {
+              "property": "document_type",
+              "width": 192
+            },
+            {
+              "property": "document_global",
+              "width": 192,
+              "hidden": true
+            },
+            {
+              "property": "description",
+              "width": 192,
+              "hidden": true
+            },
+            {
+              "property": "archive",
+              "width": 192,
+              "hidden": true
+            },
+            {
+              "property": "type",
+              "width": 192,
+              "hidden": true
+            },
+            {
+              "property": "links",
+              "width": 192,
+              "hidden": true
+            },
+            {
+              "property": "backlinks",
+              "width": 192,
+              "hidden": true
+            },
+            {
+              "property": "last_modified_by",
+              "width": 192,
+              "hidden": true
+            },
+            {
+              "property": "last_modified_date",
+              "width": 192,
+              "hidden": true
+            },
+            {
+              "property": "created_date",
+              "width": 192,
+              "hidden": true
+            },
+            {
+              "property": "creator",
+              "width": 192,
+              "hidden": true
+            },
+            {
+              "property": "tag",
+              "width": 192,
+              "hidden": true
+            },
+            {
+              "property": "done",
+              "width": 192,
+              "hidden": true
+            }
+          ]
+        }
+      ],
+      "display": {
+        "header": "inline",
+        "width": 0
+      }
+    },
+    {
+      "key": "epic",
+      "name": "Epic",
+      "plural_name": "Epics",
+      "layout": "collection",
+      "description": "Lasting grouping of projects: one large application, one activity.",
+      "icon": {
+        "format": "icon",
+        "name": "grid",
+        "color": "purple"
+      },
+      "properties": [
+        "priority",
+        "status",
+        "budget_estimated",
+        "budget_actual",
+        "effort_estimated",
+        "effort_actual",
+        "done_definition",
+        "documents",
+        "archive"
+      ],
+      "panel": {
+        "featured": [
+          "priority",
+          "status",
+          "budget_estimated",
+          "budget_actual",
+          "effort_estimated",
+          "effort_actual",
+          "done_definition"
+        ],
+        "hidden": []
+      },
+      "default_template": "Default epic",
+      "views": [
+        {
+          "name": "All",
+          "type": "list",
+          "hide_icon": true,
+          "wrap_content": true,
+          "filters": [
+            {
+              "property": "archive",
+              "condition": "equal",
+              "value": false
+            }
+          ],
+          "sorts": [
+            {
+              "property": "last_modified_date",
+              "direction": "desc"
+            }
+          ],
+          "columns": [
+            {
+              "property": "name",
+              "width": 263
+            },
+            {
+              "property": "priority",
+              "width": 85,
+              "hidden": true
+            },
+            {
+              "property": "status",
+              "width": 109,
+              "hidden": true
+            },
+            {
+              "property": "budget_estimated",
+              "width": 192,
+              "hidden": true
+            },
+            {
+              "property": "budget_actual",
+              "width": 192,
+              "hidden": true
+            },
+            {
+              "property": "effort_estimated",
+              "width": 192,
+              "hidden": true
+            },
+            {
+              "property": "effort_actual",
+              "width": 192,
+              "hidden": true
+            },
+            {
+              "property": "done_definition",
+              "width": 200,
+              "hidden": true
+            },
+            {
+              "property": "documents",
+              "width": 192,
+              "hidden": true
+            },
+            {
+              "property": "description",
+              "width": 192,
+              "hidden": true
+            },
+            {
+              "property": "archive",
+              "width": 192,
+              "hidden": true
+            },
+            {
+              "property": "type",
+              "width": 192,
+              "hidden": true
+            },
+            {
+              "property": "links",
+              "width": 192,
+              "hidden": true
+            },
+            {
+              "property": "backlinks",
+              "width": 192,
+              "hidden": true
+            },
+            {
+              "property": "last_modified_by",
+              "width": 192,
+              "hidden": true
+            },
+            {
+              "property": "last_modified_date",
+              "width": 192,
+              "hidden": true
+            },
+            {
+              "property": "created_date",
+              "width": 192,
+              "hidden": true
+            },
+            {
+              "property": "creator",
+              "width": 192,
+              "hidden": true
+            },
+            {
+              "property": "tag",
+              "width": 100,
+              "hidden": true
+            },
+            {
+              "property": "done",
+              "width": 192,
+              "hidden": true
+            }
+          ]
+        }
+      ],
+      "display": {
+        "header": "inline",
+        "width": 0
+      }
+    },
+    {
+      "key": "idea",
+      "name": "Idea",
+      "plural_name": "Ideas",
+      "layout": "note",
+      "description": "Things said in passing, to sort later.",
+      "icon": {
+        "format": "icon",
+        "name": "bulb",
+        "color": "pink"
+      },
+      "properties": [
+        "documents",
+        "archive"
+      ],
+      "views": [
+        {
+          "name": "All",
+          "type": "list",
+          "hide_icon": true,
+          "filters": [],
+          "sorts": [
+            {
+              "property": "created_date",
+              "direction": "desc"
+            }
+          ],
+          "columns": [
+            {
+              "property": "name",
+              "width": 268
+            },
+            {
+              "property": "documents",
+              "width": 192,
+              "hidden": true
+            },
+            {
+              "property": "description",
+              "width": 192,
+              "hidden": true
+            },
+            {
+              "property": "archive",
+              "width": 192,
+              "hidden": true
+            },
+            {
+              "property": "type",
+              "width": 192,
+              "hidden": true
+            },
+            {
+              "property": "links",
+              "width": 192,
+              "hidden": true
+            },
+            {
+              "property": "backlinks",
+              "width": 192,
+              "hidden": true
+            },
+            {
+              "property": "last_modified_by",
+              "width": 192,
+              "hidden": true
+            },
+            {
+              "property": "last_modified_date",
+              "width": 192,
+              "hidden": true
+            },
+            {
+              "property": "created_date",
+              "width": 192,
+              "hidden": true
+            },
+            {
+              "property": "creator",
+              "width": 192,
+              "hidden": true
+            },
+            {
+              "property": "tag",
+              "width": 100,
+              "hidden": true
+            },
+            {
+              "property": "done",
+              "width": 192,
+              "hidden": true
+            }
+          ]
+        }
+      ],
+      "display": {
+        "header": "inline",
+        "width": 0
+      }
+    },
+    {
+      "key": "person",
+      "name": "Person",
+      "plural_name": "People",
+      "layout": "profile",
+      "description": "A person we work with.",
+      "icon": {
+        "format": "icon",
+        "name": "person",
+        "color": "grey"
+      },
+      "properties": [
+        "company",
+        "role",
+        "email",
+        "phone",
+        "website",
+        "address",
+        "archive"
+      ],
+      "panel": {
+        "featured": [
+          "company",
+          "role",
+          "email",
+          "phone"
+        ],
+        "hidden": []
+      },
+      "default_template": "Default person",
+      "views": [
+        {
+          "name": "All",
+          "type": "list",
+          "hide_icon": true,
+          "filters": [],
+          "sorts": [
+            {
+              "property": "role",
+              "direction": "asc"
+            },
+            {
+              "property": "name",
+              "direction": "asc"
+            }
+          ],
+          "columns": [
+            {
+              "property": "name",
+              "width": 200
+            },
+            {
+              "property": "email",
+              "width": 187
+            },
+            {
+              "property": "phone",
+              "width": 192
+            },
+            {
+              "property": "company",
+              "width": 192,
+              "hidden": true
+            },
+            {
+              "property": "role",
+              "width": 192,
+              "hidden": true
+            },
+            {
+              "property": "website",
+              "width": 192,
+              "hidden": true
+            },
+            {
+              "property": "address",
+              "width": 192,
+              "hidden": true
+            },
+            {
+              "property": "description",
+              "width": 192,
+              "hidden": true
+            },
+            {
+              "property": "archive",
+              "width": 192,
+              "hidden": true
+            },
+            {
+              "property": "type",
+              "width": 192,
+              "hidden": true
+            },
+            {
+              "property": "links",
+              "width": 192,
+              "hidden": true
+            },
+            {
+              "property": "backlinks",
+              "width": 192,
+              "hidden": true
+            },
+            {
+              "property": "last_modified_by",
+              "width": 192,
+              "hidden": true
+            },
+            {
+              "property": "last_modified_date",
+              "width": 192,
+              "hidden": true
+            },
+            {
+              "property": "created_date",
+              "width": 192,
+              "hidden": true
+            },
+            {
+              "property": "creator",
+              "width": 192,
+              "hidden": true
+            },
+            {
+              "property": "tag",
+              "width": 192,
+              "hidden": true
+            },
+            {
+              "property": "done",
+              "width": 192,
+              "hidden": true
+            }
+          ]
+        }
+      ],
+      "display": {
+        "header": "list",
+        "width": 0
+      }
+    },
+    {
+      "key": "project",
+      "name": "Project",
+      "plural_name": "Projects",
+      "layout": "basic",
+      "description": "A broad, lasting subject we work in.",
+      "icon": {
+        "format": "icon",
+        "name": "stop",
+        "color": "orange"
+      },
+      "properties": [
+        "epic",
+        "status",
+        "priority",
+        "due_date",
+        "budget_estimated",
+        "budget_actual",
+        "effort_estimated",
+        "effort_actual",
+        "depends_on",
+        "done_definition",
+        "documents",
+        "contacts",
+        "archive"
+      ],
+      "panel": {
+        "featured": [
+          "epic",
+          "status",
+          "priority",
+          "due_date",
+          "budget_estimated",
+          "budget_actual",
+          "effort_estimated",
+          "effort_actual",
+          "depends_on",
+          "done_definition"
+        ],
+        "hidden": []
+      },
+      "default_template": "Default project",
+      "views": [
+        {
+          "name": "In progress",
+          "type": "table",
+          "hide_icon": true,
+          "wrap_content": true,
+          "filters": [
+            {
+              "property": "archive",
+              "condition": "equal",
+              "value": false
+            },
+            {
+              "property": "status",
+              "condition": "in",
+              "value": [
+                "In progress"
+              ]
+            }
+          ],
+          "sorts": [
+            {
+              "property": "last_modified_date",
+              "direction": "desc"
+            }
+          ],
+          "columns": [
+            {
+              "property": "name",
+              "width": 195
+            },
+            {
+              "property": "priority",
+              "width": 72
+            },
+            {
+              "property": "done_definition",
+              "width": 810
+            },
+            {
+              "property": "epic",
+              "width": 107,
+              "hidden": true
+            },
+            {
+              "property": "status",
+              "width": 192,
+              "hidden": true
+            },
+            {
+              "property": "due_date",
+              "width": 192,
+              "hidden": true
+            },
+            {
+              "property": "budget_estimated",
+              "width": 192,
+              "hidden": true
+            },
+            {
+              "property": "budget_actual",
+              "width": 192,
+              "hidden": true
+            },
+            {
+              "property": "effort_estimated",
+              "width": 192,
+              "hidden": true
+            },
+            {
+              "property": "effort_actual",
+              "width": 192,
+              "hidden": true
+            },
+            {
+              "property": "depends_on",
+              "width": 192,
+              "hidden": true
+            },
+            {
+              "property": "documents",
+              "width": 192,
+              "hidden": true
+            },
+            {
+              "property": "contacts",
+              "width": 192,
+              "hidden": true
+            },
+            {
+              "property": "description",
+              "width": 192,
+              "hidden": true
+            },
+            {
+              "property": "archive",
+              "width": 192,
+              "hidden": true
+            },
+            {
+              "property": "type",
+              "width": 192,
+              "hidden": true
+            },
+            {
+              "property": "links",
+              "width": 192,
+              "hidden": true
+            },
+            {
+              "property": "backlinks",
+              "width": 192,
+              "hidden": true
+            },
+            {
+              "property": "last_modified_by",
+              "width": 192,
+              "hidden": true
+            },
+            {
+              "property": "last_modified_date",
+              "width": 192,
+              "hidden": true
+            },
+            {
+              "property": "created_date",
+              "width": 192,
+              "hidden": true
+            },
+            {
+              "property": "creator",
+              "width": 192,
+              "hidden": true
+            },
+            {
+              "property": "tag",
+              "width": 192,
+              "hidden": true
+            },
+            {
+              "property": "done",
+              "width": 192,
+              "hidden": true
+            }
+          ]
+        },
+        {
+          "name": "All",
+          "type": "table",
+          "hide_icon": true,
+          "filters": [
+            {
+              "property": "done",
+              "condition": "equal",
+              "value": false
+            },
+            {
+              "property": "archive",
+              "condition": "equal",
+              "value": false
+            }
+          ],
+          "sorts": [
+            {
+              "property": "last_modified_date",
+              "direction": "desc"
+            }
+          ],
+          "columns": [
+            {
+              "property": "name",
+              "width": 217
+            },
+            {
+              "property": "epic",
+              "width": 127
+            },
+            {
+              "property": "status",
+              "width": 123
+            },
+            {
+              "property": "priority",
+              "width": 54
+            },
+            {
+              "property": "due_date",
+              "width": 130
+            },
+            {
+              "property": "done_definition",
+              "width": 607
+            },
+            {
+              "property": "budget_estimated",
+              "width": 133,
+              "hidden": true
+            },
+            {
+              "property": "budget_actual",
+              "width": 116,
+              "hidden": true
+            },
+            {
+              "property": "effort_estimated",
+              "width": 149,
+              "hidden": true
+            },
+            {
+              "property": "effort_actual",
+              "width": 130,
+              "hidden": true
+            },
+            {
+              "property": "depends_on",
+              "width": 196,
+              "hidden": true
+            },
+            {
+              "property": "documents",
+              "width": 192,
+              "hidden": true
+            },
+            {
+              "property": "contacts",
+              "width": 157,
+              "hidden": true
+            },
+            {
+              "property": "description",
+              "width": 192,
+              "hidden": true
+            },
+            {
+              "property": "archive",
+              "width": 192,
+              "hidden": true
+            },
+            {
+              "property": "type",
+              "width": 192,
+              "hidden": true
+            },
+            {
+              "property": "links",
+              "width": 192,
+              "hidden": true
+            },
+            {
+              "property": "backlinks",
+              "width": 192,
+              "hidden": true
+            },
+            {
+              "property": "last_modified_by",
+              "width": 192,
+              "hidden": true
+            },
+            {
+              "property": "last_modified_date",
+              "width": 192,
+              "hidden": true
+            },
+            {
+              "property": "created_date",
+              "width": 192,
+              "hidden": true
+            },
+            {
+              "property": "creator",
+              "width": 192,
+              "hidden": true
+            },
+            {
+              "property": "tag",
+              "width": 192,
+              "hidden": true
+            },
+            {
+              "property": "done",
+              "width": 192,
+              "hidden": true
+            }
+          ]
+        }
+      ],
+      "display": {
+        "header": "list",
+        "width": 0
+      }
+    },
+    {
+      "key": "report",
+      "name": "Report",
+      "plural_name": "Reports",
+      "layout": "note",
+      "description": "The journal of a work session.",
+      "icon": {
+        "format": "icon",
+        "name": "clipboard",
+        "color": "ice"
+      },
+      "properties": [
+        "tasks",
+        "contacts",
+        "archive"
+      ],
+      "panel": {
+        "featured": [
+          "tasks",
+          "contacts"
+        ],
+        "hidden": []
+      },
+      "views": [
+        {
+          "name": "All",
+          "type": "list",
+          "hide_icon": true,
+          "filters": [],
+          "sorts": [
+            {
+              "property": "last_modified_date",
+              "direction": "desc"
+            }
+          ],
+          "columns": [
+            {
+              "property": "name",
+              "width": 387
+            },
+            {
+              "property": "created_date",
+              "width": 192
+            },
+            {
+              "property": "contacts",
+              "width": 192
+            },
+            {
+              "property": "tasks",
+              "width": 192
+            },
+            {
+              "property": "description",
+              "width": 192,
+              "hidden": true
+            },
+            {
+              "property": "archive",
+              "width": 192,
+              "hidden": true
+            },
+            {
+              "property": "type",
+              "width": 192,
+              "hidden": true
+            },
+            {
+              "property": "links",
+              "width": 192,
+              "hidden": true
+            },
+            {
+              "property": "backlinks",
+              "width": 192,
+              "hidden": true
+            },
+            {
+              "property": "last_modified_by",
+              "width": 192,
+              "hidden": true
+            },
+            {
+              "property": "last_modified_date",
+              "width": 192,
+              "hidden": true
+            },
+            {
+              "property": "creator",
+              "width": 192,
+              "hidden": true
+            },
+            {
+              "property": "tag",
+              "width": 100,
+              "hidden": true
+            },
+            {
+              "property": "done",
+              "width": 192,
+              "hidden": true
+            }
+          ]
+        }
+      ],
+      "display": {
+        "header": "inline",
+        "width": 0
+      }
+    },
+    {
+      "key": "task",
+      "name": "Task",
+      "plural_name": "Tasks",
+      "layout": "action",
+      "description": "An executable unit that moves a subject forward and is quickly ticked off.",
+      "icon": {
+        "format": "icon",
+        "name": "checkbox",
+        "color": "lime"
+      },
+      "properties": [
+        "projects",
+        "contacts",
+        "files",
+        "due_date",
+        "priority",
+        "task_type",
+        "done_definition",
+        "slot",
+        "orchestrated_by",
+        "documents",
+        "time_estimated",
+        "time_actual",
+        "status",
+        "archive",
+        "done"
+      ],
+      "panel": {
+        "featured": [
+          "projects",
+          "contacts",
+          "files",
+          "due_date",
+          "priority",
+          "task_type",
+          "done_definition"
+        ],
+        "hidden": [
+          "done"
+        ]
+      },
+      "default_template": "Default task",
+      "views": [
+        {
+          "name": "To do",
+          "type": "table",
+          "filters": [
+            {
+              "property": "done",
+              "condition": "equal",
+              "value": false
+            }
+          ],
+          "sorts": [
+            {
+              "property": "last_modified_date",
+              "direction": "desc"
+            }
+          ],
+          "columns": [
+            {
+              "property": "name",
+              "width": 329
+            },
+            {
+              "property": "priority",
+              "width": 63
+            },
+            {
+              "property": "due_date",
+              "width": 137
+            },
+            {
+              "property": "done_definition",
+              "width": 652
+            },
+            {
+              "property": "projects",
+              "width": 192,
+              "hidden": true
+            },
+            {
+              "property": "contacts",
+              "width": 192,
+              "hidden": true
+            },
+            {
+              "property": "files",
+              "width": 192,
+              "hidden": true
+            },
+            {
+              "property": "task_type",
+              "width": 192,
+              "hidden": true
+            },
+            {
+              "property": "slot",
+              "width": 192,
+              "hidden": true
+            },
+            {
+              "property": "orchestrated_by",
+              "width": 192,
+              "hidden": true
+            },
+            {
+              "property": "documents",
+              "width": 192,
+              "hidden": true
+            },
+            {
+              "property": "time_estimated",
+              "width": 192,
+              "hidden": true
+            },
+            {
+              "property": "time_actual",
+              "width": 192,
+              "hidden": true
+            },
+            {
+              "property": "status",
+              "width": 192,
+              "hidden": true
+            },
+            {
+              "property": "description",
+              "width": 192,
+              "hidden": true
+            },
+            {
+              "property": "archive",
+              "width": 192,
+              "hidden": true
+            },
+            {
+              "property": "type",
+              "width": 192,
+              "hidden": true
+            },
+            {
+              "property": "links",
+              "width": 192,
+              "hidden": true
+            },
+            {
+              "property": "backlinks",
+              "width": 192,
+              "hidden": true
+            },
+            {
+              "property": "last_modified_by",
+              "width": 192,
+              "hidden": true
+            },
+            {
+              "property": "last_modified_date",
+              "width": 192,
+              "hidden": true
+            },
+            {
+              "property": "created_date",
+              "width": 192,
+              "hidden": true
+            },
+            {
+              "property": "creator",
+              "width": 192,
+              "hidden": true
+            },
+            {
+              "property": "tag",
+              "width": 192,
+              "hidden": true
+            },
+            {
+              "property": "done",
+              "width": 192,
+              "hidden": true
+            }
+          ]
+        },
+        {
+          "name": "Task type",
+          "type": "kanban",
+          "group_by": "task_type",
+          "card_size": "medium",
+          "colored_groups": true,
+          "filters": [
+            {
+              "property": "done",
+              "condition": "equal",
+              "value": false
+            }
+          ],
+          "sorts": [
+            {
+              "property": "last_modified_date",
+              "direction": "desc"
+            }
+          ],
+          "columns": [
+            {
+              "property": "name",
+              "width": 426
+            },
+            {
+              "property": "contacts",
+              "width": 154
+            },
+            {
+              "property": "done_definition",
+              "width": 192
+            },
+            {
+              "property": "projects",
+              "width": 192,
+              "hidden": true
+            },
+            {
+              "property": "files",
+              "width": 192,
+              "hidden": true
+            },
+            {
+              "property": "due_date",
+              "width": 192,
+              "hidden": true
+            },
+            {
+              "property": "priority",
+              "width": 192,
+              "hidden": true
+            },
+            {
+              "property": "task_type",
+              "width": 192,
+              "hidden": true
+            },
+            {
+              "property": "slot",
+              "width": 192,
+              "hidden": true
+            },
+            {
+              "property": "orchestrated_by",
+              "width": 192,
+              "hidden": true
+            },
+            {
+              "property": "documents",
+              "width": 192,
+              "hidden": true
+            },
+            {
+              "property": "time_estimated",
+              "width": 192,
+              "hidden": true
+            },
+            {
+              "property": "time_actual",
+              "width": 192,
+              "hidden": true
+            },
+            {
+              "property": "status",
+              "width": 192,
+              "hidden": true
+            },
+            {
+              "property": "description",
+              "width": 192,
+              "hidden": true
+            },
+            {
+              "property": "archive",
+              "width": 192,
+              "hidden": true
+            },
+            {
+              "property": "type",
+              "width": 192,
+              "hidden": true
+            },
+            {
+              "property": "links",
+              "width": 192,
+              "hidden": true
+            },
+            {
+              "property": "backlinks",
+              "width": 192,
+              "hidden": true
+            },
+            {
+              "property": "last_modified_by",
+              "width": 192,
+              "hidden": true
+            },
+            {
+              "property": "last_modified_date",
+              "width": 192,
+              "hidden": true
+            },
+            {
+              "property": "created_date",
+              "width": 192,
+              "hidden": true
+            },
+            {
+              "property": "creator",
+              "width": 192,
+              "hidden": true
+            },
+            {
+              "property": "tag",
+              "width": 192,
+              "hidden": true
+            },
+            {
+              "property": "done",
+              "width": 192,
+              "hidden": true
+            }
+          ]
+        },
+        {
+          "name": "Calendar",
+          "type": "calendar",
+          "group_by": "due_date",
+          "filters": [],
+          "sorts": [
+            {
+              "property": "last_modified_date",
+              "direction": "desc"
+            }
+          ],
+          "columns": [
+            {
+              "property": "name",
+              "width": 426
+            },
+            {
+              "property": "priority",
+              "width": 95
+            },
+            {
+              "property": "due_date",
+              "width": 103
+            },
+            {
+              "property": "projects",
+              "width": 304
+            },
+            {
+              "property": "contacts",
+              "width": 154
+            },
+            {
+              "property": "task_type",
+              "width": 112
+            },
+            {
+              "property": "files",
+              "width": 192,
+              "hidden": true
+            },
+            {
+              "property": "done_definition",
+              "width": 192,
+              "hidden": true
+            },
+            {
+              "property": "slot",
+              "width": 192,
+              "hidden": true
+            },
+            {
+              "property": "orchestrated_by",
+              "width": 192,
+              "hidden": true
+            },
+            {
+              "property": "documents",
+              "width": 192,
+              "hidden": true
+            },
+            {
+              "property": "time_estimated",
+              "width": 192,
+              "hidden": true
+            },
+            {
+              "property": "time_actual",
+              "width": 192,
+              "hidden": true
+            },
+            {
+              "property": "status",
+              "width": 192,
+              "hidden": true
+            },
+            {
+              "property": "description",
+              "width": 192,
+              "hidden": true
+            },
+            {
+              "property": "archive",
+              "width": 192,
+              "hidden": true
+            },
+            {
+              "property": "type",
+              "width": 192,
+              "hidden": true
+            },
+            {
+              "property": "links",
+              "width": 192,
+              "hidden": true
+            },
+            {
+              "property": "backlinks",
+              "width": 192,
+              "hidden": true
+            },
+            {
+              "property": "last_modified_by",
+              "width": 192,
+              "hidden": true
+            },
+            {
+              "property": "last_modified_date",
+              "width": 192,
+              "hidden": true
+            },
+            {
+              "property": "created_date",
+              "width": 192,
+              "hidden": true
+            },
+            {
+              "property": "creator",
+              "width": 192,
+              "hidden": true
+            },
+            {
+              "property": "tag",
+              "width": 192,
+              "hidden": true
+            },
+            {
+              "property": "done",
+              "width": 192,
+              "hidden": true
+            }
+          ]
+        },
+        {
+          "name": "Done",
+          "type": "list",
+          "card_size": "medium",
+          "colored_groups": true,
+          "filters": [
+            {
+              "property": "done",
+              "condition": "equal",
+              "value": true
+            }
+          ],
+          "sorts": [
+            {
+              "property": "last_modified_date",
+              "direction": "desc"
+            }
+          ],
+          "columns": [
+            {
+              "property": "name",
+              "width": 426
+            },
+            {
+              "property": "projects",
+              "width": 220
+            },
+            {
+              "property": "due_date",
+              "width": 103
+            },
+            {
+              "property": "priority",
+              "width": 95
+            },
+            {
+              "property": "contacts",
+              "width": 192,
+              "hidden": true
+            },
+            {
+              "property": "files",
+              "width": 192,
+              "hidden": true
+            },
+            {
+              "property": "task_type",
+              "width": 192,
+              "hidden": true
+            },
+            {
+              "property": "done_definition",
+              "width": 192,
+              "hidden": true
+            },
+            {
+              "property": "slot",
+              "width": 192,
+              "hidden": true
+            },
+            {
+              "property": "orchestrated_by",
+              "width": 192,
+              "hidden": true
+            },
+            {
+              "property": "documents",
+              "width": 192,
+              "hidden": true
+            },
+            {
+              "property": "time_estimated",
+              "width": 192,
+              "hidden": true
+            },
+            {
+              "property": "time_actual",
+              "width": 192,
+              "hidden": true
+            },
+            {
+              "property": "status",
+              "width": 192,
+              "hidden": true
+            },
+            {
+              "property": "description",
+              "width": 192,
+              "hidden": true
+            },
+            {
+              "property": "archive",
+              "width": 192,
+              "hidden": true
+            },
+            {
+              "property": "type",
+              "width": 192,
+              "hidden": true
+            },
+            {
+              "property": "links",
+              "width": 192,
+              "hidden": true
+            },
+            {
+              "property": "backlinks",
+              "width": 192,
+              "hidden": true
+            },
+            {
+              "property": "last_modified_by",
+              "width": 192,
+              "hidden": true
+            },
+            {
+              "property": "last_modified_date",
+              "width": 192,
+              "hidden": true
+            },
+            {
+              "property": "created_date",
+              "width": 192,
+              "hidden": true
+            },
+            {
+              "property": "creator",
+              "width": 192,
+              "hidden": true
+            },
+            {
+              "property": "tag",
+              "width": 192,
+              "hidden": true
+            },
+            {
+              "property": "done",
+              "width": 192,
+              "hidden": true
+            }
+          ]
+        }
+      ],
+      "display": {
+        "header": "list",
+        "width": 0
+      }
+    }
+  ],
+  "templates": [
+    {
+      "name": "Default project",
+      "for": "project",
+      "blocks": [
+        {
+          "type": "divider"
+        },
+        {
+          "type": "dataview",
+          "source": "type:task",
+          "properties": [
+            {
+              "property": "name",
+              "format": "text"
+            },
+            {
+              "property": "last_modified_date",
+              "format": "date"
+            },
+            {
+              "property": "last_modified_by",
+              "format": "objects"
+            },
+            {
+              "property": "lastOpenedDate",
+              "format": "date"
+            },
+            {
+              "property": "backlinks",
+              "format": "objects"
+            },
+            {
+              "property": "description",
+              "format": "text"
+            },
+            {
+              "property": "done",
+              "format": "checkbox"
+            },
+            {
+              "property": "due_date",
+              "format": "date"
+            },
+            {
+              "property": "status",
+              "format": "select"
+            },
+            {
+              "property": "done_definition",
+              "format": "text"
+            },
+            {
+              "property": "priority",
+              "format": "number"
+            },
+            {
+              "property": "projects",
+              "format": "objects"
+            },
+            {
+              "property": "task_type",
+              "format": "select"
+            },
+            {
+              "property": "contacts",
+              "format": "objects"
+            },
+            {
+              "property": "files",
+              "format": "files"
+            },
+            {
+              "property": "slot",
+              "format": "select"
+            },
+            {
+              "property": "documents",
+              "format": "objects"
+            },
+            {
+              "property": "time_estimated",
+              "format": "number"
+            },
+            {
+              "property": "time_actual",
+              "format": "number"
+            },
+            {
+              "property": "archive",
+              "format": "checkbox"
+            },
+            {
+              "property": "orchestrated_by",
+              "format": "objects"
+            }
+          ],
+          "views": [
+            {
+              "name": "To do",
+              "type": "table",
+              "filters": [
+                {
+                  "property": "done",
+                  "condition": "equal",
+                  "value": false
+                },
+                {
+                  "property": "projects",
+                  "condition": "in",
+                  "value": [
+                    "$self"
+                  ]
+                }
+              ],
+              "sorts": [
+                {
+                  "property": "last_modified_date",
+                  "direction": "desc"
+                }
+              ],
+              "columns": [
+                {
+                  "property": "name",
+                  "width": 329
+                },
+                {
+                  "property": "priority",
+                  "width": 63
+                },
+                {
+                  "property": "due_date",
+                  "width": 137
+                },
+                {
+                  "property": "done_definition",
+                  "width": 652
+                },
+                {
+                  "property": "projects",
+                  "width": 192,
+                  "hidden": true
+                },
+                {
+                  "property": "contacts",
+                  "width": 192,
+                  "hidden": true
+                },
+                {
+                  "property": "files",
+                  "width": 192,
+                  "hidden": true
+                },
+                {
+                  "property": "task_type",
+                  "width": 192,
+                  "hidden": true
+                },
+                {
+                  "property": "slot",
+                  "width": 192,
+                  "hidden": true
+                },
+                {
+                  "property": "orchestrated_by",
+                  "width": 192,
+                  "hidden": true
+                },
+                {
+                  "property": "documents",
+                  "width": 192,
+                  "hidden": true
+                },
+                {
+                  "property": "time_estimated",
+                  "width": 192,
+                  "hidden": true
+                },
+                {
+                  "property": "time_actual",
+                  "width": 192,
+                  "hidden": true
+                },
+                {
+                  "property": "status",
+                  "width": 192,
+                  "hidden": true
+                },
+                {
+                  "property": "description",
+                  "width": 192,
+                  "hidden": true
+                },
+                {
+                  "property": "archive",
+                  "width": 192,
+                  "hidden": true
+                },
+                {
+                  "property": "type",
+                  "width": 192,
+                  "hidden": true
+                },
+                {
+                  "property": "links",
+                  "width": 192,
+                  "hidden": true
+                },
+                {
+                  "property": "backlinks",
+                  "width": 192,
+                  "hidden": true
+                },
+                {
+                  "property": "last_modified_by",
+                  "width": 192,
+                  "hidden": true
+                },
+                {
+                  "property": "last_modified_date",
+                  "width": 192,
+                  "hidden": true
+                },
+                {
+                  "property": "tag",
+                  "width": 192,
+                  "hidden": true
+                },
+                {
+                  "property": "done",
+                  "width": 192,
+                  "hidden": true
+                }
+              ]
+            },
+            {
+              "name": "Task type",
+              "type": "kanban",
+              "group_by": "task_type",
+              "card_size": "medium",
+              "colored_groups": true,
+              "filters": [
+                {
+                  "property": "done",
+                  "condition": "equal",
+                  "value": false
+                },
+                {
+                  "property": "projects",
+                  "condition": "in",
+                  "value": [
+                    "$self"
+                  ]
+                }
+              ],
+              "sorts": [
+                {
+                  "property": "last_modified_date",
+                  "direction": "desc"
+                }
+              ],
+              "columns": [
+                {
+                  "property": "name",
+                  "width": 426
+                },
+                {
+                  "property": "contacts",
+                  "width": 154
+                },
+                {
+                  "property": "done_definition",
+                  "width": 192
+                },
+                {
+                  "property": "projects",
+                  "width": 192,
+                  "hidden": true
+                },
+                {
+                  "property": "files",
+                  "width": 192,
+                  "hidden": true
+                },
+                {
+                  "property": "due_date",
+                  "width": 192,
+                  "hidden": true
+                },
+                {
+                  "property": "priority",
+                  "width": 192,
+                  "hidden": true
+                },
+                {
+                  "property": "task_type",
+                  "width": 192,
+                  "hidden": true
+                },
+                {
+                  "property": "slot",
+                  "width": 192,
+                  "hidden": true
+                },
+                {
+                  "property": "orchestrated_by",
+                  "width": 192,
+                  "hidden": true
+                },
+                {
+                  "property": "documents",
+                  "width": 192,
+                  "hidden": true
+                },
+                {
+                  "property": "time_estimated",
+                  "width": 192,
+                  "hidden": true
+                },
+                {
+                  "property": "time_actual",
+                  "width": 192,
+                  "hidden": true
+                },
+                {
+                  "property": "status",
+                  "width": 192,
+                  "hidden": true
+                },
+                {
+                  "property": "description",
+                  "width": 192,
+                  "hidden": true
+                },
+                {
+                  "property": "archive",
+                  "width": 192,
+                  "hidden": true
+                },
+                {
+                  "property": "type",
+                  "width": 192,
+                  "hidden": true
+                },
+                {
+                  "property": "links",
+                  "width": 192,
+                  "hidden": true
+                },
+                {
+                  "property": "backlinks",
+                  "width": 192,
+                  "hidden": true
+                },
+                {
+                  "property": "last_modified_by",
+                  "width": 192,
+                  "hidden": true
+                },
+                {
+                  "property": "last_modified_date",
+                  "width": 192,
+                  "hidden": true
+                },
+                {
+                  "property": "tag",
+                  "width": 192,
+                  "hidden": true
+                },
+                {
+                  "property": "done",
+                  "width": 192,
+                  "hidden": true
+                }
+              ]
+            },
+            {
+              "name": "Calendar",
+              "type": "calendar",
+              "group_by": "due_date",
+              "filters": [
+                {
+                  "property": "projects",
+                  "condition": "in",
+                  "value": [
+                    "$self"
+                  ]
+                }
+              ],
+              "sorts": [
+                {
+                  "property": "last_modified_date",
+                  "direction": "desc"
+                }
+              ],
+              "columns": [
+                {
+                  "property": "name",
+                  "width": 426
+                },
+                {
+                  "property": "priority",
+                  "width": 95
+                },
+                {
+                  "property": "due_date",
+                  "width": 103
+                },
+                {
+                  "property": "projects",
+                  "width": 304
+                },
+                {
+                  "property": "contacts",
+                  "width": 154
+                },
+                {
+                  "property": "task_type",
+                  "width": 112
+                },
+                {
+                  "property": "files",
+                  "width": 192,
+                  "hidden": true
+                },
+                {
+                  "property": "done_definition",
+                  "width": 192,
+                  "hidden": true
+                },
+                {
+                  "property": "slot",
+                  "width": 192,
+                  "hidden": true
+                },
+                {
+                  "property": "orchestrated_by",
+                  "width": 192,
+                  "hidden": true
+                },
+                {
+                  "property": "documents",
+                  "width": 192,
+                  "hidden": true
+                },
+                {
+                  "property": "time_estimated",
+                  "width": 192,
+                  "hidden": true
+                },
+                {
+                  "property": "time_actual",
+                  "width": 192,
+                  "hidden": true
+                },
+                {
+                  "property": "status",
+                  "width": 192,
+                  "hidden": true
+                },
+                {
+                  "property": "description",
+                  "width": 192,
+                  "hidden": true
+                },
+                {
+                  "property": "archive",
+                  "width": 192,
+                  "hidden": true
+                },
+                {
+                  "property": "type",
+                  "width": 192,
+                  "hidden": true
+                },
+                {
+                  "property": "links",
+                  "width": 192,
+                  "hidden": true
+                },
+                {
+                  "property": "backlinks",
+                  "width": 192,
+                  "hidden": true
+                },
+                {
+                  "property": "last_modified_by",
+                  "width": 192,
+                  "hidden": true
+                },
+                {
+                  "property": "last_modified_date",
+                  "width": 192,
+                  "hidden": true
+                },
+                {
+                  "property": "tag",
+                  "width": 192,
+                  "hidden": true
+                },
+                {
+                  "property": "done",
+                  "width": 192,
+                  "hidden": true
+                }
+              ]
+            },
+            {
+              "name": "Done",
+              "type": "list",
+              "card_size": "medium",
+              "colored_groups": true,
+              "filters": [
+                {
+                  "property": "done",
+                  "condition": "equal",
+                  "value": true
+                },
+                {
+                  "property": "projects",
+                  "condition": "in",
+                  "value": [
+                    "$self"
+                  ]
+                }
+              ],
+              "sorts": [
+                {
+                  "property": "last_modified_date",
+                  "direction": "desc"
+                }
+              ],
+              "columns": [
+                {
+                  "property": "name",
+                  "width": 426
+                },
+                {
+                  "property": "projects",
+                  "width": 220
+                },
+                {
+                  "property": "due_date",
+                  "width": 103
+                },
+                {
+                  "property": "priority",
+                  "width": 95
+                },
+                {
+                  "property": "contacts",
+                  "width": 192,
+                  "hidden": true
+                },
+                {
+                  "property": "files",
+                  "width": 192,
+                  "hidden": true
+                },
+                {
+                  "property": "task_type",
+                  "width": 192,
+                  "hidden": true
+                },
+                {
+                  "property": "done_definition",
+                  "width": 192,
+                  "hidden": true
+                },
+                {
+                  "property": "slot",
+                  "width": 192,
+                  "hidden": true
+                },
+                {
+                  "property": "orchestrated_by",
+                  "width": 192,
+                  "hidden": true
+                },
+                {
+                  "property": "documents",
+                  "width": 192,
+                  "hidden": true
+                },
+                {
+                  "property": "time_estimated",
+                  "width": 192,
+                  "hidden": true
+                },
+                {
+                  "property": "time_actual",
+                  "width": 192,
+                  "hidden": true
+                },
+                {
+                  "property": "status",
+                  "width": 192,
+                  "hidden": true
+                },
+                {
+                  "property": "description",
+                  "width": 192,
+                  "hidden": true
+                },
+                {
+                  "property": "archive",
+                  "width": 192,
+                  "hidden": true
+                },
+                {
+                  "property": "type",
+                  "width": 192,
+                  "hidden": true
+                },
+                {
+                  "property": "links",
+                  "width": 192,
+                  "hidden": true
+                },
+                {
+                  "property": "backlinks",
+                  "width": 192,
+                  "hidden": true
+                },
+                {
+                  "property": "last_modified_by",
+                  "width": 192,
+                  "hidden": true
+                },
+                {
+                  "property": "last_modified_date",
+                  "width": 192,
+                  "hidden": true
+                },
+                {
+                  "property": "tag",
+                  "width": 192,
+                  "hidden": true
+                },
+                {
+                  "property": "done",
+                  "width": 192,
+                  "hidden": true
+                }
+              ]
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "name": "Default epic",
+      "for": "epic",
+      "blocks": [
+        {
+          "type": "divider"
+        },
+        {
+          "type": "dataview",
+          "source": "type:project",
+          "properties": [
+            {
+              "property": "name",
+              "format": "text"
+            },
+            {
+              "property": "epic",
+              "format": "objects"
+            },
+            {
+              "property": "status",
+              "format": "select"
+            },
+            {
+              "property": "priority",
+              "format": "select"
+            },
+            {
+              "property": "due_date",
+              "format": "date"
+            },
+            {
+              "property": "done_definition",
+              "format": "text"
+            },
+            {
+              "property": "budget_estimated",
+              "format": "number"
+            },
+            {
+              "property": "budget_actual",
+              "format": "number"
+            },
+            {
+              "property": "effort_estimated",
+              "format": "number"
+            },
+            {
+              "property": "effort_actual",
+              "format": "number"
+            },
+            {
+              "property": "depends_on",
+              "format": "objects"
+            },
+            {
+              "property": "documents",
+              "format": "objects"
+            },
+            {
+              "property": "contacts",
+              "format": "objects"
+            },
+            {
+              "property": "description",
+              "format": "text"
+            },
+            {
+              "property": "archive",
+              "format": "checkbox"
+            },
+            {
+              "property": "type",
+              "format": "text"
+            },
+            {
+              "property": "links",
+              "format": "text"
+            },
+            {
+              "property": "backlinks",
+              "format": "objects"
+            },
+            {
+              "property": "last_modified_by",
+              "format": "objects"
+            },
+            {
+              "property": "last_modified_date",
+              "format": "date"
+            },
+            {
+              "property": "tag",
+              "format": "text"
+            },
+            {
+              "property": "done",
+              "format": "checkbox"
+            }
+          ],
+          "views": [
+            {
+              "name": "In progress",
+              "type": "table",
+              "hide_icon": true,
+              "wrap_content": true,
+              "filters": [
+                {
+                  "property": "archive",
+                  "condition": "equal",
+                  "value": false
+                },
+                {
+                  "property": "status",
+                  "condition": "in",
+                  "value": [
+                    "In progress"
+                  ]
+                },
+                {
+                  "property": "epic",
+                  "condition": "in",
+                  "value": [
+                    "$self"
+                  ]
+                }
+              ],
+              "sorts": [
+                {
+                  "property": "last_modified_date",
+                  "direction": "desc"
+                }
+              ],
+              "columns": [
+                {
+                  "property": "name",
+                  "width": 195
+                },
+                {
+                  "property": "priority",
+                  "width": 72
+                },
+                {
+                  "property": "done_definition",
+                  "width": 810
+                },
+                {
+                  "property": "epic",
+                  "width": 107,
+                  "hidden": true
+                },
+                {
+                  "property": "status",
+                  "width": 192,
+                  "hidden": true
+                },
+                {
+                  "property": "due_date",
+                  "width": 192,
+                  "hidden": true
+                },
+                {
+                  "property": "budget_estimated",
+                  "width": 192,
+                  "hidden": true
+                },
+                {
+                  "property": "budget_actual",
+                  "width": 192,
+                  "hidden": true
+                },
+                {
+                  "property": "effort_estimated",
+                  "width": 192,
+                  "hidden": true
+                },
+                {
+                  "property": "effort_actual",
+                  "width": 192,
+                  "hidden": true
+                },
+                {
+                  "property": "depends_on",
+                  "width": 192,
+                  "hidden": true
+                },
+                {
+                  "property": "documents",
+                  "width": 192,
+                  "hidden": true
+                },
+                {
+                  "property": "contacts",
+                  "width": 192,
+                  "hidden": true
+                },
+                {
+                  "property": "description",
+                  "width": 192,
+                  "hidden": true
+                },
+                {
+                  "property": "archive",
+                  "width": 192,
+                  "hidden": true
+                },
+                {
+                  "property": "type",
+                  "width": 192,
+                  "hidden": true
+                },
+                {
+                  "property": "links",
+                  "width": 192,
+                  "hidden": true
+                },
+                {
+                  "property": "backlinks",
+                  "width": 192,
+                  "hidden": true
+                },
+                {
+                  "property": "last_modified_by",
+                  "width": 192,
+                  "hidden": true
+                },
+                {
+                  "property": "last_modified_date",
+                  "width": 192,
+                  "hidden": true
+                },
+                {
+                  "property": "tag",
+                  "width": 192,
+                  "hidden": true
+                },
+                {
+                  "property": "done",
+                  "width": 192,
+                  "hidden": true
+                }
+              ]
+            },
+            {
+              "name": "All",
+              "type": "table",
+              "hide_icon": true,
+              "filters": [
+                {
+                  "property": "done",
+                  "condition": "equal",
+                  "value": false
+                },
+                {
+                  "property": "archive",
+                  "condition": "equal",
+                  "value": false
+                },
+                {
+                  "property": "epic",
+                  "condition": "in",
+                  "value": [
+                    "$self"
+                  ]
+                }
+              ],
+              "sorts": [
+                {
+                  "property": "last_modified_date",
+                  "direction": "desc"
+                }
+              ],
+              "columns": [
+                {
+                  "property": "name",
+                  "width": 217
+                },
+                {
+                  "property": "epic",
+                  "width": 127
+                },
+                {
+                  "property": "status",
+                  "width": 123
+                },
+                {
+                  "property": "priority",
+                  "width": 54
+                },
+                {
+                  "property": "due_date",
+                  "width": 130
+                },
+                {
+                  "property": "done_definition",
+                  "width": 607
+                },
+                {
+                  "property": "budget_estimated",
+                  "width": 133,
+                  "hidden": true
+                },
+                {
+                  "property": "budget_actual",
+                  "width": 116,
+                  "hidden": true
+                },
+                {
+                  "property": "effort_estimated",
+                  "width": 149,
+                  "hidden": true
+                },
+                {
+                  "property": "effort_actual",
+                  "width": 130,
+                  "hidden": true
+                },
+                {
+                  "property": "depends_on",
+                  "width": 196,
+                  "hidden": true
+                },
+                {
+                  "property": "documents",
+                  "width": 192,
+                  "hidden": true
+                },
+                {
+                  "property": "contacts",
+                  "width": 157,
+                  "hidden": true
+                },
+                {
+                  "property": "description",
+                  "width": 192,
+                  "hidden": true
+                },
+                {
+                  "property": "archive",
+                  "width": 192,
+                  "hidden": true
+                },
+                {
+                  "property": "type",
+                  "width": 192,
+                  "hidden": true
+                },
+                {
+                  "property": "links",
+                  "width": 192,
+                  "hidden": true
+                },
+                {
+                  "property": "backlinks",
+                  "width": 192,
+                  "hidden": true
+                },
+                {
+                  "property": "last_modified_by",
+                  "width": 192,
+                  "hidden": true
+                },
+                {
+                  "property": "last_modified_date",
+                  "width": 192,
+                  "hidden": true
+                },
+                {
+                  "property": "tag",
+                  "width": 192,
+                  "hidden": true
+                },
+                {
+                  "property": "done",
+                  "width": 192,
+                  "hidden": true
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "type": "divider"
+        },
+        {
+          "type": "paragraph"
+        }
+      ]
+    },
+    {
+      "name": "Default task",
+      "for": "task",
+      "blocks": [
+        {
+          "type": "divider"
+        },
+        {
+          "type": "dataview",
+          "source": "type:report",
+          "properties": [
+            {
+              "property": "backlinks",
+              "format": "objects"
+            },
+            {
+              "property": "tasks",
+              "format": "objects"
+            },
+            {
+              "property": "archive",
+              "format": "checkbox"
+            },
+            {
+              "property": "last_modified_date",
+              "format": "date"
+            },
+            {
+              "property": "last_modified_by",
+              "format": "objects"
+            },
+            {
+              "property": "creator",
+              "format": "objects"
+            },
+            {
+              "property": "type",
+              "format": "objects"
+            },
+            {
+              "property": "tag",
+              "format": "multi_select"
+            },
+            {
+              "property": "contacts",
+              "format": "objects"
+            },
+            {
+              "property": "created_date",
+              "format": "date"
+            },
+            {
+              "property": "description",
+              "format": "text"
+            },
+            {
+              "property": "links",
+              "format": "objects"
+            }
+          ],
+          "views": [
+            {
+              "name": "All",
+              "type": "list",
+              "hide_icon": true,
+              "filters": [
+                {
+                  "property": "tasks",
+                  "condition": "in",
+                  "value": [
+                    "$self"
+                  ]
+                }
+              ],
+              "sorts": [
+                {
+                  "property": "last_modified_date",
+                  "direction": "desc"
+                }
+              ],
+              "columns": [
+                {
+                  "property": "name",
+                  "width": 387
+                },
+                {
+                  "property": "contacts",
+                  "width": 192
+                },
+                {
+                  "property": "created_date",
+                  "width": 192
+                },
+                {
+                  "property": "tasks",
+                  "width": 192
+                },
+                {
+                  "property": "description",
+                  "width": 192,
+                  "hidden": true
+                },
+                {
+                  "property": "archive",
+                  "width": 192,
+                  "hidden": true
+                },
+                {
+                  "property": "type",
+                  "width": 192,
+                  "hidden": true
+                },
+                {
+                  "property": "links",
+                  "width": 192,
+                  "hidden": true
+                },
+                {
+                  "property": "backlinks",
+                  "width": 192,
+                  "hidden": true
+                },
+                {
+                  "property": "last_modified_by",
+                  "width": 192,
+                  "hidden": true
+                },
+                {
+                  "property": "last_modified_date",
+                  "width": 192,
+                  "hidden": true
+                },
+                {
+                  "property": "tag",
+                  "width": 100,
+                  "hidden": true
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "type": "heading_2",
+          "text": "Subtasks"
+        },
+        {
+          "type": "divider"
+        },
+        {
+          "type": "checkbox"
+        },
+        {
+          "type": "paragraph"
+        },
+        {
+          "type": "heading_2",
+          "text": "Details"
+        },
+        {
+          "type": "divider"
+        },
+        {
+          "type": "paragraph"
+        }
+      ]
+    },
+    {
+      "name": "Default person",
+      "for": "person",
+      "blocks": [
+        {
+          "type": "divider"
+        },
+        {
+          "type": "dataview",
+          "source": "type:task",
+          "properties": [
+            {
+              "property": "type",
+              "format": "objects"
+            },
+            {
+              "property": "tag",
+              "format": "multi_select"
+            },
+            {
+              "property": "backlinks",
+              "format": "objects"
+            },
+            {
+              "property": "contacts",
+              "format": "objects"
+            },
+            {
+              "property": "task_type",
+              "format": "select"
+            },
+            {
+              "property": "done_definition",
+              "format": "text"
+            },
+            {
+              "property": "done",
+              "format": "checkbox"
+            },
+            {
+              "property": "status",
+              "format": "select"
+            },
+            {
+              "property": "last_modified_date",
+              "format": "date"
+            },
+            {
+              "property": "last_modified_by",
+              "format": "objects"
+            },
+            {
+              "property": "created_date",
+              "format": "date"
+            },
+            {
+              "property": "creator",
+              "format": "objects"
+            },
+            {
+              "property": "description",
+              "format": "text"
+            },
+            {
+              "property": "file_ext",
+              "format": "text"
+            },
+            {
+              "property": "size_in_bytes",
+              "format": "number"
+            },
+            {
+              "property": "assignee",
+              "format": "objects"
+            },
+            {
+              "property": "linked_projects",
+              "format": "objects"
+            },
+            {
+              "property": "links",
+              "format": "objects"
+            },
+            {
+              "property": "projects",
+              "format": "objects"
+            },
+            {
+              "property": "files",
+              "format": "files"
+            },
+            {
+              "property": "due_date",
+              "format": "date"
+            },
+            {
+              "property": "priority",
+              "format": "number"
+            },
+            {
+              "property": "slot",
+              "format": "select"
+            },
+            {
+              "property": "documents",
+              "format": "objects"
+            },
+            {
+              "property": "time_estimated",
+              "format": "number"
+            },
+            {
+              "property": "time_actual",
+              "format": "number"
+            },
+            {
+              "property": "archive",
+              "format": "checkbox"
+            }
+          ],
+          "views": [
+            {
+              "name": "To do",
+              "type": "list",
+              "filters": [
+                {
+                  "property": "done",
+                  "condition": "equal",
+                  "value": false
+                },
+                {
+                  "property": "contacts",
+                  "condition": "in",
+                  "value": [
+                    "$self"
+                  ]
+                }
+              ],
+              "sorts": [
+                {
+                  "property": "priority",
+                  "direction": "desc",
+                  "empty_placement": "end"
+                },
+                {
+                  "property": "projects",
+                  "direction": "asc",
+                  "empty_placement": "end"
+                }
+              ],
+              "columns": [
+                {
+                  "property": "name",
+                  "width": 426
+                },
+                {
+                  "property": "priority",
+                  "width": 95
+                },
+                {
+                  "property": "due_date",
+                  "width": 103
+                },
+                {
+                  "property": "projects",
+                  "width": 220
+                },
+                {
+                  "property": "contacts",
+                  "width": 192,
+                  "hidden": true
+                },
+                {
+                  "property": "files",
+                  "width": 192,
+                  "hidden": true
+                },
+                {
+                  "property": "task_type",
+                  "width": 192,
+                  "hidden": true
+                },
+                {
+                  "property": "done_definition",
+                  "width": 192,
+                  "hidden": true
+                },
+                {
+                  "property": "slot",
+                  "width": 192,
+                  "hidden": true
+                },
+                {
+                  "property": "documents",
+                  "width": 192,
+                  "hidden": true
+                },
+                {
+                  "property": "time_estimated",
+                  "width": 192,
+                  "hidden": true
+                },
+                {
+                  "property": "time_actual",
+                  "width": 192,
+                  "hidden": true
+                },
+                {
+                  "property": "status",
+                  "width": 192,
+                  "hidden": true
+                },
+                {
+                  "property": "description",
+                  "width": 192,
+                  "hidden": true
+                },
+                {
+                  "property": "archive",
+                  "width": 192,
+                  "hidden": true
+                },
+                {
+                  "property": "type",
+                  "width": 192,
+                  "hidden": true
+                },
+                {
+                  "property": "links",
+                  "width": 192,
+                  "hidden": true
+                },
+                {
+                  "property": "backlinks",
+                  "width": 192,
+                  "hidden": true
+                },
+                {
+                  "property": "last_modified_by",
+                  "width": 192,
+                  "hidden": true
+                },
+                {
+                  "property": "last_modified_date",
+                  "width": 192,
+                  "hidden": true
+                },
+                {
+                  "property": "tag",
+                  "width": 192,
+                  "hidden": true
+                },
+                {
+                  "property": "done",
+                  "width": 192,
+                  "hidden": true
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "type": "divider"
+        },
+        {
+          "type": "paragraph"
+        }
+      ]
+    },
+    {
+      "name": "Default company",
+      "for": "company",
+      "blocks": [
+        {
+          "type": "divider"
+        },
+        {
+          "type": "dataview",
+          "source": "type:person",
+          "properties": [
+            {
+              "property": "tag",
+              "format": "multi_select"
+            },
+            {
+              "property": "backlinks",
+              "format": "objects"
+            },
+            {
+              "property": "company",
+              "format": "objects"
+            },
+            {
+              "property": "email",
+              "format": "email"
+            },
+            {
+              "property": "phone",
+              "format": "phone"
+            },
+            {
+              "property": "website",
+              "format": "url"
+            },
+            {
+              "property": "address",
+              "format": "text"
+            },
+            {
+              "property": "archive",
+              "format": "checkbox"
+            },
+            {
+              "property": "last_modified_date",
+              "format": "date"
+            },
+            {
+              "property": "last_modified_by",
+              "format": "objects"
+            },
+            {
+              "property": "created_date",
+              "format": "date"
+            },
+            {
+              "property": "creator",
+              "format": "objects"
+            },
+            {
+              "property": "type",
+              "format": "objects"
+            },
+            {
+              "property": "role",
+              "format": "select"
+            },
+            {
+              "property": "description",
+              "format": "text"
+            },
+            {
+              "property": "links",
+              "format": "objects"
+            }
+          ],
+          "views": [
+            {
+              "name": "All",
+              "type": "list",
+              "hide_icon": true,
+              "filters": [
+                {
+                  "property": "company",
+                  "condition": "in",
+                  "value": [
+                    "$self"
+                  ]
+                }
+              ],
+              "sorts": [
+                {
+                  "property": "role",
+                  "direction": "asc",
+                  "empty_placement": "end"
+                },
+                {
+                  "property": "name",
+                  "direction": "asc"
+                }
+              ],
+              "columns": [
+                {
+                  "property": "name",
+                  "width": 200
+                },
+                {
+                  "property": "role",
+                  "width": 192
+                },
+                {
+                  "property": "company",
+                  "width": 192,
+                  "hidden": true
+                },
+                {
+                  "property": "email",
+                  "width": 192,
+                  "hidden": true
+                },
+                {
+                  "property": "phone",
+                  "width": 192,
+                  "hidden": true
+                },
+                {
+                  "property": "website",
+                  "width": 192,
+                  "hidden": true
+                },
+                {
+                  "property": "address",
+                  "width": 192,
+                  "hidden": true
+                },
+                {
+                  "property": "description",
+                  "width": 192,
+                  "hidden": true
+                },
+                {
+                  "property": "archive",
+                  "width": 192,
+                  "hidden": true
+                },
+                {
+                  "property": "type",
+                  "width": 192,
+                  "hidden": true
+                },
+                {
+                  "property": "links",
+                  "width": 192,
+                  "hidden": true
+                },
+                {
+                  "property": "backlinks",
+                  "width": 192,
+                  "hidden": true
+                },
+                {
+                  "property": "last_modified_by",
+                  "width": 192,
+                  "hidden": true
+                },
+                {
+                  "property": "last_modified_date",
+                  "width": 192,
+                  "hidden": true
+                },
+                {
+                  "property": "tag",
+                  "width": 192,
+                  "hidden": true
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "type": "divider"
+        },
+        {
+          "type": "paragraph"
+        }
+      ]
+    }
+  ],
+  "collections": [
+    {
+      "name": "Contacts",
+      "items": [
+        "type:company",
+        "type:person"
+      ],
+      "views": [
+        {
+          "name": "All",
+          "type": "list",
+          "filters": [],
+          "sorts": [
+            {
+              "property": "name",
+              "direction": "asc"
+            }
+          ],
+          "columns": [
+            {
+              "property": "name",
+              "width": 200
+            },
+            {
+              "property": "type",
+              "width": 200
+            },
+            {
+              "property": "created_date",
+              "width": 200,
+              "hidden": true
+            },
+            {
+              "property": "creator",
+              "width": 200,
+              "hidden": true
+            },
+            {
+              "property": "description",
+              "width": 200,
+              "hidden": true
+            },
+            {
+              "property": "links",
+              "width": 192,
+              "hidden": true
+            },
+            {
+              "property": "backlinks",
+              "width": 200,
+              "hidden": true
+            },
+            {
+              "property": "last_modified_by",
+              "width": 200,
+              "hidden": true
+            },
+            {
+              "property": "last_modified_date",
+              "width": 200,
+              "hidden": true
+            },
+            {
+              "property": "tag",
+              "width": 100,
+              "hidden": true
+            }
+          ]
+        }
+      ]
+    }
+  ],
+  "queries": [],
+  "widgets": [
+    {
+      "target": "type:epic",
+      "layout": "view",
+      "limit": 6,
+      "view": "All"
+    },
+    {
+      "target": "type:project",
+      "layout": "view",
+      "limit": 6,
+      "view": "All"
+    },
+    {
+      "target": "type:task",
+      "layout": "view",
+      "limit": 6,
+      "view": "To do"
+    },
+    {
+      "target": "type:report",
+      "layout": "view",
+      "limit": 6,
+      "view": "All"
+    },
+    {
+      "target": "type:document",
+      "layout": "view",
+      "limit": 6,
+      "view": "Recent"
+    },
+    {
+      "target": "type:idea",
+      "layout": "view",
+      "limit": 6,
+      "view": "All"
+    },
+    {
+      "target": "object:Contacts",
+      "layout": "compact_list",
+      "limit": 6
+    }
+  ],
+  "pages": [
+    {
+      "name": "Start page",
+      "blocks": [
+        {
+          "type": "heading_2",
+          "text": "To do"
+        },
+        {
+          "type": "dataview",
+          "source": "type:task",
+          "views": [
+            {
+              "name": "To do",
+              "type": "list",
+              "filters": [
+                {
+                  "property": "done",
+                  "condition": "equal",
+                  "value": false
+                }
+              ],
+              "sorts": [
+                {
+                  "property": "last_modified_date",
+                  "direction": "desc"
+                }
+              ],
+              "columns": [
+                {
+                  "property": "name",
+                  "width": 329
+                },
+                {
+                  "property": "priority",
+                  "width": 63
+                },
+                {
+                  "property": "due_date",
+                  "width": 137
+                },
+                {
+                  "property": "projects",
+                  "width": 192
+                },
+                {
+                  "property": "done_definition",
+                  "width": 652,
+                  "hidden": true
+                },
+                {
+                  "property": "contacts",
+                  "width": 192,
+                  "hidden": true
+                },
+                {
+                  "property": "files",
+                  "width": 192,
+                  "hidden": true
+                },
+                {
+                  "property": "task_type",
+                  "width": 192,
+                  "hidden": true
+                },
+                {
+                  "property": "slot",
+                  "width": 192,
+                  "hidden": true
+                },
+                {
+                  "property": "orchestrated_by",
+                  "width": 192,
+                  "hidden": true
+                },
+                {
+                  "property": "documents",
+                  "width": 192,
+                  "hidden": true
+                },
+                {
+                  "property": "time_estimated",
+                  "width": 192,
+                  "hidden": true
+                },
+                {
+                  "property": "time_actual",
+                  "width": 192,
+                  "hidden": true
+                },
+                {
+                  "property": "status",
+                  "width": 192,
+                  "hidden": true
+                },
+                {
+                  "property": "description",
+                  "width": 192,
+                  "hidden": true
+                },
+                {
+                  "property": "archive",
+                  "width": 192,
+                  "hidden": true
+                },
+                {
+                  "property": "type",
+                  "width": 192,
+                  "hidden": true
+                },
+                {
+                  "property": "links",
+                  "width": 192,
+                  "hidden": true
+                },
+                {
+                  "property": "backlinks",
+                  "width": 192,
+                  "hidden": true
+                },
+                {
+                  "property": "last_modified_by",
+                  "width": 192,
+                  "hidden": true
+                },
+                {
+                  "property": "last_modified_date",
+                  "width": 192,
+                  "hidden": true
+                },
+                {
+                  "property": "tag",
+                  "width": 192,
+                  "hidden": true
+                },
+                {
+                  "property": "done",
+                  "width": 192,
+                  "hidden": true
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "type": "heading_2",
+          "text": "Projects in progress"
+        },
+        {
+          "type": "dataview",
+          "source": "type:project",
+          "views": [
+            {
+              "name": "In progress",
+              "type": "list",
+              "hide_icon": true,
+              "wrap_content": true,
+              "filters": [
+                {
+                  "property": "archive",
+                  "condition": "equal",
+                  "value": false
+                },
+                {
+                  "property": "status",
+                  "condition": "in",
+                  "value": [
+                    "In progress"
+                  ]
+                }
+              ],
+              "sorts": [
+                {
+                  "property": "last_modified_date",
+                  "direction": "desc"
+                }
+              ],
+              "columns": [
+                {
+                  "property": "name",
+                  "width": 195
+                },
+                {
+                  "property": "priority",
+                  "width": 72
+                },
+                {
+                  "property": "due_date",
+                  "width": 192
+                },
+                {
+                  "property": "done_definition",
+                  "width": 810,
+                  "hidden": true
+                },
+                {
+                  "property": "epic",
+                  "width": 107,
+                  "hidden": true
+                },
+                {
+                  "property": "status",
+                  "width": 192,
+                  "hidden": true
+                },
+                {
+                  "property": "budget_estimated",
+                  "width": 192,
+                  "hidden": true
+                },
+                {
+                  "property": "budget_actual",
+                  "width": 192,
+                  "hidden": true
+                },
+                {
+                  "property": "effort_estimated",
+                  "width": 192,
+                  "hidden": true
+                },
+                {
+                  "property": "effort_actual",
+                  "width": 192,
+                  "hidden": true
+                },
+                {
+                  "property": "depends_on",
+                  "width": 192,
+                  "hidden": true
+                },
+                {
+                  "property": "documents",
+                  "width": 192,
+                  "hidden": true
+                },
+                {
+                  "property": "contacts",
+                  "width": 192,
+                  "hidden": true
+                },
+                {
+                  "property": "description",
+                  "width": 192,
+                  "hidden": true
+                },
+                {
+                  "property": "archive",
+                  "width": 192,
+                  "hidden": true
+                },
+                {
+                  "property": "type",
+                  "width": 192,
+                  "hidden": true
+                },
+                {
+                  "property": "links",
+                  "width": 192,
+                  "hidden": true
+                },
+                {
+                  "property": "backlinks",
+                  "width": 192,
+                  "hidden": true
+                },
+                {
+                  "property": "last_modified_by",
+                  "width": 192,
+                  "hidden": true
+                },
+                {
+                  "property": "last_modified_date",
+                  "width": 192,
+                  "hidden": true
+                },
+                {
+                  "property": "tag",
+                  "width": 192,
+                  "hidden": true
+                },
+                {
+                  "property": "done",
+                  "width": 192,
+                  "hidden": true
+                }
+              ]
+            }
+          ]
+        }
+      ]
+    }
+  ]
+}
