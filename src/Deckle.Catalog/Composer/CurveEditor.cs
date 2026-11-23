@@ -2,6 +2,7 @@ using System;
 using System.Collections.Generic;
 using Microsoft.UI.Input;
 using Microsoft.UI.Xaml;
+using Microsoft.UI.Xaml.Automation;
 using Microsoft.UI.Xaml.Controls;
 using Microsoft.UI.Xaml.Controls.Primitives;
 using Microsoft.UI.Xaml.Input;
@@ -21,7 +22,7 @@ namespace Deckle.Catalog;
 // cubic Bézier with its two draggable control points, taking the width it is
 // given, and a legend: the frame's own values when the owner fills the Legend
 // slot (the cut's four anchors), then the four control points as fields in a
-// two-by-two grid with the `cubic-bezier(…)` readout under them, then the
+// two-by-two grid, then the
 // owner's LegendAfter values and its LegendTrailing slot (the reset).
 //
 // Two layouts from one frame (CurveFrame). With axes, the plot spans the data
@@ -139,7 +140,6 @@ public sealed partial class CurveEditor : UserControl
     private readonly TextBlock _yLegendName = new();
     private readonly FrameworkElement _xLegendItem, _yLegendItem;
     private readonly NumberBox _x1Box, _y1Box, _x2Box, _y2Box;
-    private readonly TextBlock _readout;
 
     // The handle positions while a drag is in flight, in unit coordinates; the
     // dependency properties are written at the release. The pointer's own
@@ -196,19 +196,11 @@ public sealed partial class CurveEditor : UserControl
             Child = _plot,
         };
 
-        // The four fields: x1 y1 over x2 y2, each with a caption, the readout
-        // under them in a monospace caption.
+        // The four fields: x1 y1 over x2 y2, each with a caption.
         _x1Box = BuildField();
         _y1Box = BuildField();
         _x2Box = BuildField();
         _y2Box = BuildField();
-        _readout = new TextBlock
-        {
-            Style = Application.Current.Resources["CaptionTextBlockStyle"] as Style,
-            FontFamily = new FontFamily("Cascadia Mono, Consolas"),
-            IsTextSelectionEnabled = true,
-            Margin = new Thickness(0, 8, 0, 0),
-        };
         BuildFieldGrid();
 
         // The axis legend: what x and y mean, in a small column to the right of
@@ -431,6 +423,9 @@ public sealed partial class CurveEditor : UserControl
     public static FrameworkElement LabelledField(string caption, FrameworkElement field)
     {
         field.Width = FieldWidth;
+        // The caption is a sibling TextBlock, not the field's own label: the
+        // field carries it as its accessible name.
+        AutomationProperties.SetName(field, caption);
         var stack = new StackPanel { Spacing = 4 };
         stack.Children.Add(new TextBlock
         {
@@ -702,8 +697,7 @@ public sealed partial class CurveEditor : UserControl
 
     private static Visibility Shown(bool visible) => visible ? Visibility.Visible : Visibility.Collapsed;
 
-    // The control points in the legend's one grid, the readout under it rather
-    // than spanning its columns, so its monospace width never moves them.
+    // The control points in the legend's one grid.
     private void BuildFieldGrid()
     {
         _fields.Children.Add(FieldGrid(
@@ -713,7 +707,6 @@ public sealed partial class CurveEditor : UserControl
             LabelledField("x2", _x2Box),
             LabelledField("y2", _y2Box),
         ]));
-        _fields.Children.Add(_readout);
     }
 
     private NumberBox BuildField()
@@ -759,7 +752,6 @@ public sealed partial class CurveEditor : UserControl
         try
         {
             Set(_x1Box, X1); Set(_y1Box, Y1); Set(_x2Box, X2); Set(_y2Box, Y2);
-            _readout.Text = $"cubic-bezier({X1:0.00}, {Y1:0.00}, {X2:0.00}, {Y2:0.00})";
         }
         finally { _syncing = false; }
 
@@ -1044,7 +1036,6 @@ public sealed partial class CurveEditor : UserControl
         _guideStart.Stroke = Brush("DividerStrokeColorDefaultBrush");
         _guideEnd.Stroke = Brush("DividerStrokeColorDefaultBrush");
         _floor.Stroke = Brush("SystemFillColorCautionBrush");
-        _readout.Foreground = Brush("TextFillColorSecondaryBrush");
         _summary.Foreground = Brush("TextFillColorSecondaryBrush");
         _footer.Background = Brush("LayerFillColorDefaultBrush");
         _footer.BorderBrush = Brush("CardStrokeColorDefaultBrush");
