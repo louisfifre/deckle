@@ -14,6 +14,21 @@ public static class InstallFailureText
     private const int ErrorAccessDeniedByPolicy = 1260; // ERROR_ACCESS_DISABLED_BY_POLICY
     private const int ErrorVirusInfected = 225;         // ERROR_VIRUS_INFECTED, also an antivirus block
 
+    // The sentence shown when the installer refuses the machine, with the reason in plain words.
+    public static string For(MachineRefusal refusal) => refusal switch
+    {
+        MachineRefusal.UnsupportedArchitecture =>
+            "Deckle does not run on this PC.\n\n" +
+            "It needs a 64-bit Intel or AMD processor (x64). ARM PCs are not supported, including with x64 emulation.",
+        MachineRefusal.MissingAvx2 =>
+            "Deckle does not run on this PC.\n\n" +
+            "Its speech recognition needs a processor with AVX2, and this one does not have it.",
+        MachineRefusal.WindowsTooOld =>
+            "Deckle does not run on this version of Windows.\n\n" +
+            "It needs Windows 11. Windows 10 is not supported.",
+        _ => string.Empty,
+    };
+
     public static string For(Exception ex) => ex switch
     {
         Win32Exception { NativeErrorCode: ErrorAccessDeniedByPolicy or ErrorVirusInfected } =>

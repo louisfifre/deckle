@@ -62,6 +62,8 @@ Smaller touches outside the module list: a **taskbar cover** that masks the task
 
 ## Install
 
+**Requirements:** Windows 11 on an x64 PC, with a processor that supports AVX2 (most Intel and AMD CPUs since 2013 to 2015). Windows 10 and ARM PCs are not supported, including ARM PCs running x64 apps by emulation; Setup says so and stops before installing anything.
+
 1. Download **Deckle-Setup** from the newest entry on the [releases page](https://github.com/louisfifre/deckle/releases).
 2. Run it and choose the modules you want.
 3. Deckle installs per user, fetches any missing assets those modules require, and starts in the tray.

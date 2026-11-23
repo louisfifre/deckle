@@ -44,10 +44,12 @@ internal static class InstallFlow
 
     private static async Task<int> RunCoreAsync(ProgressWindow window, CancellationToken ct)
     {
-        if (!Environment.Is64BitOperatingSystem)
+        // Before anything is written to disk: refuse a machine Deckle cannot run on.
+        MachineRefusal refusal = MachineRequirements.CheckThisMachine();
+        if (refusal != MachineRefusal.None)
         {
-            InstallLog.Error("Install refused | reason=os_not_64bit");
-            MessageDialog.Error(window.Handle, "Deckle requires 64-bit Windows.");
+            InstallLog.Error($"Install refused | reason={refusal}");
+            MessageDialog.Error(window.Handle, InstallFailureText.For(refusal));
             return 1;
         }
 
