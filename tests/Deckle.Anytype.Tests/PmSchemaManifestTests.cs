@@ -197,7 +197,7 @@ public sealed class PmSchemaManifestTests
     {
         SchemaManifest manifest = Load();
 
-        Assert.Equal(DevSpace.Slot.Default, manifest.Properties.Single(p => p.Key == "slot").Tags[0].Name);
+        Assert.Equal(PmTerms.Display.OptionName(DevSpace.Props.Slot, DevSpace.Slot.Default), manifest.Properties.Single(p => p.Key == "slot").Tags[0].Name);
         Assert.Equal(DevSpace.Slot.Name, manifest.Properties.Single(p => p.Key == DevSpace.Slot.Keys[0]).Name);
         Assert.Equal(DevSpace.Role.Name, manifest.Properties.Single(p => p.Key == DevSpace.Role.Keys[0]).Name);
     }

@@ -1,0 +1,77 @@
+{
+  "language": "fr",
+  "types": {
+    "epic": { "name": "Epic", "plural": "Epics" },
+    "project": { "name": "Projet", "plural": "Projets" },
+    "task": { "name": "Tâche", "plural": "Tâches" },
+    "report": { "name": "Rapport", "plural": "Rapports" },
+    "idea": { "name": "Idée", "plural": "Idées" },
+    "document": { "name": "Document", "plural": "Documents" },
+    "person": { "name": "Personne", "plural": "Personnes" },
+    "company": { "name": "Entreprise", "plural": "Entreprises" }
+  },
+  "properties": {
+    "status": "État",
+    "priority": "Priorité",
+    "done_definition": "Définition de fini",
+    "due_date": "Date cible",
+    "archive": "Archivé",
+    "done": "Done",
+    "budget_estimated": "Budget estimé",
+    "budget_actual": "Budget réel",
+    "effort_estimated": "Charge estimée",
+    "effort_actual": "Charge réelle",
+    "time_estimated": "Temps estimé",
+    "time_actual": "Temps réel",
+    "task_type": "Type de tâche",
+    "slot": "Créneau",
+    "files": "Fichiers liés",
+    "document_type": "Type de document",
+    "document_global": "Document global",
+    "version": "Version",
+    "role": "Rôle",
+    "email": "Courriel",
+    "phone": "Téléphone",
+    "website": "Site web",
+    "address": "Adresse",
+    "epic": "Epic",
+    "depends_on": "Dépend de",
+    "projects": "Projets",
+    "orchestrated_by": "Orchestré par",
+    "tasks": "Tâches",
+    "documents": "Documents",
+    "contacts": "Contacts",
+    "company": "Entreprise"
+  },
+  "options": {
+    "status": { "ready": "Prêt", "doing": "En cours", "paused": "En pause", "dormant": "Dormant" },
+    "priority": { "p_0": "0", "p_1": "1", "p_2": "2", "p_3": "3", "p_4": "4", "p_5": "5" },
+    "task_type": {
+      "orchestration": "Orchestrer",
+      "research": "Chercher",
+      "production": "Produire",
+      "organizing": "Organiser",
+      "exchange": "Échanger",
+      "management": "Gérer",
+      "monitoring": "Surveiller"
+    },
+    "slot": { "cap": "Cap", "passion": "Passion", "training": "Entraînement" },
+    "document_type": {
+      "tip": "Astuce",
+      "nomenclature": "Nomenclature",
+      "reference": "Référence",
+      "specification": "Spécification",
+      "instructions": "Instructions",
+      "research_note": "Recherche",
+      "architecture": "Architecture",
+      "resume": "Reprise"
+    },
+    "role": {
+      "administrative": "Administratif",
+      "decision": "Décision",
+      "finance": "Finances",
+      "product": "Produit",
+      "technical": "Technique"
+    }
+  }
+}

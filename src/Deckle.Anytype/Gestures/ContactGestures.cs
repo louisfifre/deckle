@@ -44,7 +44,7 @@ public sealed class ContactGestures(AnytypeApiClient api, NameResolver resolver,
             else
             {
                 roleKey = live.Key;
-                roleName = live.OptionName(role) ?? throw live.Unknown(role, nameof(role));
+                roleName = live.OptionName(role, DevSpace.Props.Role) ?? throw live.Unknown(role, nameof(role));
             }
         }
 
