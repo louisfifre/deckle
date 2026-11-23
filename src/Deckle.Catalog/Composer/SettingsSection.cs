@@ -26,7 +26,7 @@ namespace Deckle.Catalog;
 // A section may carry one text link at the title's trailing edge, before the
 // reset wheel: the HyperlinkButton Windows Settings uses for a related
 // surface, in the accent colour, which opens something beside the section
-// (the Ambient page opens its live preview there). LinkText shows it; a page
+// (a live preview, say). LinkText shows it; a page
 // answers LinkClicked or binds LinkCommand, the two forms a HyperlinkButton
 // offers. The same pair the page header carries (SettingsPageHeader.LinkText,
 // LinkClicked), minus the URI: a section's link acts in the app.

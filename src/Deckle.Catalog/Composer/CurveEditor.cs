@@ -2,6 +2,7 @@ using System;
 using System.Collections.Generic;
 using Microsoft.UI.Input;
 using Microsoft.UI.Xaml;
+using Microsoft.UI.Xaml.Automation;
 using Microsoft.UI.Xaml.Controls;
 using Microsoft.UI.Xaml.Controls.Primitives;
 using Microsoft.UI.Xaml.Input;
@@ -422,6 +423,9 @@ public sealed partial class CurveEditor : UserControl
     public static FrameworkElement LabelledField(string caption, FrameworkElement field)
     {
         field.Width = FieldWidth;
+        // The caption is a sibling TextBlock, not the field's own label: the
+        // field carries it as its accessible name.
+        AutomationProperties.SetName(field, caption);
         var stack = new StackPanel { Spacing = 4 };
         stack.Children.Add(new TextBlock
         {

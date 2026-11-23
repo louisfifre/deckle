@@ -12,7 +12,6 @@
          there to be watched while the tuning values move; as a card in the flow
          it left the screen as soon as the user scrolled to the tuning section.
          The pane opens from the Live preview tile under the module switch and
-         from the title links of the Behaviour and Fine tuning sections, and
          closes from its own Close; while it is closed the page takes the full
          width (code-behind, SyncPreviewPane).
 
@@ -85,14 +84,25 @@
                         </InfoBar.ActionButton>
                     </InfoBar>
 
+                    <!-- bespoke: the engine could not start while the switch is
+                         on. Title only, opened by the engine's Error state and
+                         closed when a start begins again or the switch goes
+                         off. The switch keeps the person's choice; the next
+                         settings change retries the start. -->
+                    <InfoBar x:Name="StartFailedInfoBar"
+                             x:Uid="AmbientStartFailedInfoBar"
+                             IsClosable="False"
+                             IsOpen="False"
+                             Severity="Error"
+                             catalog:InfoBarLayout.CollapseWhenClosed="True" />
+
                     <!-- The way to the live preview: a tile that opens the pane
                          at the right of the page, under the module switch and
                          its banner so the pane sits beside everything the page
                          tunes, the configuration included (Louis, 2026-10-15; it
                          opened the Fine tuning section before). A clickable card
                          with the stock chevron: it leads somewhere, the way a
-                         drill-in card does. The Behaviour and Fine tuning titles
-                         repeat the way in as a text link. -->
+                         drill-in card does. It is the only way in. -->
                     <controls:SettingsCard x:Name="PreviewTile"
                                            x:Uid="AmbientPreviewTile"
                                            Tag="AmbientPreviewTile"
@@ -147,6 +157,7 @@
                                                            Tag="HueBridgeAddressCard">
                                         <StackPanel Orientation="Horizontal" Spacing="8">
                                             <TextBox x:Name="HueBridgeIpTextBox"
+                                                     x:Uid="HueBridgeIpTextBox"
                                                      Width="160"
                                                      PlaceholderText="192.168.1.5" />
                                             <Button x:Name="HueDiscoverButton"
@@ -161,11 +172,16 @@
                                         </StackPanel>
                                     </controls:SettingsCard>
 
-                                    <!-- Entertainment group / room. -->
-                                    <controls:SettingsCard x:Uid="HueBridgeGroupCard"
-                                                           Tag="HueBridgeGroupCard">
+                                    <!-- Entertainment group / room. Hidden until a bridge
+                                         is paired (SyncHueBridgeUi): a setting that does
+                                         not apply is not greyed. -->
+                                    <controls:SettingsCard x:Name="HueGroupCard"
+                                                           x:Uid="HueBridgeGroupCard"
+                                                           Tag="HueBridgeGroupCard"
+                                                           Visibility="Collapsed">
                                         <StackPanel Orientation="Horizontal" Spacing="8">
                                             <ComboBox x:Name="HueGroupComboBox"
+                                                      x:Uid="HueGroupComboBox"
                                                       Width="240"
                                                       IsEnabled="False"
                                                       SelectionChanged="OnHueGroupSelectionChanged" />
@@ -182,11 +198,12 @@
                                          click, following Microsoft's official
                                          Settings pattern (confirm-then-act, not
                                          red-button-then-act). -->
-                                    <controls:SettingsCard x:Uid="HueBridgeForgetCard"
-                                                           Tag="HueBridgeForgetCard">
+                                    <controls:SettingsCard x:Name="HueForgetCard"
+                                                           x:Uid="HueBridgeForgetCard"
+                                                           Tag="HueBridgeForgetCard"
+                                                           Visibility="Collapsed">
                                         <Button x:Name="HueForgetButton"
                                                 x:Uid="HueForgetButton"
-                                                IsEnabled="False"
                                                 Click="OnHueForgetClick" />
                                     </controls:SettingsCard>
                                 </controls:SettingsExpander.Items>
@@ -197,6 +214,7 @@
                                              free-form content while the Items collection
                                              remains reserved for SettingsCard controls. -->
                                         <TextBlock x:Name="HuePairStatusText"
+                                                   AutomationProperties.LiveSetting="Polite"
                                                    Text=""
                                                    Visibility="Collapsed"
                                                    Style="{ThemeResource CaptionTextBlockStyle}"
@@ -220,6 +238,7 @@
                             <controls:SettingsCard x:Uid="AmbientMonitorCard"
                                                    Tag="AmbientMonitorCard">
                                 <ComboBox x:Name="MonitorCombo"
+                                          x:Uid="MonitorCombo"
                                           MinWidth="280"
                                           SelectionChanged="MonitorCombo_SelectionChanged" />
                             </controls:SettingsCard>
@@ -227,10 +246,7 @@
                     </catalog:SettingsSection>
 
                     <!-- ── Behaviour ──────────────────────────────────────────── -->
-                    <!-- The title link (LinkText from the .resw) opens the same
-                         preview pane as the tile above. -->
-                    <catalog:SettingsSection x:Uid="AmbientPageBehaviourSection"
-                                             LinkClicked="OpenPreview_Click">
+                    <catalog:SettingsSection x:Uid="AmbientPageBehaviourSection">
                         <StackPanel Spacing="{StaticResource SettingsCardSpacing}">
 
                             <!-- Composed: Mode, per-zone colours with the band shape
@@ -248,10 +264,8 @@
                     </catalog:SettingsSection>
 
                     <!-- ── Fine tuning ────────────────────────────────────────── -->
-                    <!-- Last, after what the module runs on and how it behaves.
-                         The title link opens the preview pane, like Behaviour's. -->
-                    <catalog:SettingsSection x:Uid="AmbientPageTuningSection"
-                                             LinkClicked="OpenPreview_Click">
+                    <!-- Last, after what the module runs on and how it behaves. -->
+                    <catalog:SettingsSection x:Uid="AmbientPageTuningSection">
                         <StackPanel Spacing="{StaticResource SettingsCardSpacing}">
 
                             <!-- Composed: the brightness curve first, then the floor,
@@ -287,7 +301,7 @@
         <!-- The preview, floating in its column: the shared block takes the
              column's height so the stage scales to the room, with the
              page's padding around it and nothing else. Opened
-             by the Live preview tile and the section links, closed by its own
+             by the Live preview tile, closed by its own
              Close; its width is the user's (SyncPreviewPane). Collapsed with the column, so the
              control inside refreshes nothing while the pane is closed. -->
         <Grid x:Name="PreviewPane"

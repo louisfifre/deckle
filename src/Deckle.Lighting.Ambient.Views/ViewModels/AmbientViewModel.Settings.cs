@@ -31,8 +31,8 @@ public partial class AmbientViewModel
     // Behaviour: per-zone colours with their band shape. The two band sliders
     // share one place and show only the one the chosen band mode reads. The
     // measure is a dropdown, not radio buttons: two options the eye need not
-    // compare at a glance, and the card's description says what each does
-    // (Louis, 2026-10-15).
+    // compare at a glance, and their labels say what each does (Louis,
+    // 2026-10-15).
     public IReadOnlyList<SettingDescriptor> BehaviourSettings =>
     [
         Setting.Group(

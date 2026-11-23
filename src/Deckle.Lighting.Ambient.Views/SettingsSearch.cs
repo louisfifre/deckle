@@ -17,7 +17,7 @@ namespace Deckle.Lighting.Ambient.Views;
 // bespoke cards carry Tag="<key>" in AmbientPage.xaml.
 //
 // Children of a composed fold (the band shape and depth under "Colour per zone", the
-// floor level under "Brightness floor") are not indexed — a hit must be bringable into
+// level under "Minimum brightness") are not indexed — a hit must be bringable into
 // view, and they hide with their master — so the fold's keywords bridge to them. The
 // per-light rows (LightZonesCard) hide with the per-zone fold too and are reached
 // through its keywords the same way.

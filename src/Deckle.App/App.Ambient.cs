@@ -68,10 +68,10 @@ public partial class App
         catch (Exception ex)
         {
             DeckleAppSource.Log.AmbientStartFailed(ex.GetType().Name, ex.Message);
+            // The switch keeps the person's choice: a bridge that is
+            // unreachable for a second must not turn Ambient Light off and
+            // save it off. The next settings change tries the start again.
             _ambientStartedWith = null;
-            var s = AmbientSettingsService.Instance.Current;
-            s.Enabled = false;
-            AmbientSettingsService.Instance.Save();
         }
     }
 }
