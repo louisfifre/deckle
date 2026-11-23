@@ -76,12 +76,6 @@
                                         <ComboBoxItem x:Uid="LlmProviderKind_ClaudeItem" />
                                     </ComboBox>
 
-                                    <TextBlock x:Uid="LlmProvider_KindBody"
-                                               Style="{StaticResource CaptionTextBlockStyle}"
-                                               Foreground="{ThemeResource TextFillColorSecondaryBrush}"
-                                               TextWrapping="Wrap"
-                                               Margin="0,-4,0,0" />
-
                                     <TextBox x:Uid="LlmProvider_EndpointBox"
                                              Text="{x:Bind Endpoint, Mode=TwoWay}"
                                              PlaceholderText="{x:Bind EndpointPlaceholder, Mode=OneWay}"

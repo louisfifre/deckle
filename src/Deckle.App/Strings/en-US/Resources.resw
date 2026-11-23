@@ -1047,10 +1047,10 @@
     <value>The key could not be stored</value>
   </data>
   <data name="Settings_KeyStored" xml:space="preserve">
-    <value>A key is saved, encrypted for this Windows account.</value>
+    <value>Key saved.</value>
   </data>
   <data name="Settings_NoKeyStored" xml:space="preserve">
-    <value>No key saved. Hosted APIs refuse requests without one.</value>
+    <value>No key saved.</value>
   </data>
   <data name="LlmProviderKind_Ollama" xml:space="preserve">
     <value>Ollama</value>
@@ -1081,7 +1081,7 @@
     <value>Error removing model</value>
   </data>
   <data name="Settings_NoOllamaModels" xml:space="preserve">
-    <value>No models found in Ollama. Pull one from your shell with ollama pull.</value>
+    <value>No models found in Ollama.</value>
   </data>
 
   <!-- ─── LogWindow ──────────────────────────────────────────────────
