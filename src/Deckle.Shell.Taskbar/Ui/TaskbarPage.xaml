@@ -19,6 +19,14 @@
                                             x:Uid="TaskbarPageHeader"
                                             ResetAllRequested="ResetAll_Click" />
 
+                <!-- One line, open only on a machine the engine does not support;
+                     the cards below are then shown off. -->
+                <InfoBar x:Name="UnsupportedNotice"
+                         Severity="Informational"
+                         IsOpen="False"
+                         IsClosable="False"
+                         catalog:InfoBarLayout.CollapseWhenClosed="True" />
+
                 <!-- No module switch: each card below is its own setting and
                      all of them always show. -->
 

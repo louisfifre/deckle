@@ -58,6 +58,7 @@ public sealed class DeckleShellTaskbarSource : DeckleEventSource
     public const int EvtTaskbarPipeServerFailed      = 42;
     public const int EvtTaskbarPipeServerRecovered   = 43;
     public const int EvtTaskbarPipeLineFailed        = 44;
+    public const int EvtTaskbarEngineUnsupported     = 45;
 
     // ── Tray icon promotion ───────────────────────────────────────────────────
     //
@@ -307,6 +308,19 @@ public sealed class DeckleShellTaskbarSource : DeckleEventSource
     public void TaskbarPartsChanged(string parts)
     {
         if (IsEnabled()) WriteEvent(EvtTaskbarPartsChanged, parts);
+    }
+
+    // The machine cannot host the engine, so Deckle never starts it and the page
+    // shows its controls off. reason: windows_before_11 or arm64. Said once per
+    // run, on the first turn.
+    [Event(EvtTaskbarEngineUnsupported,
+           Level = EventLevel.Informational,
+           Keywords = (EventKeywords)Keywords.Lifecycle,
+           Tags = ObservationTags.Milestone,
+           Message = "The taskbar engine is not started: this machine is not supported")]
+    public void TaskbarEngineUnsupported(string reason)
+    {
+        if (IsEnabled()) WriteEvent(EvtTaskbarEngineUnsupported, reason);
     }
 
     // A part that is on but asks nothing of the engine. reason: taskbar_horizontal

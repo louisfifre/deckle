@@ -51,6 +51,8 @@ public sealed class TaskbarCustomizer : IAsyncDisposable
     private bool _loggedCompactTrayLeftOut;
     private bool _loggedCompactTaskButtonsLeftOut;
     private bool _stopped;
+    private bool _loggedUnsupported;
+    private readonly TaskbarSupport _support;
 
     private TaskbarCustomizer()
         : this(() => TaskbarSettingsService.Instance.Current, TaskbarOrientation.IsVertical, CreateHost)
@@ -59,8 +61,9 @@ public sealed class TaskbarCustomizer : IAsyncDisposable
 
     internal TaskbarCustomizer(
         Func<TaskbarSettings> settings, Func<bool> isBarVertical, Func<TaskbarTarget, ITaskbarEngine> createEngine,
-        Func<string, string, Task<FunctionLookup>>? findFunction = null)
+        Func<string, string, Task<FunctionLookup>>? findFunction = null, TaskbarSupport? support = null)
     {
+        _support = support ?? TaskbarPlatformGate.Current;
         _settings = settings;
         _isBarVertical = isBarVertical;
         _createEngine = createEngine;
@@ -93,6 +96,16 @@ public sealed class TaskbarCustomizer : IAsyncDisposable
         try
         {
             if (_stopped) return;
+
+            if (_support != TaskbarSupport.Supported)
+            {
+                if (!_loggedUnsupported)
+                {
+                    _loggedUnsupported = true;
+                    DeckleShellTaskbarSource.Log.TaskbarEngineUnsupported(TaskbarPlatformGate.LogReason(_support)!);
+                }
+                return;
+            }
 
             bool vertical = _isBarVertical();
             TaskbarSettings settings = _settings();

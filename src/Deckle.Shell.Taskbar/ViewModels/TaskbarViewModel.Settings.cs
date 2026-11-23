@@ -19,6 +19,16 @@ public partial class TaskbarViewModel
     private const string ProblemNeedsDownloadKey = "TaskbarPage_ProblemNeedsDownload";
     private const string HorizontalBarKey = "TaskbarPage_HorizontalBarNoEffect";
 
+    // The native engine runs on supported machines only (TaskbarPlatformGate); on others every
+    // card is shown off, and the page says why once, above the cards.
+    public bool IsSupported => TaskbarPlatformGate.Current == TaskbarSupport.Supported;
+
+    // The .resw key of that one line; null on a supported machine.
+    internal string? UnsupportedMessageKey => TaskbarPlatformGate.MessageKey(TaskbarPlatformGate.Current);
+
+    public string? UnsupportedMessage =>
+        UnsupportedMessageKey is { } key ? Loc.GetFromOptional(TaskbarSettingsModule.ResourceLibrary, key) : null;
+
     public IReadOnlyList<SettingDescriptor> BarManifest =>
     [
         // A dropdown: three short names, and seeing them all at once adds nothing
@@ -32,6 +42,7 @@ public partial class TaskbarViewModel
                 (TaskbarBackground.Transparent, "TaskbarPage_BackgroundTransparent"),
                 (TaskbarBackground.Black, "TaskbarPage_BackgroundBlack"),
             ],
+            enabledWhen: () => IsSupported,
             defaultValue: () => new TaskbarSettings().Background,
             advisory: () => ProblemAdvisory(TaskbarPart.Background)),
         // A switch whose fold holds its value, like the compact app buttons: the
@@ -46,6 +57,7 @@ public partial class TaskbarViewModel
                     () => BarThickness, value => BarThickness = value,
                     TaskbarCustomization.BarThicknessRange, () => new TaskbarSettings().BarThickness),
             ],
+            enabledWhen: () => IsSupported,
             defaultValue: () => new TaskbarSettings().CustomBarThickness,
             advisory: () => ProblemAdvisory(TaskbarPart.BarThickness)),
         // A switch whose fold holds its one value: the pitch is meaningless while
@@ -59,12 +71,14 @@ public partial class TaskbarViewModel
                     () => TaskButtonPitch, value => TaskButtonPitch = value,
                     TaskbarCustomization.TaskButtonPitchRange, () => new TaskbarSettings().TaskButtonPitch),
             ],
+            enabledWhen: () => IsSupported,
             defaultValue: () => new TaskbarSettings().CompactTaskButtons,
             advisory: CompactTaskButtonsAdvisory),
         Setting.Toggle(
             "TaskbarPage_CompactClockCard",
             () => CompactClock,
             value => CompactClock = value,
+            enabledWhen: () => IsSupported,
             defaultValue: () => new TaskbarSettings().CompactClock,
             advisory: () => ProblemAdvisory(TaskbarPart.CompactClock)),
         // A switch that unfolds the box the thumbnails grow to fit: two numbers,
@@ -88,6 +102,7 @@ public partial class TaskbarViewModel
                     new MagnitudeArgs(ThumbnailMinimumHeight, ThumbnailMaximumHeight, Unit: "px", Integer: true),
                     defaultValue: () => new TaskbarSettings().ThumbnailMaxHeight),
             ],
+            enabledWhen: () => IsSupported,
             defaultValue: () => new TaskbarSettings().LargerThumbnails,
             advisory: () => ProblemAdvisory(TaskbarPart.Thumbnails)),
     ];
@@ -106,6 +121,7 @@ public partial class TaskbarViewModel
             "TaskbarPage_ShowAllTrayIconsCard",
             () => ShowAllTrayIcons,
             value => ShowAllTrayIcons = value,
+            enabledWhen: () => IsSupported,
             defaultValue: () => new TaskbarSettings().ShowAllTrayIcons,
             advisory: TrayAdvisory),
         Setting.Group(
@@ -117,6 +133,7 @@ public partial class TaskbarViewModel
                     () => TrayIconPitch, value => TrayIconPitch = value,
                     TaskbarCustomization.TrayPitchRange, () => new TaskbarSettings().TrayIconPitch),
             ],
+            enabledWhen: () => IsSupported,
             defaultValue: () => new TaskbarSettings().CompactTray,
             advisory: CompactTrayAdvisory),
     ];
@@ -138,6 +155,7 @@ public partial class TaskbarViewModel
             "TaskbarPage_StartMenuFullHeightCard",
             () => StartMenuFullHeight,
             value => StartMenuFullHeight = value,
+            enabledWhen: () => IsSupported,
             defaultValue: () => new TaskbarSettings().StartMenuFullHeight,
             advisory: () => ProblemAdvisory(TaskbarPart.StartMenuHeight)),
         // A choice that decides whether a value exists: the width field shows
@@ -163,6 +181,7 @@ public partial class TaskbarViewModel
                     visibleWhen: () => StartMenuWidth == StartMenuWidth.Custom,
                     defaultValue: () => new TaskbarSettings().StartMenuCustomWidth),
             ],
+            enabledWhen: () => IsSupported,
             defaultValue: () => new TaskbarSettings().StartMenuWidth,
             advisory: () => ProblemAdvisory(TaskbarPart.StartMenuWidth)),
         // Sits with the Start menu because it changes what the Windows key does to

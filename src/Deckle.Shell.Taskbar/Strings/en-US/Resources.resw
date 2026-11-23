@@ -144,6 +144,12 @@
   <data name="TaskbarPage_TrayIconPitchCard.Description" xml:space="preserve">
     <value>The room each tray icon and quick settings icon takes on the taskbar.</value>
   </data>
+  <data name="TaskbarPage_UnsupportedWindows" xml:space="preserve">
+    <value>Taskbar customization needs Windows 11, so these settings are turned off on this PC.</value>
+  </data>
+  <data name="TaskbarPage_UnsupportedArchitecture" xml:space="preserve">
+    <value>Taskbar customization is not available on ARM64 PCs, so these settings are turned off.</value>
+  </data>
   <data name="TaskbarPage_HorizontalBarNoEffect" xml:space="preserve">
     <value>Your taskbar is horizontal, so this has no effect.</value>
   </data>

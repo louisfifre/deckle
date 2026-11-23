@@ -28,6 +28,12 @@ public sealed partial class TaskbarPage : Page
 
         GateResetAll();
 
+        if (ViewModel.UnsupportedMessage is { } unsupported)
+        {
+            UnsupportedNotice.Message = unsupported;
+            UnsupportedNotice.IsOpen = true;
+        }
+
         // The promoter and the customizer outlive this page; follow them only while
         // the page is in a live tree, so a closed Settings window leaves no subscriber.
         Loaded   += (_, _) => ViewModel.AttachStatus(DispatcherQueue);
