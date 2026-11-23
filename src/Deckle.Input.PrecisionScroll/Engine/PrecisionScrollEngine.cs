@@ -244,8 +244,19 @@ public sealed class PrecisionScrollEngine : IWheelInterceptor, IPrecisionScrollE
         {
             gesture.SetTuning(Volatile.Read(ref _tuning));
             bool running = Volatile.Read(ref _runRequested) != 0;
+            bool directionRead = false;
             while (_ticks.TryDequeue(out WheelTick tick))
             {
+                // The direction is Windows' own setting and the person may flip it
+                // while this runs: it is read again whenever the wheel moves, once
+                // per batch of ticks, and a failed read keeps the last value.
+                if (!directionRead)
+                {
+                    directionRead = true;
+                    if (PrecisionTouchpadSystemParameters.TryGetScrollDirectionReversed(out bool reversed, out _))
+                        _scrollDirectionReversed = reversed;
+                }
+
                 int contactDetents = _scrollDirectionReversed
                     ? -tick.Detents
                     : tick.Detents;
