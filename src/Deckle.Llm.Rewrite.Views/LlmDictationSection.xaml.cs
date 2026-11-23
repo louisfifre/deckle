@@ -37,8 +37,7 @@ public sealed partial class LlmDictationSection : UserControl
     // as a text.
     private const int SecondStepChars = 2000;
 
-    private const double ProfileColumnWidth = 200;
-    private const double LengthColumnWidth = 260;
+    private const double ProfileColumnWidth = 180;
 
     private bool _loading;
 
@@ -242,12 +241,13 @@ public sealed partial class LlmDictationSection : UserControl
             RebuildSteps();
         };
         // A card laid out with its content on the left does not stretch it,
-        // so a star column would shrink to its content: the profile and the
-        // length take fixed widths instead, room for "From", a five-digit
-        // field and "characters", and every card's columns line up.
-        var row = new Grid { ColumnSpacing = 24 };
+        // so a star column would shrink to its content: the profile takes a
+        // fixed width and the other columns size to their content, the same
+        // on every card, so the columns line up and the remove button always
+        // fits, even with the block fields shown.
+        var row = new Grid { ColumnSpacing = 16 };
         row.ColumnDefinitions.Add(new ColumnDefinition { Width = new GridLength(ProfileColumnWidth) });
-        row.ColumnDefinitions.Add(new ColumnDefinition { Width = new GridLength(LengthColumnWidth) });
+        row.ColumnDefinitions.Add(new ColumnDefinition { Width = GridLength.Auto });
         row.ColumnDefinitions.Add(new ColumnDefinition { Width = GridLength.Auto });
         row.ColumnDefinitions.Add(new ColumnDefinition { Width = GridLength.Auto });
         Place(row, profileCombo, 0);

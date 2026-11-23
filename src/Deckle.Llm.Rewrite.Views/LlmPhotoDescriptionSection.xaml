@@ -6,8 +6,7 @@
     xmlns:catalog="using:Deckle.Catalog">
 
     <!-- The model that describes Deckle Folders' photos: a provider on this PC
-         and a model it serves. The caption says the one rule that holds
-         whatever is picked. Tag is the search index's scroll-to handle. -->
+         and a model it serves. Tag is the search index's scroll-to handle. -->
     <catalog:SettingsSection x:Name="Section"
                              x:Uid="LlmPhotoDescriptionBlock"
                              Tag="LlmPhotoDescriptionSection"
