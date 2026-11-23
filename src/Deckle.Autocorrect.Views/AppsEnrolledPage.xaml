@@ -71,9 +71,11 @@
                                         <StackPanel Orientation="Horizontal"
                                                     Spacing="8"
                                                     VerticalAlignment="Center">
-                                            <ToggleSwitch IsOn="{x:Bind Enabled, Mode=TwoWay}" />
+                                            <ToggleSwitch AutomationProperties.Name="{x:Bind DisplayName}"
+                                                          IsOn="{x:Bind Enabled, Mode=TwoWay}" />
                                             <Button x:Uid="AppsEnrolledPage_ForgetButton"
                                                     Style="{StaticResource SubtleButtonStyle}"
+                                                    AutomationProperties.Name="{x:Bind ForgetLabel}"
                                                     Command="{x:Bind ForgetCommand}">
                                                 <FontIcon Glyph="{StaticResource Icon.Delete}"
                                                           FontSize="16" />

@@ -107,11 +107,14 @@
   <data name="AutocorrectPage_DeclaredWordsNote.Text" xml:space="preserve">
     <value>Words to keep as you write them: Transcription &gt; Lexicon.</value>
   </data>
-  <data name="AutocorrectPage_IncludeButton.AutomationProperties.Name" xml:space="preserve">
-    <value>Put this word back</value>
+  <data name="AutocorrectPage_IncludeButton_NameFormat" xml:space="preserve">
+    <value>Put back {0}</value>
   </data>
-  <data name="AppsEnrolledPage_ForgetButton.AutomationProperties.Name" xml:space="preserve">
-    <value>Forget this app</value>
+  <data name="AutocorrectPage_ExclusionBox.AutomationProperties.Name" xml:space="preserve">
+    <value>Exclude a word</value>
+  </data>
+  <data name="AppsEnrolledPage_ForgetButton_NameFormat" xml:space="preserve">
+    <value>Forget {0}</value>
   </data>
   <data name="AutocorrectPage_IncludeButton.ToolTipService.ToolTip" xml:space="preserve">
     <value>Put this word back</value>

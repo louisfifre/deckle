@@ -46,7 +46,8 @@
                              (AutocorrectSettingsModule.TranscriptionLexiconPresent). -->
                         <TextBlock x:Name="DeclaredWordsNote"
                                    x:Uid="AutocorrectPage_DeclaredWordsNote"
-                                   Style="{StaticResource BodyTextBlockStyle}"
+                                   Style="{StaticResource CaptionTextBlockStyle}"
+                                   Margin="1,0,0,0"
                                    Foreground="{ThemeResource TextFillColorSecondaryBrush}"
                                    TextWrapping="Wrap"
                                    Visibility="Collapsed" />
@@ -84,6 +85,7 @@
                                     <controls:SettingsCard Header="{x:Bind Word}">
                                         <Button x:Uid="AutocorrectPage_IncludeButton"
                                                 Style="{StaticResource SubtleButtonStyle}"
+                                                AutomationProperties.Name="{x:Bind IncludeLabel}"
                                                 Command="{x:Bind IncludeCommand}">
                                             <FontIcon Glyph="{StaticResource Icon.Delete}"
                                                       FontSize="16" />

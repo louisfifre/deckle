@@ -1,6 +1,8 @@
 using System;
+using System.Globalization;
 using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
+using Deckle.Localization;
 
 namespace Deckle.Autocorrect.Views;
 
@@ -22,6 +24,9 @@ public sealed partial class AutocorrectAppRow : ObservableObject
 
     public string DisplayName { get; }
 
+    // Accessible name of the row's forget button: says which app it forgets.
+    public string ForgetLabel { get; }
+
     [ObservableProperty]
     public partial bool Enabled { get; set; }
 
@@ -34,6 +39,10 @@ public sealed partial class AutocorrectAppRow : ObservableObject
     {
         ProcessName = processName;
         DisplayName = displayName;
+        ForgetLabel = string.Format(
+            CultureInfo.CurrentCulture,
+            Loc.GetFrom(AutocorrectSettingsModule.ResourceLibrary, "AppsEnrolledPage_ForgetButton_NameFormat"),
+            displayName);
         _onToggled = onToggled;
         _onForgotten = onForgotten;
 
