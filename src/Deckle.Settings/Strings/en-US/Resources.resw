@@ -141,6 +141,13 @@
   <data name="FolderLocationLine_Open" xml:space="preserve">
     <value>Open</value>
   </data>
+  <!-- Accessible names only, {0} being the folder's own name. -->
+  <data name="FolderLocationLine_ChooseFolderNamed_Format" xml:space="preserve">
+    <value>Choose {0}</value>
+  </data>
+  <data name="FolderLocationLine_OpenNamed_Format" xml:space="preserve">
+    <value>Open {0}</value>
+  </data>
 
   <!-- ─── Consent dialogs ────────────────────────────────────────────
        Opt-in prompts for local data capture. Each dialog follows the
@@ -195,7 +202,7 @@
     <value>Enable audio corpus</value>
   </data>
   <data name="AudioCorpusConsent_Body_Intro" xml:space="preserve">
-    <value>Deckle will save the raw microphone audio of every transcription as a 16 kHz mono WAV file, under an audio/ subfolder per profile. Useful for replaying a past session against a different speech model.</value>
+    <value>Deckle will save the raw microphone audio of every transcription as a 16 kHz mono WAV file. Useful for replaying a past session against a different speech model.</value>
   </data>
   <data name="AudioCorpusConsent_Body_What" xml:space="preserve">
     <value>The exact audio passed to the speech model, including any silence and background noise picked up by the microphone. One WAV per transcription. Nothing is sent over the network.</value>
@@ -420,7 +427,7 @@
     <value>Performance mode</value>
   </data>
   <data name="GeneralPerformanceModeCard.Description" xml:space="preserve">
-    <value>Lowers the rate of background work, such as the screen capture for Ambient lighting.</value>
+    <value>Ambient lighting follows the screen less closely.</value>
   </data>
   <data name="GeneralUpdateAutoCheckCard.Header" xml:space="preserve">
     <value>Check for updates automatically</value>
@@ -544,10 +551,16 @@
     <value>Capture the interface</value>
   </data>
   <data name="GeneralCaptureInterfaceCard.Description" xml:space="preserve">
-    <value>Saves an image of each open window and settings page. This window goes through each page while it works.</value>
+    <value>Saves an image of each open window and settings page.</value>
   </data>
   <data name="GeneralCaptureInterfaceButton.Content" xml:space="preserve">
     <value>Capture</value>
+  </data>
+  <data name="GeneralCaptureInterfaceButton.AutomationProperties.Name" xml:space="preserve">
+    <value>Capture the interface</value>
+  </data>
+  <data name="GeneralCaptureInterfaceRing.AutomationProperties.Name" xml:space="preserve">
+    <value>Capturing</value>
   </data>
   <data name="GeneralCaptureInterfaceOpenFolderButton.Content" xml:space="preserve">
     <value>Open folder</value>

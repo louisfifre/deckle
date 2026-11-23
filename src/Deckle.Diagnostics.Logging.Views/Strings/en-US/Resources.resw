@@ -78,6 +78,9 @@
   <data name="LoggingDetailedCard.Header" xml:space="preserve">
     <value>Detailed logs</value>
   </data>
+  <data name="LoggingDetailedCard.Description" xml:space="preserve">
+    <value>Turn it on before a problem comes back.</value>
+  </data>
   <data name="LoggingAmbientCard.Header" xml:space="preserve">
     <value>Ambient lighting</value>
   </data>
@@ -100,7 +103,7 @@
     <value>Touchpad gestures</value>
   </data>
   <data name="LoggingWindowingCard.Header" xml:space="preserve">
-    <value>Windows</value>
+    <value>Window management</value>
   </data>
 
   <!-- The trace (diagnostics\trace.jsonl, GLOSSARY.md). Its retention is
