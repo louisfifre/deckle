@@ -66,14 +66,6 @@
                             </StackPanel>
                         </controls:SettingsCard>
 
-                        <TextBlock x:Name="ExclusionsEmptyState"
-                                   x:Uid="AutocorrectPage_Exclusions_Empty"
-                                   Style="{StaticResource BodyTextBlockStyle}"
-                                   Foreground="{ThemeResource TextFillColorSecondaryBrush}"
-                                   TextWrapping="Wrap"
-                                   Margin="0,8,0,0"
-                                   Visibility="Collapsed" />
-
                         <ItemsControl x:Name="ExclusionsList"
                                       ItemsSource="{x:Bind ViewModel.ExcludedWords}">
                             <ItemsControl.ItemsPanel>

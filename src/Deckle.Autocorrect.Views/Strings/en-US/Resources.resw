@@ -76,12 +76,6 @@
   <data name="AutocorrectPageHeader.Title" xml:space="preserve">
     <value>Autocorrect</value>
   </data>
-  <!-- Says what the feature does, and stops there. Where correction runs belongs
-       to the Apps enrolled page, whose own subtitle states it — each surface
-       describes what it holds, so the sentence is written once. -->
-  <data name="AutocorrectPageHeader.Description" xml:space="preserve">
-    <value>Restore French accents and fix typos as you type.</value>
-  </data>
 
   <!-- Master switch -->
   <data name="AutocorrectPage_MasterCard.Header" xml:space="preserve">
@@ -104,23 +98,14 @@
   <data name="AutocorrectPage_ExcludeCard.Header" xml:space="preserve">
     <value>Exclude a word</value>
   </data>
-  <data name="AutocorrectPage_ExcludeCard.Description" xml:space="preserve">
-    <value>Applies to every vocabulary, lexical domains included.</value>
-  </data>
   <data name="AutocorrectPage_ExclusionBox.PlaceholderText" xml:space="preserve">
     <value>One word</value>
   </data>
   <data name="AutocorrectPage_ExcludeButton.Content" xml:space="preserve">
     <value>Exclude</value>
   </data>
-  <data name="AutocorrectPage_Exclusions_Empty.Text" xml:space="preserve">
-    <value>You haven't excluded any words.</value>
-  </data>
   <data name="AutocorrectPage_DeclaredWordsNote.Text" xml:space="preserve">
     <value>Words to keep as you write them: Transcription &gt; Lexicon.</value>
-  </data>
-  <data name="AutocorrectPage_MasterCard.Description" xml:space="preserve">
-    <value>Off corrects nothing, in any app.</value>
   </data>
   <data name="AutocorrectPage_IncludeButton.AutomationProperties.Name" xml:space="preserve">
     <value>Put this word back</value>
