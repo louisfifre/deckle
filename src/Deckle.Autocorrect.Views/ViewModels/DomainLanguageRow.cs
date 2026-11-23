@@ -31,8 +31,6 @@ public sealed partial class DomainLanguageRow : ObservableObject
 
     public DomainPack Pack { get; }
 
-    public string LanguageName { get; }
-
     public string Label { get; }
 
     [ObservableProperty]
@@ -47,15 +45,15 @@ public sealed partial class DomainLanguageRow : ObservableObject
         Pack = pack;
         PackId = pack.Id;
 
-        LanguageName = ResolveLanguageName(pack.Language);
+        string languageName = ResolveLanguageName(pack.Language);
         Label = manifest is null
-            ? LanguageName
+            ? languageName
             : string.Format(
                 CultureInfo.CurrentCulture,
                 Loc.GetFrom(
                     AutocorrectSettingsModule.ResourceLibrary,
                     "LexicalDomainsPage_LanguageRow_Format"),
-                LanguageName,
+                languageName,
                 manifest.ShippedForms);
 
         _onToggled = onToggled;

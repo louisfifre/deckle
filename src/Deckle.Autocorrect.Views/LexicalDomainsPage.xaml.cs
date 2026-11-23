@@ -32,6 +32,14 @@ public sealed partial class LexicalDomainsPage : Page
             DomainSelector.Items.Add(new SelectorBarItem { Text = domain.Label, Tag = domain });
 
         DomainSelector.SelectedItem = DomainSelector.Items.FirstOrDefault();
+
+        // One domain is no choice: the title replaces the tab strip.
+        if (ViewModel.Domains.Count == 1)
+        {
+            DomainSelector.Visibility = Visibility.Collapsed;
+            DomainTitle.Text = ViewModel.Domains[0].Label;
+            DomainTitle.Visibility = Visibility.Visible;
+        }
     }
 
     private void OnDomainChanged(SelectorBar sender, SelectorBarSelectionChangedEventArgs args)

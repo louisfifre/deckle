@@ -290,7 +290,7 @@
     <value>Enable audio corpus</value>
   </data>
   <data name="AudioCorpusConsent_Body_Intro" xml:space="preserve">
-    <value>Deckle will save the raw microphone audio of every transcription as a 16 kHz mono WAV file, next to the JSONL text corpus under an audio/ subfolder per profile. Useful for replaying a past session against a different speech model.</value>
+    <value>Deckle will save the raw microphone audio of every transcription as a 16 kHz mono WAV file. Useful for replaying a past session against a different speech model.</value>
   </data>
   <data name="AudioCorpusConsent_Body_What" xml:space="preserve">
     <value>The exact audio passed to the speech model, including any silence and background noise picked up by the microphone. One WAV per transcription. Nothing is sent over the network.</value>
@@ -1020,10 +1020,10 @@
 
   <!-- LlmPage Reset all rewriting dialog + Ollama status -->
   <data name="Settings_ResetLlmDialog_Detail" xml:space="preserve">
-    <value>The providers and profiles, shortcuts included, are replaced by the defaults, so your custom prompts and parameters are lost. API keys and the rewriting switch stay as they are.</value>
+    <value>The providers and the dictation steps go back to the defaults. Profiles, API keys and the switches stay.</value>
   </data>
-  <data name="Settings_OllamaStatusMessage_Format" xml:space="preserve">
-    <value>Start Ollama or check the provider's address ({0}).</value>
+  <data name="Settings_OllamaStatusMessage" xml:space="preserve">
+    <value>Start Ollama or check its address.</value>
   </data>
 
   <data name="Settings_RemoveLabel" xml:space="preserve">
@@ -1046,11 +1046,14 @@
   <data name="Settings_VaultError_Title" xml:space="preserve">
     <value>The key could not be stored</value>
   </data>
+  <data name="LlmProvider_RemoveName_Format" xml:space="preserve">
+    <value>Remove {0}</value>
+  </data>
   <data name="Settings_KeyStored" xml:space="preserve">
-    <value>A key is saved, encrypted for this Windows account.</value>
+    <value>Key saved.</value>
   </data>
   <data name="Settings_NoKeyStored" xml:space="preserve">
-    <value>No key saved. Hosted APIs refuse requests without one.</value>
+    <value>No key saved.</value>
   </data>
   <data name="LlmProviderKind_Ollama" xml:space="preserve">
     <value>Ollama</value>
@@ -1067,7 +1070,7 @@
     <value>Remove this profile?</value>
   </data>
   <data name="Settings_RemoveProfileDialog_Content_Format" xml:space="preserve">
-    <value>"{0}" and its shortcut will be removed. If it is the rewrite profile, dictations go back to plain transcription. Any length step that used it is removed too.</value>
+    <value>"{0}" and its shortcut will be removed. Steps that used it are removed; the first step switches to another profile.</value>
   </data>
 
   <!-- LlmModelsSection Remove dialog + ErrorBar -->
@@ -1081,7 +1084,7 @@
     <value>Error removing model</value>
   </data>
   <data name="Settings_NoOllamaModels" xml:space="preserve">
-    <value>No models found in Ollama. Pull one from your shell with ollama pull.</value>
+    <value>No models found in Ollama.</value>
   </data>
 
   <!-- ─── LogWindow ──────────────────────────────────────────────────
@@ -1242,14 +1245,8 @@
   <data name="AmbientHue_PairStatus_IpRequired" xml:space="preserve">
     <value>Enter a bridge IP address.</value>
   </data>
-  <data name="AmbientHue_Discovery_LocalFound" xml:space="preserve">
-    <value>Bridge found on your local network.</value>
-  </data>
   <data name="AmbientHue_Discovery_LocalEmpty" xml:space="preserve">
     <value>No bridge found locally. Enter its IP address, or search with Philips Hue online.</value>
-  </data>
-  <data name="AmbientHue_Discovery_OnlineFound" xml:space="preserve">
-    <value>Bridge found through Philips Hue online.</value>
   </data>
   <data name="AmbientHue_Discovery_OnlineEmpty" xml:space="preserve">
     <value>No bridge found online. Enter its IP address manually.</value>
@@ -1271,9 +1268,6 @@
   </data>
   <data name="AmbientHue_PairStatus_PressLink" xml:space="preserve">
     <value>Press the link button on the bridge within 30 seconds.</value>
-  </data>
-  <data name="AmbientHue_PairStatus_Success" xml:space="preserve">
-    <value>Paired. Click Load rooms to continue.</value>
   </data>
   <data name="AmbientHue_PairStatus_Cancelled" xml:space="preserve">
     <value>Cancelled.</value>
@@ -1387,11 +1381,14 @@
   <data name="AmbientLights_Zone_Right" xml:space="preserve">
     <value>Right</value>
   </data>
-  <data name="AmbientLights_ZoneName" xml:space="preserve">
-    <value>Screen edge</value>
+  <data name="AmbientLights_ZoneName_Format" xml:space="preserve">
+    <value>{0}, screen edge</value>
   </data>
-  <data name="AmbientLights_BrightnessName" xml:space="preserve">
-    <value>Brightness</value>
+  <data name="AmbientLights_BrightnessName_Format" xml:space="preserve">
+    <value>{0}, brightness</value>
+  </data>
+  <data name="AmbientLights_IdentifyName_Format" xml:space="preserve">
+    <value>Identify {0}</value>
   </data>
   <data name="AmbientLights_Identify" xml:space="preserve">
     <value>Identify</value>
@@ -1414,9 +1411,6 @@
   </data>
   <data name="TrackpadPage_GesturesButton_Restore" xml:space="preserve">
     <value>Restore gestures</value>
-  </data>
-  <data name="TrackpadPage_GesturesButton_AlreadyOff" xml:space="preserve">
-    <value>Already off</value>
   </data>
 
   <!-- Second validation of an agent's move to the Anytype bin. The descriptor

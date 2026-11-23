@@ -64,8 +64,9 @@ public sealed class HudOverlayManager : IDisposable
             return;
         }
 
-        // Symmetric with HudWindow.SetState: Overlay disabled in Settings → no-op.
-        if (!SettingsService.Instance.Current.Overlay.Enabled)
+        // Symmetric with HudWindow.SetState: Overlay disabled in Settings → no-op,
+        // except for a warning or an error.
+        if (severity < 1 && !SettingsService.Instance.Current.Overlay.Enabled)
         {
             DeckleHudSource.Log.HudDisplaySuppressed(
                 "overlay", "Message", severity, "overlay_disabled");

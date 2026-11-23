@@ -19,9 +19,8 @@ namespace Deckle.Lighting.Ambient.Views;
 //
 // Visible only while UseMultiLight is on, a bridge is paired and a group is
 // selected (HueLastGroupId) — hidden, never greyed, otherwise. The group's
-// lights come from LightPlacementResolver; a light with no stored zone takes
-// the zone its entertainment-area position suggests, written to the store
-// once so the engine and this card agree.
+// lights come from LightPlacementResolver; a light with no stored zone shows
+// No zone, and only the person's pick writes the store.
 //
 // Sync: AmbientSettingsService.Changed and HuePairingService.BridgeChanged
 // fire off the UI thread and are marshalled here. A new group (or bridge)
@@ -169,27 +168,18 @@ public sealed partial class LightZonesCard : UserControl
         if (lights.Count == 0) return;
 
         var settings = AmbientSettingsService.Instance.Current;
-        bool suggestionWritten = false;
 
+        // Opening the card reads the store and never writes it: a light the
+        // person set to No zone stays out of Ambient Light on the next visit,
+        // and a light never assigned shows No zone until they pick an edge.
         _syncingRows = true;
         try
         {
             foreach (var light in lights)
             {
-                // A stored zone wins; otherwise the entertainment-area
-                // suggestion is written once so the engine drives the light.
-                if (!settings.LightZones.TryGetValue(light.Id, out var zone) || zone == LightZone.None)
-                {
-                    zone = LightZone.None;
-                    if (_placement!.SuggestedZones.TryGetValue(light.Id, out var suggested)
-                        && suggested != LightZone.None)
-                    {
-                        zone = suggested;
-                        WriteZone(settings, light.Id, suggested);
-                        suggestionWritten = true;
-                    }
-                }
-
+                var zone = settings.LightZones.TryGetValue(light.Id, out var stored)
+                    ? stored
+                    : LightZone.None;
                 LightsExpander.Items.Add(BuildRow(light, zone, settings));
             }
         }
@@ -197,8 +187,6 @@ public sealed partial class LightZonesCard : UserControl
         {
             _syncingRows = false;
         }
-
-        if (suggestionWritten) AmbientSettingsService.Instance.Save();
     }
 
     private SettingsCard BuildRow(LightDescriptor light, LightZone zone, AmbientSettings settings)
@@ -209,7 +197,7 @@ public sealed partial class LightZonesCard : UserControl
             MinWidth = 120,
             HorizontalContentAlignment = HorizontalAlignment.Left,
         };
-        AutomationProperties.SetName(zoneButton, Loc.Get("AmbientLights_ZoneName"));
+        AutomationProperties.SetName(zoneButton, Loc.Format("AmbientLights_ZoneName_Format", light.Name));
         var flyout = new MenuFlyout();
         foreach (var option in ZoneOptions)
         {
@@ -231,8 +219,9 @@ public sealed partial class LightZonesCard : UserControl
             VerticalAlignment = VerticalAlignment.Center,
             Value         = BrightnessPercentOf(settings, light.Id),
         };
-        AutomationProperties.SetName(slider, Loc.Get("AmbientLights_BrightnessName"));
-        ToolTipService.SetToolTip(slider, Loc.Get("AmbientLights_BrightnessName"));
+        string brightnessName = Loc.Format("AmbientLights_BrightnessName_Format", light.Name);
+        AutomationProperties.SetName(slider, brightnessName);
+        ToolTipService.SetToolTip(slider, brightnessName);
         slider.ValueChanged += (_, args) => OnBrightnessChanged(light.Id, args.NewValue);
 
         var identifyButton = new Button
@@ -240,6 +229,8 @@ public sealed partial class LightZonesCard : UserControl
             Content   = Loc.Get("AmbientLights_Identify"),
             IsEnabled = light.IsReachable,
         };
+        // Named once, so it keeps the light's name while the content reads Flashing.
+        AutomationProperties.SetName(identifyButton, Loc.Format("AmbientLights_IdentifyName_Format", light.Name));
         identifyButton.Click += (_, _) => _ = IdentifyAsync(identifyButton, light.Id);
 
         _rows.Add(new LightRow(light.Id, zoneButton, slider));

@@ -31,7 +31,7 @@
                      all of them always show. -->
 
                 <!-- ── Taskbar ──────────────────────────────────────────────── -->
-                <catalog:SettingsSection x:Uid="TaskbarPageBarSection">
+                <catalog:SettingsSection>
                     <StackPanel x:Name="BarHost"
                                 Spacing="{StaticResource SettingsCardSpacing}" />
                 </catalog:SettingsSection>

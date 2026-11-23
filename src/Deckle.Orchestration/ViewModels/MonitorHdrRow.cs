@@ -17,6 +17,11 @@ public sealed partial class MonitorHdrRow : ObservableObject
 
     public string FriendlyName { get; }
 
+    // The combo's accessible name: the visible description is on the card,
+    // which a screen reader does not take as the combo's name.
+    public string AccessibleName => OrchestrationText.Format(
+        "OrchestrationPage_MonitorHdr_NameFormat", FriendlyName);
+
     // ComboBox position: 0 = Leave, 1 = On, 2 = Off (the HdrRule order).
     [ObservableProperty]
     public partial int RuleIndex { get; set; }

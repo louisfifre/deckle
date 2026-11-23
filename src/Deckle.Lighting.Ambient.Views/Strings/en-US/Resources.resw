@@ -125,9 +125,6 @@
   <data name="AmbientPageHeader.Title" xml:space="preserve">
     <value>Ambient Light</value>
   </data>
-  <data name="AmbientPageHeader.Description" xml:space="preserve">
-    <value>Mirror your screen to your Philips Hue lights. Works best with HDR content.</value>
-  </data>
 
   <!-- What the page's Reset all keeps, added to the header's own dialog. Read
        by Loc.Get in AmbientPage.xaml.cs and mirrored in
@@ -140,29 +137,19 @@
   <data name="AmbientEnabledCard.Header" xml:space="preserve">
     <value>Ambient Light</value>
   </data>
-  <data name="AmbientEnabledCard.Description" xml:space="preserve">
-    <value>Your Hue lights follow what's on screen. Nothing leaves your machine.</value>
-  </data>
   <data name="AmbientNotPairedInfoBar.Title" xml:space="preserve">
     <value>Hue bridge not configured</value>
-  </data>
-  <data name="AmbientNotPairedInfoBar.Message" xml:space="preserve">
-    <value>Pair a Philips Hue bridge and pick a room or zone before turning Ambient Light on.</value>
   </data>
   <data name="AmbientNotPairedActionButton.Content" xml:space="preserve">
     <value>Configure bridge</value>
   </data>
+  <data name="AmbientStartFailedInfoBar.Title" xml:space="preserve">
+    <value>Ambient Light couldn't start</value>
+  </data>
 
   <!-- ── Behaviour ─────────────────────────────────────────── -->
-  <!-- The Behaviour and Fine tuning sections carry the same title link
-       (SettingsSection.LinkText): it opens the live preview pane, the same
-       way the Live preview tile under the module switch does, so the pane is
-       one click away from the values it shows. -->
   <data name="AmbientPageBehaviourSection.Title" xml:space="preserve">
     <value>Behaviour</value>
-  </data>
-  <data name="AmbientPageBehaviourSection.LinkText" xml:space="preserve">
-    <value>Live preview</value>
   </data>
   <!-- Preset options, read as "<key>.Content" (the preset's LabelKey,
        PresetFamily.SelectorOptions). No surface selects a preset today; the
@@ -186,13 +173,10 @@
     <value>Colour per zone</value>
   </data>
   <data name="AmbientZonesGroup.Description" xml:space="preserve">
-    <value>Each light takes the colour of its screen edge instead of all lights sharing one colour.</value>
+    <value>Each light takes the colour of its screen edge.</value>
   </data>
   <data name="AmbientBorderModeCard.Header" xml:space="preserve">
     <value>How depth is measured</value>
-  </data>
-  <data name="AmbientBorderModeCard.Description" xml:space="preserve">
-    <value>A share of the screen makes the side bands deeper than the top and bottom ones, a count of cells gives every edge the same depth.</value>
   </data>
   <data name="AmbientBorderModeShare.Content" xml:space="preserve">
     <value>As a share of the screen</value>
@@ -203,58 +187,31 @@
   <data name="AmbientBorderDepthCard.Header" xml:space="preserve">
     <value>Edge depth</value>
   </data>
-  <data name="AmbientBorderDepthCard.Description" xml:space="preserve">
-    <value>How far into the screen each light looks. Deeper edges give calmer colours.</value>
-  </data>
   <data name="AmbientBorderCellsCard.Header" xml:space="preserve">
     <value>Edge depth</value>
-  </data>
-  <data name="AmbientBorderCellsCard.Description" xml:space="preserve">
-    <value>How far into the screen each light looks, in cells. Deeper edges give calmer colours.</value>
   </data>
 
   <!-- ── Fine tuning ───────────────────────────────────────── -->
   <data name="AmbientPageTuningSection.Title" xml:space="preserve">
     <value>Fine tuning</value>
   </data>
-  <data name="AmbientPageTuningSection.LinkText" xml:space="preserve">
-    <value>Live preview</value>
-  </data>
   <data name="AmbientBrightnessCurveCard.Header" xml:space="preserve">
     <value>Brightness response</value>
   </data>
-  <data name="AmbientBrightnessCurveCard.Description" xml:space="preserve">
-    <value>How the screen's brightness becomes the lights' brightness. Drag the points to lift dark scenes or keep them low.</value>
-  </data>
   <data name="AmbientMinBrightnessGroup.Header" xml:space="preserve">
-    <value>Brightness floor</value>
-  </data>
-  <data name="AmbientMinBrightnessGroup.Description" xml:space="preserve">
-    <value>Keeps the lights bright enough to show their colour in dark scenes.</value>
+    <value>Minimum brightness</value>
   </data>
   <data name="AmbientMinBrightnessCard.Header" xml:space="preserve">
-    <value>Floor level</value>
-  </data>
-  <data name="AmbientMinBrightnessCard.Description" xml:space="preserve">
-    <value>The dimmest the lights get, as a share of their full brightness.</value>
+    <value>Level</value>
   </data>
   <data name="AmbientSmoothingCard.Header" xml:space="preserve">
     <value>Reaction speed</value>
   </data>
-  <data name="AmbientSmoothingCard.Description" xml:space="preserve">
-    <value>How quickly the lights follow the screen. Lower glides between colours, 1 follows every change at once.</value>
-  </data>
   <data name="AmbientExposureCard.Header" xml:space="preserve">
     <value>Exposure</value>
   </data>
-  <data name="AmbientExposureCard.Description" xml:space="preserve">
-    <value>Brightens or darkens the image before it reaches the lights. +1 EV doubles, −1 EV halves.</value>
-  </data>
   <data name="AmbientSaturationCard.Header" xml:space="preserve">
     <value>Saturation</value>
-  </data>
-  <data name="AmbientSaturationCard.Description" xml:space="preserve">
-    <value>More vivid or more muted colours. 1× keeps the screen's own.</value>
   </data>
 
   <!-- ── Configuration : capture and Hue bridge pairing ────── -->
@@ -279,11 +236,19 @@
   <data name="HueBridgeExpander.Header" xml:space="preserve">
     <value>Hue bridge</value>
   </data>
-  <data name="HueBridgeExpander.Description" xml:space="preserve">
-    <value>Pair the bridge and pick the room the lights follow.</value>
-  </data>
   <data name="HueBridgeAddressCard.Header" xml:space="preserve">
     <value>Bridge address</value>
+  </data>
+  <!-- Accessible names only: the card header beside a control is a sibling,
+       not the control's name. -->
+  <data name="HueBridgeIpTextBox.AutomationProperties.Name" xml:space="preserve">
+    <value>Bridge address</value>
+  </data>
+  <data name="HueGroupComboBox.AutomationProperties.Name" xml:space="preserve">
+    <value>Room or zone</value>
+  </data>
+  <data name="MonitorCombo.AutomationProperties.Name" xml:space="preserve">
+    <value>Capture display</value>
   </data>
   <data name="HueDiscoverButton.Content" xml:space="preserve">
     <value>Find bridge</value>
@@ -340,14 +305,8 @@
   <data name="AmbientHue_PairStatus_IpRequired" xml:space="preserve">
     <value>Enter a bridge IP address.</value>
   </data>
-  <data name="AmbientHue_Discovery_LocalFound" xml:space="preserve">
-    <value>Bridge found on your local network.</value>
-  </data>
   <data name="AmbientHue_Discovery_LocalEmpty" xml:space="preserve">
     <value>No bridge found locally. Enter its IP address, or search with Philips Hue online.</value>
-  </data>
-  <data name="AmbientHue_Discovery_OnlineFound" xml:space="preserve">
-    <value>Bridge found through Philips Hue online.</value>
   </data>
   <data name="AmbientHue_Discovery_OnlineEmpty" xml:space="preserve">
     <value>No bridge found online. Enter its IP address manually.</value>
@@ -357,9 +316,6 @@
   </data>
   <data name="AmbientHue_PairStatus_PressLink" xml:space="preserve">
     <value>Press the link button on the bridge within 30 seconds.</value>
-  </data>
-  <data name="AmbientHue_PairStatus_Success" xml:space="preserve">
-    <value>Paired. Click Load rooms to continue.</value>
   </data>
   <data name="AmbientHue_PairStatus_Cancelled" xml:space="preserve">
     <value>Cancelled.</value>
@@ -412,9 +368,6 @@
        it opens the preview pane beside the page. -->
   <data name="AmbientPreviewTile.Header" xml:space="preserve">
     <value>Live preview</value>
-  </data>
-  <data name="AmbientPreviewTile.Description" xml:space="preserve">
-    <value>Watch what the capture samples and the colour each light receives, beside the page, while you tune.</value>
   </data>
 
   <!-- AmbientPreviewCard (x:Uid). The block's empty text shows only
@@ -506,10 +459,10 @@
     <value>Lights</value>
   </data>
   <data name="AmbientLightsExpander.Description" xml:space="preserve">
-    <value>The screen edge each light follows and how bright it gets. A light with no edge keeps its current state.</value>
+    <value>A light with no screen edge keeps its current state.</value>
   </data>
   <data name="AmbientLightsEmptyState.Text" xml:space="preserve">
-    <value>No lights returned for this group. If this is an Entertainment Area, try selecting the matching Room/Zone instead, or check the Hue app.</value>
+    <value>No lights in this group.</value>
   </data>
   <!-- LightZonesCard code-behind (Loc.Get) — mirrored in Deckle.App's
        Resources.resw, this copy is the source of truth for wording. -->
@@ -528,11 +481,16 @@
   <data name="AmbientLights_Zone_Right" xml:space="preserve">
     <value>Right</value>
   </data>
-  <data name="AmbientLights_ZoneName" xml:space="preserve">
-    <value>Screen edge</value>
+  <!-- Accessible names of a row's controls, with the light's name so each
+       row reads apart from the others. -->
+  <data name="AmbientLights_ZoneName_Format" xml:space="preserve">
+    <value>{0}, screen edge</value>
   </data>
-  <data name="AmbientLights_BrightnessName" xml:space="preserve">
-    <value>Brightness</value>
+  <data name="AmbientLights_BrightnessName_Format" xml:space="preserve">
+    <value>{0}, brightness</value>
+  </data>
+  <data name="AmbientLights_IdentifyName_Format" xml:space="preserve">
+    <value>Identify {0}</value>
   </data>
   <data name="AmbientLights_Identify" xml:space="preserve">
     <value>Identify</value>

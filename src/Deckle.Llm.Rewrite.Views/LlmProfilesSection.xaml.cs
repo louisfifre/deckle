@@ -122,9 +122,6 @@ public sealed partial class LlmProfilesSection : UserControl
     // section is off screen then). True once the profile is gone.
     internal async Task<bool> RemoveProfileAsync(ProfileViewModel vm, XamlRoot xamlRoot)
     {
-        // Removing the active profile clears the active choice (back to plain
-        // transcription), so the page and the engine agree instead of keeping
-        // an orphan the ComboBox shows as (None).
         bool confirmed = await ConfirmationService.RequestAsync(
             xamlRoot,
             new ConfirmationRequest(

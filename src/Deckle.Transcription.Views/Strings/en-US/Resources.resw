@@ -336,9 +336,6 @@
   <data name="GeneralOverlayPositionCard.Header" xml:space="preserve">
     <value>Position</value>
   </data>
-  <data name="GeneralOverlayPositionCard.Description" xml:space="preserve">
-    <value>Applies on the next recording.</value>
-  </data>
   <data name="GeneralOverlayPositionTop.Content" xml:space="preserve">
     <value>Top</value>
   </data>
@@ -347,9 +344,6 @@
   </data>
   <data name="GeneralTranscriptPanelSideCard.Header" xml:space="preserve">
     <value>Live transcript side</value>
-  </data>
-  <data name="GeneralTranscriptPanelSideCard.Description" xml:space="preserve">
-    <value>Applies on the next recording.</value>
   </data>
   <data name="GeneralTranscriptPanelSideLeft.Content" xml:space="preserve">
     <value>Left</value>
@@ -360,14 +354,11 @@
   <data name="GeneralCorpusExpander.Header" xml:space="preserve">
     <value>Keep my dictations</value>
   </data>
-  <data name="GeneralCorpusExpander.Description" xml:space="preserve">
-    <value>The text of each dictation, raw and rewritten.</value>
-  </data>
   <data name="GeneralAudioCorpusCard.Header" xml:space="preserve">
     <value>Also save the audio</value>
   </data>
   <data name="GeneralAudioCorpusCard.Description" xml:space="preserve">
-    <value>A 16 kHz mono WAV per recording, about 2 MB per minute.</value>
+    <value>About 2 MB per minute.</value>
   </data>
 
   <!-- ─── TranscriptionPage ────────────────────────────────────────────────
@@ -378,9 +369,6 @@
        is missing or incomplete; the button reopens the first-run setup wizard. -->
   <data name="TranscriptionSetupInfoBar.Title" xml:space="preserve">
     <value>Transcription isn't set up</value>
-  </data>
-  <data name="TranscriptionSetupInfoBar.Message" xml:space="preserve">
-    <value>Download the speech model to start transcribing.</value>
   </data>
   <data name="TranscriptionSetupButton.Content" xml:space="preserve">
     <value>Set up</value>
@@ -404,8 +392,11 @@
   <data name="LexiconAddButton.Content" xml:space="preserve">
     <value>Add</value>
   </data>
-  <data name="LexiconRemoveButton.AutomationProperties.Name" xml:space="preserve">
-    <value>Remove</value>
+  <data name="LexiconRemoveButton_Format" xml:space="preserve">
+    <value>Remove {0}</value>
+  </data>
+  <data name="LexiconWordBox.AutomationProperties.Name" xml:space="preserve">
+    <value>Add a word</value>
   </data>
   <data name="LexiconRemoveButton.ToolTipService.ToolTip" xml:space="preserve">
     <value>Remove</value>
@@ -417,45 +408,39 @@
     <value>GPU acceleration</value>
   </data>
   <data name="TranscriptionUseGpuCard.Description" xml:space="preserve">
-    <value>Faster transcription on the graphics card. Turn off if you see instability or crashes.</value>
+    <value>Turn off if you see instability or crashes.</value>
   </data>
   <data name="TranscriptionVadEnabledCard.Header" xml:space="preserve">
     <value>Trim silence around speech</value>
-  </data>
-  <data name="TranscriptionVadEnabledCard.Description" xml:space="preserve">
-    <value>Keeps only the spoken part of each utterance before it reaches the model.</value>
   </data>
   <data name="TranscriptionVadThresholdCard.Header" xml:space="preserve">
     <value>Detector confidence</value>
   </data>
   <data name="TranscriptionVadThresholdCard.Description" xml:space="preserve">
-    <value>How sure the detector must be to keep a span; higher trims more and may clip soft speech.</value>
+    <value>Higher trims more and may clip soft speech.</value>
   </data>
   <data name="TranscriptionVadMinSilenceCard.Header" xml:space="preserve">
     <value>Minimum silence</value>
   </data>
   <data name="TranscriptionVadMinSilenceCard.Description" xml:space="preserve">
-    <value>A shorter pause does not split speech, so a breath is bridged.</value>
+    <value>A shorter pause does not split speech.</value>
   </data>
   <data name="TranscriptionVadSpeechPadCard.Header" xml:space="preserve">
     <value>Speech padding</value>
   </data>
   <data name="TranscriptionVadSpeechPadCard.Description" xml:space="preserve">
-    <value>Audio kept on each side of speech, so a word's start or end is not clipped.</value>
+    <value>Audio kept on each side of speech.</value>
   </data>
   <data name="TranscriptionModelsDirCard.Header" xml:space="preserve">
     <value>Models folder</value>
-  </data>
-  <data name="TranscriptionModelsDirCard.Description" xml:space="preserve">
-    <value>Where the speech models and the Silero model live.</value>
   </data>
   <!-- The speech engine fold (TranscriptionViewModel.SpeechEngineSettings). Its values
        are read at each model load: a change waits for the restart footer. -->
   <data name="TranscriptionSpeechEngineFold.Header" xml:space="preserve">
     <value>Speech engine</value>
   </data>
-  <data name="TranscriptionSpeechEngineFold.Description" xml:space="preserve">
-    <value>Where Parakeet, the speech model, is read from, and how precisely it computes.</value>
+  <data name="TranscriptionSpeechEngine_Value" xml:space="preserve">
+    <value>Parakeet</value>
   </data>
   <data name="TranscriptionParakeetFilesCard.Header" xml:space="preserve">
     <value>Model files</value>
@@ -467,22 +452,19 @@
     <value>Complete model found, with an FP16 encoder.</value>
   </data>
   <data name="TranscriptionParakeetFiles_Incomplete" xml:space="preserve">
-    <value>No complete model in this folder. It must hold vocab.txt and the fp32 folder with the encoder, the decoder and their weight files.</value>
+    <value>No complete model in this folder. It needs vocab.txt and the fp32 folder.</value>
   </data>
   <data name="TranscriptionParakeetEncoderCard.Header" xml:space="preserve">
     <value>Encoder precision</value>
   </data>
   <data name="TranscriptionParakeetEncoderCard.Description" xml:space="preserve">
-    <value>FP16 stores the encoder's numbers on 16 bits instead of 32 (FP32): half the memory, no speed gain on the graphics card, and it can cost accuracy on French. FP32 is the safe choice.</value>
+    <value>FP16 halves the memory but can cost accuracy on French.</value>
   </data>
   <data name="TranscriptionParakeetEncoderFp32.Content" xml:space="preserve">
     <value>FP32</value>
   </data>
   <data name="TranscriptionParakeetEncoderFp16.Content" xml:space="preserve">
     <value>FP16</value>
-  </data>
-  <data name="TranscriptionParakeetEncoderMissing.Message" xml:space="preserve">
-    <value>This folder has no FP16 encoder, so Parakeet cannot load with this precision.</value>
   </data>
   <data name="TranscriptionRestartDiscard.Content" xml:space="preserve">
     <value>Discard</value>
@@ -509,15 +491,9 @@
   <data name="TranscriptionPageHeader.Title" xml:space="preserve">
     <value>Transcription</value>
   </data>
-  <data name="TranscriptionPageHeader.Description" xml:space="preserve">
-    <value>The on-screen overlay, the model and the engine.</value>
-  </data>
   <!-- The module's other pages, nested under it in the rail. -->
   <data name="StreamingPageHeader.Title" xml:space="preserve">
     <value>Streaming</value>
-  </data>
-  <data name="StreamingPageHeader.Description" xml:space="preserve">
-    <value>How Deckle cuts each recording into utterances and filters silence and noise.</value>
   </data>
   <data name="StreamingPageSegmentationSection.Title" xml:space="preserve">
     <value>Segmentation</value>
@@ -530,12 +506,6 @@
        change 6): named for what it spares the person, not for its detectors. -->
   <data name="TranscriptionSilenceGuardsFold.Header" xml:space="preserve">
     <value>Silence and noise filtering</value>
-  </data>
-  <data name="TranscriptionSilenceGuardsFold.Description" xml:space="preserve">
-    <value>Keeps the speech model from writing words you never said when it hears silence or noise.</value>
-  </data>
-  <data name="StreamingPageSegmentationSection.Caption" xml:space="preserve">
-    <value>The voice level that opens an utterance is on the Recording page.</value>
   </data>
 
   <!-- ─── Settings — code-behind dialogs ─────────────────────────────
@@ -572,7 +542,7 @@
     <value>Transcribe as you speak</value>
   </data>
   <data name="TranscriptionStreamingEnabledCard.Description" xml:space="preserve">
-    <value>Off transcribes a dictation in one pass once you stop; files and recovered takes are always cut.</value>
+    <value>Off transcribes in one pass once you stop.</value>
   </data>
   <!-- The cut margin and the minimum speech: once two cards, now the two
        values of the cut curve's pause strip (TranscriptionViewModel.SegmentationSettings,
@@ -583,13 +553,13 @@
     <value>Cut margin, s</value>
   </data>
   <data name="TranscriptionSegMarginCard.Description" xml:space="preserve">
-    <value>How much of the pause after your last word an utterance keeps; too short can clip a soft ending.</value>
+    <value>Too short can clip a soft ending.</value>
   </data>
   <data name="TranscriptionMinSpeechCard.Header" xml:space="preserve">
     <value>Minimum speech, s</value>
   </data>
   <data name="TranscriptionMinSpeechCard.Description" xml:space="preserve">
-    <value>A shorter sound is not speech, for the cut as for the silence trim; too long drops a short word said alone.</value>
+    <value>Too long drops a short word said alone.</value>
   </data>
   <!-- The pause strip under the cut curve: its caption, then the words drawn on
        it. Read by the Catalog composer (PauseStripArgs.LabelKey); no element
@@ -617,9 +587,6 @@
        of the curve's corner handles) and their Description its tooltip. -->
   <data name="TranscriptionCutCurveCard.Header" xml:space="preserve">
     <value>Pause before cutting</value>
-  </data>
-  <data name="TranscriptionCutCurveCard.Description" xml:space="preserve">
-    <value>How long a pause must last to cut, shrinking as the utterance grows.</value>
   </data>
   <!-- {0} the maximum wait, {1} the ramp start, {2} the minimum wait, {3} the
        ramp end, all in seconds (TranscriptionViewModel.CutCurveSentence). -->
@@ -659,14 +626,11 @@
   <data name="GeneralAudioCorpusContentCard.Header" xml:space="preserve">
     <value>Recorded audio</value>
   </data>
-  <data name="GeneralAudioCorpusContentCard.Description" xml:space="preserve">
-    <value>Match the transcription saves what the engine heard, Always raw saves the untouched microphone signal.</value>
-  </data>
   <data name="GeneralAudioCorpusContentMatch.Content" xml:space="preserve">
     <value>Match the transcription</value>
   </data>
   <data name="GeneralAudioCorpusContentRaw.Content" xml:space="preserve">
-    <value>Always raw</value>
+    <value>Untouched microphone</value>
   </data>
 
   <data name="SettingsModuleNavLabel" xml:space="preserve">

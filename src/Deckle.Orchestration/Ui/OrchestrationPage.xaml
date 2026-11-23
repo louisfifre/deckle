@@ -17,7 +17,8 @@
             <local:EntryItemTemplateSelector.KindTemplate>
                 <DataTemplate x:DataType="local:EntryKindItem">
                     <controls:SettingsCard x:Uid="OrchestrationPage_KindCard">
-                        <ComboBox MinWidth="120"
+                        <ComboBox x:Uid="OrchestrationPage_KindCombo"
+                                  MinWidth="120"
                                   SelectedIndex="{x:Bind Row.KindIndex, Mode=TwoWay}">
                             <ComboBoxItem x:Uid="OrchestrationPage_KindApp" />
                             <ComboBoxItem x:Uid="OrchestrationPage_KindGame" />
@@ -39,7 +40,7 @@
                     <controls:SettingsCard x:Uid="OrchestrationPage_MonitorHdrCard"
                                            Header="{x:Bind FriendlyName}">
                         <ComboBox MinWidth="120"
-                                  AutomationProperties.Name="{x:Bind FriendlyName}"
+                                  AutomationProperties.Name="{x:Bind AccessibleName}"
                                   SelectedIndex="{x:Bind RuleIndex, Mode=TwoWay}">
                             <ComboBoxItem x:Uid="OrchestrationPage_HdrLeave" />
                             <ComboBoxItem x:Uid="OrchestrationPage_HdrOn" />
@@ -96,6 +97,7 @@
                                 <DataTemplate x:DataType="local:ScanFolderRow">
                                     <controls:SettingsCard Header="{x:Bind Path}">
                                         <Button x:Uid="OrchestrationPage_RemoveFolderButton"
+                                                AutomationProperties.Name="{x:Bind RemoveName}"
                                                 Style="{StaticResource SubtleButtonStyle}"
                                                 Command="{x:Bind RemoveCommand}">
                                             <FontIcon Glyph="{StaticResource Icon.Delete}"
@@ -107,9 +109,7 @@
                         </controls:SettingsExpander>
 
                         <!-- A section is cards: the command sits in one, as Trackpad's
-                             Repair and General's Rerun setup do. The section caption
-                             already says what a scan adds, so the card has no
-                             description. -->
+                             Repair and General's Rerun setup do. -->
                         <controls:SettingsCard x:Uid="OrchestrationPage_ScanCard">
                             <StackPanel Orientation="Horizontal"
                                         Spacing="12">
@@ -181,17 +181,7 @@
                                  IsOpen="False"
                                  catalog:InfoBarLayout.CollapseWhenClosed="True" />
 
-                        <!-- Trades places with the list from code-behind, off
-                             Entries.CollectionChanged. -->
-                        <TextBlock x:Name="EmptyState"
-                                   x:Uid="OrchestrationPage_Empty"
-                                   Style="{StaticResource BodyTextBlockStyle}"
-                                   Foreground="{ThemeResource TextFillColorSecondaryBrush}"
-                                   TextWrapping="Wrap"
-                                   Visibility="Collapsed" />
-
-                        <ItemsControl x:Name="EntriesList"
-                                      ItemsSource="{x:Bind ViewModel.Entries}">
+                        <ItemsControl ItemsSource="{x:Bind ViewModel.Entries}">
                             <ItemsControl.ItemsPanel>
                                 <ItemsPanelTemplate>
                                     <StackPanel Spacing="4">
@@ -225,6 +215,7 @@
                                             <ToggleSwitch IsOn="{x:Bind Enabled, Mode=TwoWay}"
                                                           AutomationProperties.Name="{x:Bind DisplayName}" />
                                             <Button x:Uid="OrchestrationPage_RemoveButton"
+                                                    AutomationProperties.Name="{x:Bind RemoveName}"
                                                     Style="{StaticResource SubtleButtonStyle}"
                                                     Command="{x:Bind RemoveCommand}">
                                                 <FontIcon Glyph="{StaticResource Icon.Delete}"

@@ -37,9 +37,9 @@ public sealed partial class LexicalDomainsViewModel : ObservableObject
         Load();
     }
 
-    // The dilution figures come from each pack's shipped manifest, read here
-    // rather than held live — they are fabrication output and only change when a
-    // new pack ships.
+    // The term counts come from each pack's shipped manifest, read here rather
+    // than held live — they are fabrication output and only change when a new
+    // pack ships.
     private void BuildDomains()
     {
         var settings = AutocorrectSettingsService.Instance.Current;
@@ -60,7 +60,7 @@ public sealed partial class LexicalDomainsViewModel : ObservableObject
                     OnLanguageToggled))
                 .ToList();
 
-            Domains.Add(new LexicalDomainTab(domain, languages, manifests));
+            Domains.Add(new LexicalDomainTab(domain, languages));
         }
     }
 

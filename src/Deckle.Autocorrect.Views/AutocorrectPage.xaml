@@ -46,7 +46,8 @@
                              (AutocorrectSettingsModule.TranscriptionLexiconPresent). -->
                         <TextBlock x:Name="DeclaredWordsNote"
                                    x:Uid="AutocorrectPage_DeclaredWordsNote"
-                                   Style="{StaticResource BodyTextBlockStyle}"
+                                   Style="{StaticResource CaptionTextBlockStyle}"
+                                   Margin="1,0,0,0"
                                    Foreground="{ThemeResource TextFillColorSecondaryBrush}"
                                    TextWrapping="Wrap"
                                    Visibility="Collapsed" />
@@ -66,14 +67,6 @@
                             </StackPanel>
                         </controls:SettingsCard>
 
-                        <TextBlock x:Name="ExclusionsEmptyState"
-                                   x:Uid="AutocorrectPage_Exclusions_Empty"
-                                   Style="{StaticResource BodyTextBlockStyle}"
-                                   Foreground="{ThemeResource TextFillColorSecondaryBrush}"
-                                   TextWrapping="Wrap"
-                                   Margin="0,8,0,0"
-                                   Visibility="Collapsed" />
-
                         <ItemsControl x:Name="ExclusionsList"
                                       ItemsSource="{x:Bind ViewModel.ExcludedWords}">
                             <ItemsControl.ItemsPanel>
@@ -92,6 +85,7 @@
                                     <controls:SettingsCard Header="{x:Bind Word}">
                                         <Button x:Uid="AutocorrectPage_IncludeButton"
                                                 Style="{StaticResource SubtleButtonStyle}"
+                                                AutomationProperties.Name="{x:Bind IncludeLabel}"
                                                 Command="{x:Bind IncludeCommand}">
                                             <FontIcon Glyph="{StaticResource Icon.Delete}"
                                                       FontSize="16" />

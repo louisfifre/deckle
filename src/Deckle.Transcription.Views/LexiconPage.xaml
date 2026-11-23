@@ -59,6 +59,7 @@
                             <controls:SettingsCard Header="{x:Bind Word}">
                                 <Button x:Uid="LexiconRemoveButton"
                                         Style="{StaticResource SubtleButtonStyle}"
+                                        AutomationProperties.Name="{x:Bind RemoveAutomationName}"
                                         Command="{x:Bind RemoveCommand}">
                                     <FontIcon Glyph="{StaticResource Icon.Delete}"
                                               FontSize="16" />

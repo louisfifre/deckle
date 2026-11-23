@@ -1,3 +1,4 @@
+using System.IO;
 using System.Threading.Tasks;
 using Microsoft.UI.Xaml;
 using Deckle.Catalog;
@@ -20,7 +21,7 @@ internal static class CorpusConsentDialog
             Title:  Loc.Get("CorpusConsent_Title"),
             Intro:  Loc.Get("CorpusConsent_Body_Intro"),
             What:   Loc.Get("CorpusConsent_Body_What"),
-            Where:  CorpusPaths.GetDirectoryPath(),
+            Where:  Path.Combine(AppPaths.TelemetryDirectory, "corpus"),
             Remind: Loc.Get("CorpusConsent_Body_Remind")));
     }
 }

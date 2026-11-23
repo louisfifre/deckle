@@ -41,6 +41,20 @@ public sealed partial class SettingsComposer
         if (icon is not null) expander.HeaderIcon = icon;
 
         expander.Items.Add(BuildPathLine(s, expander));
+
+        var args = (PathArgs)s.Args!;
+        if (args.ShowValue)
+        {
+            TextBlock valueText = BuildFoldValue();
+            string Shown()
+            {
+                string path = AsString(s.GetValue());
+                return path.Length > 0 ? path : args.DefaultPath?.Invoke() ?? string.Empty;
+            }
+            ShowFoldValue(valueText, Shown());
+            expander.Content = valueText;
+            _refreshers.Add(() => ShowFoldValue(valueText, Shown()));
+        }
         return expander;
     }
 
@@ -57,6 +71,7 @@ public sealed partial class SettingsComposer
                 "register the folder-picker control before a Path setting is composed.");
 
         IPathControl picker = PathControlFactory(args);
+        picker.SetFolderName(ResolveHeader(s.LabelKey));
         SettingsCard line = picker.Line;
         if (stateTarget is null) line.Tag = s.LabelKey;
 
@@ -292,6 +307,9 @@ public sealed partial class SettingsComposer
     private void BuildRadio(SettingsCard card, SettingDescriptor s, ChoiceArgs args)
     {
         var radio = new RadioButtons();
+        // The card's header is the group's accessible name: the options alone
+        // ("Left", "Right") do not say what they choose.
+        Microsoft.UI.Xaml.Automation.AutomationProperties.SetName(radio, ResolveHeader(s.LabelKey));
         foreach (ChoiceOption option in args.Options)
             radio.Items.Add(ResolveOptionLabel(option.LabelKey));
         radio.SelectedIndex = IndexOfValue(args, s.GetValue());

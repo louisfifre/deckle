@@ -239,7 +239,7 @@
        Providers, Models).
        The Ollama and provider InfoBars are inline on the page. -->
   <data name="LlmPage_OllamaStatusBar.Title" xml:space="preserve">
-    <value>Ollama is not reachable</value>
+    <value>Ollama is not answering</value>
   </data>
   <data name="LlmPage_ProviderStatusBar.Title" xml:space="preserve">
     <value>A provider is not answering</value>
@@ -249,22 +249,13 @@
   <data name="LlmEnableCard.Header" xml:space="preserve">
     <value>Rewriting</value>
   </data>
-  <data name="LlmEnableCard.Description" xml:space="preserve">
-    <value>Off never sends a transcription to a language model.</value>
-  </data>
 
   <!-- LlmModelsSection -->
   <data name="LlmModelsBlock.Title" xml:space="preserve">
     <value>Models</value>
   </data>
-  <data name="LlmModelsBlock.Caption" xml:space="preserve">
-    <value>Installed in Ollama. Add them with ollama pull, then refresh.</value>
-  </data>
   <data name="LlmPhotoDescriptionBlock.Title" xml:space="preserve">
     <value>Photo descriptions</value>
-  </data>
-  <data name="LlmPhotoDescriptionBlock.Caption" xml:space="preserve">
-    <value>A model on this PC describes the photos in Deckle Folders. A photo is never sent anywhere else.</value>
   </data>
   <data name="LlmPhotoDescription_ProviderCard.Header" xml:space="preserve">
     <value>Provider</value>
@@ -276,16 +267,10 @@
     <value>Provider for photo descriptions</value>
   </data>
   <data name="LlmPhotoDescription_NoLocalProvider" xml:space="preserve">
-    <value>No provider on this PC yet. Add one under Providers, such as Ollama at http://localhost:11434.</value>
+    <value>No provider on this PC yet.</value>
   </data>
   <data name="LlmPhotoDescription_ModelCard.Header" xml:space="preserve">
     <value>Model</value>
-  </data>
-  <data name="LlmPhotoDescription_ModelCard.Description" xml:space="preserve">
-    <value>One that reads images, such as a vision model.</value>
-  </data>
-  <data name="LlmPhotoDescription_ModelBox.PlaceholderText" xml:space="preserve">
-    <value>As the provider lists it</value>
   </data>
   <data name="LlmPhotoDescription_ModelBox.[using:Microsoft.UI.Xaml.Automation]AutomationProperties.Name" xml:space="preserve">
     <value>Model for photo descriptions</value>
@@ -298,9 +283,6 @@
   <data name="LlmProfilesBlock.Title" xml:space="preserve">
     <value>Profiles</value>
   </data>
-  <data name="LlmProfilesBlock.Caption" xml:space="preserve">
-    <value>Each profile sends a system prompt to one model at one provider.</value>
-  </data>
   <!-- A profile's own page (LlmProfilePage), one card per field. Each Uid
        serves one element type: the cards are SettingsCards, the boxes and
        sliders carry only what their own control has. -->
@@ -309,9 +291,6 @@
   </data>
   <data name="LlmProfilePage_NameCard.Header" xml:space="preserve">
     <value>Name</value>
-  </data>
-  <data name="LlmProfilePage_NameBox.PlaceholderText" xml:space="preserve">
-    <value>Profile name</value>
   </data>
   <data name="LlmProfilePage_NameBox.[using:Microsoft.UI.Xaml.Automation]AutomationProperties.Name" xml:space="preserve">
     <value>Name</value>
@@ -322,29 +301,17 @@
   <data name="LlmProfilePage_ModelCard.Header" xml:space="preserve">
     <value>Model</value>
   </data>
-  <data name="LlmProfilePage_ModelBox.PlaceholderText" xml:space="preserve">
-    <value>As the provider lists it</value>
-  </data>
   <data name="LlmProfilePage_ModelBox.[using:Microsoft.UI.Xaml.Automation]AutomationProperties.Name" xml:space="preserve">
     <value>Model</value>
   </data>
   <data name="LlmProfilePage_PromptCard.Header" xml:space="preserve">
     <value>System prompt</value>
   </data>
-  <data name="LlmProfilePage_PromptCard.Description" xml:space="preserve">
-    <value>Instructions sent with every request.</value>
-  </data>
-  <data name="LlmProfilePage_PromptBox.PlaceholderText" xml:space="preserve">
-    <value>How the model should rewrite your text...</value>
-  </data>
   <data name="LlmProfilePage_PromptBox.[using:Microsoft.UI.Xaml.Automation]AutomationProperties.Name" xml:space="preserve">
     <value>System prompt</value>
   </data>
   <data name="LlmProfilePage_TemperatureCard.Header" xml:space="preserve">
     <value>Temperature</value>
-  </data>
-  <data name="LlmProfilePage_TemperatureCard.Description" xml:space="preserve">
-    <value>Lower is more focused, higher more varied.</value>
   </data>
   <data name="LlmProfilePage_TemperatureSlider.[using:Microsoft.UI.Xaml.Automation]AutomationProperties.Name" xml:space="preserve">
     <value>Temperature</value>
@@ -353,7 +320,7 @@
     <value>Context size</value>
   </data>
   <data name="LlmProfilePage_ContextCard.Description" xml:space="preserve">
-    <value>Tokens the model reads at once. Larger is slower.</value>
+    <value>Larger is slower.</value>
   </data>
   <data name="LlmProfilePage_ContextSlider.[using:Microsoft.UI.Xaml.Automation]AutomationProperties.Name" xml:space="preserve">
     <value>Context size</value>
@@ -371,13 +338,13 @@
     <value>Reasoning</value>
   </data>
   <data name="LlmProfileReasoningCard.Description" xml:space="preserve">
-    <value>How much the model may think before it rewrites. Thinking counts like written text, so more of it answers later and costs more. Off answers soonest but can stray from what you said.</value>
+    <value>More thinking answers later and costs more.</value>
   </data>
   <data name="LlmProfileReasoningNoOffCard.Header" xml:space="preserve">
     <value>Reasoning</value>
   </data>
   <data name="LlmProfileReasoningNoOffCard.Description" xml:space="preserve">
-    <value>How much the model may think before it rewrites. Thinking counts like written text, so more of it answers later and costs more.</value>
+    <value>More thinking answers later and costs more.</value>
   </data>
   <data name="LlmProfileReasoningOff.Content" xml:space="preserve">
     <value>Off</value>
@@ -410,9 +377,6 @@
   </data>
   <data name="LlmDictationWhileSpeakingCard.Header" xml:space="preserve">
     <value>Rewrite while I speak</value>
-  </data>
-  <data name="LlmDictationWhileSpeakingCard.Description" xml:space="preserve">
-    <value>Rewrite in blocks as you speak, rather than all at once when you stop</value>
   </data>
   <data name="LlmTimeline_Caption" xml:space="preserve">
     <value>Pale blocks: when a step takes over, it first rewrites what you already said.</value>
@@ -471,9 +435,6 @@
   <data name="LlmProvidersBlock.Title" xml:space="preserve">
     <value>Providers</value>
   </data>
-  <data name="LlmProvidersBlock.Caption" xml:space="preserve">
-    <value>Where the models run: on this PC or through a hosted API.</value>
-  </data>
   <data name="LlmProvider_NameBox.Header" xml:space="preserve">
     <value>Name</value>
   </data>
@@ -492,17 +453,11 @@
   <data name="LlmProviderKind_ClaudeItem.Content" xml:space="preserve">
     <value>Claude</value>
   </data>
-  <data name="LlmProvider_KindBody.Text" xml:space="preserve">
-    <value>Pick Chat completions unless the provider is Ollama or Claude.</value>
-  </data>
   <data name="LlmProvider_EndpointBox.Header" xml:space="preserve">
     <value>Address</value>
   </data>
   <data name="LlmProvider_KeyBox.Header" xml:space="preserve">
     <value>API key</value>
-  </data>
-  <data name="LlmProvider_KeyBox.PlaceholderText" xml:space="preserve">
-    <value>Paste a key, then save it</value>
   </data>
   <data name="LlmProvider_SaveKeyLabel.Text" xml:space="preserve">
     <value>Save key</value>
@@ -553,10 +508,10 @@
 
   <!-- LlmPage Reset all rewriting dialog + Ollama status -->
   <data name="Settings_ResetLlmDialog_Detail" xml:space="preserve">
-    <value>The providers and profiles, shortcuts included, are replaced by the defaults, so your custom prompts and parameters are lost. API keys and the rewriting switch stay as they are.</value>
+    <value>The providers and the dictation steps go back to the defaults. Profiles, API keys and the switches stay.</value>
   </data>
-  <data name="Settings_OllamaStatusMessage_Format" xml:space="preserve">
-    <value>Start Ollama or check the provider's address ({0}).</value>
+  <data name="Settings_OllamaStatusMessage" xml:space="preserve">
+    <value>Start Ollama or check its address.</value>
   </data>
 
   <data name="Settings_RemoveLabel" xml:space="preserve">
@@ -579,11 +534,14 @@
   <data name="Settings_VaultError_Title" xml:space="preserve">
     <value>The key could not be stored</value>
   </data>
+  <data name="LlmProvider_RemoveName_Format" xml:space="preserve">
+    <value>Remove {0}</value>
+  </data>
   <data name="Settings_KeyStored" xml:space="preserve">
-    <value>A key is saved, encrypted for this Windows account.</value>
+    <value>Key saved.</value>
   </data>
   <data name="Settings_NoKeyStored" xml:space="preserve">
-    <value>No key saved. Hosted APIs refuse requests without one.</value>
+    <value>No key saved.</value>
   </data>
   <data name="LlmProviderKind_Ollama" xml:space="preserve">
     <value>Ollama</value>
@@ -600,7 +558,7 @@
     <value>Remove this profile?</value>
   </data>
   <data name="Settings_RemoveProfileDialog_Content_Format" xml:space="preserve">
-    <value>"{0}" and its shortcut will be removed. If it is the rewrite profile, dictations go back to plain transcription. Any length step that used it is removed too.</value>
+    <value>"{0}" and its shortcut will be removed. Steps that used it are removed; the first step switches to another profile.</value>
   </data>
 
   <!-- LlmModelsSection Remove dialog + ErrorBar -->
@@ -614,7 +572,7 @@
     <value>Error removing model</value>
   </data>
   <data name="Settings_NoOllamaModels" xml:space="preserve">
-    <value>No models found in Ollama. Pull one from your shell with ollama pull.</value>
+    <value>No models found in Ollama.</value>
   </data>
 
   <!-- ─── LogWindow ──────────────────────────────────────────────────

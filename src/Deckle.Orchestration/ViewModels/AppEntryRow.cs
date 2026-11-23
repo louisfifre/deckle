@@ -36,6 +36,11 @@ public sealed partial class AppEntryRow : ObservableObject
 
     public string DisplayName { get; }
 
+    // The remove button's accessible name: the icon-only button repeats on
+    // every row, so the entry names it.
+    public string RemoveName => OrchestrationText.Format(
+        "OrchestrationPage_RemoveButton_NameFormat", DisplayName);
+
     [ObservableProperty]
     public partial string? Description { get; set; }
 

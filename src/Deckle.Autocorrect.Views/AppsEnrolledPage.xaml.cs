@@ -12,9 +12,14 @@ public sealed partial class AppsEnrolledPage : Page
 {
     public AppsEnrolledViewModel ViewModel { get; } = new();
 
+    // The caption explains forgetting an app, a gesture with no target while the
+    // list is empty: it shows only with at least one app. x:Uid fills it at load.
+    private readonly string _appsCaption;
+
     public AppsEnrolledPage()
     {
         InitializeComponent();
+        _appsCaption = AppsSection.Caption;
         NavigationCacheMode = NavigationCacheMode.Required;
 
         ViewModel.Apps.CollectionChanged += OnAppsChanged;
@@ -48,5 +53,6 @@ public sealed partial class AppsEnrolledPage : Page
         bool any = ViewModel.Apps.Count > 0;
         AppsList.Visibility = any ? Visibility.Visible : Visibility.Collapsed;
         EmptyState.Visibility = any ? Visibility.Collapsed : Visibility.Visible;
+        AppsSection.Caption = any ? _appsCaption : string.Empty;
     }
 }
