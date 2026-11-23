@@ -63,17 +63,11 @@
   <data name="TaskbarPageHeader.Title" xml:space="preserve">
     <value>Taskbar</value>
   </data>
-  <data name="TaskbarPageHeader.Description" xml:space="preserve">
-    <value>Restyle the taskbar, tighten its buttons, tray and clock, enlarge its thumbnails and size the Start menu.</value>
-  </data>
   <data name="TaskbarPageBarSection.Title" xml:space="preserve">
     <value>Taskbar</value>
   </data>
   <data name="TaskbarPage_BackgroundCard.Header" xml:space="preserve">
     <value>Taskbar background</value>
-  </data>
-  <data name="TaskbarPage_BackgroundCard.Description" xml:space="preserve">
-    <value>Transparent lets the wallpaper show through the taskbar. Black fills it solid.</value>
   </data>
   <data name="TaskbarPage_BackgroundDefault.Content" xml:space="preserve">
     <value>Default</value>
@@ -88,25 +82,16 @@
     <value>Custom taskbar thickness</value>
   </data>
   <data name="TaskbarPage_BarThicknessCard.Description" xml:space="preserve">
-    <value>Makes the taskbar thinner or thicker, on any edge of the screen. Maximized windows stay against it. The first time, for each version of Windows, this downloads Microsoft's public symbols.</value>
+    <value>The first time, for each version of Windows, this downloads Microsoft's public symbols.</value>
   </data>
   <data name="TaskbarPage_BarThicknessValueCard.Header" xml:space="preserve">
     <value>Thickness</value>
   </data>
-  <data name="TaskbarPage_BarThicknessValueCard.Description" xml:space="preserve">
-    <value>The taskbar's width on a side of the screen, or its height at the bottom.</value>
-  </data>
   <data name="TaskbarPage_CompactTaskButtonsCard.Header" xml:space="preserve">
     <value>Compact app buttons</value>
   </data>
-  <data name="TaskbarPage_CompactTaskButtonsCard.Description" xml:space="preserve">
-    <value>Brings the app buttons, Start and Task view closer together. Applies to a vertical taskbar only.</value>
-  </data>
   <data name="TaskbarPage_TaskButtonPitchCard.Header" xml:space="preserve">
     <value>Button height</value>
-  </data>
-  <data name="TaskbarPage_TaskButtonPitchCard.Description" xml:space="preserve">
-    <value>The room each app button, Start and Task view take on the taskbar.</value>
   </data>
   <data name="TaskbarPage_CompactClockCard.Header" xml:space="preserve">
     <value>Compact clock</value>
@@ -118,31 +103,19 @@
     <value>Larger thumbnails</value>
   </data>
   <data name="TaskbarPage_LargerThumbnailsCard.Description" xml:space="preserve">
-    <value>Enlarges the window previews that appear when you point at an app on the taskbar. Each preview keeps the shape of its window and grows until it reaches the largest width or the largest height below, whichever comes first. The first time, for each version of Windows, this downloads Microsoft's public symbols.</value>
+    <value>The first time, for each version of Windows, this downloads Microsoft's public symbols.</value>
   </data>
   <data name="TaskbarPage_ThumbnailMaxWidthCard.Header" xml:space="preserve">
     <value>Largest width</value>
   </data>
-  <data name="TaskbarPage_ThumbnailMaxWidthCard.Description" xml:space="preserve">
-    <value>Wide windows stop growing here.</value>
-  </data>
   <data name="TaskbarPage_ThumbnailMaxHeightCard.Header" xml:space="preserve">
     <value>Largest height</value>
-  </data>
-  <data name="TaskbarPage_ThumbnailMaxHeightCard.Description" xml:space="preserve">
-    <value>Tall windows, and most others, stop growing here.</value>
   </data>
   <data name="TaskbarPage_CompactTrayCard.Header" xml:space="preserve">
     <value>Compact tray</value>
   </data>
-  <data name="TaskbarPage_CompactTrayCard.Description" xml:space="preserve">
-    <value>Brings the tray icons and the quick settings icons closer together. Applies to a vertical taskbar only.</value>
-  </data>
   <data name="TaskbarPage_TrayIconPitchCard.Header" xml:space="preserve">
     <value>Icon spacing</value>
-  </data>
-  <data name="TaskbarPage_TrayIconPitchCard.Description" xml:space="preserve">
-    <value>The room each tray icon and quick settings icon takes on the taskbar.</value>
   </data>
   <data name="TaskbarPage_HorizontalBarNoEffect" xml:space="preserve">
     <value>Your taskbar is horizontal, so this has no effect.</value>
@@ -150,14 +123,8 @@
   <data name="TaskbarPage_StartMenuFullHeightCard.Header" xml:space="preserve">
     <value>Full-height Start menu</value>
   </data>
-  <data name="TaskbarPage_StartMenuFullHeightCard.Description" xml:space="preserve">
-    <value>Makes the Start menu as tall as the screen, with the same space above and below it.</value>
-  </data>
   <data name="TaskbarPage_StartMenuWidthCard.Header" xml:space="preserve">
     <value>Start menu width</value>
-  </data>
-  <data name="TaskbarPage_StartMenuWidthCard.Description" xml:space="preserve">
-    <value>Fill the screen stretches Start across the screen it opens on. A custom width never goes past the screen's edge.</value>
   </data>
   <data name="TaskbarPage_StartMenuWidthDefault.Content" xml:space="preserve">
     <value>Default</value>
@@ -171,14 +138,8 @@
   <data name="TaskbarPage_StartMenuCustomWidthCard.Header" xml:space="preserve">
     <value>Width</value>
   </data>
-  <data name="TaskbarPage_StartMenuCustomWidthCard.Description" xml:space="preserve">
-    <value>On a narrower screen, such as one turned upright, Start stops at its edge.</value>
-  </data>
   <data name="TaskbarPage_WindowsKeyShowsTaskbarCard.Header" xml:space="preserve">
     <value>Windows key shows the taskbar</value>
-  </data>
-  <data name="TaskbarPage_WindowsKeyShowsTaskbarCard.Description" xml:space="preserve">
-    <value>Pressing the Windows key on its own brings the taskbar forward instead of opening Start. Shortcuts such as Windows + E keep working.</value>
   </data>
   <data name="TaskbarPageStartSection.Title" xml:space="preserve">
     <value>Start menu</value>
@@ -202,7 +163,7 @@
     <value>Show all tray icons</value>
   </data>
   <data name="TaskbarPage_ShowAllTrayIconsCard.Description" xml:space="preserve">
-    <value>Keep every tray icon on the taskbar instead of the overflow flyout. While this is on, hiding an icon in Windows Settings has no effect.</value>
+    <value>While this is on, hiding an icon in Windows Settings has no effect.</value>
   </data>
   <data name="TaskbarPage_TrayFailedOn" xml:space="preserve">
     <value>Deckle could not keep every tray icon on the taskbar. New icons may still land in the overflow flyout.</value>
