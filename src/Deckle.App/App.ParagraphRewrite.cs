@@ -179,6 +179,7 @@ public partial class App
         _keyboardMouseHost.FocusChanged -= OnParagraphFocusChanged;
         _keyboardMouseHost.DrainRequested -= OnParagraphDrainRequested;
     }
+
     private void OnParagraphKey(KeyboardKeyEvent e)
     {
         if (e.IsInjected || _paragraphKeyDecoder is null || _paragraphDraft is null
@@ -399,6 +400,7 @@ public partial class App
         _paragraphCaretTextReader = null;
         Interlocked.Increment(ref _paragraphRecoveryRevision);
     }
+
     private readonly record struct ParagraphCaretRecovery(
         int Revision,
         bool Succeeded,

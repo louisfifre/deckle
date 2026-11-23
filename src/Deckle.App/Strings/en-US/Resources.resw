@@ -1690,4 +1690,5 @@
   </data>
   <data name="Settings_ParagraphRewrite_ProviderOff" xml:space="preserve">
     <value>It uses the Ollama provider, which is switched off or missing in Providers below. Switch it on; rewriting stays off until then.</value>
-  </data></root>
+  </data>
+</root>
