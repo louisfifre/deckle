@@ -53,7 +53,7 @@ public static class BackendInstallation
     // same way before it ships: the exe must import api-ms-win-crt-*, never
     // msvcrt.dll, and a serve must open an account on a fresh profile
     // (scripts/release/build-anytype-backend.ps1 stays as the fallback
-    // should a release regress).
+    // should a release regress). 0.5.4 passed that check on 2026-11-23.
     public static BackendBundle CurrentBundle { get; } = new(
         Version:     "0.5.4",
         Url:         "https://github.com/anyproto/anytype-cli/releases/download/v0.5.4/anytype-cli-v0.5.4-windows-amd64.zip",

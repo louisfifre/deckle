@@ -7,7 +7,8 @@ namespace Deckle.Anytype;
 internal static class SchemaPlanner
 {
     // The types a fresh space ships, by the keys it listed on 2026-11-11
-    // (desktop app 0.57.7, anytype-cli 0.5.2). One of them missing means it was
+    // (desktop app 0.57.7, anytype-cli 0.5.2), and the same on 2026-11-23 with
+    // anytype-cli 0.5.4. One of them missing means it was
     // deleted, and its key is not free again: a `task` created after the native
     // Task was deleted and the bin emptied came back as `task_2`.
     internal static readonly IReadOnlySet<string> NativeTypeKeys = new HashSet<string>(StringComparer.Ordinal)
