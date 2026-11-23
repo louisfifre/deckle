@@ -107,9 +107,7 @@
                         </controls:SettingsExpander>
 
                         <!-- A section is cards: the command sits in one, as Trackpad's
-                             Repair and General's Rerun setup do. The section caption
-                             already says what a scan adds, so the card has no
-                             description. -->
+                             Repair and General's Rerun setup do. -->
                         <controls:SettingsCard x:Uid="OrchestrationPage_ScanCard">
                             <StackPanel Orientation="Horizontal"
                                         Spacing="12">
