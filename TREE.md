@@ -401,6 +401,7 @@ _Generated from `git ls-files` — do not edit by hand._
 │   │   │   ├── example.space-plan.json
 │   │   │   ├── PlanApi.cs
 │   │   │   ├── PlanJson.cs
+│   │   │   ├── PlanLocalizer.cs
 │   │   │   ├── PlanViews.cs
 │   │   │   ├── PlanViewsDiff.cs
 │   │   │   ├── SpacePlan.cs
@@ -2596,6 +2597,7 @@ _Generated from `git ls-files` — do not edit by hand._
 │   │   ├── NameResolverTests.cs
 │   │   ├── OperationRecoveryBugNotes.md
 │   │   ├── PagedReadLogTests.cs
+│   │   ├── PlanLocalizerTests.cs
 │   │   ├── PmSchemaManifestTests.cs
 │   │   ├── PmSchemaTrialTests.cs
 │   │   ├── PmTermsTests.cs

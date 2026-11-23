@@ -28,11 +28,11 @@ public static class SpacePlanToolCatalog
                         Prop("space", "string", "Configured space alias, for example home or pm."),
                         ("plan", PlanProp()),
                     ],
-                    optional: [StagesProp()]),
+                    optional: [StagesProp(), TermsProp()]),
                 async (args, ct) =>
                 {
                     SpacePlanPreview preview = await plans.PreviewAsync(
-                        Str(args, "space"), Obj(args, "plan"), Stages(args), ct);
+                        Str(args, "space"), Plan(args), Stages(args), ct);
                     return new ToolOutput(preview.Rendered, PreviewContent(preview));
                 },
                 ToolExecutionContract.ReadOnly)
@@ -51,10 +51,10 @@ public static class SpacePlanToolCatalog
                         ("plan", PlanProp()),
                         Prop("confirm", "boolean", "Must be true; omit or false refuses the write."),
                     ],
-                    optional: [StagesProp()]),
+                    optional: [StagesProp(), TermsProp()]),
                 async (args, ct) =>
                     await plans.ApplyAsync(
-                        Str(args, "space"), Str(args, "preview_id"), Obj(args, "plan"), Stages(args), Bool(args, "confirm"), ct),
+                        Str(args, "space"), Str(args, "preview_id"), Plan(args), Stages(args), Bool(args, "confirm"), ct),
                 // A plan also rewrites views, templates and a type's property list to match
                 // itself, and deletes a type's default view: not the additive write that
                 // schema_apply's create-only manifest is.
@@ -154,11 +154,24 @@ public static class SpacePlanToolCatalog
             },
         });
 
+    private static (string, JsonObject) TermsProp() =>
+        ("terms", new JsonObject
+        {
+            ["type"] = "object",
+            ["description"] = "A terms file, to build the plan in its language: `types` {key: {name, plural}}, `properties` {key: name} and `options` {property: {option key: name}} name the schema by key, `texts` {English text: translation} the free text (a key `<text>|type:<key>` or `<text>|collection` wins in that context). A word it does not name stays as the plan writes it. The same terms must accompany the apply.",
+        });
+
+    // The plan as the space will hold it: in the terms' language when terms are given.
+    private static JsonObject Plan(JsonObject? args) =>
+        SpacePlanGestures.InLanguage(
+            Obj(args, "plan"),
+            args?["terms"] is JsonObject terms ? (JsonObject)terms.DeepClone() : null);
+
     private static JsonObject PlanProp() => new()
     {
         ["type"] = "object",
         ["description"] =
-            "A space plan: the schema manifest's `properties`, `types` (each may add `panel` {featured, hidden}, `display` {header: list|inline, width: 0 automatic to 1}, `default_template` and `views`) and `sections`, plus `templates`, `collections`, `queries`, `pages`, `widgets` and `objects`. Keys are snake_case ASCII; nothing holds an Anytype id; references are `type:<key>`, `object:<name>`, and `$self` for the object a view lives in (a filter value). A select option is its name.",
+            "A space plan: the schema manifest's `properties`, `types` (each may add `panel` {featured, hidden}, `display` {header: list|inline, width: 0 automatic to 1}, `default_template` and `views`) and `sections`, plus `templates`, `collections`, `queries`, `pages`, `widgets` and `objects`. Keys are snake_case ASCII; nothing holds an Anytype id; references are `type:<key>`, `object:<name>`, and `$self` for the object a view lives in (a filter value). A select option is its name, and may carry a `key`.",
     };
 
     // The same shape schema_preview returns (kind, key, name per action; conflicts;

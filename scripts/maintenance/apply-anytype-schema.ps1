@@ -44,6 +44,8 @@
 .EXAMPLE
     pwsh -NoProfile -File scripts/maintenance/apply-anytype-schema.ps1 -Space home-test -Plan D:\anytype\space-builder\plans\home.plan.json -Check
 .EXAMPLE
+    pwsh -NoProfile -File scripts/maintenance/apply-anytype-schema.ps1 -Space pm-next -Plan src/Deckle.Anytype/Plan/pm.space-plan.json -Terms src/Deckle.Anytype/Terms/pm.fr.json -Check
+.EXAMPLE
     pwsh -NoProfile -File scripts/maintenance/apply-anytype-schema.ps1 -Space pm -Manifest src/Deckle.Anytype/Schema/pm-schema-manifest.json
 .EXAMPLE
     pwsh -NoProfile -File scripts/maintenance/apply-anytype-schema.ps1 -Space home -ReadTo D:\anytype\space-builder\plans\home.plan.json -Pages 'Accueil'
@@ -68,6 +70,10 @@ param(
     # Path of a space plan, a JSON file: the manifest's grammar plus panels, views,
     # templates, collections, queries, pages, widgets and objects.
     [string]$Plan,
+    # With -Plan: a terms file that puts the plan's words in its language, for
+    # example src/Deckle.Anytype/Terms/pm.fr.json. Without it, the plan is built
+    # as written, in English.
+    [string]$Terms,
     # With -Plan: which parts a run covers. Default: schema and structure.
     [ValidateSet('schema', 'structure', 'objects', 'widgets', 'prune')]
     [string[]]$Stages = @('schema', 'structure'),
@@ -248,14 +254,18 @@ if ($ReadTo) {
 if ($Plan) {
     $planPath = (Resolve-Path -LiteralPath $Plan).Path
     $planObject = Get-Content -LiteralPath $planPath -Raw | ConvertFrom-Json -Depth 64
+    $termsObject = if ($Terms) { Get-Content -LiteralPath (Resolve-Path -LiteralPath $Terms).Path -Raw | ConvertFrom-Json -Depth 64 } else { $null }
 
     function Get-PlanPreview {
-        $answer = Invoke-SchemaTool 'space_plan_preview' @{ space = $Space; plan = $planObject; stages = @($Stages) }
+        $request = @{ space = $Space; plan = $planObject; stages = @($Stages) }
+        if ($termsObject) { $request.terms = $termsObject }
+        $answer = Invoke-SchemaTool 'space_plan_preview' $request
         if ($answer.IsError -or -not $answer.Structured) { Stop-With 1 "space_plan_preview failed:`n$($answer.Text)" }
         $answer.Structured
     }
 
-    Write-Step "Preview '$Space' against $(Split-Path $planPath -Leaf) ($($Stages -join ', '))"
+    $language = if ($termsObject) { " in '$($termsObject.language)'" } else { '' }
+    Write-Step "Preview '$Space' against $(Split-Path $planPath -Leaf)$language ($($Stages -join ', '))"
     $planPreview = Get-PlanPreview
     if (@($planPreview.problems).Count) {
         Write-Host 'The plan is invalid:' -ForegroundColor Red
@@ -282,9 +292,11 @@ if ($Plan) {
     if ($answer -notin 'yes', 'y', 'oui', 'o') { Stop-With 2 'Nothing was written.' }
 
     Write-Step 'Apply'
-    $applied = Invoke-SchemaTool 'space_plan_apply' @{
+    $applyRequest = @{
         space = $Space; preview_id = $planPreview.preview_id; plan = $planObject; stages = @($Stages); confirm = $true
     }
+    if ($termsObject) { $applyRequest.terms = $termsObject }
+    $applied = Invoke-SchemaTool 'space_plan_apply' $applyRequest
     Write-Host $applied.Text
     if ($applied.IsError) { Stop-With 1 'The apply stopped on an error; what it wrote before is listed above.' }
 
