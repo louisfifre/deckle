@@ -179,9 +179,10 @@ public sealed class TaskGestures(AnytypeApiClient api, NameResolver resolver, An
             return (null, null, $"Créneau : non posé, l'espace n'a pas encore de propriété « {DevSpace.Slot.Name} ».");
 
         string wanted = string.IsNullOrWhiteSpace(slot) ? DevSpace.Slot.Default : slot;
-        if (live.OptionName(wanted) is { } option) return (live.Key, option, null);
+        if (live.OptionName(wanted, DevSpace.Props.Slot) is { } option) return (live.Key, option, null);
         if (!string.IsNullOrWhiteSpace(slot)) throw live.Unknown(slot, nameof(slot));
-        return (null, null, $"Créneau : non posé, « {live.Name} » n'a pas d'option « {DevSpace.Slot.Default} ».");
+        string defaultName = PmTerms.Display.OptionName(DevSpace.Props.Slot, DevSpace.Slot.Default);
+        return (null, null, $"Créneau : non posé, « {live.Name} » n'a pas d'option « {defaultName} ».");
     }
 
     // One read of the new task (block ids and ETag), one atomic batch. If it

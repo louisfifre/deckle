@@ -66,6 +66,24 @@ public sealed record LiveSelect(string Key, string Name, IReadOnlyList<(string K
         return null;
     }
 
+    // The same, for a property the terms files name: the typed text may be the
+    // option's key or its name in any shipped language, and the space may name
+    // it in another one (an English name on a French space works).
+    public string? OptionName(string nameOrKey, string termsProperty)
+    {
+        if (OptionName(nameOrKey) is { } direct) return direct;
+
+        string? key = PmTerms.Display.OptionKeys
+            .Where(k => k.Property == termsProperty)
+            .Select(k => k.Option)
+            .FirstOrDefault(o => o == nameOrKey || PmTerms.IsOptionName(termsProperty, o, nameOrKey));
+        if (key is null) return null;
+
+        foreach (string candidate in PmTerms.OptionNames(termsProperty, key).Prepend(key))
+            if (OptionName(candidate) is { } name) return name;
+        return null;
+    }
+
     // The model-facing refusal of an unknown value, in the words of
     // DevSpace.ResolveTag so every select miss reads the same.
     public ArgumentException Unknown(string value, string argument) => new(

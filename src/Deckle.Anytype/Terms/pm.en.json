@@ -1,0 +1,77 @@
+{
+  "language": "en",
+  "types": {
+    "epic": { "name": "Epic", "plural": "Epics" },
+    "project": { "name": "Project", "plural": "Projects" },
+    "task": { "name": "Task", "plural": "Tasks" },
+    "report": { "name": "Report", "plural": "Reports" },
+    "idea": { "name": "Idea", "plural": "Ideas" },
+    "document": { "name": "Document", "plural": "Documents" },
+    "person": { "name": "Person", "plural": "People" },
+    "company": { "name": "Company", "plural": "Companies" }
+  },
+  "properties": {
+    "status": "State",
+    "priority": "Priority",
+    "done_definition": "Definition of done",
+    "due_date": "Target date",
+    "archive": "Archived",
+    "done": "Done",
+    "budget_estimated": "Estimated budget",
+    "budget_actual": "Actual budget",
+    "effort_estimated": "Estimated effort",
+    "effort_actual": "Actual effort",
+    "time_estimated": "Estimated time",
+    "time_actual": "Actual time",
+    "task_type": "Task type",
+    "slot": "Slot",
+    "files": "Linked file(s)",
+    "document_type": "Document type",
+    "document_global": "Featured",
+    "version": "Version",
+    "role": "Role",
+    "email": "Email",
+    "phone": "Phone",
+    "website": "Website",
+    "address": "Address",
+    "epic": "Linked epic(s)",
+    "depends_on": "Depends on",
+    "projects": "Linked project(s)",
+    "orchestrated_by": "Orchestrated by",
+    "tasks": "Linked task(s)",
+    "documents": "Linked document(s)",
+    "contacts": "Linked contact(s)",
+    "company": "Linked company(ies)"
+  },
+  "options": {
+    "status": { "ready": "Ready", "doing": "In progress", "paused": "Paused", "dormant": "Dormant" },
+    "priority": { "p_0": "0", "p_1": "1", "p_2": "2", "p_3": "3", "p_4": "4", "p_5": "5" },
+    "task_type": {
+      "orchestration": "Orchestrate",
+      "research": "Research",
+      "production": "Produce",
+      "organizing": "Organize",
+      "exchange": "Exchange",
+      "management": "Manage",
+      "monitoring": "Monitor"
+    },
+    "slot": { "cap": "Focus", "passion": "Passion", "training": "Practice" },
+    "document_type": {
+      "tip": "Tip",
+      "nomenclature": "Nomenclature",
+      "reference": "Reference",
+      "specification": "Specification",
+      "instructions": "Instructions",
+      "research_note": "Investigation",
+      "architecture": "Architecture",
+      "resume": "Handover"
+    },
+    "role": {
+      "administrative": "Administrative",
+      "decision": "Decision",
+      "finance": "Finances",
+      "product": "Product",
+      "technical": "Technical"
+    }
+  }
+}

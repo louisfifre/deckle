@@ -4,8 +4,8 @@ using System.Linq;
 
 namespace Deckle.Anytype;
 
-// A select / multi_select choice. Key travels on the wire; Name is the French
-// display label.
+// A select / multi_select choice. Key travels on the wire; Name is its name in
+// the display language (PmTerms).
 public readonly record struct TagOption(string Key, string Name);
 
 // One mapped property of a type. Format is one of:
@@ -20,7 +20,9 @@ public sealed record PropertyDef(string Key, string Label, string Format, TagOpt
 // surface applies to build the space; PmSchemaManifestTests fails when the two
 // drift (a key, a label, a format, an option or a property order).
 //
-// Keys are English, lowercase, words joined by `_`. Display names stay French.
+// Keys are English, lowercase, words joined by `_`. Names are not here: they
+// come from the terms files (Terms/pm.<language>.json, PmTerms), French for
+// display, and a typed name is accepted in any shipped language.
 // A property that belongs to one type carries the type as a prefix of its key
 // (task_type, document_type); a property several types use keeps one key
 // (documents, contacts, email).
@@ -132,13 +134,13 @@ public static class DevSpace
 
         public static readonly TagOption[] All =
         [
-            new(Ready, "Prêt"),
-            new(Doing, "En cours"),
-            new(Paused, "En pause"),
-            new(Dormant, "Dormant"),
+            Opt(Props.Status, Ready),
+            Opt(Props.Status, Doing),
+            Opt(Props.Status, Paused),
+            Opt(Props.Status, Dormant),
         ];
 
-        public static string? Resolve(string nameOrKey) => ResolveOption(All, nameOrKey);
+        public static string? Resolve(string nameOrKey) => ResolveOption(Props.Status, All, nameOrKey);
         public static string? NameFor(string? key) => NameOfOption(All, key);
     }
 
@@ -149,12 +151,12 @@ public static class DevSpace
     {
         public static readonly TagOption[] All =
         [
-            new("p_0", "0"),
-            new("p_1", "1"),
-            new("p_2", "2"),
-            new("p_3", "3"),
-            new("p_4", "4"),
-            new("p_5", "5"),
+            Opt(Props.Priority, "p_0"),
+            Opt(Props.Priority, "p_1"),
+            Opt(Props.Priority, "p_2"),
+            Opt(Props.Priority, "p_3"),
+            Opt(Props.Priority, "p_4"),
+            Opt(Props.Priority, "p_5"),
         ];
 
         // Out-of-range throws: a caller asking for a priority the space does not
@@ -179,7 +181,7 @@ public static class DevSpace
         // bare level digit (which also catches « 03 » / surrounding spaces).
         public static string? Resolve(string nameOrKey)
         {
-            string? direct = ResolveOption(All, nameOrKey);
+            string? direct = ResolveOption(Props.Priority, All, nameOrKey);
             if (direct is not null) return direct;
 
             if (int.TryParse(nameOrKey, out int level) && level >= 0 && level < All.Length)
@@ -213,16 +215,16 @@ public static class DevSpace
             // First: orchestration tasks are the most important ones. Their
             // done definition is that every task they orchestrate is ticked or
             // archived.
-            new(Orchestration, "Orchestrer"),
-            new("research", "Chercher"),
-            new("production", "Produire"),
-            new("organizing", "Organiser"),
-            new("exchange", "Échanger"),
-            new("management", "Gérer"),
-            new("monitoring", "Surveiller"),
+            Opt(Props.TaskType, Orchestration),
+            Opt(Props.TaskType, "research"),
+            Opt(Props.TaskType, "production"),
+            Opt(Props.TaskType, "organizing"),
+            Opt(Props.TaskType, "exchange"),
+            Opt(Props.TaskType, "management"),
+            Opt(Props.TaskType, "monitoring"),
         ];
 
-        public static string? Resolve(string nameOrKey) => ResolveOption(All, nameOrKey);
+        public static string? Resolve(string nameOrKey) => ResolveOption(Props.TaskType, All, nameOrKey);
         public static string? NameFor(string? key) => NameOfOption(All, key);
     }
 
@@ -233,17 +235,20 @@ public static class DevSpace
     public static class Slot
     {
         public static readonly string[] Keys = [Props.Slot];
-        public const string Name = "Créneau";
-        public const string Default = "Cap";
+        public static string Name => Label(Props.Slot);
+
+        // The option a task takes when none is asked, by key: the live space
+        // may name it in any language (PmTerms.OptionNames).
+        public const string Default = "cap";
 
         public static readonly TagOption[] All =
         [
-            new("cap", "Cap"),
-            new("passion", "Passion"),
-            new("training", "Entraînement"),
+            Opt(Props.Slot, "cap"),
+            Opt(Props.Slot, "passion"),
+            Opt(Props.Slot, "training"),
         ];
 
-        public static string? Resolve(string nameOrKey) => ResolveOption(All, nameOrKey);
+        public static string? Resolve(string nameOrKey) => ResolveOption(Props.Slot, All, nameOrKey);
         public static string? NameFor(string? key) => NameOfOption(All, key);
     }
 
@@ -252,20 +257,20 @@ public static class DevSpace
     {
         public static readonly TagOption[] All =
         [
-            new("tip", "Astuce"),
-            new("nomenclature", "Nomenclature"),
-            new("reference", "Référence"),
-            new("specification", "Spécification"),
-            new("instructions", "Instructions"),
+            Opt(Props.DocumentType, "tip"),
+            Opt(Props.DocumentType, "nomenclature"),
+            Opt(Props.DocumentType, "reference"),
+            Opt(Props.DocumentType, "specification"),
+            Opt(Props.DocumentType, "instructions"),
             // Not « research »: the server keeps option keys unique across the
             // whole space, and task_type already owns that one (measured on a
             // throwaway space, 2026-11-09).
-            new("research_note", "Recherche"),
-            new("architecture", "Architecture"),
-            new("resume", "Reprise"),
+            Opt(Props.DocumentType, "research_note"),
+            Opt(Props.DocumentType, "architecture"),
+            Opt(Props.DocumentType, "resume"),
         ];
 
-        public static string? Resolve(string nameOrKey) => ResolveOption(All, nameOrKey);
+        public static string? Resolve(string nameOrKey) => ResolveOption(Props.DocumentType, All, nameOrKey);
         public static string? NameFor(string? key) => NameOfOption(All, key);
     }
 
@@ -276,18 +281,18 @@ public static class DevSpace
     public static class Role
     {
         public static readonly string[] Keys = [Props.Role];
-        public const string Name = "Rôle";
+        public static string Name => Label(Props.Role);
 
         public static readonly TagOption[] All =
         [
-            new("administrative", "Administratif"),
-            new("decision", "Décision"),
-            new("finance", "Finances"),
-            new("product", "Produit"),
-            new("technical", "Technique"),
+            Opt(Props.Role, "administrative"),
+            Opt(Props.Role, "decision"),
+            Opt(Props.Role, "finance"),
+            Opt(Props.Role, "product"),
+            Opt(Props.Role, "technical"),
         ];
 
-        public static string? Resolve(string nameOrKey) => ResolveOption(All, nameOrKey);
+        public static string? Resolve(string nameOrKey) => ResolveOption(Props.Role, All, nameOrKey);
         public static string? NameFor(string? key) => NameOfOption(All, key);
     }
 
@@ -297,94 +302,94 @@ public static class DevSpace
     // and the order the views offer them.
     static readonly PropertyDef[] EpicProps =
     [
-        new(Props.Status, "État", "select", Status.All),
-        new(Props.Priority, "Priorité", "select", Priority.All),
-        new(Props.DoneDefinition, "Définition de fini", "text"),
-        new(Props.BudgetEstimated, "Budget estimé", "number"),
-        new(Props.BudgetActual, "Budget réel", "number"),
-        new(Props.EffortEstimated, "Charge estimée", "number"),
-        new(Props.EffortActual, "Charge réelle", "number"),
-        new(Props.Documents, "Documents", "objects"),
-        new(Props.Archive, "Archivé", "checkbox"),
+        new(Props.Status, Label(Props.Status), "select", Status.All),
+        new(Props.Priority, Label(Props.Priority), "select", Priority.All),
+        new(Props.DoneDefinition, Label(Props.DoneDefinition), "text"),
+        new(Props.BudgetEstimated, Label(Props.BudgetEstimated), "number"),
+        new(Props.BudgetActual, Label(Props.BudgetActual), "number"),
+        new(Props.EffortEstimated, Label(Props.EffortEstimated), "number"),
+        new(Props.EffortActual, Label(Props.EffortActual), "number"),
+        new(Props.Documents, Label(Props.Documents), "objects"),
+        new(Props.Archive, Label(Props.Archive), "checkbox"),
     ];
 
     static readonly PropertyDef[] ProjectProps =
     [
-        new(Props.Status, "État", "select", Status.All),
-        new(Props.Priority, "Priorité", "select", Priority.All),
-        new(Props.DoneDefinition, "Définition de fini", "text"),
-        new(Props.DueDate, "Date cible", "date"),
-        new(Props.BudgetEstimated, "Budget estimé", "number"),
-        new(Props.BudgetActual, "Budget réel", "number"),
-        new(Props.EffortEstimated, "Charge estimée", "number"),
-        new(Props.EffortActual, "Charge réelle", "number"),
-        new(Props.Epic, "Epic", "objects"),
-        new(Props.DependsOn, "Dépend de", "objects"),
-        new(Props.Documents, "Documents", "objects"),
-        new(Props.Contacts, "Contacts", "objects"),
-        new(Props.Archive, "Archivé", "checkbox"),
+        new(Props.Status, Label(Props.Status), "select", Status.All),
+        new(Props.Priority, Label(Props.Priority), "select", Priority.All),
+        new(Props.DoneDefinition, Label(Props.DoneDefinition), "text"),
+        new(Props.DueDate, Label(Props.DueDate), "date"),
+        new(Props.BudgetEstimated, Label(Props.BudgetEstimated), "number"),
+        new(Props.BudgetActual, Label(Props.BudgetActual), "number"),
+        new(Props.EffortEstimated, Label(Props.EffortEstimated), "number"),
+        new(Props.EffortActual, Label(Props.EffortActual), "number"),
+        new(Props.Epic, Label(Props.Epic), "objects"),
+        new(Props.DependsOn, Label(Props.DependsOn), "objects"),
+        new(Props.Documents, Label(Props.Documents), "objects"),
+        new(Props.Contacts, Label(Props.Contacts), "objects"),
+        new(Props.Archive, Label(Props.Archive), "checkbox"),
     ];
 
     static readonly PropertyDef[] TaskProps =
     [
         // Anytype refuses to rename its native `done` (403, measured 2026-11-11),
         // in the app as through the API: it keeps its English name.
-        new(Props.Done, "Done", "checkbox"),
-        new(Props.TaskType, "Type de tâche", "select", TaskType.All),
-        new(Props.Priority, "Priorité", "select", Priority.All),
-        new(Props.DueDate, "Date cible", "date"),
-        new(Props.Slot, "Créneau", "select", Slot.All),
-        new(Props.DoneDefinition, "Définition de fini", "text"),
-        new(Props.Projects, "Projets", "objects"),
-        new(Props.OrchestratedBy, "Orchestré par", "objects"),
-        new(Props.Documents, "Documents", "objects"),
-        new(Props.Contacts, "Contacts", "objects"),
-        new(Props.TimeEstimated, "Temps estimé", "number"),
-        new(Props.TimeActual, "Temps réel", "number"),
-        new(Props.Files, "Fichiers liés", "files"),
-        new(Props.Status, "État", "select", Status.All),
-        new(Props.Archive, "Archivé", "checkbox"),
+        new(Props.Done, Label(Props.Done), "checkbox"),
+        new(Props.TaskType, Label(Props.TaskType), "select", TaskType.All),
+        new(Props.Priority, Label(Props.Priority), "select", Priority.All),
+        new(Props.DueDate, Label(Props.DueDate), "date"),
+        new(Props.Slot, Label(Props.Slot), "select", Slot.All),
+        new(Props.DoneDefinition, Label(Props.DoneDefinition), "text"),
+        new(Props.Projects, Label(Props.Projects), "objects"),
+        new(Props.OrchestratedBy, Label(Props.OrchestratedBy), "objects"),
+        new(Props.Documents, Label(Props.Documents), "objects"),
+        new(Props.Contacts, Label(Props.Contacts), "objects"),
+        new(Props.TimeEstimated, Label(Props.TimeEstimated), "number"),
+        new(Props.TimeActual, Label(Props.TimeActual), "number"),
+        new(Props.Files, Label(Props.Files), "files"),
+        new(Props.Status, Label(Props.Status), "select", Status.All),
+        new(Props.Archive, Label(Props.Archive), "checkbox"),
     ];
 
     static readonly PropertyDef[] ReportProps =
     [
-        new(Props.Tasks, "Tâches", "objects"),
-        new(Props.Contacts, "Contacts", "objects"),
-        new(Props.Archive, "Archivé", "checkbox"),
+        new(Props.Tasks, Label(Props.Tasks), "objects"),
+        new(Props.Contacts, Label(Props.Contacts), "objects"),
+        new(Props.Archive, Label(Props.Archive), "checkbox"),
     ];
 
     static readonly PropertyDef[] IdeaProps =
     [
-        new(Props.Documents, "Documents", "objects"),
-        new(Props.Archive, "Archivé", "checkbox"),
+        new(Props.Documents, Label(Props.Documents), "objects"),
+        new(Props.Archive, Label(Props.Archive), "checkbox"),
     ];
 
     static readonly PropertyDef[] DocumentProps =
     [
-        new(Props.DocumentType, "Type de document", "select", DocumentType.All),
-        new(Props.DocumentGlobal, "Document global", "checkbox"),
-        new(Props.Version, "Version", "text"),
-        new(Props.Archive, "Archivé", "checkbox"),
+        new(Props.DocumentType, Label(Props.DocumentType), "select", DocumentType.All),
+        new(Props.DocumentGlobal, Label(Props.DocumentGlobal), "checkbox"),
+        new(Props.Version, Label(Props.Version), "text"),
+        new(Props.Archive, Label(Props.Archive), "checkbox"),
     ];
 
     static readonly PropertyDef[] PersonProps =
     [
-        new(Props.Company, "Entreprise", "objects"),
-        new(Props.Role, "Rôle", "select", Role.All),
-        new(Props.Email, "Courriel", "email"),
-        new(Props.Phone, "Téléphone", "phone"),
-        new(Props.Website, "Site web", "url"),
-        new(Props.Address, "Adresse", "text"),
-        new(Props.Archive, "Archivé", "checkbox"),
+        new(Props.Company, Label(Props.Company), "objects"),
+        new(Props.Role, Label(Props.Role), "select", Role.All),
+        new(Props.Email, Label(Props.Email), "email"),
+        new(Props.Phone, Label(Props.Phone), "phone"),
+        new(Props.Website, Label(Props.Website), "url"),
+        new(Props.Address, Label(Props.Address), "text"),
+        new(Props.Archive, Label(Props.Archive), "checkbox"),
     ];
 
     static readonly PropertyDef[] CompanyProps =
     [
-        new(Props.Email, "Courriel", "email"),
-        new(Props.Phone, "Téléphone", "phone"),
-        new(Props.Website, "Site web", "url"),
-        new(Props.Address, "Adresse", "text"),
-        new(Props.Archive, "Archivé", "checkbox"),
+        new(Props.Email, Label(Props.Email), "email"),
+        new(Props.Phone, Label(Props.Phone), "phone"),
+        new(Props.Website, Label(Props.Website), "url"),
+        new(Props.Address, Label(Props.Address), "text"),
+        new(Props.Archive, Label(Props.Archive), "checkbox"),
     ];
 
     static readonly PropertyDef[] NoProps = [];
@@ -414,7 +419,7 @@ public static class DevSpace
         foreach (PropertyDef def in PropertiesFor(typeKey))
         {
             if (string.Equals(def.Key, nameOrKey, StringComparison.Ordinal) ||
-                string.Equals(def.Label, nameOrKey, StringComparison.OrdinalIgnoreCase))
+                PmTerms.IsPropertyName(def.Key, nameOrKey))
             {
                 key = def.Key;
                 format = def.Format;
@@ -460,7 +465,7 @@ public static class DevSpace
                 $"« {propKey} » n'a pas de vocabulaire figé : ses options doivent être " +
                 "résolues sur l'espace, pas via DevSpace.ResolveTag.");
 
-        string? key = ResolveOption(options, nameOrKey);
+        string? key = ResolveOption(propKey, options, nameOrKey);
         if (key is not null) return key;
 
         string valid = string.Join(", ", options.Select(o => $"{o.Name} ({o.Key})"));
@@ -473,6 +478,11 @@ public static class DevSpace
         OptionsForProperty(propKey) is not null;
 
     // ── Internal derivation helpers ───────────────────────────────────────────
+
+    static string Label(string propKey) => PmTerms.Display.PropertyName(propKey);
+
+    static TagOption Opt(string propKey, string optionKey) =>
+        new(optionKey, PmTerms.Display.OptionName(propKey, optionKey));
 
     static IEnumerable<PropertyDef> AllProps()
     {
@@ -495,12 +505,12 @@ public static class DevSpace
         return null;
     }
 
-    static string? ResolveOption(TagOption[] options, string nameOrKey)
+    static string? ResolveOption(string propKey, TagOption[] options, string nameOrKey)
     {
         if (string.IsNullOrWhiteSpace(nameOrKey)) return null;
         foreach (TagOption option in options)
             if (string.Equals(option.Key, nameOrKey, StringComparison.Ordinal) ||
-                string.Equals(option.Name, nameOrKey, StringComparison.OrdinalIgnoreCase))
+                PmTerms.IsOptionName(propKey, option.Key, nameOrKey))
                 return option.Key;
         return null;
     }

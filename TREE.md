@@ -414,6 +414,11 @@ _Generated from `git ls-files` — do not edit by hand._
 │   │   │   ├── AnytypeSpaceAliases.cs
 │   │   │   ├── DevSpace.cs
 │   │   │   └── pm-schema-manifest.json
+│   │   ├── Terms/
+│   │   │   ├── pm.en.json
+│   │   │   ├── pm.fr.json
+│   │   │   ├── PmTerms.cs
+│   │   │   └── SpaceTerms.cs
 │   │   ├── Deckle.Anytype.csproj
 │   │   ├── DeckleAnytypeSource.cs
 │   │   └── GLOSSARY.md  — glossary-deckle-anytype Anytype integration vocabulary, Deckle.Anytype.Mcp included. It separates the b…
@@ -2593,6 +2598,7 @@ _Generated from `git ls-files` — do not edit by hand._
 │   │   ├── PagedReadLogTests.cs
 │   │   ├── PmSchemaManifestTests.cs
 │   │   ├── PmSchemaTrialTests.cs
+│   │   ├── PmTermsTests.cs
 │   │   ├── ProjectGesturesBugNotes.md
 │   │   ├── ProjectGesturesTests.cs
 │   │   ├── ProviderKeywordsBugNotes.md

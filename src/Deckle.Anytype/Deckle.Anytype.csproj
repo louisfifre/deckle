@@ -12,6 +12,9 @@
 
   <ItemGroup>
     <EmbeddedResource Include="Schema\pm-schema-manifest.json" WithCulture="false" />
+    <!-- The words of the project-management space, one file per language
+         (SpaceTerms): adding a translated file adds a language. -->
+    <EmbeddedResource Include="Terms\pm.*.json" WithCulture="false" />
   </ItemGroup>
 
   <ItemGroup>
