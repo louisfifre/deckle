@@ -128,9 +128,6 @@
   <data name="TrackpadPageHeader.Title" xml:space="preserve">
     <value>Trackpad</value>
   </data>
-  <data name="TrackpadPageHeader.Description" xml:space="preserve">
-    <value>Three-finger drag on any precision touchpad: move three fingers to pick something up, lift them to drop it.</value>
-  </data>
 
   <!-- Three-finger drag -->
   <data name="TrackpadPageDragSection.Title" xml:space="preserve">
@@ -142,20 +139,17 @@
   <data name="TrackpadPage_SpeedCard.Header" xml:space="preserve">
     <value>Drag speed</value>
   </data>
-  <data name="TrackpadPage_SpeedCard.Description" xml:space="preserve">
-    <value>How far the drag travels for the same finger movement.</value>
-  </data>
   <data name="TrackpadPage_PressDelayCard.Header" xml:space="preserve">
     <value>Pick-up delay</value>
   </data>
   <data name="TrackpadPage_PressDelayCard.Description" xml:space="preserve">
-    <value>How long the drag waits after three fingers land before it picks up, unless the cursor moves the pick-up distance first. A longer wait keeps four-finger gestures from clicking, but what you drag trails the cursor.</value>
+    <value>A longer wait keeps four-finger gestures from clicking, but what you drag trails the cursor.</value>
   </data>
   <data name="TrackpadPage_PressDistanceCard.Header" xml:space="preserve">
     <value>Pick-up distance</value>
   </data>
   <data name="TrackpadPage_PressDistanceCard.Description" xml:space="preserve">
-    <value>How far the cursor moves before the drag picks up without waiting out the delay. A shorter distance picks up sooner, but four-finger gestures may click.</value>
+    <value>A shorter distance picks up sooner, but four-finger gestures may click.</value>
   </data>
 
   <!-- Windows integration -->
@@ -165,17 +159,11 @@
   <data name="TrackpadPage_GesturesCard.Header" xml:space="preserve">
     <value>Windows three-finger gestures</value>
   </data>
-  <data name="TrackpadPage_GesturesCard.Description" xml:space="preserve">
-    <value>Turns them off so they can't fire during a drag. Your choices are backed up and come back as they were.</value>
-  </data>
   <data name="TrackpadPage_GesturesButton_Neutralize" xml:space="preserve">
     <value>Turn off gestures</value>
   </data>
   <data name="TrackpadPage_GesturesButton_Restore" xml:space="preserve">
     <value>Restore gestures</value>
-  </data>
-  <data name="TrackpadPage_GesturesButton_AlreadyOff" xml:space="preserve">
-    <value>Already off</value>
   </data>
 
   <data name="SettingsModuleNavLabel" xml:space="preserve">

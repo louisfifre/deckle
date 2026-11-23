@@ -1412,9 +1412,6 @@
   <data name="TrackpadPage_GesturesButton_Restore" xml:space="preserve">
     <value>Restore gestures</value>
   </data>
-  <data name="TrackpadPage_GesturesButton_AlreadyOff" xml:space="preserve">
-    <value>Already off</value>
-  </data>
 
   <!-- Second validation of an agent's move to the Anytype bin. The descriptor
        lives in AnytypeNotifications.cs; {0} is the object's name, {1} its type
