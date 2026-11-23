@@ -19,7 +19,7 @@ function Get-AnytypeProviderDirectory {
 
 # Deckle spawns the backend with no data path and no environment of its own
 # (BackendProcess.Spawn), so the CLI's defaults apply. anytype-cli
-# core/config/constants.go, identical in v0.5.0 and v0.5.2: the database lives
+# core/config/constants.go, identical in v0.5.0, v0.5.2 and v0.5.4: the database lives
 # in DATA_PATH when set, else %APPDATA%\anytype\data on Windows, and
 # %USERPROFILE%\.anytype holds config.json (the stored account) and the logs.
 # Anytype Desktop keeps its own accounts in the same %APPDATA%\anytype\data.
