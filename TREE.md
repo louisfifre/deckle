@@ -1226,11 +1226,14 @@ _Generated from `git ls-files` — do not edit by hand._
 │   │   ├── FoldersWindow.xaml
 │   │   └── FoldersWindow.xaml.cs
 │   ├── Deckle.Home/
+│   │   ├── Plan/
+│   │   │   └── home.space-plan.json
 │   │   ├── Schema/
 │   │   │   ├── README.md
 │   │   │   ├── schema-annotations.json
 │   │   │   └── schema-manifest.json
 │   │   ├── Terms/
+│   │   │   ├── terms.en.json
 │   │   │   └── terms.fr.json
 │   │   ├── Deckle.Home.csproj
 │   │   ├── DeckleHomeSource.cs
