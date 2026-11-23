@@ -267,9 +267,6 @@
   <data name="HomePageHeader.Title" xml:space="preserve">
     <value>Home</value>
   </data>
-  <data name="HomePageHeader.Description" xml:space="preserve">
-    <value>An overview of Deckle will live here.</value>
-  </data>
   <!-- The module pages' nav labels (Recording, Transcription, Rewriting,
        Autocorrect, Ambient Light, Trackpad, Diagnostics) moved to each owning
        module's own .resw as SettingsModuleNavLabel — the shell builds those items
@@ -318,9 +315,6 @@
   <data name="HotkeysPageHeader.Title" xml:space="preserve">
     <value>Shortcuts</value>
   </data>
-  <data name="HotkeysPageHeader.Description" xml:space="preserve">
-    <value>One key combination per action, active in every app.</value>
-  </data>
   <data name="HotkeysPageDictationSection.Title" xml:space="preserve">
     <value>Dictation</value>
   </data>
@@ -333,44 +327,23 @@
   <data name="GeneralHotkeyRecordCard.Header" xml:space="preserve">
     <value>Start or stop dictation</value>
   </data>
-  <data name="GeneralHotkeyRecordCard.Description" xml:space="preserve">
-    <value>Press once to start recording, again to stop and transcribe.</value>
-  </data>
   <data name="GeneralHotkeyPrecisionScrollCard.Header" xml:space="preserve">
     <value>Turn Precision scrolling on or off</value>
-  </data>
-  <data name="GeneralHotkeyPrecisionScrollCard.Description" xml:space="preserve">
-    <value>Smooth, touchpad-like scrolling from the mouse wheel. Same switch as in the tray menu.</value>
   </data>
   <data name="GeneralHotkeyTrackpadCard.Header" xml:space="preserve">
     <value>Turn Trackpad on or off</value>
   </data>
-  <data name="GeneralHotkeyTrackpadCard.Description" xml:space="preserve">
-    <value>Three-finger drag on the precision touchpad. Same switch as in the tray menu.</value>
-  </data>
   <data name="GeneralHotkeyTaskbarCoverCard.Header" xml:space="preserve">
     <value>Turn Taskbar cover on or off</value>
-  </data>
-  <data name="GeneralHotkeyTaskbarCoverCard.Description" xml:space="preserve">
-    <value>Hides the taskbar behind a black band until the mouse comes near. Same switch as in the tray menu.</value>
   </data>
   <data name="GeneralHotkeyAutocorrectCard.Header" xml:space="preserve">
     <value>Turn Autocorrect on or off</value>
   </data>
-  <data name="GeneralHotkeyAutocorrectCard.Description" xml:space="preserve">
-    <value>Corrects what you type, as you type. Same switch as in the tray menu.</value>
-  </data>
   <data name="GeneralHotkeyRewriteCard.Header" xml:space="preserve">
     <value>Turn Rewriting on or off</value>
   </data>
-  <data name="GeneralHotkeyRewriteCard.Description" xml:space="preserve">
-    <value>Turns the rewriting of your dictations on or off. Same switch as in the tray menu.</value>
-  </data>
   <data name="GeneralHotkeyAmbientLightCard.Header" xml:space="preserve">
     <value>Turn Ambient Light on or off</value>
-  </data>
-  <data name="GeneralHotkeyAmbientLightCard.Description" xml:space="preserve">
-    <value>Your Hue lights follow what&apos;s on screen. Same switch as in the tray menu.</value>
   </data>
   <!-- Advisory under a hotkey card whose chord another action already holds.
        {0} is that action's card header. -->
@@ -381,9 +354,6 @@
        {0} is the profile's name. -->
   <data name="HotkeysPage_ProfileHotkey_Format" xml:space="preserve">
     <value>Dictate with {0}</value>
-  </data>
-  <data name="HotkeysPage_ProfileHotkey_Description" xml:space="preserve">
-    <value>Set in this profile, on the Rewriting page.</value>
   </data>
 
   <!-- ─── GeneralPage ────────────────────────────────────────────────
@@ -424,9 +394,6 @@
   <data name="GeneralAnimationsCard.Header" xml:space="preserve">
     <value>Animations</value>
   </data>
-  <data name="GeneralAnimationsCard.Description" xml:space="preserve">
-    <value>For the motion Deckle draws itself, such as the overlay outline. Reduced keeps every state visible, without motion.</value>
-  </data>
   <data name="GeneralAnimationsSystem.Content" xml:space="preserve">
     <value>Same as Windows</value>
   </data>
@@ -444,7 +411,7 @@
     <value>Start elevated</value>
   </data>
   <data name="GeneralStartElevatedCard.Description" xml:space="preserve">
-    <value>Starts Deckle as administrator so it also works over windows that run as administrator, after one approval.</value>
+    <value>Lets Deckle work over windows that run as administrator.</value>
   </data>
   <data name="GeneralPageUpdatesSection.Title" xml:space="preserve">
     <value>Updates</value>
@@ -453,13 +420,10 @@
     <value>Performance mode</value>
   </data>
   <data name="GeneralPerformanceModeCard.Description" xml:space="preserve">
-    <value>For low-power PCs. Deckle does its background work at a lower rate, such as capturing the screen for Ambient lighting less often, so the lights follow the screen a little less closely.</value>
+    <value>Lowers the rate of background work, such as the screen capture for Ambient lighting.</value>
   </data>
   <data name="GeneralUpdateAutoCheckCard.Header" xml:space="preserve">
     <value>Check for updates automatically</value>
-  </data>
-  <data name="GeneralUpdateAutoCheckCard.Description" xml:space="preserve">
-    <value>Deckle looks at launch, then once a day.</value>
   </data>
   <data name="GeneralVersionCard.Header" xml:space="preserve">
     <value>Version</value>
@@ -494,9 +458,6 @@
   <data name="GeneralBackupExpander.Header" xml:space="preserve">
     <value>Settings backup</value>
   </data>
-  <data name="GeneralBackupExpander.Description" xml:space="preserve">
-    <value>Point the location at a cloud-synced folder to carry your settings across machines.</value>
-  </data>
   <data name="GeneralBackupCreateButton.Content" xml:space="preserve">
     <value>Back up</value>
   </data>
@@ -526,9 +487,6 @@
        FolderLocationLine_* words. -->
   <data name="GeneralDataFolderCard.Header" xml:space="preserve">
     <value>Data folder</value>
-  </data>
-  <data name="GeneralDataFolderCard.Description" xml:space="preserve">
-    <value>Settings, telemetry and models.</value>
   </data>
   <data name="GeneralRerunSetupCard.Header" xml:space="preserve">
     <value>Setup wizard</value>
@@ -563,9 +521,6 @@
   <data name="GeneralPageHeader.Title" xml:space="preserve">
     <value>General</value>
   </data>
-  <data name="GeneralPageHeader.Description" xml:space="preserve">
-    <value>Theme, startup, performance, updates, backups, application data and developer tools.</value>
-  </data>
   <!-- ─── RecordingPage ───────────────────────────────────────────────
        Page extracted from GeneralPage in slice S3. Owns microphone
        device, overlay HUD. Card-level x:Uid keys
@@ -583,13 +538,13 @@
     <value>Developer mode</value>
   </data>
   <data name="GeneralDeveloperModeCard.Description" xml:space="preserve">
-    <value>Adds a developer menu to the tray icon's right click, with features still in preview and tools for reviewing Deckle.</value>
+    <value>Adds a developer menu to the tray icon.</value>
   </data>
   <data name="GeneralCaptureInterfaceCard.Header" xml:space="preserve">
     <value>Capture the interface</value>
   </data>
   <data name="GeneralCaptureInterfaceCard.Description" xml:space="preserve">
-    <value>Saves an image of each open Deckle window and of every settings page, with an index of what each image shows. This window goes through each page while it works.</value>
+    <value>Saves an image of each open window and settings page. This window goes through each page while it works.</value>
   </data>
   <data name="GeneralCaptureInterfaceButton.Content" xml:space="preserve">
     <value>Capture</value>
