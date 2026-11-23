@@ -288,19 +288,21 @@ public static class Setting
     // A fold with no master toggle. The section has no value, so it takes no
     // get/set/defaultValue: its children carry their own. GetValue and SetValue
     // only satisfy the descriptor's required members; nothing reads or writes them
-    // for a Section. visibleWhen gates the whole fold.
+    // for a Section. visibleWhen gates the whole fold. value is the text shown at
+    // the fold's trailing edge while it is closed.
     public static SettingDescriptor Section(
         string labelKey,
         IReadOnlyList<SettingDescriptor> children,
         string? glyph = null,
         bool isAdvanced = false,
-        Func<bool>? visibleWhen = null) => new()
+        Func<bool>? visibleWhen = null,
+        Func<string?>? value = null) => new()
         {
             Kind = SettingKind.Section,
             LabelKey = labelKey,
             Glyph = glyph,
             IsAdvanced = isAdvanced,
-            Args = new SectionArgs(children),
+            Args = new SectionArgs(children, value),
             GetValue = () => null,
             SetValue = _ => { },
             VisibleWhen = visibleWhen,

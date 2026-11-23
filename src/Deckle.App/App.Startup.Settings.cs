@@ -156,7 +156,7 @@ public partial class App
             // on its own so the search index resolves page coordinates per page.
             RegisterSettingsModule(Transcription.Views.TranscriptionSettingsModule.Describe(order: 100), Transcription.Views.SettingsSearch.Entries);
             RegisterSettingsModule(Transcription.Views.TranscriptionSettingsModule.DescribeLexicon(order: 105), Transcription.Views.SettingsSearch.LexiconEntries);
-            RegisterSettingsModule(Transcription.Views.TranscriptionSettingsModule.DescribeStreaming(order: 120), Transcription.Views.SettingsSearch.StreamingEntries);
+            RegisterSettingsModule(Transcription.Views.TranscriptionSettingsModule.DescribeStreaming(order: 110), Transcription.Views.SettingsSearch.StreamingEntries);
             ContributeDiagnostics(
                 Transcription.Views.TranscriptionTelemetryViewModel.Contribution(order: 100),
                 "Deckle.Transcription.Views",

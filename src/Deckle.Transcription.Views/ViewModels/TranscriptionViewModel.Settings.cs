@@ -94,7 +94,7 @@ public partial class TranscriptionViewModel
         Setting.Path("TranscriptionModelsDirCard",
             () => ModelsDirectory,
             value => ModelsDirectory = value,
-            new PathArgs(FolderPickerMode.Editable, DefaultPath: () => AppPaths.ModelsDirectory),
+            new PathArgs(FolderPickerMode.Editable, DefaultPath: () => AppPaths.ModelsDirectory, ShowValue: true),
             defaultValue: () => new TranscriptionSettings().ModelsDirectory),
     ];
 
@@ -273,7 +273,7 @@ public partial class TranscriptionViewModel
 
     // The plain-language reading of the envelope the curve eases. Its words
     // live in the module's .resw like every other string of the page; a
-    // missing entry falls back to the card's static description.
+    // missing entry shows no sentence.
     private string? CutCurveSentence()
     {
         string? format = Loc.GetFromOptional("Deckle.Transcription.Views", "TranscriptionCutCurveSentence_Format");

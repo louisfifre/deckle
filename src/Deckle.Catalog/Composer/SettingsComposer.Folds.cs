@@ -133,6 +133,9 @@ public sealed partial class SettingsComposer
 
         var defaultedChildren = new List<SettingDescriptor>();
 
+        TextBlock? valueText = args.Value is null ? null : BuildFoldValue();
+        if (valueText is not null) ShowFoldValue(valueText, args.Value!());
+
         foreach (SettingDescriptor child in args.Children)
         {
             if (child.Kind is SettingKind.Group or SettingKind.Section)
@@ -168,7 +171,15 @@ public sealed partial class SettingsComposer
             _resetActions.Add(ResetSection);
             reset.Click += (_, _) => ResetSection();
 
-            expander.Content = reset;
+            expander.Content = valueText is null
+                ? reset
+                : new StackPanel
+                {
+                    Orientation = Orientation.Horizontal,
+                    Spacing = 12,
+                    VerticalAlignment = VerticalAlignment.Center,
+                    Children = { valueText, reset },
+                };
 
             string tooltip = ResolveResetTooltip();
             updateSectionReset = () =>
@@ -178,12 +189,17 @@ public sealed partial class SettingsComposer
             };
         }
 
-        // No value to sync: the refresher only re-gates the reset and applies the
-        // section's own reactive state.
-        if (updateSectionReset is not null || s.EnabledWhen is not null || s.VisibleWhen is not null)
+        // Without a reset to carry it, the value stands alone in the content slot.
+        if (valueText is not null && defaultedChildren.Count == 0) expander.Content = valueText;
+
+        // No value to sync: the refresher re-gates the reset, refreshes the
+        // trailing value and applies the section's own reactive state.
+        if (updateSectionReset is not null || valueText is not null
+            || s.EnabledWhen is not null || s.VisibleWhen is not null)
         {
             _refreshers.Add(() =>
             {
+                if (valueText is not null) ShowFoldValue(valueText, args.Value!());
                 updateSectionReset?.Invoke();
                 ApplyReactiveState(expander, s);
             });

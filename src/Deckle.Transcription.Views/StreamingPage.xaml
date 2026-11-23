@@ -10,7 +10,7 @@
          pause strip the cut margin and the minimum speech). Everything shows
          whatever the switch says: it picks only the dictation pipeline, while
          files and recovered takes are always cut with these settings. The
-         silence and noise filtering closes the page: its fold applies to every
+         silence and noise filtering fold closes the section: it applies to every
          recording, whatever the switch says. Every card is composed from
          TranscriptionViewModel's manifests. -->
     <ScrollViewer Padding="32,24,32,24"
@@ -43,15 +43,15 @@
                              durations (TranscriptionViewModel.SegmentationSettings). -->
                         <StackPanel x:Name="SegmentationHost"
                                     Spacing="{StaticResource SettingsCardSpacing}" />
+
+                        <!-- The Silero trim, one fold with no master, collapsed: its
+                             switch, then its three parameters while it is on. It is
+                             the second detector of the cut and applies to every
+                             recording. Composed: SilenceGuardSettings. -->
+                        <StackPanel x:Name="SilenceGuardsHost"
+                                    Spacing="{StaticResource SettingsCardSpacing}" />
                     </StackPanel>
                 </catalog:SettingsSection>
-
-                <!-- ── Silence and noise filtering ─────────────────────────
-                     One fold with no master, collapsed: the Silero trim (its
-                     switch, then its three parameters while it is on).
-                     Composed: TranscriptionViewModel.SilenceGuardSettings. -->
-                <StackPanel x:Name="SilenceGuardsHost"
-                            Spacing="{StaticResource SettingsCardSpacing}" />
 
             </StackPanel>
         </Grid>

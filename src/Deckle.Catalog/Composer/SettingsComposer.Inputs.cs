@@ -41,6 +41,20 @@ public sealed partial class SettingsComposer
         if (icon is not null) expander.HeaderIcon = icon;
 
         expander.Items.Add(BuildPathLine(s, expander));
+
+        var args = (PathArgs)s.Args!;
+        if (args.ShowValue)
+        {
+            TextBlock valueText = BuildFoldValue();
+            string Shown()
+            {
+                string path = AsString(s.GetValue());
+                return path.Length > 0 ? path : args.DefaultPath?.Invoke() ?? string.Empty;
+            }
+            ShowFoldValue(valueText, Shown());
+            expander.Content = valueText;
+            _refreshers.Add(() => ShowFoldValue(valueText, Shown()));
+        }
         return expander;
     }
 

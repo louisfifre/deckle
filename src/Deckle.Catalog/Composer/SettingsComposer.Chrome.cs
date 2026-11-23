@@ -144,6 +144,27 @@ public sealed partial class SettingsComposer
     private static double AsDouble(object? value) => value is double d ? d : 0d;
     private static string AsString(object? value) => value as string ?? string.Empty;
 
+    // The current value at a fold's trailing edge, in the secondary text of
+    // Windows Settings' own right-hand values. Longer than the limit it is cut
+    // at its start, since the end of a path or a name is what tells it apart.
+    private const int FoldValueLimit = 44;
+
+    private static TextBlock BuildFoldValue() => new()
+    {
+        Style = Application.Current.Resources["BodyTextBlockStyle"] as Style,
+        Foreground = SecondaryBrush(),
+        VerticalAlignment = VerticalAlignment.Center,
+        TextWrapping = TextWrapping.NoWrap,
+        IsTextSelectionEnabled = false,
+    };
+
+    private static void ShowFoldValue(TextBlock block, string? text)
+    {
+        text ??= string.Empty;
+        block.Text = text.Length <= FoldValueLimit ? text : "…" + text[^(FoldValueLimit - 1)..];
+        block.Visibility = text.Length == 0 ? Visibility.Collapsed : Visibility.Visible;
+    }
+
     // TextFillColorSecondaryBrush is a framework theme key that lives at the
     // application root, so this root lookup is the exception to the BuildIcon note.
     private static Microsoft.UI.Xaml.Media.Brush? SecondaryBrush()

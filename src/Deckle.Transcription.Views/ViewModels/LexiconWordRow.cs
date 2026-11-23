@@ -1,5 +1,7 @@
 using System;
+using System.Globalization;
 using CommunityToolkit.Mvvm.Input;
+using Deckle.Localization;
 
 namespace Deckle.Transcription.Views;
 
@@ -11,10 +13,16 @@ public sealed partial class LexiconWordRow
 
     public string Word { get; }
 
+    // What assistive technology announces on the remove button: the word it
+    // removes, since every row's button looks the same.
+    public string RemoveAutomationName { get; }
+
     public LexiconWordRow(string word, Action<LexiconWordRow> onRemoved)
     {
         Word = word;
         _onRemoved = onRemoved;
+        string? format = Loc.GetFromOptional("Deckle.Transcription.Views", "LexiconRemoveButton_Format");
+        RemoveAutomationName = format is null ? word : string.Format(CultureInfo.CurrentCulture, format, word);
     }
 
     [RelayCommand]
