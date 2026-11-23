@@ -229,7 +229,7 @@ public static class HomeSchema
 
     internal static JsonObject CreateRequiredSchemaManifest()
     {
-        HomeTerms terms = HomeTerms.Current;
+        SpaceTerms terms = HomeTerms.Current;
         var properties = new JsonArray();
         foreach ((string key, string format) in RequiredProperties)
         {
