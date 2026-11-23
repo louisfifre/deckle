@@ -94,12 +94,15 @@ public sealed partial class TrackpadPage : Page
     // backup. Gestures active → offer to turn them off. Gestures off with a
     // Deckle backup → offer to restore that backup. Gestures off with no
     // backup (the user turned them off themselves, in Windows Settings) →
-    // nothing Deckle can restore ; the button reports the state, disabled.
+    // nothing Deckle can restore and nothing to offer, so the whole section is
+    // hidden rather than showing a disabled button that only states a fact.
     // The control's state is owned by a service rather than by settings.
     private void RefreshGesturesLabel()
     {
         bool neutralized = SafeAreNeutralized();
         bool hasBackup   = SafeHasBackup();
+
+        WindowsSection.Visibility = neutralized && !hasBackup ? Visibility.Collapsed : Visibility.Visible;
 
         if (!neutralized)
         {
@@ -110,11 +113,6 @@ public sealed partial class TrackpadPage : Page
         {
             GesturesButtonLabel.Text = Loc.Get("TrackpadPage_GesturesButton_Restore");
             GesturesButton.IsEnabled = true;
-        }
-        else
-        {
-            GesturesButtonLabel.Text = Loc.Get("TrackpadPage_GesturesButton_AlreadyOff");
-            GesturesButton.IsEnabled = false;
         }
     }
 

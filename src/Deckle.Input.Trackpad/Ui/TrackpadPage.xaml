@@ -41,7 +41,8 @@
                 <!-- ── Windows integration ──────────────────────────────────── -->
                 <!-- Hand-authored: imperative commands with their own success
                      reporting, not settable values the composer can drive. -->
-                <catalog:SettingsSection x:Uid="TrackpadPageWindowsSection">
+                <catalog:SettingsSection x:Name="WindowsSection"
+                                         x:Uid="TrackpadPageWindowsSection">
                     <StackPanel Spacing="{StaticResource SettingsCardSpacing}">
 
                         <controls:SettingsCard x:Uid="TrackpadPage_GesturesCard"
