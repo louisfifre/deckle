@@ -171,6 +171,7 @@
                                               Width="20"
                                               Height="20"
                                               IsActive="False"
+                                              x:Uid="GeneralCaptureInterfaceRing"
                                               Visibility="Collapsed" />
                                 <Button x:Name="CaptureInterfaceButton"
                                         x:Uid="GeneralCaptureInterfaceButton"

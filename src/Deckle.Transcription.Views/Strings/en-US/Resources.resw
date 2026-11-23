@@ -354,14 +354,11 @@
   <data name="GeneralCorpusExpander.Header" xml:space="preserve">
     <value>Keep my dictations</value>
   </data>
-  <data name="GeneralCorpusExpander.Description" xml:space="preserve">
-    <value>The text of each dictation, raw and rewritten.</value>
-  </data>
   <data name="GeneralAudioCorpusCard.Header" xml:space="preserve">
     <value>Also save the audio</value>
   </data>
   <data name="GeneralAudioCorpusCard.Description" xml:space="preserve">
-    <value>A 16 kHz mono WAV per recording, about 2 MB per minute.</value>
+    <value>About 2 MB per minute.</value>
   </data>
 
   <!-- ─── TranscriptionPage ────────────────────────────────────────────────
@@ -629,14 +626,11 @@
   <data name="GeneralAudioCorpusContentCard.Header" xml:space="preserve">
     <value>Recorded audio</value>
   </data>
-  <data name="GeneralAudioCorpusContentCard.Description" xml:space="preserve">
-    <value>Match the transcription saves what the engine heard, Always raw saves the untouched microphone signal.</value>
-  </data>
   <data name="GeneralAudioCorpusContentMatch.Content" xml:space="preserve">
     <value>Match the transcription</value>
   </data>
   <data name="GeneralAudioCorpusContentRaw.Content" xml:space="preserve">
-    <value>Always raw</value>
+    <value>Untouched microphone</value>
   </data>
 
   <data name="SettingsModuleNavLabel" xml:space="preserve">

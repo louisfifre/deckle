@@ -67,9 +67,6 @@
   <data name="DiagnosticsPageHeader.Title" xml:space="preserve">
     <value>Diagnostics</value>
   </data>
-  <data name="DiagnosticsPageHeader.Description" xml:space="preserve">
-    <value>What Deckle keeps about itself and about what you say or type, on this device only.</value>
-  </data>
 
   <!-- Logs section (x:Uid header + composed card label keys,
        DiagnosticsViewModel.LogsSettings). Detailed logs is one fold: its
@@ -82,13 +79,10 @@
     <value>Detailed logs</value>
   </data>
   <data name="LoggingDetailedCard.Description" xml:space="preserve">
-    <value>Step-by-step detail to investigate a problem. Turn it on before the problem comes back.</value>
+    <value>Turn it on before a problem comes back.</value>
   </data>
   <data name="LoggingAmbientCard.Header" xml:space="preserve">
     <value>Ambient lighting</value>
-  </data>
-  <data name="LoggingAmbientCard.Description" xml:space="preserve">
-    <value>Each light push, its colours and the frame analysis.</value>
   </data>
   <data name="LoggingTranscriptionCard.Header" xml:space="preserve">
     <value>Dictation</value>
@@ -99,9 +93,6 @@
   <data name="LoggingLlmCard.Header" xml:space="preserve">
     <value>Language model calls</value>
   </data>
-  <data name="LoggingLlmCard.Description" xml:space="preserve">
-    <value>Tokens and time of each call, local or online.</value>
-  </data>
   <data name="LoggingAutocorrectCard.Header" xml:space="preserve">
     <value>Autocorrect</value>
   </data>
@@ -111,14 +102,8 @@
   <data name="LoggingInputCard.Header" xml:space="preserve">
     <value>Touchpad gestures</value>
   </data>
-  <data name="LoggingInputCard.Description" xml:space="preserve">
-    <value>Each gesture recognised on the touchpad.</value>
-  </data>
   <data name="LoggingWindowingCard.Header" xml:space="preserve">
-    <value>Windows</value>
-  </data>
-  <data name="LoggingWindowingCard.Description" xml:space="preserve">
-    <value>Placement, scaling and stacking of Deckle's windows.</value>
+    <value>Window management</value>
   </data>
 
   <!-- The trace (diagnostics\trace.jsonl, GLOSSARY.md). Its retention is
@@ -126,9 +111,6 @@
        disk"; the keys keep their AppLog name. -->
   <data name="GeneralAppLogCard.Header" xml:space="preserve">
     <value>Keep logs on disk</value>
-  </data>
-  <data name="GeneralAppLogCard.Description" xml:space="preserve">
-    <value>A copy of the log that survives restarts, to follow a problem over time.</value>
   </data>
 
   <!-- Corpus section (x:Uid header). Its folds come from the modules that own
@@ -152,14 +134,8 @@
   <data name="GeneralStorageFolderCard.Header" xml:space="preserve">
     <value>Dictation audio folder</value>
   </data>
-  <data name="GeneralStorageFolderCard.Description" xml:space="preserve">
-    <value>Where the saved audio of your dictations goes.</value>
-  </data>
   <data name="DiagnosticsFilesCard.Header" xml:space="preserve">
     <value>Diagnostics folder</value>
-  </data>
-  <data name="DiagnosticsFilesCard.Description" xml:space="preserve">
-    <value>Logs and crash reports. Open it when you report a problem.</value>
   </data>
   <!-- Shared log filter bar. The live Log Window and the trace.jsonl settings
        instantiate the same control with independent filter selections. -->

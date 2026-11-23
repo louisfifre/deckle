@@ -101,7 +101,6 @@ public sealed partial class HotkeysPage : Page
             ProfileHotkeysHost.Children.Add(new SettingsCard
             {
                 Header = GeneralViewModel.ProfileHotkeyHeader(hotkey.ProfileName),
-                Description = Loc.GetFrom("Deckle.Settings", "HotkeysPage_ProfileHotkey_Description"),
                 Content = new TextBlock
                 {
                     Text = HotkeyChordText.Format(hotkey.Chord) ?? "",
