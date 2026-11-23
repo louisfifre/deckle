@@ -195,7 +195,7 @@
     <value>Enable audio corpus</value>
   </data>
   <data name="AudioCorpusConsent_Body_Intro" xml:space="preserve">
-    <value>Deckle will save the raw microphone audio of every transcription as a 16 kHz mono WAV file, next to the JSONL text corpus under an audio/ subfolder per profile. Useful for replaying a past session against a different speech model.</value>
+    <value>Deckle will save the raw microphone audio of every transcription as a 16 kHz mono WAV file, under an audio/ subfolder per profile. Useful for replaying a past session against a different speech model.</value>
   </data>
   <data name="AudioCorpusConsent_Body_What" xml:space="preserve">
     <value>The exact audio passed to the speech model, including any silence and background noise picked up by the microphone. One WAV per transcription. Nothing is sent over the network.</value>
