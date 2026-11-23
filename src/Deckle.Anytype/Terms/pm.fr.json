@@ -1,14 +1,38 @@
 {
   "language": "fr",
   "types": {
-    "epic": { "name": "Epic", "plural": "Epics" },
-    "project": { "name": "Projet", "plural": "Projets" },
-    "task": { "name": "Tâche", "plural": "Tâches" },
-    "report": { "name": "Rapport", "plural": "Rapports" },
-    "idea": { "name": "Idée", "plural": "Idées" },
-    "document": { "name": "Document", "plural": "Documents" },
-    "person": { "name": "Personne", "plural": "Personnes" },
-    "company": { "name": "Entreprise", "plural": "Entreprises" }
+    "epic": {
+      "name": "Epic",
+      "plural": "Epics"
+    },
+    "project": {
+      "name": "Projet",
+      "plural": "Projets"
+    },
+    "task": {
+      "name": "Tâche",
+      "plural": "Tâches"
+    },
+    "report": {
+      "name": "Rapport",
+      "plural": "Rapports"
+    },
+    "idea": {
+      "name": "Idée",
+      "plural": "Idées"
+    },
+    "document": {
+      "name": "Document",
+      "plural": "Documents"
+    },
+    "person": {
+      "name": "Personne",
+      "plural": "Personnes"
+    },
+    "company": {
+      "name": "Entreprise",
+      "plural": "Entreprises"
+    }
   },
   "properties": {
     "status": "État",
@@ -25,27 +49,39 @@
     "time_actual": "Temps réel",
     "task_type": "Type de tâche",
     "slot": "Créneau",
-    "files": "Fichiers liés",
+    "files": "Fichier(s) lié(s)",
     "document_type": "Type de document",
-    "document_global": "Document global",
+    "document_global": "Mis en avant",
     "version": "Version",
     "role": "Rôle",
     "email": "Courriel",
     "phone": "Téléphone",
     "website": "Site web",
     "address": "Adresse",
-    "epic": "Epic",
+    "epic": "Epic(s) lié(s)",
     "depends_on": "Dépend de",
-    "projects": "Projets",
+    "projects": "Projet(s) lié(s)",
     "orchestrated_by": "Orchestré par",
-    "tasks": "Tâches",
-    "documents": "Documents",
-    "contacts": "Contacts",
-    "company": "Entreprise"
+    "tasks": "Tâche(s) liée(s)",
+    "documents": "Document(s) lié(s)",
+    "contacts": "Contact(s) lié(s)",
+    "company": "Entreprise(s) liée(s)"
   },
   "options": {
-    "status": { "ready": "Prêt", "doing": "En cours", "paused": "En pause", "dormant": "Dormant" },
-    "priority": { "p_0": "0", "p_1": "1", "p_2": "2", "p_3": "3", "p_4": "4", "p_5": "5" },
+    "status": {
+      "ready": "Prêt",
+      "doing": "En cours",
+      "paused": "En pause",
+      "dormant": "Dormant"
+    },
+    "priority": {
+      "p_0": "0",
+      "p_1": "1",
+      "p_2": "2",
+      "p_3": "3",
+      "p_4": "4",
+      "p_5": "5"
+    },
     "task_type": {
       "orchestration": "Orchestrer",
       "research": "Chercher",
@@ -55,7 +91,11 @@
       "management": "Gérer",
       "monitoring": "Surveiller"
     },
-    "slot": { "cap": "Cap", "passion": "Passion", "training": "Entraînement" },
+    "slot": {
+      "cap": "Cap",
+      "passion": "Passion",
+      "training": "Entraînement"
+    },
     "document_type": {
       "tip": "Astuce",
       "nomenclature": "Nomenclature",
@@ -64,7 +104,10 @@
       "instructions": "Instructions",
       "research_note": "Recherche",
       "architecture": "Architecture",
-      "resume": "Reprise"
+      "resume": "Reprise",
+      "proposal": "Proposition",
+      "minutes": "Compte rendu",
+      "procedure": "Procédure"
     },
     "role": {
       "administrative": "Administratif",
@@ -73,5 +116,38 @@
       "product": "Produit",
       "technical": "Technique"
     }
+  },
+  "texts": {
+    "A broad, lasting subject we work in.": "Un sujet large et durable dans lequel on travaille.",
+    "A company we work with.": "Une entreprise avec laquelle on travaille.",
+    "A person we work with.": "Une personne avec qui on travaille.",
+    "All": "Tous",
+    "All|collection": "All",
+    "All|type:company": "Toutes",
+    "All|type:idea": "Toutes",
+    "An executable unit that moves a subject forward and is quickly ticked off.": "Une unité exécutable qui fait avancer un sujet et se coche vite.",
+    "Archived": "Archivés",
+    "Calendar": "Calendrier",
+    "Contacts": "Acteurs",
+    "Default company": "Entreprise par défaut",
+    "Default epic": "Epic par défaut",
+    "Default person": "Personne par défaut",
+    "Default project": "Projet par défaut",
+    "Default task": "Tâche par défaut",
+    "Details": "Détails",
+    "Documentation: instructions, references, investigations, specifications.": "La documentation : instructions, références, recherches, spécifications.",
+    "Done": "Fait",
+    "In progress": "En cours",
+    "Investigations": "Recherches",
+    "Lasting grouping of projects: one large application, one activity.": "Regroupement durable de projets : une grande application, une activité.",
+    "Projects in progress": "Projets en cours",
+    "Recent": "Récents",
+    "References": "Références",
+    "Start page": "Accueil",
+    "Subtasks": "Sous-tâches",
+    "Task type": "Type de tâche",
+    "The journal of a work session.": "Le journal d'une séance de travail.",
+    "Things said in passing, to sort later.": "Ce qui est dit en passant, à trier plus tard.",
+    "To do": "À faire"
   }
 }

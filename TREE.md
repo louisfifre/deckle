@@ -404,6 +404,7 @@ _Generated from `git ls-files` — do not edit by hand._
 │   │   │   ├── PlanLocalizer.cs
 │   │   │   ├── PlanViews.cs
 │   │   │   ├── PlanViewsDiff.cs
+│   │   │   ├── pm.space-plan.json
 │   │   │   ├── SpacePlan.cs
 │   │   │   ├── SpacePlanExecutor.cs
 │   │   │   ├── SpacePlanFragments.cs

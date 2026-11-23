@@ -14,6 +14,7 @@ public sealed class PlanLocalizerTests
 {
     public static TheoryData<string, string> Experiences => new()
     {
+        { "src/Deckle.Anytype/Plan/pm.space-plan.json", "src/Deckle.Anytype/Terms/pm" },
     };
 
     [Theory]
