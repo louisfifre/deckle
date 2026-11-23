@@ -99,16 +99,17 @@
   <data name="OrchestrationPage_ElevationAdvisoryAction.Content" xml:space="preserve">
     <value>Turn on Start elevated</value>
   </data>
-  <data name="OrchestrationPage_Empty.Text" xml:space="preserve">
-    <value>Your list is empty.</value>
-  </data>
   <data name="OrchestrationPage_RemoveButton.ToolTipService.ToolTip" xml:space="preserve">
     <value>Remove from list</value>
   </data>
-  <data name="OrchestrationPage_RemoveButton.AutomationProperties.Name" xml:space="preserve">
-    <value>Remove from list</value>
+  <data name="OrchestrationPage_RemoveButton_NameFormat" xml:space="preserve">
+    <value>Remove {0} from list</value>
+    <comment>{0} the app or game's name. The accessible name of the icon-only remove button on its row.</comment>
   </data>
   <data name="OrchestrationPage_KindCard.Header" xml:space="preserve">
+    <value>Type</value>
+  </data>
+  <data name="OrchestrationPage_KindCombo.AutomationProperties.Name" xml:space="preserve">
     <value>Type</value>
   </data>
   <data name="OrchestrationPage_KindApp.Content" xml:space="preserve">
@@ -125,6 +126,10 @@
   </data>
   <data name="OrchestrationPage_MonitorHdrCard.Description" xml:space="preserve">
     <value>HDR while this app runs.</value>
+  </data>
+  <data name="OrchestrationPage_MonitorHdr_NameFormat" xml:space="preserve">
+    <value>HDR while this app runs, {0}</value>
+    <comment>{0} the monitor's name. The accessible name of the HDR rule combo on that monitor's card.</comment>
   </data>
   <data name="OrchestrationPage_HdrLeave.Content" xml:space="preserve">
     <value>Leave as is</value>
@@ -148,7 +153,7 @@
     <value>Other folders to scan</value>
   </data>
   <data name="OrchestrationPage_FoldersExpander.Description" xml:space="preserve">
-    <value>Each subfolder that holds a game is added as a game. Apps directly inside the folder are added as apps.</value>
+    <value>Subfolders are added as games; apps directly inside the folder as apps.</value>
   </data>
   <data name="OrchestrationPage_AddFolderButton.Content" xml:space="preserve">
     <value>Add folder…</value>
@@ -156,8 +161,9 @@
   <data name="OrchestrationPage_RemoveFolderButton.ToolTipService.ToolTip" xml:space="preserve">
     <value>Remove</value>
   </data>
-  <data name="OrchestrationPage_RemoveFolderButton.AutomationProperties.Name" xml:space="preserve">
-    <value>Remove folder</value>
+  <data name="OrchestrationPage_RemoveFolderButton_NameFormat" xml:space="preserve">
+    <value>Remove {0}</value>
+    <comment>{0} the folder path. The accessible name of the icon-only remove button on its row.</comment>
   </data>
   <data name="RunningProcessDialog.Title" xml:space="preserve">
     <value>Choose a running app</value>

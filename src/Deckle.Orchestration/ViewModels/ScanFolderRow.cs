@@ -10,6 +10,10 @@ public sealed partial class ScanFolderRow
 
     public string Path { get; }
 
+    // The icon-only remove button's accessible name, told apart by its folder.
+    public string RemoveName => OrchestrationText.Format(
+        "OrchestrationPage_RemoveFolderButton_NameFormat", Path);
+
     public ScanFolderRow(string path, Action<ScanFolderRow> onRemoved)
     {
         Path = path;

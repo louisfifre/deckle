@@ -8,7 +8,7 @@ namespace Deckle.Orchestration;
 
 // "Apps and games" settings page, resolved by the Settings NavigationView via
 // the tag in OrchestrationSettingsModule.PageTag. Code-behind owns what needs
-// the window: the file picker, the running-app dialog, the empty-state swap and
+// the window: the file picker, the running-app dialog, the elevation advisory and
 // the duplicate notice. Picker and dialog failures are logged, never thrown.
 public sealed partial class OrchestrationPage : Page
 {
@@ -20,7 +20,7 @@ public sealed partial class OrchestrationPage : Page
         NavigationCacheMode = NavigationCacheMode.Required;
 
         ViewModel.Entries.CollectionChanged += OnEntriesChanged;
-        RefreshEmptyState();
+        RefreshElevationAdvisory();
     }
 
     protected override void OnNavigatedTo(NavigationEventArgs e)
@@ -29,7 +29,7 @@ public sealed partial class OrchestrationPage : Page
         DuplicateInfo.IsOpen = false;
         NothingNew.Visibility = Visibility.Collapsed;
         ViewModel.Load();
-        RefreshEmptyState();
+        RefreshElevationAdvisory();
         _ = RefreshMonitorsAsync();
     }
 
@@ -156,21 +156,14 @@ public sealed partial class OrchestrationPage : Page
         DeckleOrchestrationSource.Log.PageActionFailed(action, ex.GetType().Name, ex.Message);
 
     private void OnEntriesChanged(object? sender, NotifyCollectionChangedEventArgs e) =>
-        RefreshEmptyState();
-
-    private void RefreshEmptyState()
-    {
-        bool any = ViewModel.Entries.Count > 0;
-        EntriesList.Visibility = any ? Visibility.Visible : Visibility.Collapsed;
-        EmptyState.Visibility = any ? Visibility.Collapsed : Visibility.Visible;
-        RefreshElevationAdvisory(any);
-    }
+        RefreshElevationAdvisory();
 
     // Read on navigation and after each list change, never pushed: the status
     // only changes when the list does (WMI is asked when the first entry is
     // enabled), and before that the runtime predicts it from elevation.
-    private void RefreshElevationAdvisory(bool anyEntry)
+    private void RefreshElevationAdvisory()
     {
+        bool anyEntry = ViewModel.Entries.Count > 0;
         DetectionStatus? status = OrchestrationRuntime.StatusProvider?.Invoke();
         ElevationAdvisory.IsOpen = anyEntry && status is { NoticesOnlyAtForeground: true };
     }

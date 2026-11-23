@@ -1860,6 +1860,7 @@ _Generated from `git ls-files` — do not edit by hand._
 │   │   │   ├── AppEntryRow.cs
 │   │   │   ├── EntryItems.cs
 │   │   │   ├── MonitorHdrRow.cs
+│   │   │   ├── OrchestrationText.cs
 │   │   │   ├── OrchestrationViewModel.cs
 │   │   │   └── ScanFolderRow.cs
 │   │   ├── Deckle.Orchestration.csproj
