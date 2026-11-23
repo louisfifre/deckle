@@ -395,8 +395,11 @@
   <data name="LexiconAddButton.Content" xml:space="preserve">
     <value>Add</value>
   </data>
-  <data name="LexiconRemoveButton.AutomationProperties.Name" xml:space="preserve">
-    <value>Remove</value>
+  <data name="LexiconRemoveButton_Format" xml:space="preserve">
+    <value>Remove {0}</value>
+  </data>
+  <data name="LexiconWordBox.AutomationProperties.Name" xml:space="preserve">
+    <value>Add a word</value>
   </data>
   <data name="LexiconRemoveButton.ToolTipService.ToolTip" xml:space="preserve">
     <value>Remove</value>
@@ -438,6 +441,9 @@
        are read at each model load: a change waits for the restart footer. -->
   <data name="TranscriptionSpeechEngineFold.Header" xml:space="preserve">
     <value>Speech engine</value>
+  </data>
+  <data name="TranscriptionSpeechEngine_Value" xml:space="preserve">
+    <value>Parakeet</value>
   </data>
   <data name="TranscriptionParakeetFilesCard.Header" xml:space="preserve">
     <value>Model files</value>

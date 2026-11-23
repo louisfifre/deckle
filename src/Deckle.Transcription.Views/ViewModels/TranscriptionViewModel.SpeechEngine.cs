@@ -74,7 +74,8 @@ public partial class TranscriptionViewModel
                     ],
                     isAdvanced: true,
                     defaultValue: () => new EngineSettings().ParakeetEncoder),
-            ]),
+            ],
+            value: () => Loc.GetFromOptional("Deckle.Transcription.Views", "TranscriptionSpeechEngine_Value")),
     ];
 
     // Wording and meaning of the folder's state. Null when nothing answers: the

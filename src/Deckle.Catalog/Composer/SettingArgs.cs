@@ -77,9 +77,13 @@ public enum FolderPickerMode
 // DefaultPath is a deferred lookup, not a stored string: the fallback shown when
 // the value is empty comes from AppPaths and would be wrong if captured earlier.
 // The host's PathControlFactory invokes it once when building the line.
+//
+// ShowValue puts the folder at the fold's trailing edge, trimmed at its start,
+// so a closed fold still says where it points (the value, else DefaultPath).
 public sealed record PathArgs(
     FolderPickerMode Mode = FolderPickerMode.Configure,
-    Func<string>? DefaultPath = null) : SettingArgs;
+    Func<string>? DefaultPath = null,
+    bool ShowValue = false) : SettingArgs;
 
 // ── ChoiceOption ────────────────────────────────────────────────────────────────
 //
@@ -110,7 +114,12 @@ public sealed record GroupArgs(IReadOnlyList<SettingDescriptor> Children) : Sett
 // The leaf settings a Section groups, in display order. There is no master, so
 // each child stands on its own VisibleWhen. Folds never nest; the composer
 // enforces it.
-public sealed record SectionArgs(IReadOnlyList<SettingDescriptor> Children) : SettingArgs;
+//
+// Value, when given, is shown at the fold's trailing edge, so a closed fold
+// still says the current state of what it holds.
+public sealed record SectionArgs(
+    IReadOnlyList<SettingDescriptor> Children,
+    Func<string?>? Value = null) : SettingArgs;
 
 // ── ModeArgs ──────────────────────────────────────────────────────────────────
 //
