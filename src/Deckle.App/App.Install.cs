@@ -118,8 +118,13 @@ public partial class App
             CleanupDirectory = cleanup,
             InstallDirectory = installDir,
             DataDirectory    = UserEnvironment.GetDataRoot() ?? InstallPaths.DefaultDataDir,
+            // A new person starts from the default modules; a recorded choice, or
+            // an existing install with none (which boots every module), keeps
+            // what it has.
             SelectedModules  = ModulePresence.Choice
-                ?? ModuleRegistry.Modules.Select(m => m.Id).ToHashSet(StringComparer.Ordinal),
+                ?? (existing is null
+                    ? ModulePresence.DefaultChoice()
+                    : ModuleRegistry.Modules.Select(m => m.Id).ToHashSet(StringComparer.Ordinal)),
         };
 
         var setup = new SetupWindow(context);

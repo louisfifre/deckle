@@ -3132,6 +3132,7 @@ _Generated from `git ls-files` — do not edit by hand._
 │   ├── Deckle.Modules.Tests/
 │   │   ├── AssemblyInfo.cs
 │   │   ├── Deckle.Modules.Tests.csproj
+│   │   ├── DefaultChoiceTests.cs
 │   │   ├── MessageTemplateDoctrineTests.cs
 │   │   ├── ModuleGraphTests.cs
 │   │   ├── PresenceBugNotes.md

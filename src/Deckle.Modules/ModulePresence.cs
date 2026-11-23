@@ -44,6 +44,20 @@ public static class ModulePresence
     public static IReadOnlySet<string>? Choice =>
         Load()?.Resolve(Catalogue());
 
+    // What the selector pre-checks for a new person: the modules flagged
+    // DefaultSelected, closed over their dependencies so the seed is a set the
+    // cascade would accept. Read from the registry, so call after RegisterAll.
+    public static IReadOnlySet<string> DefaultChoice() =>
+        DefaultChoiceFor(ModuleRegistry.Modules);
+
+    public static IReadOnlySet<string> DefaultChoiceFor(IReadOnlyList<ModuleDescriptor> catalogue)
+    {
+        IReadOnlySet<string> seed = new HashSet<string>(StringComparer.Ordinal);
+        foreach (ModuleDescriptor module in catalogue.Where(m => m.DefaultSelected))
+            seed = ModuleGraph.WithDependencies(catalogue, seed, module.Id);
+        return seed;
+    }
+
     // Records the choice and adopts it in place, so a reader after Save sees
     // what was written without a reload.
     public static void Save(IReadOnlyCollection<string> present)

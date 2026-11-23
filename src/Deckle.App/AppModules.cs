@@ -18,6 +18,7 @@ internal static class AppModules
             Id = ModuleIds.Transcription,
             Glyph = Glyphs.Speech,
             Order = 100,
+            DefaultSelected = true,
         });
 
         ModuleRegistry.Register(new ModuleDescriptor
@@ -25,6 +26,7 @@ internal static class AppModules
             Id = ModuleIds.Rewrite,
             Glyph = Glyphs.Sparkle,
             Order = 200,
+            DefaultSelected = true,
             // The rewrite stage runs inside the transcription pipeline; alone
             // it has nothing to rewrite.
             DependsOn = [ModuleIds.Transcription],
@@ -35,6 +37,7 @@ internal static class AppModules
             Id = ModuleIds.Autocorrect,
             Glyph = Glyphs.Autocorrect,
             Order = 300,
+            DefaultSelected = true,
         });
 
         ModuleRegistry.Register(new ModuleDescriptor

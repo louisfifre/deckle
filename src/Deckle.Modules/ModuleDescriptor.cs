@@ -31,6 +31,12 @@ public sealed record ModuleDescriptor
     // assemblies compiled into the app are not modules and never appear here.
     public IReadOnlyList<string> DependsOn { get; init; } = [];
 
+    // Whether the selector pre-checks this module for a person with no recorded
+    // choice (a fresh install). Every module stays selectable either way. It
+    // seeds the wizard only: with no presence file the app still boots every
+    // module, so an existing install keeps what it has (ModulePresence.IsPresent).
+    public bool DefaultSelected { get; init; }
+
     // Sort key for the selector. Ascending; leaves gaps between values so a
     // later module can land between two existing ones.
     public int Order { get; init; }
