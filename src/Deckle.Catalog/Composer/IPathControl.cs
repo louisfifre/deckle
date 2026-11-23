@@ -28,6 +28,11 @@ public interface IPathControl
     string Path { get; set; }
     event EventHandler? PathChanged;
 
+    // The folder's name as the setting's header gives it ("Data folder"), so the
+    // control names its buttons for a screen reader: every Location line says
+    // "Open" and "Choose a folder", and only the owner tells them apart.
+    void SetFolderName(string name);
+
     SettingsCard Line { get; }
     FrameworkElement Actions { get; }
 }

@@ -43,6 +43,8 @@ public sealed class FolderLocationLine : IPathControl
     private readonly string _defaultPath;
     private readonly TextBlock? _pathText;
     private readonly TextBox? _pathBox;
+    private readonly Button? _chooseButton;
+    private readonly Button _openButton;
     private string _path = string.Empty;
 
     public SettingsCard Line { get; }
@@ -102,17 +104,32 @@ public sealed class FolderLocationLine : IPathControl
 
         if (mode != FolderPickerMode.OpenOnly)
         {
-            var choose = new Button { Content = Loc.GetFrom(Library, "FolderLocationLine_ChooseFolder") };
-            choose.Click += ChooseButton_Click;
-            actions.Children.Add(choose);
+            _chooseButton = new Button { Content = Loc.GetFrom(Library, "FolderLocationLine_ChooseFolder") };
+            _chooseButton.Click += ChooseButton_Click;
+            actions.Children.Add(_chooseButton);
         }
 
-        var open = new Button { Content = Loc.GetFrom(Library, "FolderLocationLine_Open") };
-        open.Click += OpenButton_Click;
-        actions.Children.Add(open);
+        _openButton = new Button { Content = Loc.GetFrom(Library, "FolderLocationLine_Open") };
+        _openButton.Click += OpenButton_Click;
+        actions.Children.Add(_openButton);
 
         Line.Content = actions;
         ShowPath();
+    }
+
+    // The accessible names only; the visible words stay "Choose a folder" and
+    // "Open". The name leads with a lower-cased folder name so it reads as a
+    // phrase ("Open data folder").
+    public void SetFolderName(string name)
+    {
+        if (string.IsNullOrWhiteSpace(name)) return;
+
+        string folder = char.ToLower(name[0], System.Globalization.CultureInfo.CurrentCulture) + name[1..];
+        Microsoft.UI.Xaml.Automation.AutomationProperties.SetName(_openButton,
+            string.Format(Loc.GetFrom(Library, "FolderLocationLine_OpenNamed_Format"), folder));
+        if (_chooseButton is not null)
+            Microsoft.UI.Xaml.Automation.AutomationProperties.SetName(_chooseButton,
+                string.Format(Loc.GetFrom(Library, "FolderLocationLine_ChooseFolderNamed_Format"), folder));
     }
 
     public string Path
