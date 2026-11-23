@@ -23,7 +23,7 @@ public partial class TaskbarCoverViewModel
     // 2026-10-15: the maintainer asked for a distance to sweep while the
     // preview under the card shows it on the screen. The unit is "DIP", not
     // "px": "px" read as physical pixels (the maintainer's report on the first
-    // build of this card). The description defines DIP once, and the
+    // build of this card). The card has no description: the
     // preview's readout gives the figure in this display's own pixels. The slider's
     // every detent reaches ApproachDistancePreviewed; the setting itself is
     // written at the release.
