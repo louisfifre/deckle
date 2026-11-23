@@ -125,9 +125,6 @@
   <data name="AmbientPageHeader.Title" xml:space="preserve">
     <value>Ambient Light</value>
   </data>
-  <data name="AmbientPageHeader.Description" xml:space="preserve">
-    <value>Mirror your screen to your Philips Hue lights. Works best with HDR content.</value>
-  </data>
 
   <!-- What the page's Reset all keeps, added to the header's own dialog. Read
        by Loc.Get in AmbientPage.xaml.cs and mirrored in
@@ -140,14 +137,8 @@
   <data name="AmbientEnabledCard.Header" xml:space="preserve">
     <value>Ambient Light</value>
   </data>
-  <data name="AmbientEnabledCard.Description" xml:space="preserve">
-    <value>Your Hue lights follow what's on screen. Nothing leaves your machine.</value>
-  </data>
   <data name="AmbientNotPairedInfoBar.Title" xml:space="preserve">
     <value>Hue bridge not configured</value>
-  </data>
-  <data name="AmbientNotPairedInfoBar.Message" xml:space="preserve">
-    <value>Pair a Philips Hue bridge and pick a room or zone before turning Ambient Light on.</value>
   </data>
   <data name="AmbientNotPairedActionButton.Content" xml:space="preserve">
     <value>Configure bridge</value>
@@ -186,13 +177,10 @@
     <value>Colour per zone</value>
   </data>
   <data name="AmbientZonesGroup.Description" xml:space="preserve">
-    <value>Each light takes the colour of its screen edge instead of all lights sharing one colour.</value>
+    <value>Each light takes the colour of its screen edge.</value>
   </data>
   <data name="AmbientBorderModeCard.Header" xml:space="preserve">
     <value>How depth is measured</value>
-  </data>
-  <data name="AmbientBorderModeCard.Description" xml:space="preserve">
-    <value>A share of the screen makes the side bands deeper than the top and bottom ones, a count of cells gives every edge the same depth.</value>
   </data>
   <data name="AmbientBorderModeShare.Content" xml:space="preserve">
     <value>As a share of the screen</value>
@@ -203,14 +191,8 @@
   <data name="AmbientBorderDepthCard.Header" xml:space="preserve">
     <value>Edge depth</value>
   </data>
-  <data name="AmbientBorderDepthCard.Description" xml:space="preserve">
-    <value>How far into the screen each light looks. Deeper edges give calmer colours.</value>
-  </data>
   <data name="AmbientBorderCellsCard.Header" xml:space="preserve">
     <value>Edge depth</value>
-  </data>
-  <data name="AmbientBorderCellsCard.Description" xml:space="preserve">
-    <value>How far into the screen each light looks, in cells. Deeper edges give calmer colours.</value>
   </data>
 
   <!-- ── Fine tuning ───────────────────────────────────────── -->
@@ -223,38 +205,20 @@
   <data name="AmbientBrightnessCurveCard.Header" xml:space="preserve">
     <value>Brightness response</value>
   </data>
-  <data name="AmbientBrightnessCurveCard.Description" xml:space="preserve">
-    <value>How the screen's brightness becomes the lights' brightness. Drag the points to lift dark scenes or keep them low.</value>
-  </data>
   <data name="AmbientMinBrightnessGroup.Header" xml:space="preserve">
     <value>Brightness floor</value>
-  </data>
-  <data name="AmbientMinBrightnessGroup.Description" xml:space="preserve">
-    <value>Keeps the lights bright enough to show their colour in dark scenes.</value>
   </data>
   <data name="AmbientMinBrightnessCard.Header" xml:space="preserve">
     <value>Floor level</value>
   </data>
-  <data name="AmbientMinBrightnessCard.Description" xml:space="preserve">
-    <value>The dimmest the lights get, as a share of their full brightness.</value>
-  </data>
   <data name="AmbientSmoothingCard.Header" xml:space="preserve">
     <value>Reaction speed</value>
-  </data>
-  <data name="AmbientSmoothingCard.Description" xml:space="preserve">
-    <value>How quickly the lights follow the screen. Lower glides between colours, 1 follows every change at once.</value>
   </data>
   <data name="AmbientExposureCard.Header" xml:space="preserve">
     <value>Exposure</value>
   </data>
-  <data name="AmbientExposureCard.Description" xml:space="preserve">
-    <value>Brightens or darkens the image before it reaches the lights. +1 EV doubles, −1 EV halves.</value>
-  </data>
   <data name="AmbientSaturationCard.Header" xml:space="preserve">
     <value>Saturation</value>
-  </data>
-  <data name="AmbientSaturationCard.Description" xml:space="preserve">
-    <value>More vivid or more muted colours. 1× keeps the screen's own.</value>
   </data>
 
   <!-- ── Configuration : capture and Hue bridge pairing ────── -->
@@ -278,9 +242,6 @@
   </data>
   <data name="HueBridgeExpander.Header" xml:space="preserve">
     <value>Hue bridge</value>
-  </data>
-  <data name="HueBridgeExpander.Description" xml:space="preserve">
-    <value>Pair the bridge and pick the room the lights follow.</value>
   </data>
   <data name="HueBridgeAddressCard.Header" xml:space="preserve">
     <value>Bridge address</value>
@@ -413,9 +374,6 @@
   <data name="AmbientPreviewTile.Header" xml:space="preserve">
     <value>Live preview</value>
   </data>
-  <data name="AmbientPreviewTile.Description" xml:space="preserve">
-    <value>Watch what the capture samples and the colour each light receives, beside the page, while you tune.</value>
-  </data>
 
   <!-- AmbientPreviewCard (x:Uid). The block's empty text shows only
        when no display can be read; otherwise the stage shows the display's frame. -->
@@ -506,10 +464,10 @@
     <value>Lights</value>
   </data>
   <data name="AmbientLightsExpander.Description" xml:space="preserve">
-    <value>The screen edge each light follows and how bright it gets. A light with no edge keeps its current state.</value>
+    <value>A light with no screen edge keeps its current state.</value>
   </data>
   <data name="AmbientLightsEmptyState.Text" xml:space="preserve">
-    <value>No lights returned for this group. If this is an Entertainment Area, try selecting the matching Room/Zone instead, or check the Hue app.</value>
+    <value>No lights in this group.</value>
   </data>
   <!-- LightZonesCard code-behind (Loc.Get) — mirrored in Deckle.App's
        Resources.resw, this copy is the source of truth for wording. -->
