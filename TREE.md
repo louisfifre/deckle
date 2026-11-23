@@ -1407,6 +1407,7 @@ _Generated from `git ls-files` — do not edit by hand._
 │   │   ├── FolderSafety.cs
 │   │   ├── InstallFailureText.cs
 │   │   ├── InstallPaths.cs
+│   │   ├── MachineRequirements.cs
 │   │   ├── ReleaseResolver.cs
 │   │   ├── RunningProcesses.cs
 │   │   ├── Shortcut.cs
@@ -1562,12 +1563,19 @@ _Generated from `git ls-files` — do not edit by hand._
 │   │   ├── DeckleLlmSource.cs
 │   │   ├── DeckleLlmSource.FeedbackAndUi.cs
 │   │   ├── DeckleLlmSource.OllamaService.cs
+│   │   ├── DeckleLlmSource.ParagraphAvailability.cs
 │   │   ├── DeckleLlmSource.Persistence.cs
 │   │   ├── DeckleLlmSource.Providers.cs
 │   │   ├── DeckleLlmSource.Rewrite.cs
 │   │   ├── DeckleLlmSource.RuntimeStatus.cs
 │   │   └── OllamaService.cs
 │   ├── Deckle.Llm.Rewrite/
+│   │   ├── Availability/
+│   │   │   ├── OllamaParagraphRewriteProbe.cs
+│   │   │   ├── ParagraphRewriteAvailability.cs
+│   │   │   ├── ParagraphRewriteAvailabilityMonitor.cs
+│   │   │   ├── ParagraphRewriteHostPlan.cs
+│   │   │   └── ParagraphRewriteNotice.cs
 │   │   ├── Batching/
 │   │   │   ├── DictationBatch.cs
 │   │   │   ├── DictationBatcher.cs
@@ -2222,6 +2230,7 @@ _Generated from `git ls-files` — do not edit by hand._
 │   │   │   ├── TaskbarPart.cs
 │   │   │   ├── TaskbarPartNames.cs
 │   │   │   ├── TaskbarPipeServer.cs
+│   │   │   ├── TaskbarPlatformGate.cs
 │   │   │   ├── TaskbarProblem.cs
 │   │   │   ├── TaskbarProblemReader.cs
 │   │   │   ├── TaskbarTarget.cs
@@ -2675,6 +2684,7 @@ _Generated from `git ls-files` — do not edit by hand._
 │   │   ├── AutocorrectEngineObservabilityTests.cs
 │   │   ├── AutocorrectLexiconArtifactsTests.cs
 │   │   ├── AutocorrectObservabilityCollection.cs
+│   │   ├── AutocorrectSettingsDefaultTests.cs
 │   │   ├── AutocorrectSettingsTests.cs
 │   │   ├── AutocorrectTypingScenarioTests.cs
 │   │   ├── BigramPairDisambiguatorTests.cs
@@ -3006,6 +3016,7 @@ _Generated from `git ls-files` — do not edit by hand._
 │   │   ├── FolderSafetyTests.cs
 │   │   ├── InstallFailureTextTests.cs
 │   │   ├── InstallPathsTests.cs
+│   │   ├── MachineRequirementsTests.cs
 │   │   ├── ReleaseResolverBugNotes.md
 │   │   ├── ReleaseResolverRegressionTests.cs
 │   │   ├── ReleaseResolverTests.cs
@@ -3082,6 +3093,7 @@ _Generated from `git ls-files` — do not edit by hand._
 │   │   ├── LlmSettingsNormalizerTests.cs
 │   │   ├── MessageTemplateDoctrineTests.cs
 │   │   ├── ParagraphDraftTests.cs
+│   │   ├── ParagraphRewriteAvailabilityTests.cs
 │   │   ├── ParagraphRewriteCoordinatorTests.cs
 │   │   ├── ProfileReasoningTests.cs
 │   │   ├── ProfilesSectionBugNotes.md
@@ -3311,6 +3323,7 @@ _Generated from `git ls-files` — do not edit by hand._
 │   │   ├── TaskbarBugNotes.md
 │   │   ├── TaskbarCustomizationTests.cs
 │   │   ├── TaskbarObservabilityCollection.cs
+│   │   ├── TaskbarPlatformGateTests.cs
 │   │   ├── TaskbarProfileCollection.cs
 │   │   ├── TaskbarSettingsModuleTests.cs
 │   │   ├── TaskbarSettingsTests.cs
