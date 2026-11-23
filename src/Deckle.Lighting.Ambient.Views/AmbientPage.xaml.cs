@@ -24,9 +24,8 @@ namespace Deckle.Lighting.Ambient.Views;
 // (AmbientPage.Hue.cs). The brightness curve is a composed Curve card, first
 // of the fine-tuning cards. The live preview (AmbientPreviewCard) sits in a
 // pane at the right of the page, behind a splitter, so it stays in view
-// while the values change; the Live preview tile under the module switch and
-// the Behaviour and Fine tuning title links open that pane, the preview's
-// Close closes it (SyncPreviewPane).
+// while the values change; the Live preview tile under the module switch
+// opens that pane, the preview's Close closes it (SyncPreviewPane).
 //
 // Sync : the view model writes every edit straight to AmbientSettingsService
 // and saves. The page observes AmbientSettingsService.Changed and reloads the
@@ -64,7 +63,7 @@ public sealed partial class AmbientPage : Page
 
         // The XAML column carries the pane's default width and floor; read
         // once, then the pane opens and closes on the user's word
-        // (SyncPreviewPane). Closed until the tile or a section link is clicked.
+        // (SyncPreviewPane). Closed until the tile is clicked.
         _paneWidth    = PreviewColumn.Width;
         _paneMinWidth = PreviewColumn.MinWidth;
         SyncPreviewPane();
@@ -77,8 +76,7 @@ public sealed partial class AmbientPage : Page
     // ── Preview pane ───────────────────────────────────────────────────
     //
     // The pane is the user's: the Live preview tile under the module switch
-    // and the title links of the Behaviour and Fine tuning sections open it,
-    // the preview's own Close closes it, and nothing else does; the control
+    // opens it, the preview's own Close closes it, and nothing else does; the control
     // inside says on its own whether the engine gives it something live. The
     // column's width is the user's too, written on the ColumnDefinition by the
     // splitter at each drag, and kept for the page's lifetime only: nothing is
@@ -90,7 +88,7 @@ public sealed partial class AmbientPage : Page
     private double _paneMinWidth;
     private bool _paneOpen;
 
-    // One handler for the tile's Click and the sections' LinkClicked. A click
+    // The tile's Click. A click
     // while the pane is already open changes nothing: SyncPreviewPane rewrites
     // the same state (Louis, 2026-10-15: keep it simple).
     private void OpenPreview_Click(object sender, RoutedEventArgs e)
@@ -171,6 +169,8 @@ public sealed partial class AmbientPage : Page
 
         AmbientSettingsService.Instance.Changed += OnSettingsChanged;
         HuePairingService.Instance.BridgeChanged += OnHueBridgeChanged;
+        _engine = AmbientEngine.Current;
+        if (_engine is not null) _engine.StateChanged += OnEngineStateChanged;
 
         _loading = false;
     }
@@ -186,8 +186,26 @@ public sealed partial class AmbientPage : Page
 
         AmbientSettingsService.Instance.Changed -= OnSettingsChanged;
         HuePairingService.Instance.BridgeChanged -= OnHueBridgeChanged;
+        if (_engine is not null) _engine.StateChanged -= OnEngineStateChanged;
+        _engine = null;
         _loading = true;
     }
+
+    // The engine reports a failed start as Error, then Off. The banner says it
+    // while the switch stays on, and goes when a start begins again or the
+    // switch goes off (ResyncFromSettings).
+    private AmbientEngine? _engine;
+
+    private void OnEngineStateChanged(AmbientEngineState state)
+        => DispatcherQueue.TryEnqueueObserved(
+            operation: "ui-update", caller: "ambient-page-start-failed",
+            callback: () =>
+            {
+                if (state == AmbientEngineState.Error) StartFailedInfoBar.IsOpen = true;
+                else if (state is AmbientEngineState.Starting or AmbientEngineState.Running)
+                    StartFailedInfoBar.IsOpen = false;
+            },
+            rejectSource: "AMBIENT", rejectWhat: "start failed banner");
 
     // Pulls the persisted state the bespoke cards show: the display picker
     // and the NotPaired banner. Guarded by _loading so the display combo's
@@ -203,8 +221,8 @@ public sealed partial class AmbientPage : Page
             PopulateMonitorChoices(s.SelectedMonitorDeviceName);
 
             // The criteria mirror AmbientEngine.StartAsync's validation,
-            // so the InfoBar shows before a toggle ON fails and after
-            // its auto-revert.
+            // so the InfoBar shows before a toggle ON can start.
+            if (!s.Enabled) StartFailedInfoBar.IsOpen = false;
             bool paired = !string.IsNullOrEmpty(s.HueBridgeIp)
                        && !string.IsNullOrEmpty(s.HueBridgeId)
                        && !string.IsNullOrEmpty(s.HueUsername)

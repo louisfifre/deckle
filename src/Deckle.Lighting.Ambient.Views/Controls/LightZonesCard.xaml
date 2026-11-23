@@ -23,6 +23,7 @@
         <controls:SettingsExpander.ItemsFooter>
             <TextBlock x:Name="EmptyStateText"
                        x:Uid="AmbientLightsEmptyState"
+                       AutomationProperties.LiveSetting="Polite"
                        Visibility="Collapsed"
                        Style="{ThemeResource CaptionTextBlockStyle}"
                        Foreground="{ThemeResource TextFillColorSecondaryBrush}"

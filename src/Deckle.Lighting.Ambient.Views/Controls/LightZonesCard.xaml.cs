@@ -197,7 +197,7 @@ public sealed partial class LightZonesCard : UserControl
             MinWidth = 120,
             HorizontalContentAlignment = HorizontalAlignment.Left,
         };
-        AutomationProperties.SetName(zoneButton, Loc.Get("AmbientLights_ZoneName"));
+        AutomationProperties.SetName(zoneButton, Loc.Format("AmbientLights_ZoneName_Format", light.Name));
         var flyout = new MenuFlyout();
         foreach (var option in ZoneOptions)
         {
@@ -219,8 +219,9 @@ public sealed partial class LightZonesCard : UserControl
             VerticalAlignment = VerticalAlignment.Center,
             Value         = BrightnessPercentOf(settings, light.Id),
         };
-        AutomationProperties.SetName(slider, Loc.Get("AmbientLights_BrightnessName"));
-        ToolTipService.SetToolTip(slider, Loc.Get("AmbientLights_BrightnessName"));
+        string brightnessName = Loc.Format("AmbientLights_BrightnessName_Format", light.Name);
+        AutomationProperties.SetName(slider, brightnessName);
+        ToolTipService.SetToolTip(slider, brightnessName);
         slider.ValueChanged += (_, args) => OnBrightnessChanged(light.Id, args.NewValue);
 
         var identifyButton = new Button
@@ -228,6 +229,8 @@ public sealed partial class LightZonesCard : UserControl
             Content   = Loc.Get("AmbientLights_Identify"),
             IsEnabled = light.IsReachable,
         };
+        // Named once, so it keeps the light's name while the content reads Flashing.
+        AutomationProperties.SetName(identifyButton, Loc.Format("AmbientLights_IdentifyName_Format", light.Name));
         identifyButton.Click += (_, _) => _ = IdentifyAsync(identifyButton, light.Id);
 
         _rows.Add(new LightRow(light.Id, zoneButton, slider));

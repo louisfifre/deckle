@@ -56,8 +56,11 @@ public sealed partial class AmbientPage
             HueBridgeStatusDot.Fill   = GetThemeBrush("SystemFillColorNeutralBrush");
             HueBridgeStatusText.Text  = Loc.Get("AmbientHue_Status_NotPaired");
             HuePairLabel.Text         = Loc.Get("AmbientHue_PairLabel_Pair");
-            HueListGroupsButton.IsEnabled = false;
-            HueForgetButton.IsEnabled     = false;
+
+            // Nothing to load or forget until a bridge is paired: the cards
+            // are out of the way rather than greyed.
+            HueGroupCard.Visibility  = Visibility.Collapsed;
+            HueForgetCard.Visibility = Visibility.Collapsed;
 
             _hueGroupComboSuppress = true;
             HueGroupComboBox.Items.Clear();
@@ -70,8 +73,9 @@ public sealed partial class AmbientPage
         HueBridgeStatusText.Text  = Loc.Get("AmbientHue_Status_Paired");
         HueBridgeIpTextBox.Text   = paired.InternalIpAddress;
         HuePairLabel.Text         = Loc.Get("AmbientHue_PairLabel_Repair");
+        HueGroupCard.Visibility  = Visibility.Visible;
+        HueForgetCard.Visibility = Visibility.Visible;
         HueListGroupsButton.IsEnabled = true;
-        HueForgetButton.IsEnabled     = true;
     }
 
     private static Brush GetThemeBrush(string resourceKey)
@@ -110,9 +114,7 @@ public sealed partial class AmbientPage
             {
                 _hueDiscoveredBridge = bridges[0];
                 HueBridgeIpTextBox.Text = _hueDiscoveredBridge.InternalIpAddress;
-                SetHuePairStatus(Loc.Get(useCloud
-                    ? "AmbientHue_Discovery_OnlineFound"
-                    : "AmbientHue_Discovery_LocalFound"));
+                // The filled address is the confirmation.
                 if (useCloud)
                     HueCloudDiscoverButton.Visibility = Visibility.Collapsed;
             }
@@ -193,9 +195,10 @@ public sealed partial class AmbientPage
             await HuePairingService.Instance
                 .PairAsync(target, ct: _huePairCts.Token)
                 .ConfigureAwait(true);
-            SetHuePairStatus(Loc.Get("AmbientHue_PairStatus_Success"));
             // SyncHueBridgeUi fires via BridgeChanged event and flips
-            // the dot to success + label to Re-pair.
+            // the dot to success + label to Re-pair. The rooms load at once,
+            // as Load rooms would: the status row clears with it.
+            await ListHueGroupsAsync().ConfigureAwait(true);
         }
         catch (OperationCanceledException)
         {
@@ -218,6 +221,10 @@ public sealed partial class AmbientPage
     }
 
     private async void OnHueListGroupsClick(object sender, RoutedEventArgs e)
+        => await ListHueGroupsAsync().ConfigureAwait(true);
+
+    // Load rooms: the button's routine, also run once a pairing succeeds.
+    private async Task ListHueGroupsAsync()
     {
         if (!HuePairingService.Instance.IsPaired) return;
 
