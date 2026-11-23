@@ -239,7 +239,7 @@
        Providers, Models).
        The Ollama and provider InfoBars are inline on the page. -->
   <data name="LlmPage_OllamaStatusBar.Title" xml:space="preserve">
-    <value>Ollama is not reachable</value>
+    <value>Ollama is not answering</value>
   </data>
   <data name="LlmPage_ProviderStatusBar.Title" xml:space="preserve">
     <value>A provider is not answering</value>
@@ -489,6 +489,9 @@
   <data name="LlmPageHeader.Title" xml:space="preserve">
     <value>Rewriting</value>
   </data>
+  <data name="LlmPageHeader.Description" xml:space="preserve">
+    <value>Clean up your transcriptions with a language model, local or hosted.</value>
+  </data>
   <!-- No longer an x:Uid: ResetAll_Click reads it with Loc.Get for the
        confirmation dialog's primary button. -->
 
@@ -507,8 +510,8 @@
   <data name="Settings_ResetLlmDialog_Detail" xml:space="preserve">
     <value>The providers and the dictation steps go back to the defaults. Profiles, API keys and the switches stay.</value>
   </data>
-  <data name="Settings_OllamaStatusMessage_Format" xml:space="preserve">
-    <value>Start Ollama or check the provider's address ({0}).</value>
+  <data name="Settings_OllamaStatusMessage" xml:space="preserve">
+    <value>Start Ollama or check its address.</value>
   </data>
 
   <data name="Settings_RemoveLabel" xml:space="preserve">
@@ -531,6 +534,9 @@
   <data name="Settings_VaultError_Title" xml:space="preserve">
     <value>The key could not be stored</value>
   </data>
+  <data name="LlmProvider_RemoveName_Format" xml:space="preserve">
+    <value>Remove {0}</value>
+  </data>
   <data name="Settings_KeyStored" xml:space="preserve">
     <value>Key saved.</value>
   </data>
@@ -552,7 +558,7 @@
     <value>Remove this profile?</value>
   </data>
   <data name="Settings_RemoveProfileDialog_Content_Format" xml:space="preserve">
-    <value>"{0}" and its shortcut will be removed. Dictation steps that used it move to the first profile left, or are removed.</value>
+    <value>"{0}" and its shortcut will be removed. Steps that used it are removed; the first step switches to another profile.</value>
   </data>
 
   <!-- LlmModelsSection Remove dialog + ErrorBar -->

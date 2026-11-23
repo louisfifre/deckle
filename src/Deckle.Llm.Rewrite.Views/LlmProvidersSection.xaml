@@ -46,8 +46,10 @@
                                     Spacing="8"
                                     VerticalAlignment="Center">
                             <ToggleSwitch IsOn="{x:Bind Enabled, Mode=TwoWay}"
+                                          AutomationProperties.Name="{x:Bind Name, Mode=OneWay}"
                                           MinWidth="0" />
                             <Button Tag="{x:Bind}"
+                                    AutomationProperties.Name="{x:Bind RemoveName, Mode=OneWay}"
                                     Click="DeleteProvider_Click">
                                 <StackPanel Orientation="Horizontal" Spacing="6">
                                     <FontIcon Glyph="{StaticResource Icon.Delete}" FontSize="14" />
@@ -109,6 +111,7 @@
                                             </Button>
                                         </StackPanel>
                                         <TextBlock Text="{x:Bind KeyStatus, Mode=OneWay}"
+                                                   AutomationProperties.LiveSetting="Polite"
                                                    Style="{StaticResource CaptionTextBlockStyle}"
                                                    Foreground="{ThemeResource TextFillColorSecondaryBrush}"
                                                    TextWrapping="Wrap"

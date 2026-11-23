@@ -266,7 +266,7 @@ public sealed partial class LlmPage : Page, ISettingsSubpageSample
         IReadOnlyList<OllamaModel> models, OllamaService? service = null)
     {
         if (ollama is not null)
-            OllamaStatusBar.Message = Loc.Format("Settings_OllamaStatusMessage_Format", ollama.Endpoint);
+            OllamaStatusBar.Message = Loc.Get("Settings_OllamaStatusMessage");
 
         _context.Service = service;
         _context.Available = available;
@@ -280,7 +280,7 @@ public sealed partial class LlmPage : Page, ISettingsSubpageSample
 
     private void GateModelsSection()
     {
-        bool shown = GeneralSection.IsRewritingEnabled && _context.Service is not null;
+        bool shown = GeneralSection.IsRewritingEnabled && _context.Service is not null && _context.Available;
         ModelsSection.Visibility = shown ? Visibility.Visible : Visibility.Collapsed;
     }
 

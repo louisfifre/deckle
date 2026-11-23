@@ -21,7 +21,7 @@ public partial class ProviderViewModel : ObservableObject
     public string Id { get; private set; } = "";
 
     [ObservableProperty]
-    [NotifyPropertyChangedFor(nameof(Summary))]
+    [NotifyPropertyChangedFor(nameof(Summary), nameof(RemoveName))]
     public partial string Name { get; set; }
 
     [ObservableProperty]
@@ -58,14 +58,21 @@ public partial class ProviderViewModel : ObservableObject
 
     public string KeyStatus => Loc.Get(HasKeyStored ? "Settings_KeyStored" : "Settings_NoKeyStored");
 
+    // Accessible name of the row's Remove button: identical "Remove" buttons
+    // are otherwise indistinguishable to a screen reader.
+    public string RemoveName => Loc.Format("LlmProvider_RemoveName_Format", Name);
+
+    // The kind and the address, the kind left out when it only repeats the
+    // name ("Claude", "Ollama").
     public string Summary
     {
         get
         {
             string kind = Loc.Get($"LlmProviderKind_{Kind}");
-            return ShowsEndpoint && !string.IsNullOrWhiteSpace(Endpoint)
-                ? $"{kind}  ·  {Endpoint.Trim()}"
-                : kind;
+            bool showKind = !string.Equals(kind, Name?.Trim(), StringComparison.OrdinalIgnoreCase);
+            string address = ShowsEndpoint ? Endpoint?.Trim() ?? "" : "";
+            if (address.Length == 0) return showKind ? kind : "";
+            return showKind ? $"{kind}  ·  {address}" : address;
         }
     }
 
