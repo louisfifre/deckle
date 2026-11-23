@@ -123,9 +123,6 @@
   <data name="RecordingPageHeader.Title" xml:space="preserve">
     <value>Recording</value>
   </data>
-  <data name="RecordingPageHeader.Description" xml:space="preserve">
-    <value>Your microphone, and what Deckle hears.</value>
-  </data>
   <!-- The section of a take: the maximum length and the pre-processing with
        its checks (2026-11-07 review). Provisional, like every section title of
        the page. -->
@@ -150,7 +147,7 @@
     <value>Microphone input volume</value>
   </data>
   <data name="RecordingMicrophonePropertiesCard.Description" xml:space="preserve">
-    <value>Set in Windows Settings. Keep it just below the point where your loudest speech distorts: Windows applies it before Deckle hears anything.</value>
+    <value>Keep it just below the point where your loudest speech distorts.</value>
   </data>
 
   <!-- Composed exclusive-mode toggle (composer label key). Off by default:
@@ -159,15 +156,12 @@
     <value>Exclusive microphone access</value>
   </data>
   <data name="RecordingExclusiveModeCard.Description" xml:space="preserve">
-    <value>While you dictate, Deckle takes the microphone directly and other apps can't use it. If another app is already using it, Deckle shares it.</value>
+    <value>While you dictate, Deckle takes the microphone directly and other apps can't use it.</value>
   </data>
 
   <!-- Composed voice-level card (composer label key) -->
   <data name="RecordingVoiceLevelCard.Header" xml:space="preserve">
     <value>Voice level</value>
-  </data>
-  <data name="RecordingVoiceLevelCard.Description" xml:space="preserve">
-    <value>Above this level, Deckle hears voice.</value>
   </data>
 
   <!-- Voice meter, the instrument inside the voice-level card (VoiceLevelMeter,
@@ -244,9 +238,6 @@
   <data name="RecordingLimitCard.Header" xml:space="preserve">
     <value>Limit recording duration</value>
   </data>
-  <data name="RecordingLimitCard.Description" xml:space="preserve">
-    <value>Recording stops on its own at the length you set and is transcribed as usual.</value>
-  </data>
   <data name="RecordingLimitDurationCard.Header" xml:space="preserve">
     <value>Maximum length</value>
   </data>
@@ -262,9 +253,6 @@
   <!-- Microphone level check (x:Uid) -->
   <data name="RecordingPageMicCheckCard.Header" xml:space="preserve">
     <value>Microphone level check</value>
-  </data>
-  <data name="RecordingPageMicCheckCard.Description" xml:space="preserve">
-    <value>Speak for a few seconds to learn whether pre-processing would help.</value>
   </data>
   <data name="RecordingPageMicCheckButton.Content" xml:space="preserve">
     <value>Measure</value>
@@ -300,7 +288,7 @@
     <value>Listening test</value>
   </data>
   <data name="RecordingPageListeningTestCard.Description" xml:space="preserve">
-    <value>Record a few seconds to hear what pre-processing does; nothing is saved or transcribed.</value>
+    <value>Nothing is saved or transcribed.</value>
   </data>
   <data name="RecordingPageListeningRecordButton.Content" xml:space="preserve">
     <value>Record</value>
