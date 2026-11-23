@@ -48,6 +48,27 @@ public sealed class AutocorrectSettingsService
             logError:    DeckleAutocorrectSource.Log.SettingsLoadError);
     }
 
+    // The first run writes the file the language-dependent defaults describe,
+    // so the store then loads it like any saved setting: from then on the file
+    // wins, and a later change of Windows language does not flip the switch
+    // under the person. Returns whether it wrote. A failed write leaves the
+    // store to fall back to its own defaults, as for any unwritable file.
+    public static bool SeedIfMissing(string path, IReadOnlySet<string> systemLanguages)
+    {
+        if (File.Exists(path)) return false;
+        try
+        {
+            string json = JsonSerializer.Serialize(
+                AutocorrectSettings.CreateDefault(systemLanguages), _jsonOptions);
+            File.WriteAllText(path, json);
+            return true;
+        }
+        catch (Exception ex) when (ex is IOException or UnauthorizedAccessException)
+        {
+            return false;
+        }
+    }
+
     public void Save()                            => _store.Save();
     public void Flush()                           => _store.Flush();
     public void Reload()                          => _store.Reload();

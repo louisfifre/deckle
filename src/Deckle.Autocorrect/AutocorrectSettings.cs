@@ -26,6 +26,22 @@ public sealed class AutocorrectSettings : IJsonOnDeserialized
     // and NFC) so an entry matches the lexicon keys it removes.
     public List<string> ExcludedWords { get; set; } = new();
 
+    // The settings a first run starts from, when no file has been saved yet.
+    // Autocorrect is a French corrector, so it is on by default only when the
+    // person's Windows languages include French; otherwise it starts off and
+    // enrolls no app, so nothing is corrected until they turn it on and choose
+    // where. The languages are an argument (primary subtags, as
+    // SystemLanguages.Current gives them) so the rule is testable without
+    // depending on the machine. A saved file always wins over this.
+    public static AutocorrectSettings CreateDefault(IReadOnlySet<string> systemLanguages)
+    {
+        bool french = systemLanguages.Contains("fr");
+        var settings = new AutocorrectSettings { Enabled = french };
+        if (!french)
+            settings.Apps = new Dictionary<string, bool>(StringComparer.OrdinalIgnoreCase);
+        return settings;
+    }
+
     // System.Text.Json rebuilds Apps with the default ordinal comparer, so
     // restore the case-insensitive one.
     public void OnDeserialized()

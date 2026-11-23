@@ -9,9 +9,8 @@ namespace Deckle.Autocorrect.Views;
 // ViewModel that owns the values rather than in the page code-behind.
 // SettingsComposer builds each SettingDescriptor into its host panel.
 //
-// The master toggle's default reads the POCO initializer (new
-// AutocorrectSettings().Enabled — the same literal AutocorrectSettingsService
-// persists), so the card gets a per-card reset that goes active exactly when
+// The master toggle's default is the first-run value for this machine
+// (AutocorrectSettings.CreateDefault: on only when Windows is in French), so the card gets a per-card reset that goes active exactly when
 // the value leaves that default.
 public partial class AutocorrectViewModel
 {
@@ -20,6 +19,6 @@ public partial class AutocorrectViewModel
         Setting.Toggle("AutocorrectPage_MasterCard",
             () => Enabled,
             value => Enabled = value,
-            defaultValue: () => new AutocorrectSettings().Enabled),
+            defaultValue: () => AutocorrectSettings.CreateDefault(SystemLanguages.Current).Enabled),
     ];
 }

@@ -388,7 +388,7 @@
     <value>Autocorrect</value>
   </data>
   <data name="Setup_Module_autocorrect_Description" xml:space="preserve">
-    <value>Corrects typed text machine-wide, as you type</value>
+    <value>Corrects typed French machine-wide, as you type</value>
   </data>
   <data name="Setup_Module_ambient_Label" xml:space="preserve">
     <value>Ambient light</value>
