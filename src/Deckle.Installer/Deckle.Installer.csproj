@@ -30,6 +30,13 @@
          analyzers DO run on build, so non-AOT-safe code surfaces as warnings here. -->
     <PublishAot>true</PublishAot>
 
+    <!-- The stub must run on the machines it refuses, to say why. Pinning the
+         instruction set to x86-64-v2 (no AVX2) keeps Avx2.IsSupported a runtime
+         check, so a CPU without AVX2 gets the refusal message instead of a crash;
+         the minimum version stays at Windows 10 1809 for the same reason. -->
+    <IlcInstructionSet>x86-64-v2</IlcInstructionSet>
+    <TargetPlatformMinVersion>10.0.17763.0</TargetPlatformMinVersion>
+
     <!-- Drops ICU from the AOT image: the installer has no culture-sensitive text. -->
     <InvariantGlobalization>true</InvariantGlobalization>
 
