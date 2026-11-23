@@ -164,10 +164,22 @@ public sealed class TaskbarCustomizerTests
     }
 
     [Fact]
-    public async Task ALookupThatCouldNotReachTheServerIsAnError()
+    public async Task ALookupThatCouldNotReachTheServerAsksForTheOneTimeDownload()
     {
         _settings.CustomBarThickness = true;
         _frameSize = new(null, "download_failed");
+        TaskbarCustomizer customizer = Customizer();
+
+        await customizer.ReconcileAsync("startup");
+
+        Assert.Equal(TaskbarProblem.NeedsDownload, customizer.Problems[TaskbarPart.BarThickness]);
+    }
+
+    [Fact]
+    public async Task ALookupThatFailedForAnotherReasonIsAnError()
+    {
+        _settings.CustomBarThickness = true;
+        _frameSize = new(null, "pdb_unreadable");
         TaskbarCustomizer customizer = Customizer();
 
         await customizer.ReconcileAsync("startup");

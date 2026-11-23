@@ -13,7 +13,8 @@ internal sealed record ReadoutsModel(
     VersionReading? VersionDetail,
     string Uncommitted,
     string Agent,
-    string? AgentTooltip);
+    string? AgentTooltip,
+    string? GitNote = null);
 
 internal sealed partial class ReadoutsRow : UserControl
 {
@@ -35,6 +36,8 @@ internal sealed partial class ReadoutsRow : UserControl
 
     public string AgentText => AgentValue.Text;
 
+    public string GitNoteText => GitNote.Text;
+
     public bool InfoIsShown => InfoButton.Visibility == Visibility.Visible;
 
     public bool FlyoutIsOpen => _flyout?.IsOpen ?? false;
@@ -45,6 +48,8 @@ internal sealed partial class ReadoutsRow : UserControl
         UncommittedValue.Text = model.Uncommitted;
         AgentValue.Text = model.Agent;
         ToolTipService.SetToolTip(AgentValue, model.AgentTooltip);
+        GitNote.Text = model.GitNote ?? "";
+        GitNote.Visibility = model.GitNote is null ? Visibility.Collapsed : Visibility.Visible;
 
         _detail = model.VersionDetail;
         bool info = _detail is not null;

@@ -50,9 +50,11 @@
     </PropertyGroup>
     <MakeDir Directories="$(DeckleBuildStateDir)" ContinueOnError="WarnAndContinue" />
     <Touch Files="$([System.IO.Path]::Combine($(DeckleBuildStateDir), '$(MSBuildProjectName).stamp'))" AlwaysCreate="true" ContinueOnError="WarnAndContinue" />
-    <!-- 120 s is four watchdog ticks: the same staleness the script applies. -->
-    <Exec Condition="$(_DeckleWatchdogHeartbeatAge) &gt; 120"
-          Command="pwsh -NoProfile -NonInteractive -File &quot;$(MSBuildThisFileDirectory)scripts\build-server-watchdog.ps1&quot; -Arm -StateDir &quot;$(DeckleBuildStateDir)&quot;"
+    <!-- 120 s is four watchdog ticks: the same staleness the script applies.
+         The watchdog is a convenience: a checkout without the script, or a machine
+         without pwsh, builds silently without it instead of warning on every build. -->
+    <Exec Condition="$(_DeckleWatchdogHeartbeatAge) &gt; 120 and Exists('$(MSBuildThisFileDirectory)scripts\build-server-watchdog.ps1')"
+          Command="where pwsh &gt;nul 2&gt;&amp;1 || exit /b 0&#10;pwsh -NoProfile -NonInteractive -File &quot;$(MSBuildThisFileDirectory)scripts\build-server-watchdog.ps1&quot; -Arm -StateDir &quot;$(DeckleBuildStateDir)&quot;"
           EchoOff="true"
           StandardOutputImportance="low"
           ContinueOnError="WarnAndContinue" />

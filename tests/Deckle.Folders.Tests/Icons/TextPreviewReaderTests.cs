@@ -39,6 +39,16 @@ public sealed class TextPreviewReaderTests
     }
 
     [Fact]
+    public void BytesThatAreNotUtf8ReadInTheGivenAnsiCodePage()
+    {
+        // Notepad on a Russian machine wrote Windows-1251, not 1252.
+        const string text = "Привет, мир";
+        Encoding cp1251 = CodePagesEncodingProvider.Instance.GetEncoding(1251)!;
+
+        Assert.Equal(text, TextPreviewReader.Decode(cp1251.GetBytes(text), truncated: false, cp1251));
+    }
+
+    [Fact]
     public void AUtf8CharacterCutByTheLimitIsDroppedNotReplaced()
     {
         byte[] whole = Encoding.UTF8.GetBytes("abc€");

@@ -1,3 +1,5 @@
+using System.Globalization;
+
 namespace Deckle.Shell.Taskbar;
 
 // What Deckle wants the taskbar to look like, in the terms of a person and not
@@ -71,14 +73,20 @@ internal sealed record TaskbarCustomization
     /// other way. A pitch read from the file is held to its range: a value
     /// written by hand cannot squash an icon to nothing.
     /// </summary>
-    public static TaskbarCustomization From(TaskbarSettings settings, bool verticalBar) => new()
+    public static TaskbarCustomization From(TaskbarSettings settings, bool verticalBar) =>
+        From(settings, verticalBar, CultureInfo.CurrentUICulture, CultureInfo.CurrentCulture);
+
+    /// <inheritdoc cref="From(TaskbarSettings, bool)"/>
+    /// <param name="names">The language of the clock's month and day names.</param>
+    /// <param name="regional">The regional format, which decides 12 or 24 hours.</param>
+    public static TaskbarCustomization From(TaskbarSettings settings, bool verticalBar, CultureInfo names, CultureInfo regional) => new()
     {
         Background = settings.Background,
         BarThickness = settings.CustomBarThickness ? BarThicknessRange.Clamp(settings.BarThickness) : null,
         TrayIconPitch = settings.CompactTray && verticalBar ? TrayPitchRange.Clamp(settings.TrayIconPitch) : null,
         TightenQuickSettings = settings.CompactTray && verticalBar,
         TaskButtonPitch = settings.CompactTaskButtons && verticalBar ? TaskButtonPitchRange.Clamp(settings.TaskButtonPitch) : null,
-        Clock = settings.CompactClock ? ClockCustomization.DateAboveTime : null,
+        Clock = settings.CompactClock ? ClockCustomization.ForCulture(names, regional) : null,
         TightenClockButton = settings.CompactClock && verticalBar,
         Thumbnails = settings.LargerThumbnails ? new ThumbnailBox(settings.ThumbnailMaxWidth, settings.ThumbnailMaxHeight) : null,
         StartMenu = StartMenuFrom(settings),
@@ -241,4 +249,24 @@ internal sealed record ClockCustomization(
         UpperStyle: new ClockTextStyle(FontSize: 12, Color: "#C8C8C8", LineHeight: 13),
         LowerStyle: new ClockTextStyle(FontSize: 18, FontWeight: "Medium", LineHeight: 19),
         LineSpacing: 4);
+
+    /// <summary>
+    /// The same stack in the person's own language: month and day names from
+    /// <paramref name="names"/> (the display language, which Windows reads the
+    /// clock's names in), and a 12 or 24 hour clock from the time pattern of
+    /// <paramref name="regional"/> (the regional format, where a person sets 12/24 h).
+    /// The upper line keeps Explorer's own color, which follows the theme; the
+    /// fixed grey of <see cref="DateAboveTime"/> is dim on a light bar.
+    /// </summary>
+    public static ClockCustomization ForCulture(CultureInfo names, CultureInfo regional)
+    {
+        bool twelveHour = regional.DateTimeFormat.ShortTimePattern.Contains('h');
+        return DateAboveTime with
+        {
+            UpperLines = [ClockLine.Date("MMM"), ClockLine.Date("dd"), ClockLine.Date("ddd")],
+            LowerLines = [ClockLine.Time(twelveHour ? "hh" : "HH"), ClockLine.Time("mm")],
+            UpperStyle = DateAboveTime.UpperStyle with { Color = null },
+            Locale = names.Name.Length == 0 ? "en-US" : names.Name,
+        };
+    }
 }

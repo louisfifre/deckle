@@ -68,7 +68,6 @@ public sealed class AutocorrectLexiconArtifactsTests : IDisposable
     [InlineData("push")]
     [InlineData("git")]
     [InlineData("size")]
-    [InlineData("stp")]
     [InlineData("logs")]
     [InlineData("telemetry")]
     public void GlobalEnglishLayerProtectsObservedDeveloperLiterals(string literal)
@@ -78,6 +77,22 @@ public sealed class AutocorrectLexiconArtifactsTests : IDisposable
             AutocorrectLexiconArtifacts.LoadGlobalEnglishSeed(dataDir));
 
         Assert.True(english.Contains(literal));
+    }
+
+    [Theory]
+    [InlineData("anytype")]
+    [InlineData("stp")]
+    [InlineData("winui")]
+    [InlineData("xaml")]
+    [InlineData("mcp")]
+    [InlineData("onnx")]
+    [InlineData("llm")]
+    [InlineData("jsonl")]
+    public void GlobalEnglishOverlayCarriesNoMaintainerSpecificWord(string word)
+    {
+        var english = new GlobalEnglishLexicon(generatedSeed: null);
+
+        Assert.False(english.Contains(word));
     }
 
     private void WriteGzipTsv(string fileName, string content)

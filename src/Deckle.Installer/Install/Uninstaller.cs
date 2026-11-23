@@ -115,7 +115,10 @@ internal static class Uninstaller
 
                 if (removeData)
                 {
-                    TryDeleteTree(dataDir);
+                    // Only what Deckle owns: a data root an earlier version let the
+                    // person pick may be a folder shared with other files.
+                    try { FolderSafety.RemoveDataRoot(dataDir); }
+                    catch (Exception ex) { InstallLog.Verbose($"data folder delete failed | path={dataDir} | {InstallLog.Cause(ex)}"); }
                     if (Directory.Exists(dataDir))
                         InstallLog.Warning($"Data folder not fully removed | reason=delete_failed | path={dataDir}");
                 }

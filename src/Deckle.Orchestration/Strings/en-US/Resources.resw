@@ -106,7 +106,10 @@
     <value>This app is already in your list.</value>
   </data>
   <data name="OrchestrationPage_ElevationAdvisory.Message" xml:space="preserve">
-    <value>Deckle can't see your apps start, so their HDR choices may not apply. Turn on Start elevated in General settings.</value>
+    <value>Apps that start in the background are only noticed once they come to the front, so their HDR choices may apply late or not at all.</value>
+  </data>
+  <data name="OrchestrationPage_ElevationAdvisoryAction.Content" xml:space="preserve">
+    <value>Turn on Start elevated</value>
   </data>
   <data name="OrchestrationPage_Empty.Text" xml:space="preserve">
     <value>Your list is empty. Browse for an app, choose a running one, or scan to fill it.</value>

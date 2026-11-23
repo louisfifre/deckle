@@ -14,6 +14,15 @@ public static class HomeMcp
         "mcp-token-home",
         "DECKLE_MCP_TOKEN_HOME");
 
+    // Home is the maintainer's own house space: its surface is offered to
+    // assistants only once the "home" alias names that space in spaces.json.
+    // Without it every Home tool would fail on an unknown alias.
+    public static bool IsConnected(AnytypeSpaceAliases aliases)
+    {
+        ArgumentNullException.ThrowIfNull(aliases);
+        return aliases.All.ContainsKey("home");
+    }
+
     private static readonly McpSurfaceDescriptor Descriptor = new(
         "deckle-home",
         "Deckle Home",

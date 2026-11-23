@@ -72,8 +72,8 @@
   <data name="EmptyStep1Body.Text" xml:space="preserve"><value>Deckle Folders finds the photos, documents, code and scripts in it on its own.</value></data>
   <data name="EmptyStep2Title.Text" xml:space="preserve"><value>You ask for descriptions, if you want them</value></data>
   <data name="EmptyStep2Body.Text" xml:space="preserve"><value>A model on this computer describes a photo, or a whole folder. Nothing starts on its own.</value></data>
-  <data name="EmptyStep3Title.Text" xml:space="preserve"><value>Search finds them again</value></data>
-  <data name="EmptyStep3Body.Text" xml:space="preserve"><value>From the magnifier at the top right: a person's name, a word from the description.</value></data>
+  <data name="EmptyStep3Title.Text" xml:space="preserve"><value>Search finds them by name</value></data>
+  <data name="EmptyStep3Body.Text" xml:space="preserve"><value>From the magnifier at the top right: PowerToys Command Palette looks a file up by its name.</value></data>
 
   <!-- File list -->
   <data name="FilesHeaderName.Text" xml:space="preserve"><value>Name</value></data>
@@ -195,10 +195,10 @@
   <data name="Photos_Description_Again" xml:space="preserve"><value>Describe again</value></data>
   <data name="Photos_Description_Retry" xml:space="preserve"><value>Try again</value></data>
   <data name="Photos_Description_Settings" xml:space="preserve"><value>Open settings</value></data>
-  <data name="Photos_DescriptionFailure_NoModelChosen" xml:space="preserve"><value>No model is chosen to describe photos. Choose one in settings.</value></data>
+  <data name="Photos_DescriptionFailure_NoModelChosen" xml:space="preserve"><value>No model is chosen to describe photos.</value></data>
   <data name="Photos_DescriptionFailure_ServerUnreachable" xml:space="preserve"><value>The model's server isn't responding. Start it on this computer, then try again.</value></data>
-  <data name="Photos_DescriptionFailure_ImagesNotSupported" xml:space="preserve"><value>The chosen model can't read images. Choose another one in settings.</value></data>
-  <data name="Photos_DescriptionFailure_EndpointNotLocal" xml:space="preserve"><value>The chosen provider isn't on this computer, and no photo leaves it. Choose a local provider in settings.</value></data>
+  <data name="Photos_DescriptionFailure_ImagesNotSupported" xml:space="preserve"><value>The chosen model can't read images.</value></data>
+  <data name="Photos_DescriptionFailure_EndpointNotLocal" xml:space="preserve"><value>The chosen provider isn't on this computer, and no photo leaves it.</value></data>
   <data name="Photos_DescriptionFailure_PhotoUnreadable" xml:space="preserve"><value>This photo can't be read.</value></data>
   <data name="Photos_DescriptionFailure_Stopped" xml:space="preserve"><value>The description was stopped before it was written.</value></data>
   <data name="Photos_DescriptionFailure_Other" xml:space="preserve"><value>The model didn't describe this photo: it refused the request or didn't answer in time.</value></data>

@@ -1,3 +1,4 @@
+using System.Globalization;
 using System.Text;
 
 namespace Deckle.Folders;
@@ -13,8 +14,9 @@ namespace Deckle.Folders;
 //
 // Encodings, the ones a text file on Windows comes in: a byte order mark says
 // UTF-8, UTF-16 little or big endian; without one the bytes are taken as
-// UTF-8 when they are valid UTF-8, as Windows-1252 otherwise, the code page
-// Notepad wrote French text in before UTF-8. Bytes that hold a NUL are not
+// UTF-8 when they are valid UTF-8, as the system ANSI code page otherwise
+// (Windows-1252 on a French or English machine, 1251 on a Russian one): the
+// code page Notepad wrote text in before UTF-8. Bytes that hold a NUL are not
 // text, whatever their extension says, and show no preview.
 //
 // Never throws for a file it cannot read (gone, locked, refused): it answers
@@ -59,9 +61,14 @@ public static class TextPreviewReader
     // the file goes on past them, so a character cut at the end is dropped
     // rather than shown as a replacement mark. Null when there is nothing to
     // show: no text, or not text.
-    public static string? Decode(ReadOnlySpan<byte> bytes, bool truncated)
+    public static string? Decode(ReadOnlySpan<byte> bytes, bool truncated) =>
+        Decode(bytes, truncated, SystemAnsi);
+
+    // The same, with the encoding that reads bytes which are not UTF-8: the
+    // system one for the app, a chosen one for a test.
+    public static string? Decode(ReadOnlySpan<byte> bytes, bool truncated, Encoding ansi)
     {
-        string text = DecodeCharacters(bytes, truncated);
+        string text = DecodeCharacters(bytes, truncated, ansi);
         if (text.Contains('\0')) return null;
 
         string[] lines = text.Replace("\r\n", "\n").Replace('\r', '\n').Split('\n');
@@ -75,15 +82,15 @@ public static class TextPreviewReader
         return preview.Length == 0 ? null : preview;
     }
 
-    private static string DecodeCharacters(ReadOnlySpan<byte> bytes, bool truncated)
+    private static string DecodeCharacters(ReadOnlySpan<byte> bytes, bool truncated, Encoding ansi)
     {
         if (bytes.StartsWith((ReadOnlySpan<byte>)[0xEF, 0xBB, 0xBF]))
-            return Utf8(bytes[3..], truncated) ?? Windows1252.GetString(bytes[3..]);
+            return Utf8(bytes[3..], truncated) ?? ansi.GetString(bytes[3..]);
         if (bytes.StartsWith((ReadOnlySpan<byte>)[0xFF, 0xFE]))
             return Utf16(Encoding.Unicode, bytes[2..]);
         if (bytes.StartsWith((ReadOnlySpan<byte>)[0xFE, 0xFF]))
             return Utf16(Encoding.BigEndianUnicode, bytes[2..]);
-        return Utf8(bytes, truncated) ?? Windows1252.GetString(bytes);
+        return Utf8(bytes, truncated) ?? ansi.GetString(bytes);
     }
 
     // Null when the bytes are not valid UTF-8. A sequence the byte limit cut
@@ -132,9 +139,10 @@ public static class TextPreviewReader
 
     private static readonly Encoding StrictUtf8 = new UTF8Encoding(encoderShouldEmitUTF8Identifier: false, throwOnInvalidBytes: true);
 
-    // Windows-1252 ships with .NET in CodePagesEncodingProvider, which is not
-    // registered by default; Latin-1, its near neighbour, if it ever is not
-    // there.
-    private static readonly Encoding Windows1252 =
-        CodePagesEncodingProvider.Instance.GetEncoding(1252) ?? Encoding.Latin1;
+    // The system ANSI code page ships with .NET in CodePagesEncodingProvider,
+    // which is not registered by default; Windows-1252, then Latin-1, if the
+    // machine's page is not there.
+    private static readonly Encoding SystemAnsi = CodePagesEncodingProvider.Instance
+        .GetEncoding(CultureInfo.CurrentCulture.TextInfo.ANSICodePage)
+        ?? CodePagesEncodingProvider.Instance.GetEncoding(1252) ?? Encoding.Latin1;
 }

@@ -6,7 +6,8 @@ namespace Deckle.App;
 public sealed partial class DeckleAppSource
 {
     // The resident Anytype runtime is gone without a failure. outcome:
-    // cancelled (reason shutdown). A runtime that
+    // cancelled (reason shutdown) or skipped (reason not_provisioned: no backend
+    // installed, so neither gateway nor approval pipe started). A runtime that
     // stopped on a failure says so at Error level, in AnytypeRuntimeFailed.
     // ex_type and ex_message are empty when the reason alone is the cause.
     [Event(EvtAnytypeRuntimeEnded,

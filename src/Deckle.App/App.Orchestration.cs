@@ -25,6 +25,8 @@ public partial class App
         // The settings page reads the detection status through this hook
         // rather than a reference to App.
         OrchestrationRuntime.StatusProvider = () => runtime.Status;
+        OrchestrationRuntime.OpenGeneralSettings =
+            () => ShowSettingsWindowLazy("Deckle.Settings.GeneralPage");
         runtime.Start();
     }
 
@@ -40,6 +42,7 @@ public partial class App
         if (_orchestration is null) return;
 
         OrchestrationRuntime.StatusProvider = null;
+        OrchestrationRuntime.OpenGeneralSettings = null;
         _orchestration?.Dispose();
         _orchestration = null;
         _orchestrationForeground?.Dispose();

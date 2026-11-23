@@ -31,6 +31,16 @@
                          IsClosable="False"
                          catalog:InfoBarLayout.CollapseWhenClosed="True" />
 
+                <!-- Why the Start elevated switch reverted (refused prompt,
+                     failed task) or reads off while an old task remains
+                     (GeneralPage.ElevatedStartup.cs). Closable: the person
+                     has read it. -->
+                <InfoBar x:Name="ElevatedStartupInfoBar"
+                         Severity="Warning"
+                         IsOpen="False"
+                         IsClosable="True"
+                         catalog:InfoBarLayout.CollapseWhenClosed="True" />
+
                 <!-- The theme, then the two logon switches (start with Windows,
                      start elevated) stand first, grouped under no title: a
                      section of one card earns no heading, the cards simply open

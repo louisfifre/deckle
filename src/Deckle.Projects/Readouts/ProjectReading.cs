@@ -34,7 +34,8 @@ public sealed record ProjectReading(
     int? UncommittedFiles,
     GitRemote? Remote,
     bool HasScriptMenu,
-    DateTimeOffset ReadAt)
+    DateTimeOffset ReadAt,
+    bool GitNotInstalled = false)
 {
     public bool IsGitRepository => Git == RepositoryState.Repository;
 

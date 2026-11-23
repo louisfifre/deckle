@@ -43,6 +43,20 @@ public sealed class ProjectReaderUnavailableTests
         Assert.Equal(reason, warning.Payload?[0]);
     }
 
+    [Theory]
+    [InlineData(GitFailure.NotFound, true)]
+    [InlineData(GitFailure.TimedOut, false)]
+    [InlineData(GitFailure.DubiousOwnership, false)]
+    public async Task OnlyAGitThatIsNotInstalledIsReadAsNotInstalled(GitFailure failure, bool notInstalled)
+    {
+        using var scratch = new ScratchFolder();
+        var reader = new ProjectReader(new FixedGit(Failed(failure)));
+
+        ProjectReading reading = await reader.ReadAsync(scratch.Folder("p"), CancellationToken.None);
+
+        Assert.Equal(notInstalled, reading.GitNotInstalled);
+    }
+
     [Fact]
     public async Task ManyProjectsAndRefreshesWithTheSameFailureAreOneWarning()
     {

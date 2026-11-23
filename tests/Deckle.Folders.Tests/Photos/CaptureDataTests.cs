@@ -135,8 +135,12 @@ public sealed class CaptureDataFormatTests
     };
 
     [Fact]
-    public void TheDateReadsLikeTheBoard() =>
-        Assert.Equal("dim. 14 juin 2026, 15:42", CaptureDataFormat.Taken(Sample, French));
+    public void TheDateReadsInTheCulturesOwnLongDateAndShortTime() =>
+        Assert.Equal("dimanche 14 juin 2026, 15:42", CaptureDataFormat.Taken(Sample, French));
+
+    [Fact]
+    public void TheDateFollowsTheCultureOrderAndClock() =>
+        Assert.Equal("Sunday, June 14, 2026, 3:42 PM", CaptureDataFormat.Taken(Sample, CultureInfo.GetCultureInfo("en-US")));
 
     [Fact]
     public void TheMakeIsLeftOutWhenTheModelNamesIt() =>

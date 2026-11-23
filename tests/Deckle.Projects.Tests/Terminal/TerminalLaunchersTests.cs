@@ -14,7 +14,7 @@ public sealed class TerminalLaunchersTests
     private const string Shell = @"C:\Program Files\PowerShell\7\pwsh.exe";
 
     private static TerminalCommand Command(string script = "Write-Host 'hi'; exit 3") =>
-        new(@"D:\sample\alpha", "Build & run \u00B7 alpha (1a2b)", Shell, script);
+        new(@"C:\sample\alpha", "Build & run \u00B7 alpha (1a2b)", Shell, script);
 
     [Fact]
     public void TheWindowsTerminalArgumentListIsTheMeasuredOne()
@@ -25,29 +25,29 @@ public sealed class TerminalLaunchersTests
 
         Assert.Equal(
             ["-w", "new", "--title", "Build & run \u00B7 alpha (1a2b)", "--suppressApplicationTitle",
-             "-d", @"D:\sample\alpha", Shell, "-NoProfile", "-EncodedCommand", RunWrapper.Encode(script)],
+             "-d", @"C:\sample\alpha", Shell, "-NoProfile", "-ExecutionPolicy", "Bypass", "-EncodedCommand", RunWrapper.Encode(script)],
             arguments);
     }
 
     [Fact]
     public void NothingInTheCommandReachesWtAsASemicolon()
     {
-        var command = new TerminalCommand(@"D:\a;b", "Title; with; semicolons", Shell, "a; b; c");
+        var command = new TerminalCommand(@"C:\a;b", "Title; with; semicolons", Shell, "a; b; c");
 
         IReadOnlyList<string> arguments = WindowsTerminalLauncher.Arguments(command);
 
         // The script crosses as base64; the title and the folder are escaped.
         Assert.DoesNotContain(';', arguments[^1]);
         Assert.Equal("Title, with, semicolons", arguments[arguments.ToList().IndexOf("--title") + 1]);
-        Assert.Equal(@"D:\a\;b", arguments[arguments.ToList().IndexOf("-d") + 1]);
+        Assert.Equal(@"C:\a\;b", arguments[arguments.ToList().IndexOf("-d") + 1]);
     }
 
     [Fact]
     public void ATerminalWithNoCommandIsOnlyTheFolder()
     {
-        IReadOnlyList<string> arguments = WindowsTerminalLauncher.Arguments(new TerminalCommand(@"D:\a", "Terminal"));
+        IReadOnlyList<string> arguments = WindowsTerminalLauncher.Arguments(new TerminalCommand(@"C:\a", "Terminal"));
 
-        Assert.Equal(["-w", "new", "--title", "Terminal", "--suppressApplicationTitle", "-d", @"D:\a"], arguments);
+        Assert.Equal(["-w", "new", "--title", "Terminal", "--suppressApplicationTitle", "-d", @"C:\a"], arguments);
     }
 
     [Fact]
@@ -78,8 +78,8 @@ public sealed class TerminalLaunchersTests
         var started = Assert.Single(starter.Started);
         Assert.Equal(Shell, started.FileName);
         Assert.True(started.UseShellExecute);
-        Assert.Equal(@"D:\sample\alpha", started.WorkingDirectory);
-        Assert.StartsWith("-NoProfile -EncodedCommand ", started.Arguments);
+        Assert.Equal(@"C:\sample\alpha", started.WorkingDirectory);
+        Assert.StartsWith("-NoProfile -ExecutionPolicy Bypass -EncodedCommand ", started.Arguments);
     }
 
     [Fact]
@@ -126,7 +126,7 @@ public sealed class TerminalLaunchersTests
     {
         var starter = new FakeProcessStarter();
 
-        new DefaultConsoleLauncher(starter).Launch(new TerminalCommand(@"D:\a", "Terminal"));
+        new DefaultConsoleLauncher(starter).Launch(new TerminalCommand(@"C:\a", "Terminal"));
 
         var started = Assert.Single(starter.Started);
         Assert.Equal("powershell.exe", started.FileName);
@@ -142,7 +142,7 @@ public sealed class TerminalLaunchersTests
         new DefaultConsoleLauncher(starter).Launch(Command(script));
 
         string encoded = starter.Started.Single().Arguments![
-            "-NoProfile -EncodedCommand ".Length..];
+            "-NoProfile -ExecutionPolicy Bypass -EncodedCommand ".Length..];
         Assert.Equal(script, Encoding.Unicode.GetString(Convert.FromBase64String(encoded)));
     }
 

@@ -16,6 +16,7 @@ public partial class TaskbarViewModel
     private const string ProblemNotAppliedKey = "TaskbarPage_ProblemNotApplied";
     private const string ProblemContestedKey = "TaskbarPage_ProblemContested";
     private const string ProblemErrorKey = "TaskbarPage_ProblemError";
+    private const string ProblemNeedsDownloadKey = "TaskbarPage_ProblemNeedsDownload";
     private const string HorizontalBarKey = "TaskbarPage_HorizontalBarNoEffect";
 
     public IReadOnlyList<SettingDescriptor> BarManifest =>
@@ -241,6 +242,7 @@ public partial class TaskbarViewModel
         {
             TaskbarProblem.NotApplied => ProblemNotAppliedKey,
             TaskbarProblem.Contested => ProblemContestedKey,
+            TaskbarProblem.NeedsDownload => ProblemNeedsDownloadKey,
             _ => ProblemErrorKey,
         };
     }

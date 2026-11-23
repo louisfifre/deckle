@@ -19,7 +19,11 @@ internal readonly record struct FunctionLookup(ExplorerFunction? Function, strin
     /// <summary>Microsoft's symbols for this build of the module do not name the function.</summary>
     public bool FunctionGone => Failure == SymbolMissing;
 
+    /// <summary>The symbols could not be fetched (offline, proxy, server down): connecting and trying again can fix it.</summary>
+    public bool DownloadFailed => Failure == DownloadFailure;
+
     public const string SymbolMissing = "symbol_missing";
+    public const string DownloadFailure = "download_failed";
 }
 
 // Finds where a function of explorer lives, from Microsoft's public symbols.
@@ -75,7 +79,7 @@ internal sealed class ExplorerFunctionLocator
         if (!cache.TryGetValue(key, out uint? rva))
         {
             if (_failedAt.TryGetValue(key, out DateTime failed) && DateTime.UtcNow - failed < RetryAfterFailure)
-                return new(null, "download_failed");
+                return new(null, FunctionLookup.DownloadFailure);
 
             string? failure;
             (rva, failure) = await ResolveFromServerAsync(module, identity, symbol, cancellation).ConfigureAwait(false);

@@ -109,7 +109,7 @@ public partial class App
                 }
 
                 DeckleAppSource.Log.DataRootCleanupStarting(old);
-                Directory.Delete(old, recursive: true);
+                Deckle.Install.FolderSafety.RemoveDataRoot(old);
                 DeckleAppSource.Log.DataRootCleanupFinished("completed", "none", stopwatch.ElapsedMilliseconds);
             }
             catch (Exception ex)

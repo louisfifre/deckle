@@ -76,9 +76,15 @@
       <TaskbarNativeMSBuild Condition="$(TaskbarNativeMSBuild.Contains(';'))">$(TaskbarNativeMSBuild.Split(';')[0])</TaskbarNativeMSBuild>
     </PropertyGroup>
 
-    <Warning Condition="'$(TaskbarNativeMSBuild)' == '' or !Exists('$(TaskbarNativeMSBuild)')"
+    <Warning Condition="('$(TaskbarNativeMSBuild)' == '' or !Exists('$(TaskbarNativeMSBuild)')) and '$(Configuration)' != 'Release'"
              Code="DECKLE001"
              Text="MSBuild.exe with the C++ build tools was not found (vswhere). Deckle.Shell.Taskbar.Native.dll is not built; the taskbar engine will be unavailable." />
+
+    <!-- A Release output is what gets deployed: without the DLL it would ship
+         a taskbar engine that is silently unavailable, so Release fails here. -->
+    <Error Condition="('$(TaskbarNativeMSBuild)' == '' or !Exists('$(TaskbarNativeMSBuild)')) and '$(Configuration)' == 'Release'"
+           Code="DECKLE001"
+           Text="MSBuild.exe with the C++ build tools was not found (vswhere). A Release build needs it to produce Deckle.Shell.Taskbar.Native.dll; install the Visual Studio C++ desktop workload." />
 
     <Exec Condition="'$(TaskbarNativeMSBuild)' != '' and Exists('$(TaskbarNativeMSBuild)')"
           Command="&quot;$(TaskbarNativeMSBuild)&quot; &quot;$(TaskbarNativeDir)Deckle.Shell.Taskbar.Native.vcxproj&quot; -p:Configuration=$(Configuration) -p:Platform=x64 -m:4 -v:m -nologo -nodeReuse:false -lowPriority:true"

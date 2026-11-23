@@ -128,7 +128,8 @@ public partial class GeneralViewModel : ObservableObject
     partial void OnElevatedStartupEnabledChanged(bool value)
     {
         if (_isSyncing) return;
-        bool ok = value ? ElevatedStartupService.Enable() : ElevatedStartupService.Disable();
+        var issue = ElevatedStartupIssue.None;
+        bool ok = value ? ElevatedStartupService.TryEnable(out issue) : ElevatedStartupService.Disable();
 
         _isSyncing = true;
         try
@@ -136,14 +137,22 @@ public partial class GeneralViewModel : ObservableObject
             if (ok)
             {
                 AutostartEnabled = true;
+                ElevatedStartupIssue = ElevatedStartupIssue.None;
             }
             else
             {
                 ElevatedStartupEnabled = !value;
+                ElevatedStartupIssue = issue;
             }
         }
         finally { _isSyncing = false; }
     }
+
+    // Why the switch last reverted or reads off while a task is left behind;
+    // the page shows it in an InfoBar. Not persisted: Load() re-derives the
+    // stale-task case from the probe, a refusal lasts until the next attempt.
+    [ObservableProperty]
+    public partial ElevatedStartupIssue ElevatedStartupIssue { get; set; }
 
     // ── Data folder ──────────────────────────────────────────────────────────
     //
@@ -289,8 +298,9 @@ public partial class GeneralViewModel : ObservableObject
             // and ask the Run key alone for the other vehicle. The facade's
             // StartsAtLogon would probe the task a second time whenever the Run
             // key is absent, one schtasks spawn too many on every visit.
-            bool elevated = ElevatedStartupService.IsEnabled();
+            bool elevated = ElevatedStartupService.Probe(out var elevatedIssue);
             ElevatedStartupEnabled = elevated;
+            ElevatedStartupIssue = elevatedIssue;
             AutostartEnabled = elevated || AutostartService.IsEnabled();
             BackupDirectory = shell.Paths.BackupDirectory;
             UpdateAutoCheckEnabled = shell.Updates.AutoCheckEnabled;

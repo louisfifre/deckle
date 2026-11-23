@@ -559,7 +559,6 @@ _Generated from `git ls-files` — do not edit by hand._
 │   │   ├── CrashSupervisor.cs
 │   │   ├── Deckle.App.csproj
 │   │   ├── FileTranscriptionRun.cs
-│   │   ├── global.json
 │   │   ├── LogWindow.Chrome.cs
 │   │   ├── LogWindow.Interaction.cs
 │   │   ├── LogWindow.Model.cs
@@ -1405,6 +1404,8 @@ _Generated from `git ls-files` — do not edit by hand._
 │   │   └── TrackpadSettingsService.cs
 │   ├── Deckle.Install/
 │   │   ├── Deckle.Install.csproj
+│   │   ├── FolderSafety.cs
+│   │   ├── InstallFailureText.cs
 │   │   ├── InstallPaths.cs
 │   │   ├── ReleaseResolver.cs
 │   │   ├── RunningProcesses.cs
@@ -2081,6 +2082,7 @@ _Generated from `git ls-files` — do not edit by hand._
 │   │   ├── Modules/
 │   │   │   └── SettingsModuleRegistry.cs
 │   │   ├── Pages/
+│   │   │   ├── GeneralPage.ElevatedStartup.cs
 │   │   │   ├── GeneralPage.InterfaceCapture.cs
 │   │   │   ├── GeneralPage.ToastsElevated.cs
 │   │   │   ├── GeneralPage.xaml
@@ -2170,6 +2172,7 @@ _Generated from `git ls-files` — do not edit by hand._
 │   │   ├── Deckle.Shell.csproj
 │   │   ├── DeckleShellSource.cs
 │   │   ├── DispatcherQueueExtensions.cs
+│   │   ├── ElevatedStartupIssue.cs
 │   │   ├── ElevatedStartupService.cs
 │   │   ├── GlobalHotkeyBindings.cs
 │   │   ├── HotkeyDesktopPolicy.cs
@@ -2750,6 +2753,7 @@ _Generated from `git ls-files` — do not edit by hand._
 │   ├── Deckle.Core.Tests/
 │   │   ├── AppIdentityTests.cs
 │   │   ├── Deckle.Core.Tests.csproj
+│   │   ├── DownloaderStallTests.cs
 │   │   ├── DpiTests.cs
 │   │   ├── FolderNameOrderTests.cs
 │   │   ├── FolderPathsTests.cs
@@ -2999,6 +3003,8 @@ _Generated from `git ls-files` — do not edit by hand._
 │   │   └── TrackpadSettingsTests.cs
 │   ├── Deckle.Install.Tests/
 │   │   ├── Deckle.Install.Tests.csproj
+│   │   ├── FolderSafetyTests.cs
+│   │   ├── InstallFailureTextTests.cs
 │   │   ├── InstallPathsTests.cs
 │   │   ├── ReleaseResolverBugNotes.md
 │   │   ├── ReleaseResolverRegressionTests.cs
@@ -3152,6 +3158,7 @@ _Generated from `git ls-files` — do not edit by hand._
 │   │   ├── AppSessionTrackerTests.cs
 │   │   ├── Deckle.Orchestration.Tests.csproj
 │   │   ├── DeckleOrchestrationSourceTests.cs
+│   │   ├── DetectionStatusTests.cs
 │   │   ├── DisplayConfigLayoutTests.cs
 │   │   ├── ExecutableIconTests.cs
 │   │   ├── ExecutableLocatorTests.cs
@@ -3269,6 +3276,7 @@ _Generated from `git ls-files` — do not edit by hand._
 │   ├── Deckle.Shell.Taskbar.Tests/
 │   │   ├── Native/
 │   │   │   ├── BarThicknessTests.cs
+│   │   │   ├── ClockCultureTests.cs
 │   │   │   ├── CompositionDiagGuardTests.cs
 │   │   │   ├── EngineResidencyTests.cs
 │   │   │   ├── ExplorerCompositionDiagBugNotes.md
@@ -3277,6 +3285,7 @@ _Generated from `git ls-files` — do not edit by hand._
 │   │   │   ├── JsonLineFramingTests.cs
 │   │   │   ├── ModuleIdentityTests.cs
 │   │   │   ├── NativeCommandTests.cs
+│   │   │   ├── NativeDllReleaseGuardTests.cs
 │   │   │   ├── NativeEngineMessageTests.cs
 │   │   │   ├── NativeLogRelayTests.cs
 │   │   │   ├── NativeMessageTests.cs
@@ -3322,6 +3331,7 @@ _Generated from `git ls-files` — do not edit by hand._
 │   ├── Deckle.Shell.Tests/
 │   │   ├── Deckle.Shell.Tests.csproj
 │   │   ├── DispatcherQueueExtensionsTests.cs
+│   │   ├── ElevatedStartupServiceTests.cs
 │   │   ├── GlobalHotkeyBindingsTests.cs
 │   │   ├── HotkeyBugNotes.md
 │   │   ├── HotkeyDesktopPolicyTests.cs
@@ -3471,6 +3481,7 @@ _Generated from `git ls-files` — do not edit by hand._
 ├── Directory.Build.rsp
 ├── Directory.Build.targets
 ├── Directory.Packages.props
+├── global.json
 ├── GLOSSARY-MAP.md  — glossary-map-deckle Index of Deckle's bounded-context glossaries — where each module's GLOSSARY.md…
 ├── LICENSE
 ├── NOTICE.md

@@ -21,7 +21,7 @@ public sealed class DefaultConsoleLauncher(IProcessStarter starter) : ITerminalL
             WorkingDirectory = command.WorkingDirectory,
         };
         if (command.ScriptText is not null)
-            start.Arguments = $"-NoProfile -EncodedCommand {RunWrapper.Encode(command.ScriptText)}";
+            start.Arguments = $"-NoProfile -ExecutionPolicy Bypass -EncodedCommand {RunWrapper.Encode(command.ScriptText)}";
 
         try
         {

@@ -4,6 +4,7 @@ using System.IO;
 using Microsoft.UI.Xaml.Controls;
 using Microsoft.UI.Xaml.Navigation;
 using Windows.Storage.Pickers;
+using Deckle.Install;
 using Deckle.Localization;
 
 namespace Deckle.Setup;
@@ -74,7 +75,7 @@ public sealed partial class FoldersPage : Page
     {
         string? picked = await PickFolderAsync();
         if (picked is null || _context is null) return;
-        _context.InstallDirectory = picked;
+        _context.InstallDirectory = FolderSafety.OwnFolderUnder(picked);
         RefreshPaths();
         RefreshSpace();
     }
@@ -83,7 +84,7 @@ public sealed partial class FoldersPage : Page
     {
         string? picked = await PickFolderAsync();
         if (picked is null || _context is null) return;
-        _context.DataDirectory = picked;
+        _context.DataDirectory = FolderSafety.OwnFolderUnder(picked);
         RefreshPaths();
         RefreshSpace();
     }

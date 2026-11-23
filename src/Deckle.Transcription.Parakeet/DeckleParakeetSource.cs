@@ -33,6 +33,7 @@ public sealed class DeckleParakeetSource : DeckleEventSource
     public const int EvtTranscribeSummary          = 13;
     public const int EvtChunkDecoded               = 14;
     public const int EvtLexiconUnavailable         = 15;
+    public const int EvtTranscribeGpuFallback      = 16;
 
     // ── Model load ──────────────────────────────────────────────────────
 
@@ -213,6 +214,19 @@ public sealed class DeckleParakeetSource : DeckleEventSource
     public void LexiconUnavailable(string ex_type, string ex_message)
     {
         if (IsEnabled()) WriteEvent(EvtLexiconUnavailable, ex_type, PathRedaction.Redact(ex_message));
+    }
+
+    // The GPU encoder failed during a take and the chunk restarted on a CPU encoder; the take
+    // goes on, slower, and so do the next ones until the model is loaded again. step is the
+    // one that failed: encode | decode. Once per take at most.
+    [Event(EvtTranscribeGpuFallback,
+           Level = EventLevel.Warning,
+           Keywords = (EventKeywords)Keywords.Pipeline,
+           Tags = ObservationTags.Milestone,
+           Message = "The GPU failed during a take, the Parakeet encoder now runs on the CPU\nstep={0} | ex_type={1} | encoder_precision={2}")]
+    public void TranscribeGpuFallback(string step, string ex_type, string encoder_precision)
+    {
+        if (IsEnabled()) WriteEvent(EvtTranscribeGpuFallback, step, ex_type, encoder_precision);
     }
 
     // A table row: one per chunk, so the chunks of a long take compare column by

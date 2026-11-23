@@ -2,7 +2,8 @@ namespace Deckle.Autocorrect;
 
 // The permanent restricted-English protection tier. The generated FranceTerme
 // seed supplies broad technical terminology; this small reviewed overlay covers
-// everyday developer literals. Several deliberately collide with plausible French
+// everyday developer literals. A word only the maintainer uses (a product or
+// framework name) belongs in the personal dictionary, not here. Several deliberately collide with plausible French
 // neighbours (docs/dos, repo/repos, model/modèle): that is exactly why they need
 // an explicit literal grant instead of being inferred from spelling distance.
 public sealed class GlobalEnglishLexicon : IFrequencyLexicon
@@ -11,9 +12,8 @@ public sealed class GlobalEnglishLexicon : IFrequencyLexicon
 
     private static readonly HashSet<string> TechnicalLiterals = new(StringComparer.Ordinal)
     {
-        "anytype", "api", "cli", "cpu", "def", "docs", "git", "github",
-        "gpu", "json", "jsonl", "llm", "logs", "mcp", "model", "onnx", "push",
-        "repo", "size", "stp", "telemetry", "ui", "ux", "winui", "xaml",
+        "api", "cli", "cpu", "def", "docs", "git", "github", "gpu", "json",
+        "logs", "model", "push", "repo", "size", "telemetry", "ui", "ux",
     };
 
     private readonly IFrequencyLexicon? _generatedSeed;
