@@ -47,6 +47,18 @@
                          Margin="0,0,0,8"
                          catalog:InfoBarLayout.CollapseWhenClosed="True" />
 
+                <!-- Advisory, not an error: paragraph rewriting needs the local Ollama and
+                     its model on this PC and stays off until both are there.
+                     Open only while the module is on and one of them is missing;
+                     the message says which (set by code). -->
+                <InfoBar x:Name="ParagraphRewriteBar"
+                         x:Uid="LlmPage_ParagraphRewriteBar"
+                         Severity="Informational"
+                         IsOpen="False"
+                         IsClosable="False"
+                         Margin="0,0,0,8"
+                         catalog:InfoBarLayout.CollapseWhenClosed="True" />
+
                 <llm:LlmGeneralSection x:Name="GeneralSection" />
 
                 <!-- Mask-not-grey: the dependent sections collapse out of layout

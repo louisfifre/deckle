@@ -628,4 +628,16 @@
   <data name="SettingsModuleNavLabel" xml:space="preserve">
     <value>Rewriting</value>
   </data>
+  <data name="LlmPage_ParagraphRewriteBar.Title" xml:space="preserve">
+    <value>Paragraph rewriting is off</value>
+  </data>
+  <data name="Settings_ParagraphRewrite_OllamaMissing_Format" xml:space="preserve">
+    <value>It needs Ollama running on this PC with the {0} model. Install Ollama from ollama.com, start it, then run: ollama pull {0}. Rewriting stays off until then.</value>
+  </data>
+  <data name="Settings_ParagraphRewrite_ModelMissing_Format" xml:space="preserve">
+    <value>Ollama is running but does not have the {0} model. Run: ollama pull {0}. Rewriting stays off until then.</value>
+  </data>
+  <data name="Settings_ParagraphRewrite_ProviderOff" xml:space="preserve">
+    <value>It uses the Ollama provider, which is switched off or missing in Providers below. Switch it on; rewriting stays off until then.</value>
+  </data>
 </root>
