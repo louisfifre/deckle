@@ -1942,6 +1942,7 @@ _Generated from `git ls-files` — do not edit by hand._
 │   │   │   ├── CardGridCapacity.cs
 │   │   │   ├── CardMeta.cs
 │   │   │   ├── DeckleProjectsSource.Window.cs
+│   │   │   ├── HomeLayout.cs
 │   │   │   └── ProjectsTarget.cs
 │   │   ├── Readouts/
 │   │   │   ├── Manifests/
@@ -3226,6 +3227,8 @@ _Generated from `git ls-files` — do not edit by hand._
 │   │   │   └── ProjectOpenerTests.cs
 │   │   ├── Presentation/
 │   │   │   ├── ActionStatesTests.cs
+│   │   │   ├── HomeLayoutBugNotes.md
+│   │   │   ├── HomeLayoutTests.cs
 │   │   │   └── PresentationTests.cs
 │   │   ├── Readouts/
 │   │   │   ├── AgentReadingTests.cs
