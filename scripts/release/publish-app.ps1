@@ -6,10 +6,17 @@
     stub and the self-contained app ZIP with its sha256 sidecar. Without
     -Publish both are built locally for inspection; with -Publish they are
     also uploaded as a GitHub Release under the version tag via gh.
+    -App folders or mail builds the portable ZIP of Deckle Folders or Deckle
+    Mail instead; with -Publish it is uploaded as a private draft release
+    under folders-vX.Y.Z or mail-vX.Y.Z, never made public.
 .NOTES
     order: 110
     action: App release / prepare |
     action: App release / publish | -Publish | danger | Publishes a public GitHub Release of the app.
+    action: Folders release / prepare | -App folders
+    action: Folders release / publish draft | -App folders -Publish | danger | Uploads a private draft GitHub Release of Deckle Folders.
+    action: Mail release / prepare | -App mail
+    action: Mail release / publish draft | -App mail -Publish | danger | Uploads a private draft GitHub Release of Deckle Mail.
 #>
 
 # The app payload is the publish folder, not a single file: the rationale sits
@@ -18,6 +25,13 @@
 
 [CmdletBinding()]
 param(
+    # Which app of the suite: deckle (the published Deckle, installer and
+    # public release), folders (DeckleFolders.exe) or mail (DeckleMail.exe),
+    # each a portable ZIP for a private draft release. Checked below, not a
+    # [ValidateSet], as in build-run.ps1: the launcher reads an enumerated
+    # parameter as the script's variant.
+    [string]$App = 'deckle',
+
     # Build a specific repo or worktree instead of the one containing this
     # script. Accepts any path — main repo or any git worktree root.
     [string]$Target,
@@ -49,10 +63,18 @@ $LibDir = Join-Path $ScriptsDir 'lib'
 . (Join-Path $LibDir 'native-console.ps1')
 . (Join-Path $LibDir 'version.ps1')
 Import-Module (Join-Path $LibDir 'release-validation.psm1') -Force
+Import-Module (Join-Path $LibDir 'standalone-app-release.psm1') -Force
+
+if ($App -cne 'deckle' -and $App -cnotin @(Get-StandaloneAppNames)) {
+    [Console]::Error.WriteLine("-App is deckle, $((Get-StandaloneAppNames) -join ' or '), not '$App'.")
+    exit 1
+}
 
 $WorkflowOutput = New-WorkflowOutput -Category 'publish'
 
-$Workflow = if ($Publish) { 'Publish app release' } else { 'Prepare app release artifacts' }
+$Workflow = if ($App -cne 'deckle') {
+    if ($Publish) { "Publish $App draft release" } else { "Prepare $App release archive" }
+} elseif ($Publish) { 'Publish app release' } else { 'Prepare app release artifacts' }
 $RepoRoot = $null
 $Version = $null
 $SetupPath = $null
@@ -82,6 +104,140 @@ if ($Target) {
     $RepoRoot = (Get-Item $Target).FullName
 } else {
     $RepoRoot = Split-Path -Parent $ScriptsDir
+}
+
+# A standalone app (Folders, Mail) takes its own path and ends here: a portable
+# ZIP and its sha256, and with -Publish a private draft release under its own
+# tag. Nothing on this path stops a running app, builds an installer, marks a
+# release, touches CHANGELOG.md or makes anything public: the Deckle path below
+# keeps those acts.
+if ($App -cne 'deckle') {
+    Write-OutputText -Text "Repo: $RepoRoot" -Role Muted
+    $Version = Get-RepositoryVersion -Path $RepoRoot
+    $AppRelease = Get-StandaloneAppRelease -App $App -RepoRoot $RepoRoot -Version $Version
+    if (-not (Test-Path -LiteralPath $AppRelease.Csproj)) {
+        throw "csproj not found at $($AppRelease.Csproj): is '$RepoRoot' a Deckle repo?"
+    }
+    Write-WorkflowStep -Output $WorkflowOutput -Message "$($AppRelease.Title) v$Version"
+    $HeadSha = (& git -C $RepoRoot rev-parse HEAD).Trim()
+    if ($LASTEXITCODE -ne 0) { throw "git rev-parse HEAD failed (code $LASTEXITCODE)" }
+
+    $OwnerRepo = '<owner>/deckle'
+    $remoteUrl = & git -C $RepoRoot remote get-url origin 2>$null
+    if ($LASTEXITCODE -eq 0 -and $remoteUrl -match 'github\.com[:/]([^/]+/[^/.]+)') { $OwnerRepo = $Matches[1] }
+
+    # The draft is checked before minutes of build: clean main, in step with
+    # origin, GitHub reachable, and no release under the app's tag yet. An
+    # existing one is left for the maintainer to look at, never replaced.
+    if ($Publish) {
+        Write-WorkflowStep -Output $WorkflowOutput -Message 'Fetch and validate release source'
+        & git -C $RepoRoot fetch origin main --tags --prune
+        if ($LASTEXITCODE -ne 0) { throw "git fetch origin main --tags failed (code $LASTEXITCODE)" }
+        $source = Assert-DeckleReleaseRepositorySource -RepoRoot $RepoRoot
+        $OwnerRepo = $source.OwnerRepo
+        $HeadSha = $source.HeadSha
+        & gh auth status --hostname github.com *> $null
+        if ($LASTEXITCODE -ne 0) { throw 'GitHub CLI is not authenticated for github.com' }
+        $resolvedRepo = (& gh repo view $OwnerRepo --json nameWithOwner --jq '.nameWithOwner').Trim()
+        if ($LASTEXITCODE -ne 0 -or $resolvedRepo -cne $OwnerRepo) {
+            throw "GitHub repository preflight failed for $OwnerRepo"
+        }
+        & gh release view $AppRelease.Tag --repo $OwnerRepo *> $null
+        if ($LASTEXITCODE -eq 0) {
+            throw "A GitHub release $($AppRelease.Tag) already exists in $OwnerRepo; look at it on GitHub, this script never replaces one"
+        }
+        Write-WorkflowMessage -Output $WorkflowOutput -Message "clean main at $($HeadSha.Substring(0, 12)), GitHub access verified for $OwnerRepo"
+    }
+
+    if (-not $OutDir) { $OutDir = Join-Path $RepoRoot "artifacts\$($AppRelease.DirName)" }
+    if (Test-Path $OutDir) {
+        Write-WorkflowMessage -Output $WorkflowOutput -Message "OutDir exists, cleaning: $OutDir" -Role Warning
+        Remove-Item $OutDir -Recurse -Force
+    }
+    $null = New-Item -ItemType Directory -Path $OutDir
+    $PublishDir = Join-Path $OutDir 'publish'
+    $ZipPath = Join-Path $OutDir $AppRelease.ZipName
+    $ShaPath = Join-Path $OutDir $AppRelease.ShaName
+
+    # Through build-locked.ps1, which holds the machine to three builds at once.
+    Write-WorkflowStep -Output $WorkflowOutput -Message 'Publish (Release, win-x64, self-contained folder) through build-locked.ps1'
+    $buildArguments = @(
+        '-NoProfile', '-File', (Join-Path $ScriptsDir 'build-locked.ps1'),
+        '-Project', $AppRelease.Csproj,
+        '-Configuration', 'Release'
+    ) + @(Get-StandaloneAppPublishArguments -PublishDir $PublishDir)
+    $buildExitCode = Invoke-CapturedProcess -FilePath 'pwsh' -ArgumentList $buildArguments
+    if ($buildExitCode -ne 0) { throw "build-locked.ps1 publish of $($AppRelease.Title) failed (code $buildExitCode)" }
+    foreach ($required in @($AppRelease.ExeName, $AppRelease.PriName)) {
+        if (-not (Test-Path -LiteralPath (Join-Path $PublishDir $required))) {
+            throw "$required missing from publish output $PublishDir"
+        }
+    }
+    $fileCount = (Get-ChildItem $PublishDir -Recurse -File).Count
+    Write-WorkflowMessage -Output $WorkflowOutput -Message "publish folder OK: $fileCount files ($($AppRelease.ExeName) + $($AppRelease.PriName) present)"
+
+    Write-WorkflowStep -Output $WorkflowOutput -Message "Compress to $($AppRelease.ZipName)"
+    Add-Type -AssemblyName System.IO.Compression.FileSystem
+    [System.IO.Compression.ZipFile]::CreateFromDirectory(
+        $PublishDir, $ZipPath,
+        [System.IO.Compression.CompressionLevel]::Optimal, $false)
+    Assert-DeckleReleaseArchive -PublishDir $PublishDir -ZipPath $ZipPath -RequiredEntries @($AppRelease.ExeName, $AppRelease.PriName)
+    $ZipSha256 = (Get-FileHash $ZipPath -Algorithm SHA256).Hash.ToLower()
+    $ZipBytes = (Get-Item $ZipPath).Length
+    Set-Content -Path $ShaPath -Value ('{0} *{1}' -f $ZipSha256, $AppRelease.ZipName) -Encoding ascii
+    Write-WorkflowMessage -Output $WorkflowOutput -Message "$($AppRelease.ZipName) ($([math]::Round($ZipBytes / 1MB, 2)) MB) sha256=$ZipSha256, $($AppRelease.ShaName) written"
+
+    if (-not $Notes) {
+        $Notes = Join-Path $OutDir 'release-notes.md'
+        Set-Content -LiteralPath $Notes -Value (Get-StandaloneAppDraftNotes -Release $AppRelease -HeadSha $HeadSha) -Encoding utf8
+    } elseif (-not (Test-Path -LiteralPath $Notes -PathType Leaf)) {
+        throw "Release notes file not found: $Notes"
+    }
+    $ghArgs = Get-StandaloneAppDraftArguments -Release $AppRelease -OwnerRepo $OwnerRepo -HeadSha $HeadSha -ZipPath $ZipPath -ShaPath $ShaPath -NotesPath $Notes
+
+    $DraftUrl = $null
+    if ($Publish) {
+        Write-WorkflowStep -Output $WorkflowOutput -Message "Upload draft release $($AppRelease.Tag)"
+        & gh @ghArgs
+        if ($LASTEXITCODE -ne 0) { throw "gh release create failed (code $LASTEXITCODE)" }
+        $draftJson = (& gh release view $AppRelease.Tag --repo $OwnerRepo --json isDraft,assets,tagName,targetCommitish,url) -join "`n"
+        if ($LASTEXITCODE -ne 0) { throw "GitHub draft $($AppRelease.Tag) could not be read after upload" }
+        $draft = $draftJson | ConvertFrom-Json
+        Assert-DeckleReleaseDraft -Release $draft -Tag $AppRelease.Tag -HeadSha $HeadSha -ExpectedAssets @{
+            $AppRelease.ZipName = $ZipBytes
+            $AppRelease.ShaName = (Get-Item $ShaPath).Length
+        }
+        $DraftUrl = $draft.url
+        $Published = $true
+        Write-WorkflowMessage -Output $WorkflowOutput -Message "Draft $($AppRelease.Tag) uploaded and verified by name and byte size; it stays private"
+    }
+
+    $ghDisplay = ($ghArgs | ForEach-Object { if ($_ -match '\s') { "`"$_`"" } else { $_ } }) -join ' '
+    Write-ActionSummary `
+        -Workflow $Workflow `
+        -Result Success `
+        -Sentence $(if ($Published) { "$($AppRelease.Title) v$Version was uploaded as a private draft release." } else { "$($AppRelease.Title) v$Version was packaged locally; nothing was sent." }) `
+        -Details ([ordered]@{
+            Worktree    = $RepoRoot
+            Version     = "v$Version"
+            Tag         = $AppRelease.Tag
+            OutDir      = $OutDir
+            Payload     = $ZipPath
+            Files       = $fileCount
+            SHA256      = $ZipSha256
+            Notes       = $Notes
+            Published   = $(if ($Published) { 'Draft' } else { 'No' })
+            'Draft URL' = $DraftUrl
+        }) `
+        -Next $(if ($Published) {
+            @('Look at the draft on GitHub; publishing it stays a separate act.')
+        } else {
+            @(
+                "To upload it as a private draft (maintainer act): pwsh scripts/release/publish-app.ps1 -App $App -Target `"$RepoRoot`" -Publish",
+                "which runs: gh $ghDisplay"
+            )
+        })
+    return
 }
 
 # Once GitHub holds the public release, the repository records it: the
