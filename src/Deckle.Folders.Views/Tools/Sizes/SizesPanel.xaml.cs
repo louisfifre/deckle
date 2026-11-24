@@ -1,6 +1,7 @@
 using Microsoft.UI.Xaml;
 using Microsoft.UI.Xaml.Automation;
 using Microsoft.UI.Xaml.Controls;
+using Microsoft.UI.Xaml.Media;
 using Deckle.Core;
 
 namespace Deckle.Folders.Views;
@@ -8,8 +9,49 @@ namespace Deckle.Folders.Views;
 // One of the heaviest files beneath the place, as the panel lists it: its name,
 // the folder it is in written from the place (empty when it lies in the place
 // itself, so the path never only repeats the name: spec, Sizes), and its size.
-internal sealed class HeavyItem(HeavyFile file, string place)
+//
+// Its icon is the one Windows gives the file, asked for when the list realizes
+// the item. There is no glyph to fall back on: the cell stays empty until the
+// image comes, and when the shell has none.
+internal sealed class HeavyItem(HeavyFile file, string place) : System.ComponentModel.INotifyPropertyChanged
 {
+    private ImageSource? _icon;
+    private CancellationTokenSource? _loading;
+
+    public event System.ComponentModel.PropertyChangedEventHandler? PropertyChanged;
+
+    public ImageSource? Icon
+    {
+        get => _icon;
+        private set
+        {
+            if (ReferenceEquals(_icon, value)) return;
+            _icon = value;
+            PropertyChanged?.Invoke(this, new System.ComponentModel.PropertyChangedEventArgs(nameof(Icon)));
+        }
+    }
+
+    public async Task LoadIconAsync(IFileIconProvider icons, int pixelSize)
+    {
+        if (_icon is not null) return;
+        _loading?.Cancel();
+        var loading = new CancellationTokenSource();
+        _loading = loading;
+        try
+        {
+            Icon = await icons.GetAsync(File.Path, isFolder: false, pixelSize, loading.Token);
+        }
+        catch (OperationCanceledException)
+        {
+        }
+    }
+
+    public void ReleaseIcon()
+    {
+        _loading?.Cancel();
+        _loading = null;
+    }
+
     public HeavyFile File { get; } = file;
     public string Name => File.Name;
     public string Where { get; } = file.FolderRelativeTo(place);
@@ -30,9 +72,11 @@ internal sealed partial class SizesPanel : UserControl
 {
     private IReadOnlyList<HeavyFile> _shown = [];
     private bool _marking;
+    private readonly IFileIconProvider _icons;
 
-    public SizesPanel()
+    public SizesPanel(IFileIconProvider icons)
     {
+        _icons = icons;
         InitializeComponent();
         HeaviestTitle.Text = FoldersText.Get("Sizes_Heaviest");
         HeaviestNone.Text = FoldersText.Get("Sizes_Heaviest_None");
@@ -104,6 +148,18 @@ internal sealed partial class SizesPanel : UserControl
         {
             _marking = false;
         }
+    }
+
+    private void OnHeaviestContainerContentChanging(ListViewBase sender, ContainerContentChangingEventArgs args)
+    {
+        if (args.Item is not HeavyItem item) return;
+        if (args.InRecycleQueue)
+        {
+            item.ReleaseIcon();
+            return;
+        }
+        // The same 16 DIP cell as a row of the sizes list.
+        _ = item.LoadIconAsync(_icons, (int)Math.Round(16 * (XamlRoot?.RasterizationScale ?? 1.0)));
     }
 
     private void OnHeaviestSelectionChanged(object sender, SelectionChangedEventArgs e)
