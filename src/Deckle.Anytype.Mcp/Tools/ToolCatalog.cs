@@ -375,7 +375,7 @@ public static class ToolCatalog
 
             new(
                 "update",
-                "Rename an object and/or set its properties: pass `name` to retitle it, `properties` to set fields (keys or display names map to values). At least one of the two is required. Select and multi-select values must name existing options — an unknown value is rejected with the valid options listed; options are created by hand in Anytype, never through this tool. The markdown body is not a property and cannot be written with this tool.",
+                "Rename an object and/or set its properties: pass `name` to retitle it, `properties` to set fields (keys or display names map to values). At least one of the two is required. Select and multi-select values must name existing options — an unknown value is rejected with the valid options listed; options are created by hand in Anytype, never through this tool. A date takes YYYY-MM-DD or an ISO timestamp; null or an empty string clears it. The markdown body is not a property and cannot be written with this tool.",
                 Schema(
                     required:
                     [

@@ -306,6 +306,42 @@ public class QueryGesturesTests
         Assert.DoesNotContain(server.Requests, r => r.Path.Contains("/properties"));
     }
 
+    // The API clears a property sent as JSON null and parses any string as a
+    // date, so an empty string answered 400 « invalid date format » and no date
+    // could be emptied. A null or blank date must go out as null.
+    [Theory]
+    [Trait("Category", "regression")]
+    [InlineData(null)]
+    [InlineData("")]
+    [InlineData("   ")]
+    public async Task UpdateWithANullOrBlankDateClearsItWithJsonNull(string? cleared)
+    {
+        using var server = new FakeAnytypeServer();
+        server.OnGetObject(TaskId, TaskObject());
+        server.OnPatchObject(TaskId, TaskObject());
+
+        var props = new JsonObject { [DevSpace.Props.DueDate] = cleared is null ? null : JsonValue.Create(cleared) };
+        await NewGestures(server).UpdateAsync(TaskId, null, props, Ct);
+
+        JsonObject entry = Assert.IsType<JsonObject>(Assert.Single((JsonArray)server.LastBodyFor("PATCH")["properties"]!));
+        Assert.Equal(DevSpace.Props.DueDate, entry["key"]!.GetValue<string>());
+        Assert.True(entry.ContainsKey("date"));
+        Assert.Null(entry["date"]);
+    }
+
+    [Fact]
+    public async Task UpdateWithADateSendsItAsGiven()
+    {
+        using var server = new FakeAnytypeServer();
+        server.OnGetObject(TaskId, TaskObject());
+        server.OnPatchObject(TaskId, TaskObject());
+
+        await NewGestures(server).UpdateAsync(TaskId, null, new JsonObject { [DevSpace.Props.DueDate] = "2026-12-01" }, Ct);
+
+        JsonObject entry = Assert.IsType<JsonObject>(Assert.Single((JsonArray)server.LastBodyFor("PATCH")["properties"]!));
+        Assert.Equal("2026-12-01", entry["date"]!.GetValue<string>());
+    }
+
     [Fact]
     public async Task UpdateOnFrozenVocabularyWithUnknownValueThrowsAndSendsNoPatch()
     {
