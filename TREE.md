@@ -2603,6 +2603,7 @@ _Generated from `git ls-files` — do not edit by hand._
 │   │   ├── ProjectGesturesTests.cs
 │   │   ├── ProviderKeywordsBugNotes.md
 │   │   ├── ProviderKeywordsTests.cs
+│   │   ├── QueryGesturesBugNotes.md
 │   │   ├── QueryGesturesTests.cs
 │   │   ├── ReadGesturesBugNotes.md
 │   │   ├── ReadGesturesTests.cs

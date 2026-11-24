@@ -666,8 +666,8 @@ public sealed class QueryGestures(AnytypeApiClient api, NameResolver resolver, A
         "select"       => new JsonObject { ["key"] = key, ["select"] = await ResolveTagAsync(key, AsString(value), ct) },
         "multi_select" => new JsonObject { ["key"] = key, ["multi_select"] = await MultiTagsAsync(key, value, ct) },
         "objects"      => new JsonObject { ["key"] = key, ["objects"] = AsStringArray(value) },
-        "date"         => new JsonObject { ["key"] = key, ["date"] = AsString(value) },
-        "email"        => new JsonObject { ["key"] = key, ["email"] = AsString(value) },
+        "date"         => new JsonObject { ["key"] = key, ["date"] = AsDateOrClear(value) },
+        "email"       => new JsonObject { ["key"] = key, ["email"] = AsString(value) },
         "phone"        => new JsonObject { ["key"] = key, ["phone"] = AsString(value) },
         "url"          => new JsonObject { ["key"] = key, ["url"] = AsString(value) },
         _              => new JsonObject { ["key"] = key, ["text"] = AsString(value) },
@@ -709,6 +709,16 @@ public sealed class QueryGestures(AnytypeApiClient api, NameResolver resolver, A
         JsonValue v when v.TryGetValue(out string? s) => s ?? "",
         _ => value.ToJsonString().Trim('"'),
     };
+
+    // Clearing a date is a JSON null, never an empty string: the v1 API writes a
+    // null value as « no value », while a string, even an empty one, goes
+    // through its date parser and answers 400 « invalid date format ». So a
+    // null or blank date the model sends to empty the property goes out as null.
+    static JsonNode? AsDateOrClear(JsonNode? value)
+    {
+        string date = AsString(value);
+        return string.IsNullOrWhiteSpace(date) ? null : JsonValue.Create(date);
+    }
 
     static double AsNumber(JsonNode? value) => value switch
     {
