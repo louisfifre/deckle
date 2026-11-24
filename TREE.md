@@ -226,6 +226,7 @@ _Generated from `git ls-files` — do not edit by hand._
 │   │   ├── script-discovery.psm1
 │   │   ├── script-output.ps1
 │   │   ├── source-metrics.psm1
+│   │   ├── standalone-app-release.psm1
 │   │   ├── terminal-interaction.psm1
 │   │   └── version.ps1
 │   ├── maintenance/
@@ -280,7 +281,8 @@ _Generated from `git ls-files` — do not edit by hand._
 │   │       ├── resource-inventory.tests.ps1
 │   │       ├── script-inventory.tests.ps1
 │   │       ├── script-layout.tests.ps1
-│   │       └── source-metrics.tests.ps1
+│   │       ├── source-metrics.tests.ps1
+│   │       └── standalone-app-release.tests.ps1
 │   ├── build-locked.ps1
 │   ├── build-run.ps1  — Build the app Build Deckle for the chosen configuration (x64) and, unless told not to, launch…
 │   ├── build-server-watchdog.ps1
