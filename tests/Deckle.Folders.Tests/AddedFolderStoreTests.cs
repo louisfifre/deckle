@@ -132,6 +132,82 @@ public sealed class AddedFolderStoreTests
     }
 
     [Fact]
+    public void AToolChosenForAFolderIsThereWhenTheStoreIsReadAgain()
+    {
+        using var scratch = new ScratchFolder();
+        string data = scratch.Folder("data");
+        string a = scratch.Folder("A");
+        string b = scratch.Folder("B");
+        var store = new AddedFolderStore(data);
+        store.Add(a);
+        store.Add(b);
+        int changes = 0;
+        store.Changed += () => changes++;
+
+        AddedFolder? changed = store.ChangeTool(a.ToUpperInvariant() + "\\", "photos");
+
+        Assert.Equal("photos", changed?.Tool);
+        Assert.Equal(1, changes);
+        var reread = new AddedFolderStore(data);
+        Assert.Equal("photos", reread.Find(a)?.Tool);
+        Assert.Null(reread.Find(b)?.Tool);
+    }
+
+    [Fact]
+    public void AFolderAddedHasNoToolAndNeitherDoesOneReadFromAVersion2File()
+    {
+        using var scratch = new ScratchFolder();
+        string data = scratch.Folder("data");
+        string added = scratch.Folder("Added");
+        string old = scratch.Folder("Old");
+        Assert.Null(new AddedFolderStore(scratch.Folder("fresh")).Add(added).Tool);
+        string json = $$"""
+            {
+              "Version": 2,
+              "Folders": [ { "Path": {{System.Text.Json.JsonSerializer.Serialize(old)}}, "AddedAt": "2026-11-10T09:00:00+00:00",
+                             "Icon": "Folder", "Tint": "Accent", "IconBackground": false } ]
+            }
+            """;
+        File.WriteAllText(Path.Combine(data, AddedFolderStore.FileName), json);
+
+        AddedFolder read = new AddedFolderStore(data).Folders.Single();
+
+        Assert.Null(read.Tool);
+        Assert.False(File.Exists(Path.Combine(data, AddedFolderStore.FileName + ".bad")));
+    }
+
+    [Fact]
+    public void ChangingTheToolOfAPathNotAddedReturnsNullAndWritesNothing()
+    {
+        using var scratch = new ScratchFolder();
+        string data = scratch.Folder("data");
+        var store = new AddedFolderStore(data);
+        int changes = 0;
+        store.Changed += () => changes++;
+
+        Assert.Null(store.ChangeTool(scratch.Folder("Elsewhere"), "photos"));
+
+        Assert.Equal(0, changes);
+        Assert.False(File.Exists(store.FilePath));
+    }
+
+    [Fact]
+    public void ChoosingTheDefaultToolAfterAnotherClearsIt()
+    {
+        using var scratch = new ScratchFolder();
+        string data = scratch.Folder("data");
+        string a = scratch.Folder("A");
+        var store = new AddedFolderStore(data);
+        store.Add(a);
+        store.ChangeTool(a, "sizes");
+
+        AddedFolder? cleared = store.ChangeTool(a, null);
+
+        Assert.Null(cleared?.Tool);
+        Assert.Null(new AddedFolderStore(data).Find(a)?.Tool);
+    }
+
+    [Fact]
     public void ARemovedFolderIsGoneWhenTheStoreIsReadAgainAndStaysOnTheDisk()
     {
         using var scratch = new ScratchFolder();

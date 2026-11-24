@@ -11,7 +11,9 @@ namespace Deckle.Folders;
 // and the rail's tooltip show: the folder's own name, or "D:" for a drive.
 // The icon is what the pane and the address bar draw for it (spec, Window):
 // picked by FolderIconRule when the folder is added, changed by the person.
-public sealed record AddedFolder(string Path, DateTimeOffset AddedAt, IconChoice Icon = default)
+// The tool is the id of the view the folder was left in (IFoldersTool.Id,
+// "photos"); null means the default tool. Each added folder remembers its own.
+public sealed record AddedFolder(string Path, DateTimeOffset AddedAt, IconChoice Icon = default, string? Tool = null)
 {
     public string Name => FolderPaths.DisplayName(Path);
 }

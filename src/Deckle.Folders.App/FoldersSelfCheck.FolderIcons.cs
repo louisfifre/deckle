@@ -119,6 +119,28 @@ internal static partial class FoldersSelfCheck
         }, keepPopups: true);
         window.CloseIconPickerForReview();
         await Task.Delay(300);
+
+        // Each added folder remembers its tool: the sample goes to Photos, the
+        // Photos folder added inside it still opens in Files, and coming back
+        // to the sample finds Photos. Both are put back to Files afterwards so
+        // the later scenes keep their look.
+        await Capture("tool-per-folder", async () =>
+        {
+            string other = Path.Combine(sample, "Photos");
+            await window.AddFolderForReviewAsync(sample);
+            await window.ShowToolForReviewAsync("photos");
+            await window.AddFolderForReviewAsync(other);
+            if (window.ActiveToolIdForReview != "files")
+                throw new InvalidOperationException(
+                    $"The second added folder opened in {window.ActiveToolIdForReview}, not in Files: the first one's tool carried over.");
+            await window.AddFolderForReviewAsync(sample);
+            if (window.ActiveToolIdForReview != "photos")
+                throw new InvalidOperationException(
+                    $"The first added folder opened in {window.ActiveToolIdForReview} on coming back, not in Photos: it did not keep its tool.");
+        });
+        await window.ShowToolForReviewAsync("files");
+        await window.AddFolderForReviewAsync(Path.Combine(sample, "Photos"));
+        await window.ShowToolForReviewAsync("files");
     }
 
     // What the garbage collector does on its own time, done at a moment the

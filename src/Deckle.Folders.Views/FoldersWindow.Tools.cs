@@ -17,7 +17,6 @@ public sealed partial class FoldersWindow : IFoldersToolHost
     private readonly Dictionary<string, IFoldersToolView> _views = new(StringComparer.Ordinal);
     private readonly Dictionary<string, ToggleButton> _toolButtons = new(StringComparer.Ordinal);
     private readonly ShellFileIconProvider _icons = new();
-    private IFoldersTool? _activeTool;
     private CancellationTokenSource? _showing;
     private string? _selection;
 
@@ -27,7 +26,22 @@ public sealed partial class FoldersWindow : IFoldersToolHost
     // folder opens in: the first of the catalog, with no button of its own.
     private IFoldersTool DefaultTool => _tools[0];
 
-    private IFoldersTool ActiveTool => _activeTool ??= DefaultTool;
+    // Each added folder remembers the tool it was left in: leave Photos for
+    // another folder and that folder opens in its own tool, not in Photos.
+    // So the tool is derived from the added folder the window stands in, read
+    // fresh from the store because Place.Root is the record as it was when
+    // the place was built. Home, no place, a folder never given a tool or a
+    // tool id this build does not know all give the default tool.
+    private IFoldersTool ActiveTool
+    {
+        get
+        {
+            if (Place is not { } place || _folders.Find(place.Root.Path)?.Tool is not { } id) return DefaultTool;
+            return _tools.FirstOrDefault(t => t.Id == id) ?? DefaultTool;
+        }
+    }
+
+    public string ActiveToolIdForReview => ActiveTool.Id;
 
     // Whether the panel may show: the person's choice (the toggle after the
     // tools), kept for this window's life only. Two choices, one per layout,
@@ -86,7 +100,7 @@ public sealed partial class FoldersWindow : IFoldersToolHost
     // The pressed button is the active tool; with none pressed Files shows.
     // At Home, and so with no folder added, there is nothing for a tool to
     // look at, so none is pressed (12.11 draws every tool as a bare, disabled
-    // glyph); the active tool is remembered and presses again in a folder.
+    // glyph); each folder's tool is remembered and presses again in it.
     private void MarkActiveTool()
     {
         bool inFolder = _history.Current is FolderDestination;
@@ -94,13 +108,20 @@ public sealed partial class FoldersWindow : IFoldersToolHost
             button.IsChecked = ActiveTool.Id == id && inFolder;
     }
 
-    // Changing tool keeps the folder and the selection (spec, Window).
+    // Changing tool keeps the folder and the selection (spec, Window). The
+    // choice is the folder's: it is saved in the added folder at once.
     private void SwitchTo(IFoldersTool tool)
     {
-        _activeTool = tool;
+        if (Place is not { } place) return;
+        StoreTool(place, tool);
         MarkActiveTool();
-        if (Place is not null) _ = ShowCurrentToolAsync();
+        _ = ShowCurrentToolAsync();
     }
+
+    // The default tool is stored as none, so a folder never moved off Files
+    // keeps no tool in its file.
+    private void StoreTool(FolderPlace place, IFoldersTool tool) =>
+        _folders.ChangeTool(place.Root.Path, ReferenceEquals(tool, DefaultTool) ? null : tool.Id);
 
     // Shows the place with the active tool. A newer call cancels the one in
     // flight, so a slow folder never paints over the one the person went to.

@@ -87,7 +87,8 @@ public sealed partial class FoldersWindow
 
     private void SwitchToWithoutShowing(IFoldersTool tool)
     {
-        _activeTool = tool;
+        if (Place is not { } place) return;
+        StoreTool(place, tool);
         MarkActiveTool();
     }
 

@@ -8,10 +8,9 @@ namespace Deckle.Folders;
 //
 // Why not JsonSettingsStore: that primitive debounces, watches the file and
 // holds a cross-process mutex, which settings edited by hand need. This list
-// changes only on an explicit gesture (add, remove a folder, change its icon), is
-// written at once, and
-// is read by one window, so a plain atomic write (temp file, then move) is the
-// whole need.
+// changes only on an explicit gesture (add, remove a folder, change its icon,
+// choose a tool in it), is written at once, and is read by one window, so a
+// plain atomic write (temp file, then move) is the whole need.
 //
 // A file that cannot be read is copied aside as "<name>.bad" and the store
 // starts empty, so a broken file never blocks the window and nothing is lost.
@@ -86,6 +85,24 @@ public sealed class AddedFolderStore
         return changed;
     }
 
+    // Gives the added folder at this path the tool it is left in (null for the
+    // default one) and saves at once. The id is kept as written: this build
+    // may not know a tool a later one wrote. Returns the folder as it now is,
+    // or null when no added folder sits at that path.
+    public AddedFolder? ChangeTool(string path, string? toolId)
+    {
+        string normalized = FolderPaths.Normalize(path);
+        int index = _folders.FindIndex(f => FolderPaths.Comparer.Equals(f.Path, normalized));
+        if (index < 0) return null;
+        if (_folders[index].Tool == toolId) return _folders[index];
+
+        AddedFolder changed = _folders[index] with { Tool = toolId };
+        _folders[index] = changed;
+        Save();
+        Changed?.Invoke();
+        return changed;
+    }
+
     // Forgets the added folder at this path and saves at once. Only the entry
     // goes: the folder and everything in it stay on the disk as they are, so
     // adding it again undoes the removal (it then gets its icon from the rule
@@ -129,7 +146,7 @@ public sealed class AddedFolderStore
                 if (string.IsNullOrWhiteSpace(f.Path)) continue;
                 string normalized = FolderPaths.Normalize(f.Path);
                 if (_folders.Any(k => FolderPaths.Comparer.Equals(k.Path, normalized))) continue;
-                _folders.Add(new AddedFolder(normalized, f.AddedAt, f.ToIcon()));
+                _folders.Add(new AddedFolder(normalized, f.AddedAt, f.ToIcon(), f.Tool));
             }
         }
         catch (Exception ex) when (ex is JsonException or IOException or UnauthorizedAccessException or ArgumentException or NotSupportedException)
@@ -157,10 +174,11 @@ public sealed class AddedFolderStore
     }
 
     // Version 2 adds the icon. A version 1 file has none: its folders take
-    // IconChoice.Default, the plain folder in the accent colour.
+    // IconChoice.Default, the plain folder in the accent colour. Version 3 adds
+    // the tool; a version 2 file has none and its folders open in the default tool.
     private sealed class StoredFile
     {
-        public int Version { get; set; } = 2;
+        public int Version { get; set; } = 3;
         public List<StoredFolder> Folders { get; set; } = [];
     }
 
@@ -174,6 +192,7 @@ public sealed class AddedFolderStore
         public string? Icon { get; set; }
         public string? Tint { get; set; }
         public bool IconBackground { get; set; }
+        public string? Tool { get; set; }
 
         public static StoredFolder From(AddedFolder folder) => new()
         {
@@ -182,6 +201,7 @@ public sealed class AddedFolderStore
             Icon = folder.Icon.Symbol.ToString(),
             Tint = folder.Icon.Tint.ToString(),
             IconBackground = folder.Icon.HasBackground,
+            Tool = folder.Tool,
         };
 
         public IconChoice ToIcon() => new(

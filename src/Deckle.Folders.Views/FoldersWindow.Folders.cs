@@ -347,13 +347,12 @@ public sealed partial class FoldersWindow
     }
 
     // A folder just added appears last in the pane and opens in the file tool,
-    // nothing selected and no panel (12.20). Adding a known folder opens it.
+    // nothing selected and no panel (12.20): it has no tool yet, so it opens in
+    // Files. Adding a known folder opens it, in the tool it was left in.
     private Task AddAndOpen(string path)
     {
         AddedFolder folder = _folders.Add(path);
         SyncFolderItems();
-        _activeTool = _tools[0];
-        MarkActiveTool();
         return NavigateTo(FolderPlace.AtRoot(folder));
     }
 
