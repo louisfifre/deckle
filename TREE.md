@@ -2001,6 +2001,16 @@ _Generated from `git ls-files` — do not edit by hand._
 │   │   │   └── ProjectsWorkspace.cs
 │   │   ├── Deckle.Projects.csproj
 │   │   └── DeckleProjectsSource.cs
+│   ├── Deckle.Projects.App/
+│   │   ├── app.manifest
+│   │   ├── App.xaml
+│   │   ├── App.xaml.cs
+│   │   ├── Composition.cs
+│   │   ├── Deckle.Projects.App.csproj
+│   │   ├── DeckleProjectsAppSource.cs
+│   │   ├── Program.cs
+│   │   ├── ProjectsContribution.cs
+│   │   └── ProjectsDataCopy.cs
 │   ├── Deckle.Projects.Views/
 │   │   ├── Controls/
 │   │   │   ├── Breadcrumb.cs
@@ -3220,6 +3230,11 @@ _Generated from `git ls-files` — do not edit by hand._
 │   ├── Deckle.Presets.Tests/
 │   │   ├── Deckle.Presets.Tests.csproj
 │   │   └── PresetFamilyTests.cs
+│   ├── Deckle.Projects.App.Tests/
+│   │   ├── Deckle.Projects.App.Tests.csproj
+│   │   ├── DeckleProjectsAppSourceTests.cs
+│   │   ├── ProjectsAppIdentityTests.cs
+│   │   └── ProjectsDataCopyTests.cs
 │   ├── Deckle.Projects.Tests/
 │   │   ├── Formatting/
 │   │   │   └── FormattingTests.cs
