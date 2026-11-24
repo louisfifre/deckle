@@ -185,6 +185,17 @@
                 <Thickness x:Key="NavigationViewContentGridBorderThickness">1,1,1,1</Thickness>
             </NavigationView.Resources>
 
+            <!-- Home first, then its separator, then the added folders, which
+                 the window puts after them (PaneLeadingItems). -->
+            <NavigationView.MenuItems>
+                <NavigationViewItem x:Name="HomeItem">
+                    <NavigationViewItem.Icon>
+                        <FontIcon Glyph="&#xE80F;" />
+                    </NavigationViewItem.Icon>
+                </NavigationViewItem>
+                <NavigationViewItemSeparator />
+            </NavigationView.MenuItems>
+
             <NavigationView.FooterMenuItems>
                 <NavigationViewItem x:Name="AddFolderItem" SelectsOnInvoked="False">
                     <NavigationViewItem.Icon>

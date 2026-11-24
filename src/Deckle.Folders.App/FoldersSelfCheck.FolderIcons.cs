@@ -91,6 +91,25 @@ internal static partial class FoldersSelfCheck
             CollectGarbageNow();
             window.SetPaneOpenForReview(true);
         });
+
+        // Home with the pane open and the five folders added; then a tile
+        // opens a folder, and Back returns to Home with Forward enabled.
+        await Capture("folders-home", () =>
+        {
+            window.NavigateHomeForReview();
+            if (!window.AtHomeForReview) throw new InvalidOperationException("The window does not stand at Home.");
+            return Task.CompletedTask;
+        });
+        await Capture("folders-home-back", async () =>
+        {
+            if (!window.OpenHomeTileForReview(Path.Combine(sample, "Photos")))
+                throw new InvalidOperationException("The Home page has no tile for the Photos folder.");
+            await Task.Delay(300);
+            if (window.AtHomeForReview) throw new InvalidOperationException("A tile did not open its folder.");
+            window.GoBackForReview();
+            if (!window.AtHomeForReview) throw new InvalidOperationException("Back did not return to Home.");
+            if (!window.CanGoForwardForReview) throw new InvalidOperationException("Forward is not enabled after Back to Home.");
+        });
         window.SetPaneOpenForReview(false);
 
         await Capture("folder-icon-picker-background", async () =>

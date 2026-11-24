@@ -5,9 +5,9 @@ using Microsoft.UI.Xaml.Controls;
 
 namespace Deckle.Folders.Views;
 
-// Each added folder's icon: drawn in the pane and in the address bar, changed
-// with the picker the address bar opens (spec, Window). A choice is saved the
-// moment it is made, and both places redraw at once.
+// Each added folder's icon: drawn in the pane, in the address bar and on its
+// Home tile, changed with the picker the address bar opens. A choice is saved
+// the moment it is made, and the places redraw at once.
 public sealed partial class FoldersWindow
 {
     // The side of a folder's icon in the pane: the symbol alone is 16 px, the
@@ -19,16 +19,16 @@ public sealed partial class FoldersWindow
     // the square the background option puts behind the symbol. The content's
     // first column sits where the slot's icon would, so reduced to the rail
     // the item shows the icon alone, and opened it shows the icon then the
-    // name and the path.
-    private static Grid FolderItemContent(out IconChoiceView icon, UIElement text)
+    // name.
+    private static Grid FolderItemContent(out IconChoiceView icon, UIElement name)
     {
         var grid = new Grid { ColumnSpacing = 14 };
         grid.ColumnDefinitions.Add(new ColumnDefinition { Width = GridLength.Auto });
         grid.ColumnDefinitions.Add(new ColumnDefinition { Width = new GridLength(1, GridUnitType.Star) });
         icon = new IconChoiceView { BoxSize = PaneIconBoxSize, VerticalAlignment = VerticalAlignment.Center };
         grid.Children.Add(icon);
-        Grid.SetColumn((FrameworkElement)text, 1);
-        grid.Children.Add(text);
+        Grid.SetColumn((FrameworkElement)name, 1);
+        grid.Children.Add(name);
         return grid;
     }
 

@@ -1037,6 +1037,7 @@ _Generated from `git ls-files` — do not edit by hand._
 │   │   ├── Browsing/
 │   │   │   ├── AddressResolver.cs
 │   │   │   ├── DeckleFoldersSource.FileRecycling.cs
+│   │   │   ├── Destination.cs
 │   │   │   ├── FolderListing.cs
 │   │   │   └── FolderPlace.cs
 │   │   ├── Formatting/
@@ -1148,6 +1149,9 @@ _Generated from `git ls-files` — do not edit by hand._
 │   │   │   └── AddressCrumb.cs
 │   │   ├── Details/
 │   │   │   └── DetailsSheet.cs
+│   │   ├── Home/
+│   │   │   ├── HomeView.xaml
+│   │   │   └── HomeView.xaml.cs
 │   │   ├── Icons/
 │   │   │   ├── IFileIconProvider.cs
 │   │   │   └── ShellFileIconProvider.cs
@@ -1221,6 +1225,7 @@ _Generated from `git ls-files` — do not edit by hand._
 │   │   ├── FoldersWindow.External.cs
 │   │   ├── FoldersWindow.FolderIcon.cs
 │   │   ├── FoldersWindow.Folders.cs
+│   │   ├── FoldersWindow.Home.cs
 │   │   ├── FoldersWindow.Navigation.cs
 │   │   ├── FoldersWindow.Review.cs
 │   │   ├── FoldersWindow.Tools.cs
@@ -2909,6 +2914,7 @@ _Generated from `git ls-files` — do not edit by hand._
 │   │   ├── DeckleFoldersSourceEventIdTests.cs
 │   │   ├── DeckleFoldersSourceTests.cs
 │   │   ├── DenyListing.cs
+│   │   ├── DestinationHistoryTests.cs
 │   │   ├── EntryFormatTests.cs
 │   │   ├── FolderIconRuleTests.cs
 │   │   ├── FolderListingBugNotes.md

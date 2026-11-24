@@ -9,7 +9,8 @@ using Deckle.Vision;
 namespace Deckle.Folders.App;
 
 // The self-check's walk of Deckle Folders window. The run's data root is fresh,
-// so the window first opens with no folder: the empty state of board 12.11.
+// so the window first opens at Home with no folder: the empty state of board
+// 12.11.
 // Then a sample folder made under that root (SampleFolder, nothing from the
 // person's disk) is added the way the picker adds one, and the window is
 // photographed in the file tool, with an item selected, with a row's two
@@ -39,6 +40,9 @@ internal static partial class FoldersSelfCheck
         var window = (FoldersWindow)host.Ensure("folders");
         OffscreenWindow.ShowInactive(window);
         bool loaded = await WaitUntilLoadedAsync(window);
+        // The window opens at Home with its pane open; the states below were
+        // drawn in the rail, and the ones that show the pane open it.
+        if (loaded) window.SetPaneOpenForReview(false);
 
         // Every state is reached; the gate says which ones get a picture, and
         // ends the walk once a targeted state has its own.

@@ -15,13 +15,14 @@ namespace Deckle.Folders.Views;
 internal sealed partial class AddressBar : UserControl
 {
     private FolderPlace? _place;
+    private bool _atHome;
     private bool _dialogOpen;
     private int _suggestionRequest;
 
     public AddressBar()
     {
         InitializeComponent();
-        Placeholder.Text = FoldersText.Get("Address_None");
+        HomeLabel.Text = FoldersText.Get("Nav_Home");
         AutomationProperties.SetName(PathBox, FoldersText.Get("Address_Label"));
     }
 
@@ -31,20 +32,26 @@ internal sealed partial class AddressBar : UserControl
 
     public bool IsEditing => PathBox.Visibility == Visibility.Visible;
 
-    // No folder added yet (12.11): the bar says so and takes no click.
-    public void ShowNone()
+    // Home (boards 24/11, A2): the Home glyph in the icon's slot, with
+    // nothing to click, and one segment, "Home", with no chevron and no click.
+    // A click on the bar's empty part, or Ctrl+L, still opens the text field,
+    // empty, to type a path from nowhere.
+    public void ShowHome()
     {
         _place = null;
+        _atHome = true;
         LeaveTextMode();
         Crumbs.ItemsSource = null;
         Crumbs.Visibility = Visibility.Collapsed;
         IconButton.Visibility = Visibility.Collapsed;
-        Placeholder.Visibility = Visibility.Visible;
+        HomeIcon.Visibility = Visibility.Visible;
+        HomeLabel.Visibility = Visibility.Visible;
     }
 
     public async Task ShowAsync(FolderPlace place)
     {
         _place = place;
+        _atHome = false;
         IReadOnlyList<PathSegment> segments = place.Segments;
         // Whether each segment has folders inside decides its chevron; that
         // reads the disk, so off the UI thread.
@@ -58,13 +65,14 @@ internal sealed partial class AddressBar : UserControl
         FitSegmentNames();
         ShowIcon(place.Root);
         IconButton.Visibility = Visibility.Visible;
-        Placeholder.Visibility = Visibility.Collapsed;
+        HomeIcon.Visibility = Visibility.Collapsed;
+        HomeLabel.Visibility = Visibility.Collapsed;
     }
 
     // Ctrl+L, Alt+D: straight to the text mode, as in File Explorer.
     public void EditAddress()
     {
-        if (_place is not null) EnterTextMode();
+        if (_place is not null || _atHome) EnterTextMode();
     }
 
     private void OnCrumbClicked(BreadcrumbBar sender, BreadcrumbBarItemClickedEventArgs args)
@@ -102,12 +110,13 @@ internal sealed partial class AddressBar : UserControl
     // a chevron keeps its own click.
     private void OnSegmentsModeTapped(object sender, TappedRoutedEventArgs e)
     {
-        if (ReferenceEquals(e.OriginalSource, SegmentsMode) && _place is not null) EnterTextMode();
+        if (ReferenceEquals(e.OriginalSource, SegmentsMode) && (_place is not null || _atHome)) EnterTextMode();
     }
 
     private void EnterTextMode()
     {
-        PathBox.Text = _place!.Path;
+        // From Home there is no path to start from.
+        PathBox.Text = _place?.Path ?? "";
         PathBox.ItemsSource = null;
         SegmentsMode.Visibility = Visibility.Collapsed;
         PathBox.Visibility = Visibility.Visible;

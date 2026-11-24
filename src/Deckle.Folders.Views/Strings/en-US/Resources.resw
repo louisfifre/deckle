@@ -36,11 +36,14 @@
 
   <!-- Address bar -->
   <data name="Address_Label" xml:space="preserve"><value>Address</value></data>
-  <data name="Address_None" xml:space="preserve"><value>No folder</value></data>
   <data name="Address_Chevron_Format" xml:space="preserve"><value>Folders in {0}</value></data>
   <data name="Address_NotFound_Format" xml:space="preserve"><value>Deckle Folders can't find "{0}". Check the spelling and try again.</value></data>
   <data name="Address_Outside_Format" xml:space="preserve"><value>"{0}" isn't in any added folder. Add the folder that contains it first.</value></data>
   <data name="Common_Ok" xml:space="preserve"><value>OK</value></data>
+
+  <!-- Home -->
+  <data name="Nav_Home" xml:space="preserve"><value>Home</value></data>
+  <data name="HomeTitle.Text" xml:space="preserve"><value>Home</value></data>
 
   <!-- Added folders -->
   <data name="Folders_Pane" xml:space="preserve"><value>Added folders</value></data>

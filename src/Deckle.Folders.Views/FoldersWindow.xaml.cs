@@ -39,16 +39,16 @@ public sealed partial class FoldersWindow : Window
         Address.IconChosen += OnFolderIconChosen;
 
         BuildToolButtons();
-        // The rail the first time (spec, Window: the pane reduced to icons),
-        // then as the user left it (specs/deckle-navigation-pane.md). Attached
-        // before the items, which read whether the pane is open.
-        _pane = NavigationPane.Attach(Nav, windowKey: "folders", openAtFirst: false);
+        // Open the first time (boards 24/11, A2), then as the user left it
+        // (specs/deckle-navigation-pane.md). Attached before the items, which
+        // read whether the pane is open.
+        _pane = NavigationPane.Attach(Nav, windowKey: "folders", openAtFirst: true);
         SyncFolderItems();
         // The icon provider's shell threads end with the window.
         Closed += (_, _) => _icons.Dispose();
 
-        if (_folders.Folders.Count > 0) _ = NavigateTo(FolderPlace.AtRoot(_folders.Folders[0]));
-        else ShowEmptyState();
+        // The window opens at Home, with or without added folders.
+        NavigateHome();
     }
 
     public void ShowAndActivate()
@@ -106,6 +106,7 @@ public sealed partial class FoldersWindow : Window
         AutomationProperties.SetName(ToolButtons, FoldersText.Get("Tools_Group"));
         AutomationProperties.SetName(DetailsPanel, FoldersText.Get("Details_Panel"));
         AutomationProperties.SetName(Nav, FoldersText.Get("Folders_Pane"));
+        HomeItem.Content = FoldersText.Get("Nav_Home");
         AddFolderItem.Content = FoldersText.Get("Folders_Add");
         EmptyAddLabel.Text = FoldersText.Get("Folders_Add");
     }

@@ -21,6 +21,11 @@ public sealed partial class FoldersWindow
     private const string ChangeIconGlyph = "";     // Edit, the pencil
     private const string RemoveGlyph = "";         // Remove, the minus
 
+    // The pane's items before the added folders: "Home", then its separator
+    // (FoldersWindow.xaml). Every index into Nav.MenuItems for the folder at
+    // position i of _folderItems is PaneLeadingItems + i.
+    private const int PaneLeadingItems = 2;
+
     // The "..." button's slot at the end of an item, the same on every item,
     // shown or not, so no name shifts when the button appears.
     private const double MoreSlotWidth = 32;
@@ -46,12 +51,13 @@ public sealed partial class FoldersWindow
     // or null.
     private string? _unreachableShown;
 
-    // One item per added folder, in the order they were added. Reduced to
-    // the icon, an item says its name and path on hover and to a screen
-    // reader; opened, it shows them on two lines (12.2, Open 14), and the
+    // One item per added folder, in the order they were added, after Home and
+    // its separator. Reduced to the icon, an item says its name and path on
+    // hover and to a screen reader; opened, it shows the icon and the name on
+    // one line (boards 24/11, A2; the path stays in the tooltip), and the
     // "..." button at its end while the pointer is over it or the keyboard
-    // is on it. The icon is the folder's own, in its colour (spec, Window),
-    // drawn by the item's content (FoldersWindow.FolderIcon.cs).
+    // is on it. The icon is the folder's own, in its colour, drawn by the
+    // item's content (FoldersWindow.FolderIcon.cs).
     //
     // The pane is brought to what the store holds without building it
     // again: an item whose folder is still there is updated where it is, a
@@ -67,7 +73,7 @@ public sealed partial class FoldersWindow
             FolderItem parts = _folderItems[i];
             if (folders.Any(f => FolderPaths.Comparer.Equals(f.Path, parts.Folder.Path))) continue;
             if (ReferenceEquals(Nav.SelectedItem, parts.Item)) Nav.SelectedItem = null;
-            Nav.MenuItems.RemoveAt(i);
+            Nav.MenuItems.RemoveAt(PaneLeadingItems + i);
             _folderItems.RemoveAt(i);
             parts.Rest();
             _spareItems.Push(parts);
@@ -88,20 +94,22 @@ public sealed partial class FoldersWindow
                 {
                     parts = _folderItems[at];
                     _folderItems.RemoveAt(at);
-                    Nav.MenuItems.RemoveAt(at);
+                    Nav.MenuItems.RemoveAt(PaneLeadingItems + at);
                 }
                 else
                 {
                     parts = _spareItems.Count > 0 ? _spareItems.Pop() : NewFolderItem();
                 }
                 _folderItems.Insert(i, parts);
-                Nav.MenuItems.Insert(i, parts.Item);
+                Nav.MenuItems.Insert(PaneLeadingItems + i, parts.Item);
             }
             parts.Show(folder);
             parts.SetPaneOpen(Nav.IsPaneOpen);
             MarkReach(parts, _reach.GetValueOrDefault(folder.Path, AddedFolderReachability.Reachable));
         }
         if (Place is { } place) SelectFolderItem(place.Root);
+        // The tiles of Home follow the store as the pane does.
+        else if (AtHome) ShowHome();
         _reachChecked = CheckFolderReachAsync();
     }
 
@@ -111,27 +119,17 @@ public sealed partial class FoldersWindow
     // context request.
     private FolderItem NewFolderItem()
     {
-        // One line each, trimmed: CaptionTextBlockStyle wraps, and in the
-        // 48 px rail a wrapping path breaks at every letter and stretches
-        // the item to the window's height.
+        // One line, trimmed: in the 48 px rail a wrapping name breaks at every
+        // letter and stretches the item to the window's height.
         var name = new TextBlock
         {
+            VerticalAlignment = VerticalAlignment.Center,
             TextWrapping = TextWrapping.NoWrap,
             TextTrimming = TextTrimming.CharacterEllipsis,
         };
-        var path = new TextBlock
-        {
-            Style = (Style)Application.Current.Resources["CaptionTextBlockStyle"],
-            Foreground = (Brush)Application.Current.Resources["TextFillColorSecondaryBrush"],
-            TextWrapping = TextWrapping.NoWrap,
-            TextTrimming = TextTrimming.CharacterEllipsis,
-        };
-        var text = new StackPanel { VerticalAlignment = VerticalAlignment.Center };
-        text.Children.Add(name);
-        text.Children.Add(path);
 
         Button more = MoreButton();
-        Grid content = FolderItemContent(out IconChoiceView icon, text);
+        Grid content = FolderItemContent(out IconChoiceView icon, name);
         content.ColumnDefinitions.Add(new ColumnDefinition { Width = new GridLength(MoreSlotWidth) });
         Grid.SetColumn(more, 2);
         content.Children.Add(more);
@@ -141,7 +139,7 @@ public sealed partial class FoldersWindow
             Content = content,
             HorizontalContentAlignment = HorizontalAlignment.Stretch,
         };
-        var parts = new FolderItem(item, name, path, icon, more);
+        var parts = new FolderItem(item, name, icon, more);
         more.Click += (_, _) => ShowFolderMenu(parts, more, null);
         item.ContextRequested += (_, args) =>
         {
@@ -300,6 +298,8 @@ public sealed partial class FoldersWindow
     }
 
 
+    private void SelectHomeItem() => Nav.SelectedItem = HomeItem;
+
     private void SelectFolderItem(AddedFolder root)
     {
         foreach (object item in Nav.MenuItems)
@@ -318,6 +318,12 @@ public sealed partial class FoldersWindow
         if (ReferenceEquals(args.InvokedItemContainer, AddFolderItem))
         {
             _ = PickAndAddFolderAsync();
+            return;
+        }
+        if (ReferenceEquals(args.InvokedItemContainer, HomeItem))
+        {
+            _pane.CloseIfOverPage();
+            NavigateHome();
             return;
         }
         // A folder its remove button just forgot is not opened.
@@ -354,19 +360,24 @@ public sealed partial class FoldersWindow
     // Forgets the added folder, never touches the disk. Back and Forward lose
     // every place inside it. Standing in it, the window moves to the folder
     // that takes its place in the pane, or the one above when it was last;
-    // with none left, it shows the empty window (12.11).
+    // with none left, it goes Home, which shows the empty window (12.11).
+    // Home is never forgotten.
     private Task RemoveFolderAsync(string path)
     {
         int index = _folders.Folders.ToList().FindIndex(f => FolderPaths.Comparer.Equals(f.Path, path));
         if (index < 0 || !_folders.Remove(path)) return Task.CompletedTask;
         _reach.Remove(path);
-        bool standingInIt = _history.Forget(p => FolderPaths.Comparer.Equals(p.Root.Path, path));
+        bool standingInIt = _history.Forget(d =>
+            d is FolderDestination folder && FolderPaths.Comparer.Equals(folder.Place.Root.Path, path));
         SyncFolderItems();
 
         if (_folders.Folders.Count == 0)
         {
-            MarkActiveTool();
-            ShowEmptyState();
+            // Standing in the folder, the history has no current place now and
+            // Home takes it; standing at Home, Home shows again, empty.
+            _history.Navigate(HomeDestination.Instance);
+            _selection = null;
+            ShowHome();
             return Task.CompletedTask;
         }
         if (standingInIt)
@@ -596,7 +607,7 @@ public sealed partial class FoldersWindow
     // button shows while the pointer is over the item or the keyboard is on
     // it, and only in the opened pane; hidden, it keeps its slot transparent.
     private sealed class FolderItem(
-        NavigationViewItem item, TextBlock name, TextBlock path, IconChoiceView icon, Button more)
+        NavigationViewItem item, TextBlock name, IconChoiceView icon, Button more)
     {
         private bool _pointerOver;
         private bool _keyboardFocus;
@@ -614,7 +625,6 @@ public sealed partial class FoldersWindow
             Folder = folder;
             Item.Tag = folder;
             name.Text = folder.Name;
-            path.Text = folder.Path;
             icon.Choice = folder.Icon;
         }
 

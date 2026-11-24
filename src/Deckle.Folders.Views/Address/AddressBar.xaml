@@ -47,6 +47,15 @@
                 <catalog:IconChoiceView x:Name="RootIcon" />
             </Button>
 
+            <!-- At Home the same slot holds the Home glyph, which opens
+                 nothing. -->
+            <FontIcon x:Name="HomeIcon"
+                      Glyph="&#xE80F;"
+                      FontSize="16"
+                      Margin="6,0"
+                      VerticalAlignment="Center"
+                      Visibility="Collapsed" />
+
             <BreadcrumbBar x:Name="Crumbs"
                            Grid.Column="1"
                            HorizontalAlignment="Left"
@@ -89,11 +98,11 @@
                 </BreadcrumbBar.ItemTemplate>
             </BreadcrumbBar>
 
-            <TextBlock x:Name="Placeholder"
+            <!-- Home's only segment: not clickable, no chevron. -->
+            <TextBlock x:Name="HomeLabel"
                        Grid.Column="1"
                        Margin="6,0"
                        VerticalAlignment="Center"
-                       Foreground="{ThemeResource TextFillColorSecondaryBrush}"
                        Visibility="Collapsed" />
         </Grid>
 

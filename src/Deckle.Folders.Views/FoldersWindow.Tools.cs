@@ -33,8 +33,8 @@ public sealed partial class FoldersWindow : IFoldersToolHost
     // tools), kept for this window's life only.
     private bool _detailsOn = true;
 
-    // Whether a tool is showing a folder, as opposed to the empty state or
-    // the message for an unreachable folder, where there is nothing to detail.
+    // Whether a tool is showing a folder, as opposed to Home or the message
+    // for an unreachable folder, where there is nothing to detail.
     private bool _showingFolder;
 
     // What the panel holds when the active tool gave no details for the
@@ -76,12 +76,14 @@ public sealed partial class FoldersWindow : IFoldersToolHost
     }
 
     // The pressed button is the active tool; with none pressed Files shows.
-    // With no folder added there is nothing to look at, so no tool is
-    // active either (12.11 draws every tool as a bare, disabled glyph).
+    // At Home, and so with no folder added, there is nothing for a tool to
+    // look at, so none is pressed (12.11 draws every tool as a bare, disabled
+    // glyph); the active tool is remembered and presses again in a folder.
     private void MarkActiveTool()
     {
+        bool inFolder = _history.Current is FolderDestination;
         foreach ((string id, ToggleButton button) in _toolButtons)
-            button.IsChecked = ActiveTool.Id == id && _folders.Folders.Count > 0;
+            button.IsChecked = ActiveTool.Id == id && inFolder;
     }
 
     // Changing tool keeps the folder and the selection (spec, Window).
