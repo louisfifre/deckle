@@ -1,3 +1,4 @@
+using System.Globalization;
 using System.Net;
 using System.Threading.RateLimiting;
 using Deckle.Anytype;
@@ -145,10 +146,21 @@ public sealed class McpHttpHost : IAsyncDisposable
         builder.Services.AddRateLimiter(options =>
         {
             options.RejectionStatusCode = StatusCodes.Status429TooManyRequests;
-            options.OnRejected = (context, _) =>
+            // Reached only when the client's wait queue is full: say when to
+            // retry, in the header and in words an agent's transcript shows.
+            options.OnRejected = async (context, ct) =>
             {
                 Reject("rate-limit", StatusCodes.Status429TooManyRequests);
-                return ValueTask.CompletedTask;
+                int retrySeconds = RetryAfterSeconds(context.Lease);
+                HttpResponse response = context.HttpContext.Response;
+                response.Headers.RetryAfter = retrySeconds.ToString(CultureInfo.InvariantCulture);
+                response.ContentType = "text/plain; charset=utf-8";
+                await response.WriteAsync(
+                    "The Anytype gateway is busy: this client has spent its budget of "
+                    + $"{_requestRateLimit.PermitLimit} requests per {_requestRateLimit.Window.TotalSeconds:0} s "
+                    + $"and {_requestRateLimit.QueueLimit} more are already waiting. "
+                    + $"Retry in {retrySeconds} s.",
+                    ct).ConfigureAwait(false);
             };
             options.AddPolicy<string>(RateLimitPolicy, context =>
             {
@@ -158,15 +170,20 @@ public sealed class McpHttpHost : IAsyncDisposable
                     return RateLimitPartition.GetNoLimiter("unauthenticated");
                 }
 
-                return RateLimitPartition.GetFixedWindowLimiter(
+                // A token bucket, not a fixed window: a waiting request gets
+                // the next permit that comes back instead of sitting out the
+                // rest of a minute, and the queue bounds both the wait and what
+                // a runaway client can hold open (McpRequestRateLimit).
+                return RateLimitPartition.GetTokenBucketLimiter(
                     client.Id,
-                    _ => new FixedWindowRateLimiterOptions
+                    _ => new TokenBucketRateLimiterOptions
                     {
                         AutoReplenishment = true,
-                        PermitLimit = _requestRateLimit.PermitLimit,
-                        QueueLimit = 0,
+                        TokenLimit = _requestRateLimit.PermitLimit,
+                        TokensPerPeriod = 1,
+                        ReplenishmentPeriod = _requestRateLimit.ReplenishmentInterval,
+                        QueueLimit = _requestRateLimit.QueueLimit,
                         QueueProcessingOrder = QueueProcessingOrder.OldestFirst,
-                        Window = _requestRateLimit.Window,
                     });
             });
         });
@@ -275,6 +292,17 @@ public sealed class McpHttpHost : IAsyncDisposable
             return false;
         return string.Equals(uri.Host, "localhost", StringComparison.OrdinalIgnoreCase)
             || uri.Host == "127.0.0.1";
+    }
+
+    // The limiter computes when enough permits will be back for the queue
+    // ahead; without that, one replenishment interval. Whole seconds, at least 1.
+    private int RetryAfterSeconds(RateLimitLease lease)
+    {
+        TimeSpan delay = lease.TryGetMetadata(MetadataName.RetryAfter, out TimeSpan advertised)
+            && advertised > TimeSpan.Zero
+                ? advertised
+                : _requestRateLimit.ReplenishmentInterval;
+        return (int)Math.Clamp(Math.Ceiling(delay.TotalSeconds), 1, int.MaxValue);
     }
 
     private void Reject(string reason, int statusCode)
