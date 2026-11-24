@@ -1138,6 +1138,7 @@ _Generated from `git ls-files` — do not edit by hand._
 │   │   ├── FoldersSelfCheck.Previews.cs
 │   │   ├── FoldersSelfCheck.Search.cs
 │   │   ├── FoldersSelfCheck.Sizes.cs
+│   │   ├── FoldersSelfCheck.Widths.cs
 │   │   ├── FoldersWalkContext.cs
 │   │   ├── LlmPhotoDescriptionModel.cs
 │   │   └── Program.cs
@@ -1230,6 +1231,7 @@ _Generated from `git ls-files` — do not edit by hand._
 │   │   ├── FoldersWindow.Navigation.cs
 │   │   ├── FoldersWindow.Review.cs
 │   │   ├── FoldersWindow.Tools.cs
+│   │   ├── FoldersWindow.Widths.cs
 │   │   ├── FoldersWindow.xaml
 │   │   └── FoldersWindow.xaml.cs
 │   ├── Deckle.Home/

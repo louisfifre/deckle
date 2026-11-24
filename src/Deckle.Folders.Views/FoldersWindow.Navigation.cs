@@ -120,7 +120,6 @@ public sealed partial class FoldersWindow
         UpButton.IsEnabled = enabled;
         RefreshButton.IsEnabled = enabled;
         SearchButton.IsEnabled = enabled;
-        DetailsToggle.IsEnabled = enabled;
         foreach (UIElement button in ToolButtons.Children)
             if (button is Microsoft.UI.Xaml.Controls.Control control) control.IsEnabled = enabled;
     }

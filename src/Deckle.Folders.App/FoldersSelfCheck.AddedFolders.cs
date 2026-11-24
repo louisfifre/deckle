@@ -18,9 +18,7 @@ namespace Deckle.Folders.App;
 // button that opens an application.
 internal static partial class FoldersSelfCheck
 {
-    // The window's minimum width, in DIPs (FoldersWindow.ApplyChrome), and
-    // the size it is drawn at.
-    private const int FoldersMinimumWidth = 840;
+    // The size the window is drawn at, in DIPs.
     private const int FoldersDrawnWidth = 1280;
     private const int FoldersDrawnHeight = 800;
 

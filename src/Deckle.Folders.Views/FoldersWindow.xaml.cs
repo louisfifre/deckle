@@ -83,10 +83,10 @@ public sealed partial class FoldersWindow : Window
             Math.Min((int)(800 * scale), work.Height)));
 
         var presenter = OverlappedPresenter.Create();
-        // The narrowest the top row holds whole: the buttons, the tools with
-        // their names, the details toggle, search, and an address bar of its icon and a
-        // few letters (FoldersWindow.xaml).
-        presenter.PreferredMinimumWidth = (int)(840 * scale);
+        // The narrowest layout is the narrow one (FoldersWindow.Widths.cs): Back
+        // and Up, the current folder's name, the tools as icons and the details
+        // toggle hold whole in the top row from here up.
+        presenter.PreferredMinimumWidth = (int)(640 * scale);
         presenter.PreferredMinimumHeight = (int)(480 * scale);
         AppWindow.SetPresenter(presenter);
     }

@@ -30,8 +30,14 @@ public sealed partial class FoldersWindow : IFoldersToolHost
     private IFoldersTool ActiveTool => _activeTool ??= DefaultTool;
 
     // Whether the panel may show: the person's choice (the toggle after the
-    // tools), kept for this window's life only.
-    private bool _detailsOn = true;
+    // tools), kept for this window's life only. Two choices, one per layout,
+    // as NavigationPane keeps one per mode: the wide window starts with the
+    // panel on, the narrow one (FoldersWindow.Widths.cs) without it, and
+    // widening again gives back what the person had chosen in the wide one.
+    private bool _detailsOnWide = true;
+    private bool _detailsOnNarrow;
+
+    private bool DetailsChoice => _narrow ? _detailsOnNarrow : _detailsOnWide;
 
     // Whether a tool is showing a folder, as opposed to Home or the message
     // for an unreachable folder, where there is nothing to detail.
@@ -57,7 +63,9 @@ public sealed partial class FoldersWindow : IFoldersToolHost
         {
             var content = new StackPanel { Orientation = Orientation.Horizontal, Spacing = 8 };
             content.Children.Add(new FontIcon { Glyph = tool.Glyph, FontSize = 16 });
-            content.Children.Add(new TextBlock { Text = tool.Name, VerticalAlignment = VerticalAlignment.Center });
+            var name = new TextBlock { Text = tool.Name, VerticalAlignment = VerticalAlignment.Center };
+            _toolNames.Add(name);
+            content.Children.Add(name);
             var button = new ToggleButton
             {
                 Content = content,
@@ -150,21 +158,35 @@ public sealed partial class FoldersWindow : IFoldersToolHost
         UpdateDetailsPanel();
     }
 
-    // The panel shows when the person wants it and a tool shows a folder; a
-    // click on an item hands it details but never turns the toggle on.
-    private void UpdateDetailsPanel() =>
-        DetailsPanel.Visibility = _detailsOn && _showingFolder ? Visibility.Visible : Visibility.Collapsed;
+    // What the toggle shows and the panel does are derived from the choice and
+    // from what the window holds: where no panel can show (Home, the empty
+    // state, an unreachable folder) the toggle is disabled and unpressed, and
+    // the choice is kept to press again once a folder shows. A click on an
+    // item hands it details but never turns the toggle on.
+    private void UpdateDetailsPanel()
+    {
+        bool shown = DetailsChoice && _showingFolder;
+        DetailsToggle.IsEnabled = _showingFolder;
+        DetailsToggle.IsChecked = shown;
+        DetailsPanel.Visibility = shown ? Visibility.Visible : Visibility.Collapsed;
+    }
 
     private void OnDetailsToggleClick(object sender, RoutedEventArgs e)
     {
-        _detailsOn = DetailsToggle.IsChecked == true;
+        bool on = DetailsToggle.IsChecked == true;
+        if (_narrow) _detailsOnNarrow = on;
+        else _detailsOnWide = on;
         UpdateDetailsPanel();
     }
 
     private void OnDetailsAccelerator(KeyboardAccelerator sender, KeyboardAcceleratorInvokedEventArgs args)
     {
-        DetailsToggle.IsChecked = DetailsToggle.IsChecked != true;
-        OnDetailsToggleClick(DetailsToggle, new RoutedEventArgs());
+        // Disabled where no panel can show: the key does what the button does.
+        if (DetailsToggle.IsEnabled)
+        {
+            DetailsToggle.IsChecked = DetailsToggle.IsChecked != true;
+            OnDetailsToggleClick(DetailsToggle, new RoutedEventArgs());
+        }
         args.Handled = true;
     }
 

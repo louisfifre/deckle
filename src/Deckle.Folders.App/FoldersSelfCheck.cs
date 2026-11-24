@@ -154,6 +154,7 @@ internal static partial class FoldersSelfCheck
             return Task.CompletedTask;
         });
 
+        if (loaded) await WalkFoldersWidthsAsync(window, sample, Capture);
         if (loaded) await WalkFoldersFolderIconsAsync(report, run, outputFolder, step, window, sample, gate);
         if (loaded) await WalkFoldersSearchAsync(report, run, outputFolder, step, window, gate);
         if (loaded) await WalkFoldersAddedFoldersAsync(report, run, outputFolder, step, window, sample, gate);

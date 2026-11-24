@@ -9,7 +9,7 @@
          first one, opened when keyboard focus lands anywhere inside it. On the
          root that is a stray "F5" under the window whenever focus arrives by
          keyboard; the buttons' own tooltips say what the keys do. -->
-    <Grid x:Name="RootGrid" KeyboardAcceleratorPlacementMode="Hidden">
+    <Grid x:Name="RootGrid" KeyboardAcceleratorPlacementMode="Hidden" SizeChanged="OnRootSizeChanged">
         <Grid.Resources>
             <!-- The three numbered lines of the empty state (12.11). -->
             <Style x:Key="EmptyStepCard" TargetType="Grid">
@@ -70,11 +70,13 @@
                 <Grid Margin="4,0,0,0" ColumnSpacing="4">
                     <Grid.ColumnDefinitions>
                         <ColumnDefinition Width="Auto" />
-                        <!-- The address field's floor is its icon, a few letters
-                             and the search button inside it: at the window's
-                             minimum width, with the tools' names shown, a
-                             larger one pushed the tools out of the row. -->
-                        <ColumnDefinition Width="*" MinWidth="96" />
+                        <!-- The address field's floor is its icon, the search
+                             button inside it and a few letters. The title bar
+                             keeps a drag margin before the caption buttons, so at
+                             the window's minimum width (the narrow layout, with Back
+                             and Up, the tools as glyphs and the details toggle) a
+                             floor of 96 clipped the toggle's pressed fill. -->
+                        <ColumnDefinition Width="*" MinWidth="80" />
                         <ColumnDefinition Width="Auto" />
                     </Grid.ColumnDefinitions>
 
