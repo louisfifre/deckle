@@ -1036,6 +1036,7 @@ _Generated from `git ls-files` — do not edit by hand._
 │   │   │   └── FolderIconRule.cs
 │   │   ├── Browsing/
 │   │   │   ├── AddressResolver.cs
+│   │   │   ├── AddressShortForm.cs
 │   │   │   ├── DeckleFoldersSource.FileRecycling.cs
 │   │   │   ├── Destination.cs
 │   │   │   ├── FolderListing.cs
@@ -2910,6 +2911,7 @@ _Generated from `git ls-files` — do not edit by hand._
 │   │   │   └── SearchRoutingTests.cs
 │   │   ├── AddedFolderStoreTests.cs
 │   │   ├── AddressResolverTests.cs
+│   │   ├── AddressShortFormTests.cs
 │   │   ├── Deckle.Folders.Tests.csproj
 │   │   ├── DeckleFoldersSourceEventIdTests.cs
 │   │   ├── DeckleFoldersSourceTests.cs

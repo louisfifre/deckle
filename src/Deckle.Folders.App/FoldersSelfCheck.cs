@@ -46,7 +46,10 @@ internal static partial class FoldersSelfCheck
 
         // Every state is reached; the gate says which ones get a picture, and
         // ends the walk once a targeted state has its own.
-        async Task Capture(string state, Func<Task>? reach = null)
+        Task Capture(string state, Func<Task>? reach = null) => CaptureState(state, reach, false);
+
+        // A popup the state is about (a chevron's list) stays open in its image.
+        async Task CaptureState(string state, Func<Task>? reach, bool keepPopups)
         {
             gate.ThrowIfDone();
             bool photographed = gate.Photographs(state);
@@ -70,10 +73,15 @@ internal static partial class FoldersSelfCheck
                 return;
             }
             if (!photographed) return;
-            (int closed, int left) = await CloseTransientPopupsAsync(window);
+            (int closed, int left) = keepPopups ? (0, 0) : await CloseTransientPopupsAsync(window);
             report.Surfaces.Add(await CaptureWindowFrameAsync(
                 run, window, "folders", state, null, true, stateClock.ElapsedMilliseconds, closed, left));
             report.Save(outputFolder);
+        }
+
+        static void Check(bool holds, string what)
+        {
+            if (!holds) throw new InvalidOperationException(what);
         }
 
         // A run kept with -KeepData may already hold the sample: the empty
@@ -121,8 +129,25 @@ internal static partial class FoldersSelfCheck
 
         await WalkFoldersMapAsync(window, sample, Capture);
 
-        // The chevron's list is a popup, which every image closes first, so
-        // only the text mode is photographed.
+        // The field's three forms, three folders down: at rest, after the click
+        // that opens the full path, with a chevron's list open (a popup, which
+        // this image keeps), then the text form.
+        string deep = Path.Combine(sample, "Photos", "2026", "2026-06-14 Mariage");
+        await Capture("address-short", async () =>
+        {
+            await window.ShowToolForReviewAsync("files");
+            await window.OpenPathForReviewAsync(deep);
+        });
+        await Capture("address-full", () =>
+        {
+            Check(window.OpenAddressFullForReview(), "The address field did not open its full form.");
+            return Task.CompletedTask;
+        });
+        await CaptureState("address-chevron", () =>
+        {
+            Check(window.OpenAddressChevronForReview(1), "The chevron after the Photos folder did not open its list.");
+            return Task.CompletedTask;
+        }, keepPopups: true);
         await Capture("address-text", () =>
         {
             window.EditAddressForReview();
