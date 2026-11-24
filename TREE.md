@@ -2529,6 +2529,7 @@ _Generated from `git ls-files` — do not edit by hand._
 │   │   ├── McpHostBugNotes.md
 │   │   ├── McpHttpHostTests.cs
 │   │   ├── McpObservabilityTests.cs
+│   │   ├── McpRateLimitBugNotes.md
 │   │   ├── McpToolsetTests.cs
 │   │   ├── MessageTemplateDoctrineTests.cs
 │   │   ├── MilestoneClosersTests.cs
