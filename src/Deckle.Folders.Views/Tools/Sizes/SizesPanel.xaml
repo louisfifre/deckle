@@ -27,6 +27,7 @@
             <ListView x:Name="Heaviest"
                       Margin="-16,0"
                       SelectionMode="Single"
+                      ContainerContentChanging="OnHeaviestContainerContentChanging"
                       SelectionChanged="OnHeaviestSelectionChanged">
                 <ListView.ItemContainerStyle>
                     <Style TargetType="ListViewItem" BasedOn="{StaticResource DefaultListViewItemStyle}">
@@ -38,10 +39,19 @@
                     <DataTemplate x:DataType="local:HeavyItem">
                         <Grid ColumnSpacing="12">
                             <Grid.ColumnDefinitions>
+                                <ColumnDefinition Width="Auto" />
                                 <ColumnDefinition Width="*" />
                                 <ColumnDefinition Width="Auto" />
                             </Grid.ColumnDefinitions>
-                            <StackPanel VerticalAlignment="Center">
+                            <!-- Level with the name's first line, a caption
+                                 line about 16 px high. -->
+                            <Image Source="{x:Bind Icon, Mode=OneWay}"
+                                   Width="16"
+                                   Height="16"
+                                   Stretch="Uniform"
+                                   VerticalAlignment="Top"
+                                   Margin="0,2,0,0" />
+                            <StackPanel Grid.Column="1" VerticalAlignment="Center">
                                 <TextBlock Text="{x:Bind Name}"
                                            Style="{StaticResource CaptionTextBlockStyle}"
                                            TextTrimming="CharacterEllipsis"
@@ -53,7 +63,7 @@
                                            TextWrapping="NoWrap"
                                            Visibility="{x:Bind WhereVisibility}" />
                             </StackPanel>
-                            <TextBlock Grid.Column="1"
+                            <TextBlock Grid.Column="2"
                                        Text="{x:Bind Size}"
                                        Style="{StaticResource CaptionTextBlockStyle}"
                                        Foreground="{ThemeResource TextFillColorSecondaryBrush}"

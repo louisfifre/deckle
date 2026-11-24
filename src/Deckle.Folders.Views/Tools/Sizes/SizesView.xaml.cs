@@ -34,7 +34,7 @@ internal sealed partial class SizesView : UserControl, IFoldersToolView
 
     private readonly IFoldersToolHost _host;
     private readonly ObservableCollection<SizeRow> _rows = [];
-    private readonly SizesPanel _panel = new();
+    private readonly SizesPanel _panel;
     private FolderPlace? _place;
 
     // The report on screen, and the report of the last analysis that ran to
@@ -63,6 +63,7 @@ internal sealed partial class SizesView : UserControl, IFoldersToolView
     public SizesView(IFoldersToolHost host)
     {
         _host = host;
+        _panel = new SizesPanel(host.Icons);
         InitializeComponent();
         Rows.ItemsSource = _rows;
         HeaderName.Text = FoldersText.Get("Sizes_HeaderName");
@@ -339,6 +340,22 @@ internal sealed partial class SizesView : UserControl, IFoldersToolView
         _panel.Mark(row?.Kind == SizeRowKind.HeavyFile ? row.Path : null);
         _host.Select(selection, _panel);
     }
+
+    // A row asks the shell for its icon when the list realizes its container,
+    // so a folder of many sub-folders asks only for those on screen, and drops
+    // the request when the container is recycled (as FilesView does).
+    private void OnContainerContentChanging(ListViewBase sender, ContainerContentChangingEventArgs args)
+    {
+        if (args.Item is not SizeRow row) return;
+        if (args.InRecycleQueue)
+        {
+            row.ReleaseIcon();
+            return;
+        }
+        _ = row.LoadIconAsync(_host.Icons, (int)Math.Round(IconCellSize * (XamlRoot?.RasterizationScale ?? 1.0)));
+    }
+
+    private const double IconCellSize = 16;
 
     private void OnSelectionChanged(object sender, SelectionChangedEventArgs e)
     {

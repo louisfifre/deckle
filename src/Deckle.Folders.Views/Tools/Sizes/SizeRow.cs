@@ -1,5 +1,6 @@
 using System.ComponentModel;
 using Microsoft.UI.Xaml;
+using Microsoft.UI.Xaml.Media;
 
 namespace Deckle.Folders.Views;
 
@@ -14,10 +15,16 @@ internal enum SizeRowKind
     HeavyFile,
 }
 
-// One row of the sizes list. Rows are kept across the snapshots of a running
-// analysis, keyed by what they stand for, so a row that gets its size or moves
-// up the list is the same object: the list updates in place instead of being
-// rebuilt under the person's pointer.
+// One row of the sizes list. A row that stands for a folder or a file on disk
+// draws the icon Windows gives it (IFileIconProvider), as the file tool does:
+// the neutral glyph shows until the image is handed back, and stays when the
+// shell has none. The place's own files row stands for no single object, so it
+// has no path to ask the shell about and keeps its glyph.
+//
+// Rows are kept across the snapshots of a running analysis, keyed by what
+// they stand for, so a row that gets its size or moves up the list is the
+// same object: the list updates in place instead of being rebuilt under the
+// person's pointer.
 internal sealed class SizeRow : INotifyPropertyChanged
 {
     private string _name = "";
@@ -25,6 +32,8 @@ internal sealed class SizeRow : INotifyPropertyChanged
     private double _share;
     private string _where = "";
     private string _warning = "";
+    private ImageSource? _icon;
+    private CancellationTokenSource? _loading;
 
     public SizeRow(SizeRowKind kind, string key, string? path)
     {
@@ -48,6 +57,46 @@ internal sealed class SizeRow : INotifyPropertyChanged
     public string? Path { get; }
 
     public string Glyph { get; }
+
+    // The shell's icon, once handed back.
+    public ImageSource? Icon
+    {
+        get => _icon;
+        private set
+        {
+            if (ReferenceEquals(_icon, value)) return;
+            _icon = value;
+            PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(nameof(Icon)));
+            PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(nameof(GlyphVisibility)));
+        }
+    }
+
+    public Visibility GlyphVisibility => _icon is null ? Visibility.Visible : Visibility.Collapsed;
+
+    // Called on the UI thread when the list realizes the row's container.
+    // pixelSize is in physical pixels. A null answer keeps the glyph.
+    public async Task LoadIconAsync(IFileIconProvider icons, int pixelSize)
+    {
+        if (Path is null || _icon is not null) return;
+        _loading?.Cancel();
+        var loading = new CancellationTokenSource();
+        _loading = loading;
+        try
+        {
+            Icon = await icons.GetAsync(Path, Kind == SizeRowKind.Folder, pixelSize, loading.Token);
+        }
+        catch (OperationCanceledException)
+        {
+        }
+    }
+
+    // The container went back to the recycle queue: what it asked for is dropped.
+    public void ReleaseIcon()
+    {
+        _loading?.Cancel();
+        _loading = null;
+    }
+
     public Thickness Indent { get; }
 
     public string Name { get => _name; set => Set(ref _name, value, nameof(Name)); }
