@@ -3,11 +3,14 @@ using Microsoft.UI.Xaml;
 using Microsoft.UI.Xaml.Automation;
 using Microsoft.UI.Xaml.Controls;
 using Microsoft.UI.Xaml.Controls.Primitives;
+using Microsoft.UI.Xaml.Input;
+using Microsoft.UI.Xaml.Media;
 
 namespace Deckle.Folders.Views;
 
-// The tools: their buttons in the top row, the active one's view in the
-// centre, and the window's side of the tool seam (IFoldersToolHost).
+// The tools: their buttons in the top row (all but Files, which shows when
+// none is pressed), the active one's view in the centre, and the window's
+// side of the tool seam (IFoldersToolHost).
 public sealed partial class FoldersWindow : IFoldersToolHost
 {
     private readonly IReadOnlyList<IFoldersTool> _tools = FoldersToolCatalog.Create();
@@ -20,46 +23,65 @@ public sealed partial class FoldersWindow : IFoldersToolHost
 
     IFileIconProvider IFoldersToolHost.Icons => _icons;
 
-    private IFoldersTool ActiveTool => _activeTool ??= _tools[0];
+    // Files is the tool that shows when no button is pressed, and the one a
+    // folder opens in: the first of the catalog, with no button of its own.
+    private IFoldersTool DefaultTool => _tools[0];
+
+    private IFoldersTool ActiveTool => _activeTool ??= DefaultTool;
+
+    // Whether the panel may show: the person's choice (the toggle after the
+    // tools), kept for this window's life only.
+    private bool _detailsOn = true;
+
+    // Whether a tool is showing a folder, as opposed to the empty state or
+    // the message for an unreachable folder, where there is nothing to detail.
+    private bool _showingFolder;
+
+    // What the panel holds when the active tool gave no details for the
+    // selection. Built once; the panel swaps it in and out of its host.
+    private TextBlock? _nothingSelected;
+
+    private TextBlock NothingSelected => _nothingSelected ??= new TextBlock
+    {
+        Text = FoldersText.Get("Details_NothingSelected"),
+        Style = (Style)Application.Current.Resources["BodyTextBlockStyle"],
+        Foreground = (Brush)Application.Current.Resources["TextFillColorSecondaryBrush"],
+        TextAlignment = TextAlignment.Center,
+        TextWrapping = TextWrapping.Wrap,
+        Padding = new Thickness(24),
+    };
 
     private void BuildToolButtons()
     {
-        foreach (IFoldersTool tool in _tools)
+        foreach (IFoldersTool tool in _tools.Where(t => !ReferenceEquals(t, DefaultTool)))
         {
-            var name = new TextBlock { Text = tool.Name, VerticalAlignment = VerticalAlignment.Center, Visibility = Visibility.Collapsed };
             var content = new StackPanel { Orientation = Orientation.Horizontal, Spacing = 8 };
             content.Children.Add(new FontIcon { Glyph = tool.Glyph, FontSize = 16 });
-            content.Children.Add(name);
+            content.Children.Add(new TextBlock { Text = tool.Name, VerticalAlignment = VerticalAlignment.Center });
             var button = new ToggleButton
             {
                 Content = content,
                 Height = 32,
                 MinWidth = 36,
                 Padding = new Thickness(10, 0, 10, 0),
-                Tag = name,
             };
             ToolTipService.SetToolTip(button, tool.Name);
             AutomationProperties.SetName(button, tool.Name);
-            button.Click += (_, _) => SwitchTo(tool);
+            // A click on the pressed one gives the window back to Files.
+            button.Click += (_, _) => SwitchTo(ReferenceEquals(tool, ActiveTool) ? DefaultTool : tool);
             _toolButtons[tool.Id] = button;
             ToolButtons.Children.Add(button);
         }
         MarkActiveTool();
     }
 
-    // The active tool's button is pressed and shows its name; the others
-    // show their glyph alone (spec, Window).
+    // The pressed button is the active tool; with none pressed Files shows.
     // With no folder added there is nothing to look at, so no tool is
     // active either (12.11 draws every tool as a bare, disabled glyph).
     private void MarkActiveTool()
     {
-        foreach (IFoldersTool tool in _tools)
-        {
-            ToggleButton button = _toolButtons[tool.Id];
-            bool active = ReferenceEquals(tool, ActiveTool) && _folders.Folders.Count > 0;
-            button.IsChecked = active;
-            ((TextBlock)button.Tag).Visibility = active ? Visibility.Visible : Visibility.Collapsed;
-        }
+        foreach ((string id, ToggleButton button) in _toolButtons)
+            button.IsChecked = ActiveTool.Id == id && _folders.Folders.Count > 0;
     }
 
     // Changing tool keeps the folder and the selection (spec, Window).
@@ -122,8 +144,26 @@ public sealed partial class FoldersWindow : IFoldersToolHost
     private void Select(string? path, UIElement? details)
     {
         _selection = path;
-        DetailsHost.Content = details;
-        DetailsPanel.Visibility = details is null ? Visibility.Collapsed : Visibility.Visible;
+        DetailsHost.Content = details ?? NothingSelected;
+        UpdateDetailsPanel();
+    }
+
+    // The panel shows when the person wants it and a tool shows a folder; a
+    // click on an item hands it details but never turns the toggle on.
+    private void UpdateDetailsPanel() =>
+        DetailsPanel.Visibility = _detailsOn && _showingFolder ? Visibility.Visible : Visibility.Collapsed;
+
+    private void OnDetailsToggleClick(object sender, RoutedEventArgs e)
+    {
+        _detailsOn = DetailsToggle.IsChecked == true;
+        UpdateDetailsPanel();
+    }
+
+    private void OnDetailsAccelerator(KeyboardAccelerator sender, KeyboardAcceleratorInvokedEventArgs args)
+    {
+        DetailsToggle.IsChecked = DetailsToggle.IsChecked != true;
+        OnDetailsToggleClick(DetailsToggle, new RoutedEventArgs());
+        args.Handled = true;
     }
 
     // Refresh's tooltip is one ToolTip the window keeps, so its text can

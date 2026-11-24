@@ -458,6 +458,7 @@ public sealed partial class FoldersWindow
     private void ShowUnreachable(AddedFolder root, AddedFolderReachability reach)
     {
         _showing?.Cancel();
+        _showingFolder = false;
         Select(null, null);
         SetToolButtonsEnabled(false);
         DeckleFoldersSource.Log.AddedFolderUnreachable(reach.ToString());

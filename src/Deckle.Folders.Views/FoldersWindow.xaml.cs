@@ -83,8 +83,8 @@ public sealed partial class FoldersWindow : Window
             Math.Min((int)(800 * scale), work.Height)));
 
         var presenter = OverlappedPresenter.Create();
-        // The narrowest the top row holds whole: the buttons, the active
-        // tool with its name, search, and an address bar of its icon and a
+        // The narrowest the top row holds whole: the buttons, the tools with
+        // their names, the details toggle, search, and an address bar of its icon and a
         // few letters (FoldersWindow.xaml).
         presenter.PreferredMinimumWidth = (int)(840 * scale);
         presenter.PreferredMinimumHeight = (int)(480 * scale);
@@ -101,6 +101,8 @@ public sealed partial class FoldersWindow : Window
         // The active tool may say what Refresh does for it (FoldersWindow.Tools.cs).
         SetRefreshLabel(null);
         Label(SearchButton, "Search");
+        ToolTipService.SetToolTip(DetailsToggle, FoldersText.Get("Details_Toggle_Tip"));
+        AutomationProperties.SetName(DetailsToggle, FoldersText.Get("Details_Toggle"));
         AutomationProperties.SetName(ToolButtons, FoldersText.Get("Tools_Group"));
         AutomationProperties.SetName(DetailsPanel, FoldersText.Get("Details_Panel"));
         AutomationProperties.SetName(Nav, FoldersText.Get("Folders_Pane"));

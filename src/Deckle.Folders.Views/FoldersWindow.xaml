@@ -42,6 +42,7 @@
             <KeyboardAccelerator Key="Up" Modifiers="Menu" Invoked="OnUpAccelerator" />
             <KeyboardAccelerator Key="L" Modifiers="Control" Invoked="OnAddressAccelerator" />
             <KeyboardAccelerator Key="D" Modifiers="Menu" Invoked="OnAddressAccelerator" />
+            <KeyboardAccelerator Key="P" Modifiers="Menu,Shift" Invoked="OnDetailsAccelerator" />
         </Grid.KeyboardAccelerators>
 
         <!-- The top row is the title bar itself (spec, Window: one row, no
@@ -71,7 +72,7 @@
                         <ColumnDefinition Width="Auto" />
                         <!-- The address bar's floor is its icon and a few
                              letters: at the window's minimum width, with the
-                             active tool's name shown, a larger one pushed the
+                             tools' names shown, a larger one pushed the
                              tools and search out of the row. -->
                         <ColumnDefinition Width="*" MinWidth="96" />
                         <ColumnDefinition Width="Auto" />
@@ -95,16 +96,37 @@
 
                     <local:AddressBar x:Name="Address" Grid.Column="1" Margin="2,0" />
 
-                    <!-- One button per tool; the active one is pressed and
-                         shows its name (spec, Window). Built from the tool
-                         catalog in code. -->
-                    <StackPanel x:Name="ToolButtons" Grid.Column="2" Orientation="Horizontal" Spacing="2" Margin="2,0">
-                        <StackPanel.Resources>
-                            <SolidColorBrush x:Key="ToggleButtonBackground" Color="Transparent" />
-                            <SolidColorBrush x:Key="ToggleButtonBorderBrush" Color="Transparent" />
-                            <SolidColorBrush x:Key="ToggleButtonBackgroundDisabled" Color="Transparent" />
-                            <SolidColorBrush x:Key="ToggleButtonBorderBrushDisabled" Color="Transparent" />
-                        </StackPanel.Resources>
+                    <!-- One toggle per tool but Files, each with its glyph
+                         and its name; the pressed one is the active tool
+                         (spec, Window). Files has none: it is what shows
+                         when none is pressed. Built from the tool catalog in
+                         code. The divider and the details-pane toggle sit
+                         after them. -->
+                    <StackPanel Grid.Column="2" Orientation="Horizontal" Spacing="2" Margin="2,0">
+                        <StackPanel x:Name="ToolButtons" Orientation="Horizontal" Spacing="2">
+                            <StackPanel.Resources>
+                                <SolidColorBrush x:Key="ToggleButtonBackground" Color="Transparent" />
+                                <SolidColorBrush x:Key="ToggleButtonBorderBrush" Color="Transparent" />
+                                <SolidColorBrush x:Key="ToggleButtonBackgroundDisabled" Color="Transparent" />
+                                <SolidColorBrush x:Key="ToggleButtonBorderBrushDisabled" Color="Transparent" />
+                            </StackPanel.Resources>
+                        </StackPanel>
+
+                        <Rectangle Width="1" Height="20" Margin="4,0" VerticalAlignment="Center"
+                                   Fill="{ThemeResource DividerStrokeColorDefaultBrush}" />
+
+                        <!-- Whether the details panel shows: the person's
+                             choice, on at first and kept for this window's
+                             life only. -->
+                        <ToggleButton x:Name="DetailsToggle" Width="36" Height="32" Padding="0" IsChecked="True" Click="OnDetailsToggleClick">
+                            <ToggleButton.Resources>
+                                <SolidColorBrush x:Key="ToggleButtonBackground" Color="Transparent" />
+                                <SolidColorBrush x:Key="ToggleButtonBorderBrush" Color="Transparent" />
+                                <SolidColorBrush x:Key="ToggleButtonBackgroundDisabled" Color="Transparent" />
+                                <SolidColorBrush x:Key="ToggleButtonBorderBrushDisabled" Color="Transparent" />
+                            </ToggleButton.Resources>
+                            <FontIcon Glyph="&#xE90D;" FontSize="16" />
+                        </ToggleButton>
                     </StackPanel>
 
                     <!-- Search goes through PowerToys Command Palette (spec,
@@ -141,7 +163,10 @@
              row. Its display mode is set in code (NavigationPane,
              specs/deckle-navigation-pane.md); its own toggle is hidden because
              the title bar's opens it. Its content area brings the layer fill
-             and the rounded top left corner the boards draw. -->
+             and the stroke the boards draw; the three resources below make
+             it a card, rounded on its four corners and inset from the
+             window's right and bottom edges. The Left display mode sets none
+             of them itself, so these apply (generic.xaml, NavigationView). -->
         <NavigationView x:Name="Nav"
                         Grid.Row="1"
                         IsPaneToggleButtonVisible="False"
@@ -152,6 +177,14 @@
                         OpenPaneLength="280"
                         SelectionFollowsFocus="Disabled"
                         ItemInvoked="OnNavItemInvoked">
+            <!-- Written out in four parts: a keyed Thickness of "1" ends the
+                 app in XAML parsing here. -->
+            <NavigationView.Resources>
+                <Thickness x:Key="NavigationViewContentMargin">0,0,8,8</Thickness>
+                <StaticResource x:Key="NavigationViewContentGridCornerRadius" ResourceKey="OverlayCornerRadius" />
+                <Thickness x:Key="NavigationViewContentGridBorderThickness">1,1,1,1</Thickness>
+            </NavigationView.Resources>
+
             <NavigationView.FooterMenuItems>
                 <NavigationViewItem x:Name="AddFolderItem" SelectsOnInvoked="False">
                     <NavigationViewItem.Icon>

@@ -49,6 +49,7 @@ public sealed partial class FoldersWindow
             ShowUnreachable(place.Root, reach);
             return;
         }
+        _showingFolder = true;
         await ShowCurrentToolAsync();
     }
 
@@ -62,6 +63,7 @@ public sealed partial class FoldersWindow
         CentreHost.Content = null;
         CentreHost.Visibility = Visibility.Collapsed;
         EmptyState.Visibility = Visibility.Visible;
+        _showingFolder = false;
         Select(null, null);
         SetTopRowEnabled(false);
         Address.ShowNone();

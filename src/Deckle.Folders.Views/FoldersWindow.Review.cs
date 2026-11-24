@@ -1,3 +1,5 @@
+using Microsoft.UI.Xaml;
+
 namespace Deckle.Folders.Views;
 
 // What the self-check drives to photograph the window in each of its states.
@@ -35,6 +37,22 @@ public sealed partial class FoldersWindow
         if (Place is null) return;
         _selection = System.IO.Path.Combine(Place.Path, name);
         await ShowCurrentToolAsync();
+    }
+
+    // Clears the selection and shows the folder again, so the panel holds
+    // its line for an empty selection.
+    public async Task ClearSelectionForReviewAsync()
+    {
+        if (Place is null) return;
+        _selection = null;
+        await ShowCurrentToolAsync();
+    }
+
+    // The details toggle as a click sets it.
+    public void SetDetailsOnForReview(bool on)
+    {
+        DetailsToggle.IsChecked = on;
+        OnDetailsToggleClick(DetailsToggle, new RoutedEventArgs());
     }
 
     public async Task OpenForReviewAsync(string name)
