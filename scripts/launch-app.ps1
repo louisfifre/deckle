@@ -4,8 +4,9 @@
 .DESCRIPTION
     Replace the running Deckle instance with the freshest already-built
     executable of the chosen configuration. No build happens here. The running
-    instance is stopped first: Deckle is single-instance, so the new process
-    could not take over while the old one holds the resident mutex.
+    instance is stopped once the executable is found, and only then: Deckle is
+    single-instance, so the new process could not take over while the old one
+    holds the resident mutex, but a launch with nothing built stops nothing.
     -App mail or folders launches DeckleMail.exe or DeckleFolders.exe instead:
     separate apps with their own resident mutex and data root, so the running
     Deckle is never stopped (only a previous instance of the same small app is).
@@ -54,7 +55,9 @@ trap {
             Executable    = $ExePath
             Error         = $_.Exception.Message
         })
-    throw
+    # `throw $_`, not a bare `throw`: in a trap a bare throw raises a new error whose
+    # message is "ScriptHalted" and the real one never reaches the caller.
+    throw $_
 }
 
 if ($Target) {
@@ -72,23 +75,24 @@ $ProcessName = [System.IO.Path]::GetFileNameWithoutExtension($ExeName)
 $AppArtifactsBin = Join-Path $RepoRoot "artifacts\bin\$AppProject"
 $PivotPrefix     = $Configuration.ToLowerInvariant()
 
-Write-WorkflowStep -Output $WorkflowOutput -Message "Stop running $ProcessName instance"
-Stop-DeckleProcess -ProcessName $ProcessName -WriteEvent {
-    param([string]$Role, [string]$Message)
-    Write-WorkflowMessage -Output $WorkflowOutput -Message $Message -Role $Role
-}
-
+# Resolved before anything is stopped: with nothing to launch, the running app stays.
 Write-WorkflowStep -Output $WorkflowOutput -Message "Resolve built executable ($Configuration)"
 $ExeCandidates = Get-ChildItem -Path $AppArtifactsBin -Recurse -Filter $ExeName -ErrorAction SilentlyContinue |
     Where-Object { $_.Directory.Name -like "$PivotPrefix*" } |
     Sort-Object LastWriteTime -Descending
 
 if (-not $ExeCandidates) {
-    throw "Exe not found under $AppArtifactsBin. Build $Configuration first."
+    throw "No $Configuration build of $ExeName under $AppArtifactsBin. Build it first: scripts/build-run.ps1 -App $App -Configuration $Configuration"
 }
 
 $ExePath = $ExeCandidates[0].FullName
 Write-WorkflowMessage -Output $WorkflowOutput -Message $ExePath
+
+Write-WorkflowStep -Output $WorkflowOutput -Message "Stop running $ProcessName instance"
+Stop-DeckleProcess -ProcessName $ProcessName -WriteEvent {
+    param([string]$Role, [string]$Message)
+    Write-WorkflowMessage -Output $WorkflowOutput -Message $Message -Role $Role
+}
 
 $psi = [System.Diagnostics.ProcessStartInfo]::new()
 $psi.FileName = $ExePath

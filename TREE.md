@@ -267,6 +267,7 @@ _Generated from `git ls-files` — do not edit by hand._
 │   │   │   ├── fetch-autocorrect-data.tests.ps1
 │   │   │   ├── inspect-context.tests.ps1
 │   │   │   ├── InspectContextBugNotes.md
+│   │   │   ├── launch-app.tests.ps1
 │   │   │   ├── perf-compare.tests.ps1
 │   │   │   └── read-log.tests.ps1
 │   │   └── lib/
