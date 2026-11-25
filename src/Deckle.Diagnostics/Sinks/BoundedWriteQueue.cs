@@ -4,9 +4,14 @@ using System.Threading.Channels;
 namespace Deckle.Diagnostics;
 
 // One bounded, ordered hand-off from EventSource emitter threads to a sink's
-// asynchronous writer. If producers outrun disk, WriteAsync applies
-// backpressure instead of dropping a row or growing without bound. A flush
-// marker is ordered with data, making Flush deterministic.
+// asynchronous writer. If producers outrun disk, Enqueue by default applies
+// backpressure instead of dropping a row or growing without bound: every
+// producer waits for room. That is the dataset behaviour, and a dataset sink
+// keeps it. A queue built with dropWhenFull is for a log: a full queue then
+// refuses the new line at once, the caller never waits on the disk, and the
+// refused lines are counted. The first write that lands after drops calls
+// onDropped with the count, once, so the log says how many lines it lost. A
+// flush marker is ordered with data, making Flush deterministic.
 //
 // Each sink owns a lightweight pending Task, not a dedicated OS thread. Actual
 // file writes use asynchronous I/O, so several dormant JSONL destinations do
@@ -29,6 +34,8 @@ internal sealed class BoundedWriteQueue<T> : IDisposable where T : class
     private readonly Action _close;
     private readonly Action<Exception>? _onFault;
     private readonly Action<int>? _onRecovered;
+    private readonly Action<int>? _onDropped;
+    private readonly bool _dropWhenFull;
     private readonly Task _worker;
     private readonly object _lifetimeLock = new();
 
@@ -39,13 +46,19 @@ internal sealed class BoundedWriteQueue<T> : IDisposable where T : class
     // Worker-owned incident state.
     private int _consecutiveFailures;
 
+    // Lines refused by a full queue since the last report. Written by any
+    // producer, drained by the worker.
+    private int _dropped;
+
     public BoundedWriteQueue(
         int capacity,
         Func<T, ValueTask> write,
         Func<ValueTask> flush,
         Action close,
         Action<Exception>? onFault = null,
-        Action<int>? onRecovered = null)
+        Action<int>? onRecovered = null,
+        bool dropWhenFull = false,
+        Action<int>? onDropped = null)
     {
         if (capacity <= 0) throw new ArgumentOutOfRangeException(nameof(capacity));
 
@@ -61,6 +74,8 @@ internal sealed class BoundedWriteQueue<T> : IDisposable where T : class
         _close = close ?? throw new ArgumentNullException(nameof(close));
         _onFault = onFault;
         _onRecovered = onRecovered;
+        _dropWhenFull = dropWhenFull;
+        _onDropped = onDropped;
         _worker = Task.Run(ConsumeAsync);
     }
 
@@ -70,10 +85,18 @@ internal sealed class BoundedWriteQueue<T> : IDisposable where T : class
 
         // The lock makes completion atomic with the last accepted write. It is
         // uncontended and non-blocking while capacity remains; only sustained
-        // disk pressure deliberately propagates back to producers.
+        // disk pressure deliberately propagates back to producers, and not at
+        // all in a queue that drops when full.
         lock (_lifetimeLock)
         {
             if (!_accepting) return;
+            if (_dropWhenFull)
+            {
+                if (!_items.Writer.TryWrite(WorkItem.ForValue(value)))
+                    Interlocked.Increment(ref _dropped);
+                return;
+            }
+
             _items.Writer.WriteAsync(WorkItem.ForValue(value))
                 .AsTask().GetAwaiter().GetResult();
         }
@@ -190,6 +213,8 @@ internal sealed class BoundedWriteQueue<T> : IDisposable where T : class
             return;
         }
 
+        ReportDropped();
+
         if (_consecutiveFailures > 0)
         {
             int failures = _consecutiveFailures;
@@ -204,6 +229,17 @@ internal sealed class BoundedWriteQueue<T> : IDisposable where T : class
                 _ = Task.Run(() => onRecovered(failures));
             }
         }
+    }
+
+    // The disk accepted a line again: say once how many were refused while it
+    // did not. Off the worker, for the reason in the header comment.
+    private void ReportDropped()
+    {
+        if (_onDropped is null) return;
+        int lost = Interlocked.Exchange(ref _dropped, 0);
+        if (lost == 0) return;
+        Action<int> onDropped = _onDropped;
+        _ = Task.Run(() => onDropped(lost));
     }
 
     private async ValueTask TryRunAsync(Func<ValueTask> action)

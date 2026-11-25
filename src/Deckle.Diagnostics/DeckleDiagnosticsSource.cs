@@ -38,6 +38,7 @@ public sealed class DeckleDiagnosticsSource : DeckleEventSource
     public const int EvtSettingsLoadError = 13;
     public const int EvtIncidentListenerFaulted = 14;
     public const int EvtIncidentListenerRecovered = 15;
+    public const int EvtLinesLost = 16;
 
     // One incident per sink: opened by the first failure, closed by the next
     // successful write (SinkRecovered). The attempts in between are counted,
@@ -60,6 +61,19 @@ public sealed class DeckleDiagnosticsSource : DeckleEventSource
     public void SinkRecovered(string sink, int failed_writes)
     {
         if (IsEnabled()) WriteEvent(EvtSinkRecovered, sink, failed_writes);
+    }
+
+    // A log sink whose queue was full while the disk did not write refuses new
+    // lines rather than make every emitter wait (the dataset sinks still wait).
+    // Reported once, by the first line that lands after the refusals, with the
+    // count: the log shows the gap and its size beside the hole.
+    [Event(EvtLinesLost,
+           Level = EventLevel.Warning,
+           Keywords = (EventKeywords)Keywords.Lifecycle,
+           Message = "A log sink lost lines while its disk did not write\nsink={0} | lost_lines={1}")]
+    public void LinesLost(string sink, int lost_lines)
+    {
+        if (IsEnabled()) WriteEvent(EvtLinesLost, sink, lost_lines);
     }
 
     // Emitted once when boot ends, only if the replay ring dropped entries: a
