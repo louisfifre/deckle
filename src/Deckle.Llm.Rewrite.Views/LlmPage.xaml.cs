@@ -64,8 +64,13 @@ public sealed partial class LlmPage : Page, ISettingsSubpageSample
     protected override void OnNavigatedFrom(NavigationEventArgs e)
     {
         base.OnNavigatedFrom(e);
-        ParagraphRewriteAvailabilityMonitor.Instance.Changed -= OnParagraphAvailabilityChanged;
+        LlmSettingsService.Instance.Changed -= OnSettingsChanged;
     }
+
+    // Raised on a timer thread once a write lands: a dictation step or a
+    // shortcut changed on this page, and the profile cards say who uses them.
+    private void OnSettingsChanged() =>
+        DispatcherQueue.TryEnqueue(ProfilesSection.RefreshUsers);
 
     protected override async void OnNavigatedTo(NavigationEventArgs e)
     {
@@ -75,10 +80,9 @@ public sealed partial class LlmPage : Page, ISettingsSubpageSample
         base.OnNavigatedTo(e);
         try
         {
-            ParagraphRewriteAvailabilityMonitor.Instance.Changed -= OnParagraphAvailabilityChanged;
-            ParagraphRewriteAvailabilityMonitor.Instance.Changed += OnParagraphAvailabilityChanged;
+            LlmSettingsService.Instance.Changed -= OnSettingsChanged;
+            LlmSettingsService.Instance.Changed += OnSettingsChanged;
             Hydrate();
-            ShowParagraphRewriteNotice();
             await RefreshProvidersAsync();
         }
         catch (Exception ex)
@@ -95,7 +99,6 @@ public sealed partial class LlmPage : Page, ISettingsSubpageSample
         if (e.PropertyName is nameof(LlmGeneralViewModel.Enabled))
         {
             GateModelsSection();
-            ShowParagraphRewriteNotice();
         }
     }
 
@@ -167,8 +170,9 @@ public sealed partial class LlmPage : Page, ISettingsSubpageSample
 
     private async Task RefreshProvidersAsync()
     {
-        // The paragraph rewrite lives on the same provider list: a changed,
-        // switched or removed Ollama provider changes what the notice says.
+        // Paragraph correction lives on the same provider list: a changed,
+        // switched or removed Ollama provider changes what the Autocorrect
+        // page's bar says, so the one answer the App acts on is asked again.
         _ = RefreshParagraphAvailabilityAsync();
 
         int generation = ++_refreshGeneration;
@@ -300,11 +304,11 @@ public sealed partial class LlmPage : Page, ISettingsSubpageSample
         ModelsSection.Visibility = shown ? Visibility.Visible : Visibility.Collapsed;
     }
 
-    // ── Paragraph rewrite notice ───────────────────────────────────────────
+    // ── Paragraph correction availability ───────────────────────────────────
     //
-    // The monitor holds the one answer the App also acts on; the page asks it
-    // to probe again and shows what it says. The probe is local and quiet, so
-    // a failure only changes the notice.
+    // The monitor holds the one answer the App acts on and the Autocorrect page
+    // shows; this page, where the provider is set up, asks it to probe again.
+    // The probe is local and quiet, so a failure only changes the notice there.
 
     private static async Task RefreshParagraphAvailabilityAsync()
     {
@@ -313,30 +317,6 @@ public sealed partial class LlmPage : Page, ISettingsSubpageSample
         {
             DeckleLlmSource.Log.EndpointRefreshFailed(ex.GetType().Name, ex.Message);
         }
-    }
-
-    // Raised on the probing thread.
-    private void OnParagraphAvailabilityChanged()
-    {
-        if (DispatcherQueue.HasThreadAccess) ShowParagraphRewriteNotice();
-        else DispatcherQueue.TryEnqueue(ShowParagraphRewriteNotice);
-    }
-
-    private void ShowParagraphRewriteNotice()
-    {
-        string? message = ParagraphRewriteNotices.For(
-            GeneralSection.IsRewritingEnabled, ParagraphRewriteAvailabilityMonitor.Instance.Current) switch
-        {
-            ParagraphRewriteNotice.OllamaMissing => Loc.Format(
-                "Settings_ParagraphRewrite_OllamaMissing_Format", ParagraphRewrite.Model),
-            ParagraphRewriteNotice.ModelMissing => Loc.Format(
-                "Settings_ParagraphRewrite_ModelMissing_Format", ParagraphRewrite.Model),
-            ParagraphRewriteNotice.ProviderOff => Loc.Get("Settings_ParagraphRewrite_ProviderOff"),
-            _ => null,
-        };
-
-        if (message is not null) ParagraphRewriteBar.Message = message;
-        ParagraphRewriteBar.IsOpen = message is not null;
     }
 
     private void OnBackgroundTapped(object sender, TappedRoutedEventArgs e)

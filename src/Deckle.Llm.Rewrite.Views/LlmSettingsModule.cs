@@ -16,6 +16,12 @@ public static class LlmSettingsModule
     // sets it; unset, the section takes streaming as on.
     public static Func<bool>? TranscriptionStreams { get; set; }
 
+    // Whether paragraph correction is on: its own switch and the Autocorrect
+    // switch, which live in a module this one does not reference, so the host
+    // that knows both sets it. Unset (no Autocorrect module), it is off, and
+    // the Ollama provider's card says nothing of it.
+    public static Func<bool>? ParagraphCorrectionOn { get; set; }
+
     // The model that describes Deckle Folders' photos, read and written through
     // the host (PhotoDescriptionModelSetting's header); unset when Deckle Folders
     // is not installed, and the page then has no photo section.

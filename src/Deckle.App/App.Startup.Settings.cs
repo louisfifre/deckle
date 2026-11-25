@@ -168,6 +168,13 @@ public partial class App
             Llm.Rewrite.Views.LlmSettingsModule.TranscriptionStreams = () =>
                 transcriptionPresent
                 && TranscriptionSettingsService.Instance.Current.Streaming.Strategy == PipelineStrategyKind.Streaming;
+            // The Ollama provider's card says paragraph correction also uses it
+            // while that is on: both switches belong to the Autocorrect module,
+            // so without it the line never shows.
+            bool autocorrectPresent = context.AutocorrectPresent;
+            Llm.Rewrite.Views.LlmSettingsModule.ParagraphCorrectionOn = () =>
+                autocorrectPresent
+                && Autocorrect.AutocorrectSettingsService.Instance.Current is { Enabled: true, ParagraphCorrection: true };
             RegisterSettingsModule(Llm.Rewrite.Views.LlmSettingsModule.Describe(order: 200), Llm.Rewrite.Views.SettingsSearch.Entries);
         }
         if (context.AutocorrectPresent)
@@ -176,6 +183,27 @@ public partial class App
             // resolves page coordinates per registration, so a child folded into
             // its parent's call would send every hit to the parent's page.
             Autocorrect.Views.AutocorrectSettingsModule.TranscriptionLexiconPresent = context.TranscriptionPresent;
+            // Paragraph correction runs in the Rewrite module, which the page does
+            // not reference: it is told whether that module is there, what the
+            // bar needs to say, and where "Set up Ollama" leads. The monitor is
+            // the one answer the host acts on.
+            Autocorrect.Views.AutocorrectSettingsModule.ParagraphCorrectionPresent = context.RewritePresent;
+            if (context.RewritePresent)
+            {
+                Autocorrect.Views.AutocorrectSettingsModule.ParagraphCorrectionSetup = () =>
+                    Llm.Rewrite.ParagraphRewriteAvailabilityMonitor.Instance.Current switch
+                    {
+                        Llm.Rewrite.ParagraphRewriteAvailability.OllamaUnreachable => Autocorrect.Views.ParagraphCorrectionSetup.OllamaNotRunning,
+                        Llm.Rewrite.ParagraphRewriteAvailability.ModelMissing      => Autocorrect.Views.ParagraphCorrectionSetup.ModelMissing,
+                        Llm.Rewrite.ParagraphRewriteAvailability.ProviderOff       => Autocorrect.Views.ParagraphCorrectionSetup.ProviderOff,
+                        _                                                          => Autocorrect.Views.ParagraphCorrectionSetup.None,
+                    };
+                Autocorrect.Views.AutocorrectSettingsModule.ParagraphCorrectionModel = Llm.Rewrite.ParagraphRewrite.Model;
+                Autocorrect.Views.AutocorrectSettingsModule.ParagraphCorrectionSetupPageTag =
+                    Llm.Rewrite.Views.LlmSettingsModule.PageTag;
+                Llm.Rewrite.ParagraphRewriteAvailabilityMonitor.Instance.Changed +=
+                    Autocorrect.Views.AutocorrectSettingsModule.RaiseParagraphCorrectionSetupChanged;
+            }
             RegisterSettingsModule(
                 Autocorrect.Views.AutocorrectSettingsModule.Describe(order: 300),
                 Autocorrect.Views.SettingsSearch.Entries);

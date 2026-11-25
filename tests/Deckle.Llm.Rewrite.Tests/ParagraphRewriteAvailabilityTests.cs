@@ -151,17 +151,17 @@ public sealed class ParagraphRewriteAvailabilityTests
 
     // ── The notice ─────────────────────────────────────────────────────
 
+    // The Autocorrect page's bar: the Rewriting switch is no longer part of it.
     [Theory]
-    [InlineData(true, ParagraphRewriteAvailability.OllamaUnreachable, ParagraphRewriteNotice.OllamaMissing)]
-    [InlineData(true, ParagraphRewriteAvailability.ModelMissing, ParagraphRewriteNotice.ModelMissing)]
-    [InlineData(true, ParagraphRewriteAvailability.ProviderOff, ParagraphRewriteNotice.ProviderOff)]
-    [InlineData(true, ParagraphRewriteAvailability.Available, ParagraphRewriteNotice.None)]
-    [InlineData(true, ParagraphRewriteAvailability.Unknown, ParagraphRewriteNotice.None)]
-    [InlineData(false, ParagraphRewriteAvailability.OllamaUnreachable, ParagraphRewriteNotice.None)]
-    public void ThePageAdvisesOnlyWhileRewritingIsOnAndSomethingIsMissing(
-        bool enabled, ParagraphRewriteAvailability availability, ParagraphRewriteNotice expected)
+    [InlineData(ParagraphRewriteAvailability.OllamaUnreachable, true)]
+    [InlineData(ParagraphRewriteAvailability.ModelMissing, true)]
+    [InlineData(ParagraphRewriteAvailability.ProviderOff, true)]
+    [InlineData(ParagraphRewriteAvailability.Available, false)]
+    [InlineData(ParagraphRewriteAvailability.Unknown, false)]
+    public void ThePageAdvisesOnlyWhenOllamaOrTheModelIsMissing(
+        ParagraphRewriteAvailability availability, bool expected)
     {
-        Assert.Equal(expected, ParagraphRewriteNotices.For(enabled, availability));
+        Assert.Equal(expected, ParagraphRewriteNotices.NeedsSetup(availability));
     }
 
     // ── The monitor ────────────────────────────────────────────────────

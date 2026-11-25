@@ -76,10 +76,47 @@
   <data name="AutocorrectPageHeader.Title" xml:space="preserve">
     <value>Autocorrect</value>
   </data>
+  <!-- One line, true of what the module does: on each word you finish typing,
+       in an enrolled app, it restores a missing accent or fixes a typo. -->
+  <data name="AutocorrectPageHeader.Description" xml:space="preserve">
+    <value>Fixes typos and missing accents as you type, in enrolled apps.</value>
+  </data>
 
   <!-- Master switch -->
   <data name="AutocorrectPage_MasterCard.Header" xml:space="preserve">
     <value>Autocorrect</value>
+  </data>
+
+  <!-- Paragraph correction: the switch lives with Autocorrect, which decides
+       where a paragraph is offered a correction; the Rewrite module does the
+       work on the local model. The card sits under the master switch. The bar
+       above it names the one cause that is missing; {0} is the pinned model. -->
+  <data name="AutocorrectPage_ParagraphCard.Header" xml:space="preserve">
+    <value>Correct a paragraph with Shift+Enter</value>
+  </data>
+  <data name="AutocorrectPage_ParagraphCard.Description" xml:space="preserve">
+    <value>In enrolled apps, shows a corrected version of the paragraph. You apply it or keep the original.</value>
+  </data>
+  <data name="AutocorrectPage_ParagraphBar_OllamaNotRunning_Title" xml:space="preserve">
+    <value>Ollama isn't running on this PC</value>
+  </data>
+  <data name="AutocorrectPage_ParagraphBar_OllamaNotRunning_Message_Format" xml:space="preserve">
+    <value>Install it from ollama.com and start it, then run: ollama pull {0}.</value>
+  </data>
+  <data name="AutocorrectPage_ParagraphBar_ModelMissing_Title_Format" xml:space="preserve">
+    <value>Ollama doesn't have the {0} model</value>
+  </data>
+  <data name="AutocorrectPage_ParagraphBar_ModelMissing_Message_Format" xml:space="preserve">
+    <value>Run: ollama pull {0}.</value>
+  </data>
+  <data name="AutocorrectPage_ParagraphBar_ProviderOff_Title" xml:space="preserve">
+    <value>The Ollama provider is off</value>
+  </data>
+  <data name="AutocorrectPage_ParagraphBar_ProviderOff_Message" xml:space="preserve">
+    <value>Switch it on in Rewriting.</value>
+  </data>
+  <data name="AutocorrectPage_ParagraphBarSetup.Content" xml:space="preserve">
+    <value>Open Rewriting</value>
   </data>
 
   <!-- Excluded words — the settings mirror of the exclusion register. It sits on
@@ -104,8 +141,11 @@
   <data name="AutocorrectPage_ExcludeButton.Content" xml:space="preserve">
     <value>Exclude</value>
   </data>
-  <data name="AutocorrectPage_DeclaredWordsNote.Text" xml:space="preserve">
-    <value>Words to keep as you write them: Transcription &gt; Lexicon.</value>
+  <data name="AutocorrectPage_DeclaredWordsCard.Header" xml:space="preserve">
+    <value>Lexicon</value>
+  </data>
+  <data name="AutocorrectPage_DeclaredWordsCard.Description" xml:space="preserve">
+    <value>Words in your Dictation lexicon are never corrected either.</value>
   </data>
   <data name="AutocorrectPage_IncludeButton_NameFormat" xml:space="preserve">
     <value>Put back {0}</value>

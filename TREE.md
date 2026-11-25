@@ -549,6 +549,7 @@ _Generated from `git ls-files` — do not edit by hand._
 │   │   ├── App.Paste.cs
 │   │   ├── App.PrecisionScroll.cs
 │   │   ├── App.Relocate.cs
+│   │   ├── App.SelfCheck.Autocorrect.cs
 │   │   ├── App.SelfCheck.cs
 │   │   ├── App.SelfCheck.Diagnostics.cs
 │   │   ├── App.SelfCheck.Icons.cs
@@ -748,6 +749,7 @@ _Generated from `git ls-files` — do not edit by hand._
 │   │   ├── Surfaces/
 │   │   │   ├── FocusedSurface.cs
 │   │   │   ├── ISurfaceProber.cs
+│   │   │   ├── ParagraphCorrectionGate.cs
 │   │   │   └── SurfaceProber.cs
 │   │   ├── Tracking/
 │   │   │   ├── KeyDecoder.cs
@@ -812,6 +814,7 @@ _Generated from `git ls-files` — do not edit by hand._
 │   │   ├── Deckle.Autocorrect.Views.csproj
 │   │   ├── LexicalDomainsPage.xaml
 │   │   ├── LexicalDomainsPage.xaml.cs
+│   │   ├── ParagraphCorrectionSection.cs
 │   │   └── SettingsSearch.cs
 │   ├── Deckle.Catalog/
 │   │   ├── Composer/
@@ -1631,6 +1634,7 @@ _Generated from `git ls-files` — do not edit by hand._
 │   │   │   ├── ParagraphRewriteCoordinator.cs
 │   │   │   └── ParagraphRewriteOffer.cs
 │   │   ├── Settings/
+│   │   │   ├── ProfileUsers.cs
 │   │   │   ├── RewriteAvailability.cs
 │   │   │   └── StepTimelineLayout.cs
 │   │   ├── Deckle.Llm.Rewrite.csproj
@@ -2765,6 +2769,7 @@ _Generated from `git ls-files` — do not edit by hand._
 │   │   ├── MistouchMiningMaintenanceTests.cs
 │   │   ├── MorphalouReaderTests.cs
 │   │   ├── PairModelTrainerTests.cs
+│   │   ├── ParagraphCorrectionGateTests.cs
 │   │   ├── ParagraphReplacementPlanTests.cs
 │   │   ├── PersonalDictionaryTests.cs
 │   │   ├── PersonalLexiconWithTermsTests.cs
@@ -2777,6 +2782,9 @@ _Generated from `git ls-files` — do not edit by hand._
 │   │   ├── SurfaceProfileStoreTests.cs
 │   │   ├── TypedWordTrackerTests.cs
 │   │   └── WordBoundariesTests.cs
+│   ├── Deckle.Autocorrect.Views.Tests/
+│   │   ├── Deckle.Autocorrect.Views.Tests.csproj
+│   │   └── ParagraphCorrectionPageTests.cs
 │   ├── Deckle.Catalog.Tests/
 │   │   ├── CubicBezierTests.cs
 │   │   ├── CurveEndpointLimitsTests.cs
@@ -3148,6 +3156,7 @@ _Generated from `git ls-files` — do not edit by hand._
 │   │   ├── ParagraphRewriteCoordinatorTests.cs
 │   │   ├── ProfileReasoningTests.cs
 │   │   ├── ProfilesSectionBugNotes.md
+│   │   ├── ProfileUsersTests.cs
 │   │   ├── RewriteDiffGateTests.cs
 │   │   ├── RewriteFailureMessageTests.cs
 │   │   ├── RewriteLogTests.cs
