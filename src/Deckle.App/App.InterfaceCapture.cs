@@ -14,8 +14,7 @@ namespace Deckle.App;
 // mode is on.
 //
 // The App is the one place that knows which window is which, so it names them:
-// the Log window "log", each window a contributed module carries by its own name (none in the
-// published Deckle today), the HUD "hud". Any other
+// the Log window "log", the HUD "hud". Any other
 // visible window of this process (the transcript panel, a rewrite offer, the
 // setup wizard, a taskbar cover) is captured too, named after its title. The
 // Settings window is captured once per page, by its own walk, rather than as
