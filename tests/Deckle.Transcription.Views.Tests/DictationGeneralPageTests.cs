@@ -67,6 +67,17 @@ public class DictationGeneralPageTests
     }
 
     [Fact]
+    public void TheRecordingLimitSaysWhatOffMeansAndAnswersToCutOff()
+    {
+        Assert.False(Deckle.Audio.RecordingLimit.IsLimited(0));
+        Assert.Equal("Off records until you stop.", ReadResw()["RecordingLimitCard.Description"]);
+
+        string[] keywords = Entry("RecordingLimitCard").Keywords.ToArray();
+        foreach (string word in new[] { "cut off", "stop", "length", "time", "minutes", "recording", "limit" })
+            Assert.Contains(word, keywords);
+    }
+
+    [Fact]
     public void KeywordsAreLowercase()
     {
         foreach (string keyword in SettingsSearch.Entries.Concat(SettingsSearch.LexiconEntries).SelectMany(e => e.Keywords))

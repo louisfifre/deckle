@@ -507,6 +507,9 @@
   <data name="RecordingLimitCard.Header" xml:space="preserve">
     <value>Limit recording duration</value>
   </data>
+  <data name="RecordingLimitCard.Description" xml:space="preserve">
+    <value>Off records until you stop.</value>
+  </data>
   <data name="RecordingLimitDurationCard.Header" xml:space="preserve">
     <value>Maximum length</value>
   </data>

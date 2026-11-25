@@ -64,7 +64,7 @@ public static class SettingsSearch
         new SettingSearchEntry
         {
             LabelKey = "RecordingLimitCard",
-            Keywords = ["recording", "duration", "length", "limit", "minutes", "cap", "stop"],
+            Keywords = ["recording", "duration", "length", "limit", "minutes", "cap", "stop", "cut off", "time"],
         },
 
         // "Speech engine" — the engine fold (the Parakeet model folder, the state
