@@ -6,9 +6,11 @@
     local Git history. The section is bounded by invisible HTML comments so
     the visible README stays clean while automation has a stable replacement
     target. It also draws one small chart, the 7-day rolling mean of commits per
-    day over the last 26 weeks as a smooth curve, as two SVG files under
-    docs/media (a light and a dark one, which the section shows through a
-    picture element; they fill the README column in width, keep a fixed height and a fixed text size, and have a transparent background). The publication script runs
+    day over the last 26 weeks as a smooth curve, as pictures under
+    docs/media, a light and a dark one of each, which the section shows through
+    picture elements: the curve, which stretches with the README column, and
+    three small labels of fixed size (start date, end date, peak date) that
+    scale uniformly, so nothing that must keep its shape is ever stretched. The publication script runs
     this one after a release; it never pushes.
 .NOTES
     section: Project
@@ -45,7 +47,14 @@ $ChartFiles = [ordered]@{
     light = 'docs/media/pulse-commits-light.svg'
     dark  = 'docs/media/pulse-commits-dark.svg'
 }
-$ChartPaths = @($ChartFiles.Values)
+$LabelFiles = [ordered]@{
+    start = [ordered]@{ light = 'docs/media/pulse-label-start-light.svg'; dark = 'docs/media/pulse-label-start-dark.svg' }
+    end   = [ordered]@{ light = 'docs/media/pulse-label-end-light.svg';   dark = 'docs/media/pulse-label-end-dark.svg' }
+    peak  = [ordered]@{ light = 'docs/media/pulse-label-peak-light.svg';  dark = 'docs/media/pulse-label-peak-dark.svg' }
+}
+$PulseFontSize = 13
+$PulseLabelHeight = 16
+$ChartPaths = @($ChartFiles.Values) + @($LabelFiles.Values | ForEach-Object { $_.Values })
 
 trap {
     Write-ActionSummary `
@@ -117,9 +126,9 @@ if ($Commit) {
         throw 'README commit stopped because staged changes already exist. Commit or unstage them, then run again.'
     }
 
-    $otherTrackedPaths = @(Invoke-Git diff --name-only | Where-Object { $_ -cne 'README.md' -and $_ -cnotin $ChartFiles.Values })
+    $otherTrackedPaths = @(Invoke-Git diff --name-only | Where-Object { $_ -cne 'README.md' -and $_ -cnotin $ChartPaths })
     if ($otherTrackedPaths.Count -gt 0) {
-        throw "README commit stopped because tracked changes exist outside README.md and its chart:$($otherTrackedPaths -join ', '). Commit or revert them, then run again."
+        throw "README commit stopped because tracked changes exist outside README.md and its pictures: $($otherTrackedPaths -join ', '). Commit or revert them, then run again."
     }
 
     $readmeDirty = @(Invoke-Git diff --name-only -- README.md).Count -gt 0
@@ -249,32 +258,34 @@ function New-PulseChartSvg {
     )
 
     $accent = if ($Theme -eq 'dark') { '#8B5CFF' } else { '#6366FF' }
-    $muted  = if ($Theme -eq 'dark') { '#9198A1' } else { '#59636E' }
 
     $means = $Daily.Means
     $days = $means.Count
     $peak = [double]($means | Measure-Object -Maximum).Maximum
     $peakIndex = [array]::IndexOf($means, $peak)
 
-    # The picture has a fixed height in pixels and no viewBox of its own, so
-    # it fills the README column in width only: the text, the marker and the
-    # stroke keep their size at any column width. Only the curve and its area
-    # sit in a nested svg that stretches (preserveAspectRatio="none"); its
-    # viewBox height equals its height in pixels, so y is one to one. The
-    # background is left transparent.
-    $height = 88
-    $curveTop = 24; $curveHeight = 40; $curveWidth = 800
-    $inset = 1.5   # percent of the width kept free on each side
-    $span = 100 - 2 * $inset
-    $fontSize = 13
+    # The picture holds the curve, its area and the peak marker, nothing that
+    # must keep its shape: it has a viewBox and no width or height, so it fills
+    # the box the README gives it and stretches freely (preserveAspectRatio
+    # none). The strokes keep their thickness (non-scaling-stroke). The README
+    # gives it a height of 40 pixels, so one unit of y is one pixel. Room is
+    # left in the box so that the stroke and the marker are never clipped: the
+    # curve spans y 5 to 37 (the marker, 4 pixels of radius, needs 4 above the
+    # peak) and x 12 to 788 (the same 1.5 percent each side as the labels'
+    # column edge). The marker is a zero-length path with a round cap, so it
+    # stays round whatever the stretch; a circle would become an ellipse. The
+    # background is left transparent. The text lives in the label pictures.
+    $boxWidth = 800; $boxHeight = 40
+    $left = 12; $right = 788
+    $curveTop = 5; $curveBottom = 37
     $xs = [double[]]::new($days); $ys = [double[]]::new($days)
     foreach ($i in 0..($days - 1)) {
-        $xs[$i] = $curveWidth * $i / ($days - 1)
+        $xs[$i] = $left + ($right - $left) * $i / ($days - 1)
         $level = if ($peak -gt 0) { [math]::Sqrt($means[$i] / $peak) } else { 0.0 }
-        $ys[$i] = $curveHeight - $curveHeight * $level
+        $ys[$i] = $curveBottom - ($curveBottom - $curveTop) * $level
     }
-    $line = ConvertTo-SmoothPath -X $xs -Y $ys -Top 0 -Bottom $curveHeight
-    $area = '{0} L{1} {3} L{2} {3} Z' -f $line, (Format-Coordinate $xs[$days - 1]), (Format-Coordinate $xs[0]), $curveHeight
+    $line = ConvertTo-SmoothPath -X $xs -Y $ys -Top $curveTop -Bottom $curveBottom
+    $area = '{0} L{1} {3} L{2} {3} Z' -f $line, (Format-Coordinate $xs[$days - 1]), (Format-Coordinate $xs[0]), $boxHeight
 
     $firstLabel = $Daily.First.ToString('d MMM yyyy', $Culture)
     $lastLabel  = $Daily.First.AddDays($days - 1).ToString('d MMM yyyy', $Culture)
@@ -283,18 +294,12 @@ function New-PulseChartSvg {
 
     $marker = @()
     if ($peak -gt 0) {
-        $peakPercent = $inset + $span * $peakIndex / ($days - 1)
-        $anchor = 'middle'; $labelPercent = $peakPercent
-        if ($peakPercent -lt 12) { $anchor = 'start'; $labelPercent = $inset }
-        elseif ($peakPercent -gt 88) { $anchor = 'end'; $labelPercent = 100 - $inset }
-        $marker = @(
-            ('  <circle cx="{0}%" cy="{1}" r="4" fill="{2}"/>' -f (Format-Coordinate $peakPercent), (Format-Coordinate ($curveTop + $ys[$peakIndex])), $accent),
-            ('  <text x="{0}%" y="{1}" text-anchor="{2}" font-size="{3}" font-weight="600" fill="{4}">{5}</text>' -f (Format-Coordinate $labelPercent), (Format-Coordinate ($curveTop + $ys[$peakIndex] - 9)), $anchor, $fontSize, $accent, $peakDay)
-        )
+        $mx = Format-Coordinate $xs[$peakIndex]; $my = Format-Coordinate $ys[$peakIndex]
+        $marker = @(('  <path d="M{0} {1} L{0} {1}" fill="none" stroke="{2}" stroke-width="8" stroke-linecap="round" vector-effect="non-scaling-stroke"/>' -f $mx, $my, $accent))
     }
 
     $lines = @(
-        ('<svg xmlns="http://www.w3.org/2000/svg" width="100%" height="{0}" role="img" aria-labelledby="t d">' -f $height),
+        ('<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 {0} {1}" preserveAspectRatio="none" role="img" aria-labelledby="t d">' -f $boxWidth, $boxHeight),
         '  <title id="t">Commits per day, last 26 weeks, smoothed over 7 days</title>',
         ('  <desc id="d">{0} commits between {1} and {2}; the busiest 7 days averaged {3} a day, around {4}.</desc>' -f $Daily.Total, $firstLabel, $lastLabel, $peakPerDay, $peakDay),
         '  <defs>',
@@ -303,34 +308,97 @@ function New-PulseChartSvg {
         ('      <stop offset="1" stop-color="{0}" stop-opacity="0"/>' -f $accent),
         '    </linearGradient>',
         '  </defs>',
-        '  <g font-family="-apple-system, BlinkMacSystemFont, ''Segoe UI'', Helvetica, Arial, sans-serif">',
-        ('  <svg x="{0}%" y="{1}" width="{2}%" height="{3}" viewBox="0 0 {4} {3}" preserveAspectRatio="none" overflow="visible">' -f (Format-Coordinate $inset), $curveTop, (Format-Coordinate $span), $curveHeight, $curveWidth),
-        ('    <path d="{0}" fill="url(#fade)" stroke="none"/>' -f $area),
-        ('    <path d="{0}" fill="none" stroke="{1}" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" vector-effect="non-scaling-stroke"/>' -f $line, $accent),
-        '  </svg>'
-    ) + $marker + @(
-        ('  <text x="{0}%" y="{1}" text-anchor="start" font-size="{2}" fill="{3}">{4}</text>' -f (Format-Coordinate $inset), ($height - 5), $fontSize, $muted, $firstLabel),
-        ('  <text x="{0}%" y="{1}" text-anchor="end" font-size="{2}" fill="{3}">{4}</text>' -f (Format-Coordinate (100 - $inset)), ($height - 5), $fontSize, $muted, $lastLabel),
-        '  </g>',
+        ('  <path d="{0}" fill="url(#fade)" stroke="none"/>' -f $area),
+        ('  <path d="{0}" fill="none" stroke="{1}" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" vector-effect="non-scaling-stroke"/>' -f $line, $accent)
+    ) + $marker + @('</svg>')
+    return (($lines -join "`n") + "`n")
+}
+
+# One label of the pulse as a picture of fixed size: the browser scales it
+# uniformly, so the text never gets squeezed. It is as wide as its text needs
+# (the character count times a safe allowance per character, since the fonts
+# differ from one system to the next) and the text is anchored to the side the
+# label is pinned to, so any spare room falls on the side facing the middle.
+function Get-PulseLabelSize {
+    param([Parameter(Mandatory)][string]$Text)
+    return [pscustomobject]@{ Width = [int][math]::Ceiling($Text.Length * $PulseFontSize * 0.65) + 4; Height = $PulseLabelHeight }
+}
+
+function New-PulseLabelSvg {
+    param(
+        [Parameter(Mandatory)][string]$Text,
+        [Parameter(Mandatory)][ValidateSet('start', 'end', 'peak')][string]$Kind,
+        [Parameter(Mandatory)][ValidateSet('light', 'dark')][string]$Theme
+    )
+
+    $accent = if ($Theme -eq 'dark') { '#8B5CFF' } else { '#6366FF' }
+    $muted  = if ($Theme -eq 'dark') { '#9198A1' } else { '#59636E' }
+    $size = Get-PulseLabelSize -Text $Text
+    $anchor = if ($Kind -eq 'start') { 'start' } else { 'end' }
+    $x = if ($Kind -eq 'start') { 0 } else { $size.Width }
+    $fill = if ($Kind -eq 'peak') { $accent } else { $muted }
+    $weight = if ($Kind -eq 'peak') { ' font-weight="600"' } else { '' }
+
+    $lines = @(
+        ('<svg xmlns="http://www.w3.org/2000/svg" width="{0}" height="{1}" viewBox="0 0 {0} {1}">' -f $size.Width, $size.Height),
+        ('  <text x="{0}" y="12" text-anchor="{1}" font-family="-apple-system, BlinkMacSystemFont, ''Segoe UI'', Helvetica, Arial, sans-serif" font-size="{2}"{3} fill="{4}">{5}</text>' -f $x, $anchor, $PulseFontSize, $weight, $fill, $Text),
         '</svg>'
     )
     return (($lines -join "`n") + "`n")
+}
+
+function Write-GeneratedFile {
+    param([string]$RelativePath, [string]$Content)
+    $path = Join-Path $RepoRoot $RelativePath
+    $null = New-Item -ItemType Directory -Force -Path (Split-Path -Parent $path)
+    if (-not (Test-Path -LiteralPath $path) -or [System.IO.File]::ReadAllText($path) -cne $Content) {
+        [System.IO.File]::WriteAllText($path, $Content, [System.Text.UTF8Encoding]::new($false))
+    }
 }
 
 Write-WorkflowStep -Output $WorkflowOutput -Message 'Draw the daily commit curve'
 $daily = Get-DailyMeans -CommitDates $dates -Days $ChartDays -Window 7
 $chartTotal = [int]$daily.Total
 $chartPeak = ([double]($daily.Means | Measure-Object -Maximum).Maximum).ToString('0.#', $Culture)
-$utf8NoBomChart = [System.Text.UTF8Encoding]::new($false)
+$hasPeak = [double]$chartPeak -gt 0
+$startText = $daily.First.ToString('d MMM yyyy', $Culture)
+$endText   = $daily.First.AddDays($ChartDays - 1).ToString('d MMM yyyy', $Culture)
+$peakText  = $daily.First.AddDays([array]::IndexOf($daily.Means, [double]($daily.Means | Measure-Object -Maximum).Maximum)).ToString('d MMM', $Culture)
+$labelTexts = @{ start = $startText; end = $endText; peak = $peakText }
 foreach ($theme in $ChartFiles.Keys) {
-    $chartPath = Join-Path $RepoRoot $ChartFiles[$theme]
-    $null = New-Item -ItemType Directory -Force -Path (Split-Path -Parent $chartPath)
-    $svg = New-PulseChartSvg -Daily $daily -Theme $theme
-    if (-not (Test-Path -LiteralPath $chartPath) -or [System.IO.File]::ReadAllText($chartPath) -cne $svg) {
-        [System.IO.File]::WriteAllText($chartPath, $svg, $utf8NoBomChart)
+    Write-GeneratedFile -RelativePath $ChartFiles[$theme] -Content (New-PulseChartSvg -Daily $daily -Theme $theme)
+    foreach ($kind in $LabelFiles.Keys) {
+        if ($kind -eq 'peak' -and -not $hasPeak) { continue }
+        Write-GeneratedFile -RelativePath $LabelFiles[$kind][$theme] -Content (New-PulseLabelSvg -Text $labelTexts[$kind] -Kind $kind -Theme $theme)
     }
 }
 Write-WorkflowMessage -Output $WorkflowOutput -Message ('{0} commits over {1} days, busiest 7 days averaged {2} a day' -f (Format-Count $chartTotal), $ChartDays, $chartPeak)
+
+function Get-PulsePicture {
+    param([string]$Light, [string]$Dark, [string]$Alt, [string]$Size, [string]$Align)
+    $alignAttribute = if ($Align) { " align=`"$Align`"" } else { '' }
+    return @(
+        '<picture>',
+        "  <source media=`"(prefers-color-scheme: dark)`" srcset=`"$Dark`">",
+        "  <source media=`"(prefers-color-scheme: light)`" srcset=`"$Light`">",
+        "  <img alt=`"$Alt`" src=`"$Light`" $Size$alignAttribute>",
+        '</picture>'
+    ) -join "`n"
+}
+
+# Pictures that must keep their shape are fixed-size images floated to the side
+# they are pinned to; only the curve is 100% wide. No style, no class: only
+# what the README sanitizer keeps.
+function Get-PulseLabelPicture {
+    param([string]$Kind, [string]$Align, [string]$Alt)
+    $size = Get-PulseLabelSize -Text $labelTexts[$Kind]
+    return Get-PulsePicture -Light $LabelFiles[$Kind]['light'] -Dark $LabelFiles[$Kind]['dark'] -Alt $Alt -Size ('width="{0}" height="{1}"' -f $size.Width, $size.Height) -Align $Align
+}
+
+$peakBlock = if ($hasPeak) { (Get-PulseLabelPicture -Kind peak -Align right -Alt "Peak on $peakText") + "`n<br clear=`"all`">`n" } else { '' }
+$curveBlock = Get-PulsePicture -Light $ChartFiles['light'] -Dark $ChartFiles['dark'] -Alt "Commits per day, smoothed over 7 days, over the last 26 weeks: $(Format-Count $chartTotal) in total, the busiest stretch averaged $chartPeak a day." -Size 'width="100%" height="40"' -Align ''
+$startBlock = Get-PulseLabelPicture -Kind start -Align left -Alt "From $startText"
+$endBlock = Get-PulseLabelPicture -Kind end -Align right -Alt "To $endText"
 
 $generatedDate = (Get-Date).ToString('yyyy-MM-dd', $Culture)
 
@@ -357,11 +425,10 @@ $StartMarker
 |---:|---:|---:|---:|---:|---:|
 | $firstDate | $(Format-Count $commitCount) | $(Format-Count $activeDays) | $(Format-Count $additions) | $(Format-Count $touched) | $(Format-Count $trackedTextLines) |
 
-<picture>
-  <source media="(prefers-color-scheme: dark)" srcset="$($ChartFiles['dark'])">
-  <source media="(prefers-color-scheme: light)" srcset="$($ChartFiles['light'])">
-  <img alt="Commits per day, smoothed over 7 days, over the last 26 weeks: $(Format-Count $chartTotal) in total, the busiest stretch averaged $chartPeak a day." src="$($ChartFiles['light'])" width="100%" height="88">
-</picture>
+$peakBlock$curveBlock
+$startBlock
+$endBlock
+<br clear="all">
 
 <sub>Generated from Git history on $generatedDate. Counts include tracked text files only for the current line total.</sub>
 $EndMarker
