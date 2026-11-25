@@ -77,4 +77,85 @@ public sealed class BoundedWriteQueueRegressionTests
         Assert.Throws<IOException>(() => queue.TryFlush(TimeSpan.FromSeconds(5)));
         Assert.Throws<IOException>(queue.Dispose);
     }
+
+    [Fact]
+    public async Task A_full_log_queue_drops_new_lines_without_blocking_and_reports_the_count_once_writing_resumes()
+    {
+        using var diskReleased = new ManualResetEventSlim();
+        using var writeStarted = new ManualResetEventSlim();
+        var written = new List<string>();
+        var reports = new List<int>();
+        using var queue = new BoundedWriteQueue<string>(
+            capacity: 1,
+            write: line =>
+            {
+                writeStarted.Set();
+                diskReleased.Wait();
+                lock (written) written.Add(line);
+                return ValueTask.CompletedTask;
+            },
+            flush: () => ValueTask.CompletedTask,
+            close: () => { },
+            dropWhenFull: true,
+            onDropped: lost => { lock (reports) reports.Add(lost); });
+
+        try
+        {
+            queue.Enqueue("stuck in the write");
+            Assert.True(writeStarted.Wait(TimeSpan.FromSeconds(5)));
+            queue.Enqueue("fills the channel");
+
+            Task burst = Task.Run(() =>
+            {
+                for (int i = 0; i < 5; i++) queue.Enqueue($"lost {i}");
+            });
+            Assert.True(await Task.WhenAny(burst, Task.Delay(TimeSpan.FromSeconds(5))) == burst,
+                "A producer waited on a full log queue instead of dropping its line.");
+            lock (reports) Assert.Empty(reports);
+        }
+        finally
+        {
+            diskReleased.Set();
+        }
+
+        Assert.True(queue.TryFlush(TimeSpan.FromSeconds(5)));
+        SpinWait.SpinUntil(() => { lock (reports) return reports.Count > 0; }, TimeSpan.FromSeconds(5));
+        Thread.Sleep(100);
+
+        lock (written) Assert.Equal(["stuck in the write", "fills the channel"], written);
+        lock (reports) Assert.Equal([5], reports);
+    }
+
+    [Fact]
+    public async Task A_dataset_queue_still_waits_on_a_full_queue_and_loses_nothing()
+    {
+        using var diskReleased = new ManualResetEventSlim();
+        using var writeStarted = new ManualResetEventSlim();
+        var written = new List<string>();
+        using var queue = new BoundedWriteQueue<string>(
+            capacity: 1,
+            write: line =>
+            {
+                writeStarted.Set();
+                diskReleased.Wait();
+                lock (written) written.Add(line);
+                return ValueTask.CompletedTask;
+            },
+            flush: () => ValueTask.CompletedTask,
+            close: () => { });
+
+        queue.Enqueue("first");
+        Assert.True(writeStarted.Wait(TimeSpan.FromSeconds(5)));
+        queue.Enqueue("second");
+        Task waiting = Task.Run(() => queue.Enqueue("third"));
+
+        await Task.Delay(200);
+        Assert.False(waiting.IsCompleted, "The producer did not wait for room.");
+
+        diskReleased.Set();
+        await waiting.WaitAsync(TimeSpan.FromSeconds(5));
+        Assert.True(queue.TryFlush(TimeSpan.FromSeconds(5)));
+
+        lock (written) Assert.Equal(["first", "second", "third"], written);
+    }
 }
