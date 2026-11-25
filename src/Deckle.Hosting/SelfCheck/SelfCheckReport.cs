@@ -87,7 +87,12 @@ public sealed class SelfCheckReport
 
         foreach (SelfCheckSurface surface in Surfaces)
         {
-            if (!surface.Loaded)
+            // A surface that did not load with an Error is a step that threw
+            // on the way (a check of the walk, a page that failed to build):
+            // its words are the failure. Without one, the page never arrived.
+            if (!surface.Loaded && surface.Error is not null)
+                failures.Add($"{surface.Name}: failed after {surface.Ms} ms: {surface.Error}");
+            else if (!surface.Loaded)
                 failures.Add($"{surface.Name}: did not load (navigation did not complete in {surface.Ms} ms).");
             else if (surface.Png is null)
                 failures.Add($"{surface.Name}: loaded but its image could not be taken ({surface.Error ?? "no pixels"}).");
