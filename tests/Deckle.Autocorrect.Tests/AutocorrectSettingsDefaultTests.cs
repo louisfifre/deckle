@@ -27,12 +27,12 @@ public sealed class AutocorrectSettingsDefaultTests : IDisposable
     }
 
     [Fact]
-    public void FrenchList_StartsEnabledWithNotepadEnrolled()
+    public void FrenchList_StartsEnabledWithNoAppEnrolled()
     {
         var s = AutocorrectSettings.CreateDefault(Languages("fr", "en"));
 
         Assert.True(s.Enabled);
-        Assert.True(s.Apps["Notepad"]);
+        Assert.Empty(s.Apps);
     }
 
     [Fact]

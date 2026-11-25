@@ -1,33 +1,9 @@
 using System;
 using System.Collections.Generic;
-using System.Text.Json.Serialization;
 using Deckle.Core;
 using Deckle.Llm;
 
 namespace Deckle.Llm.Rewrite;
-
-// ── Before the steps ─────────────────────────────────────────────────────────
-//
-// The length ladder and the batch switch as a file held them before
-// 2026-11-11, read once to migrate (LlmSettingsNormalizer.MigrateToSteps) and
-// never written again.
-public sealed class LegacyLengthStep
-{
-    public int FromChars { get; set; }
-    public string ProfileId { get; set; } = "";
-}
-
-public sealed class LegacyLengthSwitchSettings
-{
-    public bool Enabled { get; set; }
-    public List<LegacyLengthStep> Steps { get; set; } = new();
-}
-
-public sealed class LegacyBatchRewriteSettings
-{
-    public bool Enabled { get; set; }
-    public int ThresholdChars { get; set; } = 600;
-}
 
 // ── LLM rewriting settings ───────────────────────────────────────────────────
 
@@ -56,8 +32,7 @@ public sealed class RewriteProfile
     // How much the model reasons before it answers. Per profile, not per
     // provider, because what a level allows depends on the model, which the
     // profile names. Null keeps the engine's own default (Claude: low effort,
-    // adaptive thinking), so a profile saved before this setting behaves as
-    // it did; the default moves only once the benchmark has measured a level.
+    // adaptive thinking).
     public ReasoningLevel? Reasoning { get; set; }
 
     // Starts a dictation rewritten with this profile, whatever its length.
@@ -92,25 +67,16 @@ public sealed class RewriteStep
 
     // The stretch of raw transcript this step's profile rewrites in one
     // request, closed at the first pause once it reaches this size
-    // (DictationBatcher). Zero in a file written before the size moved onto
-    // the steps: the normalizer fills it.
+    // (DictationBatcher). Zero when the file has none: the normalizer fills
+    // the default.
     public int BlockChars { get; set; }
-
-    // Before 2026-11-12 (read once, to migrate): each step had its own
-    // "Streaming" switch. LlmSettingsNormalizer.NormalizeDictation turns any
-    // step that streamed into DictationRewriteSettings.RewriteWhileSpeaking,
-    // then clears it; null is never written.
-    [JsonPropertyName("streaming")]
-    [JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)]
-    public bool? LegacyStreaming { get; set; }
 }
 
 // Which profile rewrites a dictation, and when: an ordered list of steps.
 //
 // The first step is the base rewrite and always exists. Every step starts at
 // its FromChars, the first one included (0: from the beginning), each later
-// one strictly above the step before. One rule for every step, where a "Start
-// at" box once marked the first (until 2026-11-12): a length of 0 says it.
+// one strictly above the step before. A length of 0 says "from the beginning".
 // The highest step a dictation reaches takes it, and a dictation is always
 // rewritten from its beginning, never from the length of the step.
 //
@@ -159,24 +125,8 @@ public sealed class DictationRewriteSettings
     public bool RewriteWhileSpeaking { get; set; }
 
     // Never empty once normalized (LlmSettingsNormalizer.NormalizeDictation):
-    // Steps[0] is the base rewrite. Empty in a file written before the steps
-    // existed, which is what tells the normalizer to migrate it.
+    // Steps[0] is the base rewrite.
     public List<RewriteStep> Steps { get; set; } = new();
-
-    // Before 2026-11-12 (read once, to migrate): one passage size for every
-    // step. The normalizer gives it to each step as its block size, then
-    // clears it; null is never written.
-    [JsonPropertyName("passageChars")]
-    [JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)]
-    public int? LegacyPassageChars { get; set; }
-
-    // Before 2026-11-12 (read once, to migrate): the first step's "Start at"
-    // box. Off, the first step started from the beginning whatever its
-    // length said, so the normalizer sets that length to 0, then clears it;
-    // null is never written.
-    [JsonPropertyName("startAtLength")]
-    [JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)]
-    public bool? LegacyStartAtLength { get; set; }
 
     // The precision a length is held at: about a twentieth of it, on the
     // 1-2-5 ladder, never under MinChars. A length is meant in relative
@@ -222,18 +172,6 @@ public sealed class LlmSettings
     // The steps that choose the profile of a dictation and its moment.
     public DictationRewriteSettings Dictation { get; set; } = new();
 
-    // ── Before the steps (read once, to migrate) ──────────────────────────
-    //
-    // The shape a file had before 2026-11-11: an active profile, a length
-    // ladder and a switch for batches. LlmSettingsNormalizer.NormalizeDictation
-    // turns them into Dictation the first time such a file loads, then clears
-    // them; null is never written, so the next save drops them from the file.
-    [JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)]
-    public LegacyBatchRewriteSettings? BatchRewriting { get; set; }
-
-    [JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)]
-    public LegacyLengthSwitchSettings? LengthSwitch { get; set; }
-
     // Where a model is served from. A profile names one by Id. These defaults
     // are the three shapes the market has (a local Ollama, a chat-completions
     // server, Claude); the user renames, repoints, disables or deletes them in
@@ -244,15 +182,6 @@ public sealed class LlmSettings
         new() { Id = "lm-studio", Name = "LM Studio", Kind = LlmProviderKind.OpenAiCompatible, Endpoint = "http://localhost:1234/v1" },
         new() { Id = "claude",    Name = "Claude",    Kind = LlmProviderKind.Claude },
     };
-
-    // Before the steps too: the profile every dictation took. null = plain
-    // transcription. Lookup prefers the Id (stable across renames) and falls
-    // back to the Name.
-    [JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)]
-    public string? ActiveProfileId { get; set; }
-
-    [JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)]
-    public string? ActiveProfileName { get; set; }
 
     // Deckle ships no profile: a profile is the person's own prompt, written
     // on the Rewriting page (decided with Louis on 2026-11-21). A fresh data

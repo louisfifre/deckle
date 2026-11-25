@@ -75,12 +75,6 @@ public static class CancelledOperations
     // One paragraph of a rewrite; the rewrite itself may go on with the next.
     public const string ParagraphRewrite = "paragraph-rewrite";
 
-    // One sentence of a paragraph rewrite.
-    public const string SentenceRewrite = "sentence-rewrite";
-
-    // Prolonged /api/ps polling while a generation waits for its model.
-    public const string LlmWarmup = "llm-warmup";
-
     // An admin operation on the model list (delete, refresh).
     public const string LlmModels = "llm-models";
 
@@ -127,9 +121,4 @@ public static class CancellationReasons
 
     // A newer request of the same kind replaced this one.
     public const string Superseded = "superseded";
-
-    // The work this operation served finished, so the operation was stopped
-    // on purpose: Ollama's /api/ps poll is cancelled as soon as the
-    // generation it watches settles, which is the normal end, not a failure.
-    public const string Completed = "completed";
 }

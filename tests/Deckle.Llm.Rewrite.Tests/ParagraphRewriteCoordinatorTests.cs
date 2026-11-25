@@ -92,11 +92,6 @@ public sealed class ParagraphRewriteCoordinatorTests
             string paragraph,
             CancellationToken cancellationToken)
             => new(rewritten, 1, 0, 0, 0, 0, 0);
-
-        public GenerationResult RewriteSentence(
-            string sentence,
-            CancellationToken cancellationToken)
-            => throw new NotSupportedException();
     }
 
     private sealed class BlockingRewriteService(
@@ -116,11 +111,6 @@ public sealed class ParagraphRewriteCoordinatorTests
             release.Wait(TimeSpan.FromSeconds(2), TestContext.Current.CancellationToken);
             return new(rewritten, 1, 0, 0, 0, 0, 0);
         }
-
-        public GenerationResult RewriteSentence(
-            string sentence,
-            CancellationToken cancellationToken)
-            => throw new NotSupportedException();
 
         public void Dispose() => Started.Dispose();
     }

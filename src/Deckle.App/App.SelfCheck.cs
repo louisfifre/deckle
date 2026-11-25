@@ -2,7 +2,6 @@ using Deckle.App.SelfCheck;
 using Deckle.Hosting.SelfCheck;
 using static Deckle.Hosting.SelfCheck.SelfCheckCapture;
 using static Deckle.Hosting.SelfCheck.SelfCheckProcess;
-using Deckle.Contributions;
 using Deckle.Core;
 using Deckle.Diagnostics;
 using Deckle.Diagnostics.Logging;
@@ -23,7 +22,7 @@ namespace Deckle.App;
 // composes a short, explicit list of pieces (below); probes the microphone once;
 // opens the Settings window and walks every page of the rail, then opens the Log
 // window, the Transcribe and rewrite and Paste to folder windows in each of
-// their states, then the contributed windows (PublishedComposition);
+// their states;
 // photographs each, then the icon each window and Deckle.exe give the taskbar;
 // writes report.json (the contract
 // with scripts/self-check.ps1) and exits 0 when all is well, 1 otherwise.
@@ -416,18 +415,6 @@ public partial class App
                 if (states.Count > 0) paste.ShowStateForCapture(states[0]);
             }
             report.Save(outputFolder);
-        }
-
-        // The contributed windows (PublishedComposition), in composition order:
-        // none today. Each walk is told its window's name and the
-        // view asked for; one that ends on a targeted view without a failure
-        // says so itself.
-        foreach (ContributedWalk walk in PublishedHost.Walks)
-        {
-            if (!Wants(walk.WindowName)) continue;
-            Step(walk.WindowName);
-            await walk.Run(new SelfCheckWalkContext(
-                this, report, run, outputFolder, target?.View, Step));
         }
 
         // What the taskbar is handed, once every window has been opened

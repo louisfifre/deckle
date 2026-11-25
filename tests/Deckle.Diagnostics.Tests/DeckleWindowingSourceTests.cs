@@ -26,15 +26,15 @@ public class DeckleWindowingSourceTests : IDisposable
         // Positive control: with Windowing admitted (the constructor opens it)
         // the same call is observed, so the empty result below can only come
         // from the closed admission and not from a silent provider.
-        DeckleWindowingSource.Log.WindowResizeFrame(
-            "settings", 1, 800, 600, 16, 2);
+        DeckleWindowingSource.Log.WindowPositioned(
+            "settings", 0x12345L, 144, "Center", 100, 200, 960, 1440);
         Assert.Single(listener.Events);
 
         OperationalLogAdmission.Configure(static _ => false);
         try
         {
-            DeckleWindowingSource.Log.WindowResizeFrame(
-                "settings", 2, 800, 600, 16, 2);
+            DeckleWindowingSource.Log.WindowPositioned(
+                "settings", 0x12345L, 144, "Center", 100, 200, 960, 1440);
 
             Assert.Single(listener.Events);
         }

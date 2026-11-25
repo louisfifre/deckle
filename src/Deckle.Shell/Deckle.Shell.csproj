@@ -17,8 +17,8 @@
   </ItemGroup>
 
   <ItemGroup>
-    <!-- ResizeGesture (the Win32-free state machine behind ResizeCoalescer) is
-         internal; its unit tests reach it through this grant. -->
+    <!-- Internal types (GlobalHotkeyBindings, TrayIconRegistration…) are
+         reached by the unit tests through this grant. -->
     <InternalsVisibleTo Include="Deckle.Shell.Tests" />
   </ItemGroup>
 

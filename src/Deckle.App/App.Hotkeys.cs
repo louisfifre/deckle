@@ -23,8 +23,12 @@ public partial class App
     // The tray panel's Record button lands here too.
     private void OnHotkey(int hotkeyId)
     {
+        // Taken first: the HUD times its first frame from this instant.
+        _hotkeyPressTimestamp = System.Diagnostics.Stopwatch.GetTimestamp();
         AllHotkeyActions().FirstOrDefault(action => action.Id == hotkeyId)?.Invoke();
     }
+
+    private long _hotkeyPressTimestamp;
 
     private void ToggleRecordingFromHotkey() => ToggleRecordingFromHotkey(rewriteProfileId: null);
 
@@ -58,16 +62,25 @@ public partial class App
                     // is the bound chord, not proof it was pressed.
                     DeckleAppSource.Log.HotkeyStartDetail(HotkeyChordLabel(RecordHotkeyId));
                 }
-                _hudWindow?.ShowPreparing();
+                _hudWindow?.ShowPreparing(_hotkeyPressTimestamp);
                 break;
 
             case ToggleResult.Stopped:
                 DeckleAppSource.Log.HotkeyStop();
                 // Acknowledged here at once: the next engine status only fires
-                // after the streaming drain decodes the queued tail, so the chrono
+                // after the streaming drain decodes the queued speech, so the chrono
                 // would keep ticking and the stop would feel laggy. The later
                 // status-driven SwitchToTranscribing is an idempotent no-op.
-                _hudWindow?.SwitchToTranscribing();
+                _hudWindow?.SwitchToTranscribing(_hotkeyPressTimestamp);
+                // The tray and the windows leave Recording at the press too:
+                // the microphone closes here, while the next engine status
+                // waits for the drain and can come seconds later.
+                string transcribing = Deckle.Localization.Loc.Get("Status_Transcribing");
+                _tray?.UpdateStatus(
+                    _quitPending ? QuitPendingStatus(transcribing) : transcribing,
+                    isRecording: false);
+                _lastRecordingState = false;
+                ApplyRecordingStateToWindows(false);
                 break;
 
             case ToggleResult.IgnoredBusy:

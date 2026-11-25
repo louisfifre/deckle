@@ -10,8 +10,7 @@ public sealed class AutocorrectSettings : IJsonOnDeserialized
     // Process name (no extension, matched case-insensitively) → corrections on.
     //   absent = never met: never corrected, a candidate for the enrollment prompt.
     //   true   = enabled here.   false = declined (never prompt, never correct).
-    public Dictionary<string, bool> Apps { get; set; } =
-        new(StringComparer.OrdinalIgnoreCase) { ["notepad"] = true };
+    public Dictionary<string, bool> Apps { get; set; } = new(StringComparer.OrdinalIgnoreCase);
 
     // The user's decisions about domain packs, by pack id ("fr-it").
     //   absent      = never decided — the pack follows the Windows language
@@ -28,18 +27,14 @@ public sealed class AutocorrectSettings : IJsonOnDeserialized
 
     // The settings a first run starts from, when no file has been saved yet.
     // Autocorrect is a French corrector, so it is on by default only when the
-    // person's Windows languages include French; otherwise it starts off and
-    // enrolls no app, so nothing is corrected until they turn it on and choose
+    // person's Windows languages include French; otherwise it starts off. It
+    // enrolls no app either way, so nothing is corrected until they choose
     // where. The languages are an argument (primary subtags, as
     // SystemLanguages.Current gives them) so the rule is testable without
     // depending on the machine. A saved file always wins over this.
     public static AutocorrectSettings CreateDefault(IReadOnlySet<string> systemLanguages)
     {
-        bool french = systemLanguages.Contains("fr");
-        var settings = new AutocorrectSettings { Enabled = french };
-        if (!french)
-            settings.Apps = new Dictionary<string, bool>(StringComparer.OrdinalIgnoreCase);
-        return settings;
+        return new AutocorrectSettings { Enabled = systemLanguages.Contains("fr") };
     }
 
     // System.Text.Json rebuilds Apps with the default ordinal comparer, so

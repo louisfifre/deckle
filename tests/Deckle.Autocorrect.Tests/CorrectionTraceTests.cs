@@ -18,14 +18,14 @@ public class CorrectionTraceTests
 
     private static FrequencyLexicon French() => FrequencyLexicon.LoadTsv(new StringReader(FrenchTsv));
 
-    private static DiacriticsRestorer Diacritics(RestorerOptions? options = null)
+    private static DiacriticsRestorer Diacritics()
     {
         var french = French();
-        return new DiacriticsRestorer(french, english: null, AccentIndex.Build(french), options);
+        return new DiacriticsRestorer(french, english: null, AccentIndex.Build(french));
     }
 
     private static ConservativeTypoCorrector Typo() =>
-        new(French(), english: null, personal: null, options: null);
+        new(French(), english: null, personal: null);
 
     [Fact]
     public void RecordsAFiredLexicalGate()

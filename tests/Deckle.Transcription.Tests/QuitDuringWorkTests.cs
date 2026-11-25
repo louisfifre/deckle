@@ -34,8 +34,7 @@ public sealed class QuitDuringWorkTests : IDisposable
             new StreamingHost(),
             backend,
             new ScriptedMicrophoneCapture(utteranceCount: 2),
-            clipboard,
-            captureTail: TestCaptureTail);
+            clipboard);
         var outcomes = new List<TranscriptionOutcome>();
         engine.TranscriptionFinished += outcome => { lock (outcomes) outcomes.Add(outcome); };
 
@@ -61,8 +60,7 @@ public sealed class QuitDuringWorkTests : IDisposable
             new StreamingHost(),
             new SequencedBackend([TestInference]),
             new ScriptedMicrophoneCapture(utteranceCount: 0),
-            new RecordingClipboardWriter(),
-            captureTail: TestCaptureTail);
+            new RecordingClipboardWriter());
 
         DrainResult result = await Task.Run(
             () => engine.FinishInFlightWork("test", TimeSpan.FromSeconds(10)), testCancellation);
@@ -85,8 +83,7 @@ public sealed class QuitDuringWorkTests : IDisposable
             backend,
             new ScriptedMicrophoneCapture(utteranceCount: 2),
             clipboard,
-            recovery: recovery,
-            captureTail: TestCaptureTail);
+            recovery: recovery);
 
         Assert.Equal(ToggleResult.Started, engine.RequestToggle());
         await backend.AllCallsCompleted.Task.WaitAsync(TimeSpan.FromSeconds(5), testCancellation);
@@ -116,8 +113,7 @@ public sealed class QuitDuringWorkTests : IDisposable
             new StreamingHost(),
             new SequencedBackend([TestInference]),
             new ScriptedMicrophoneCapture(utteranceCount: 0),
-            new RecordingClipboardWriter(),
-            captureTail: TestCaptureTail);
+            new RecordingClipboardWriter());
 
         await Task.Run(
             () => engine.FinishInFlightWork("test", TimeSpan.FromSeconds(1)), testCancellation);

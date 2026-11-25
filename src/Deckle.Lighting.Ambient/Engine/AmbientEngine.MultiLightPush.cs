@@ -113,7 +113,7 @@ public sealed partial class AmbientEngine
             var decision = AmbientPushGate.Decide(
                 targetColor,
                 prev,
-                _changeThreshold,
+                AmbientPushGate.ChangeThreshold,
                 _requiresContinuousColorUpdates);
 
             if (decision == AmbientPushDecision.Drop)

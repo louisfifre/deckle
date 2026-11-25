@@ -23,20 +23,52 @@ public sealed class ConservativeTypoCorrector : ICorrectionPolicy
     private readonly IFrequencyLexicon _french;
     private readonly IFrequencyLexicon? _english;
     private readonly IPersonalLexicon? _personal;
-    private readonly TypoOptions _options;
     private readonly AccentIndex? _accentIndex;
+
+    // The thresholds governing the corrector. Two tiers: a relaxed near tier
+    // (one edit away) for ordinary slips, and a strict far tier (two edits away)
+    // for bigger faults, tried only when nothing sits one edit away. The far
+    // tier is held to a higher word-length, frequency and dominance bar — a
+    // correction reaching further must clear stronger evidence. Aggression is
+    // the product (type fast and carelessly, and let it rewrite), so these bars
+    // carry the safety on their own. They are an engineer's operating point,
+    // tuned by feel, not measured optima.
+
+    // Words shorter than this are never typo-corrected: a 1-2 letter non-word sits
+    // one edit from too many valid words to ever be unambiguous. At 3 the corrector
+    // reaches common short slips while a 2-letter intentional token stays safe.
+    private const int MinWordLength = 3;
+
+    // The chosen near word must itself be common enough to be the obvious intent —
+    // a rare neighbour winning a ratio over an even rarer one is not evidence.
+    private const double MinFrequencyPerMillion = 2.0;
+
+    // With more than one near neighbour, the best must out-frequency the runner up
+    // by at least this ratio to fire; a close second means real ambiguity.
+    private const double DominanceRatio = 5.0;
+
+    // The far tier (two edits, "bnjuor" → "bonjour") only applies to words at
+    // least this long: a short word two edits away matches far too many valid
+    // words to be unambiguous.
+    private const int Edits2MinWordLength = 6;
+
+    // The far tier's frequency floor — much higher than the near tier's. Reaching
+    // two edits away, only a genuinely common target is credible.
+    private const double Edits2MinFrequencyPerMillion = 30.0;
+
+    // The far tier's dominance ratio — stricter than the near tier's. At distance
+    // two the valid neighbourhood is crowded, so the winner must clearly dominate.
+    private const double Edits2DominanceRatio = 12.0;
 
     public ConservativeTypoCorrector(
         IFrequencyLexicon french,
         IFrequencyLexicon? english = null,
         IPersonalLexicon? personal = null,
-        TypoOptions? options = null,
         AccentIndex? accentIndex = null)
     {
         _french = french;
         _english = english;
         _personal = personal;
-        _options = options ?? new TypoOptions();
         _accentIndex = accentIndex;
     }
 
@@ -47,7 +79,7 @@ public sealed class ConservativeTypoCorrector : ICorrectionPolicy
     {
         StageTrace? st = trace?.Open(CorrectionTrace.StageNames.Typo);
 
-        if (word.Length < _options.MinWordLength)
+        if (word.Length < MinWordLength)
             return Abstain(st, CorrectionTrace.Reasons.TooShort);
 
         // Letters only: an apostrophe, hyphen or digit takes the token out of
@@ -92,21 +124,20 @@ public sealed class ConservativeTypoCorrector : ICorrectionPolicy
             // modele stays reserved for modèle rather than modèles).
             if (_accentIndex is not null
                 && _accentIndex.VariantsOf(lower) is { Count: > 0 } accents
-                && near[0].Frequency < accents[0].FrequencyPerMillion * _options.DominanceRatio)
+                && near[0].Frequency < accents[0].FrequencyPerMillion * DominanceRatio)
                 return Abstain(st, CorrectionTrace.Reasons.AccentFoldPreferred);
 
-            return Decide(word, near, _options.MinFrequencyPerMillion, _options.DominanceRatio,
+            return Decide(word, near, MinFrequencyPerMillion, DominanceRatio,
                 st, CorrectionTrace.Reasons.TypoNear);
         }
 
-        if (_options.MaxEditDistance >= 2
-            && lower.Length >= _options.Edits2MinWordLength
+        if (lower.Length >= Edits2MinWordLength
             && lower.Length <= Edits2MaxWordLength)
         {
             var far = ValidNeighbours(lower, twoEdits: true);
             if (far.Count > 0)
                 return Decide(
-                    word, far, _options.Edits2MinFrequencyPerMillion, _options.Edits2DominanceRatio,
+                    word, far, Edits2MinFrequencyPerMillion, Edits2DominanceRatio,
                     st, CorrectionTrace.Reasons.TypoFar);
         }
 

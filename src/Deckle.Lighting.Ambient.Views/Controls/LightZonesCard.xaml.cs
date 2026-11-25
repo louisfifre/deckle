@@ -250,7 +250,7 @@ public sealed partial class LightZonesCard : UserControl
     }
 
     // Reflects the store on the rows already built (an edit from another
-    // surface, a preset, a reset). Guarded so the slider does not write back.
+    // surface, a reset). Guarded so the slider does not write back.
     private void SyncRows()
     {
         var settings = AmbientSettingsService.Instance.Current;
