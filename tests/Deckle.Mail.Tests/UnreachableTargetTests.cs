@@ -110,7 +110,7 @@ public class UnreachableTargetTests
     {
         var line = To();
         var newsletter = To();
-        var elsewhere = To(deliveredTo: "maison@exemple.fr", mailboxId: "maison");
+        var elsewhere = To(deliveredTo: "maison@example.com", mailboxId: "maison");
         var state = Sorted(
             (line, MailJudgment.Informs("Coupure d'eau jeudi")),
             (newsletter, MailJudgment.SetAside(SetAsideReason.Newsletter, "Lettre de novembre")),

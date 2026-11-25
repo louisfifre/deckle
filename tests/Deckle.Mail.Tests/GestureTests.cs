@@ -180,7 +180,7 @@ public class GestureTests
         var state = Sorted(
             (To(minutesAgo: 30), MailJudgment.Informs("Remboursement de 42,10 €")),
             (To(minutesAgo: 20), MailJudgment.Informs("Remboursement de 18,00 €")),
-            (To(deliveredTo: "maison@exemple.fr", mailboxId: "maison", minutesAgo: 10), MailJudgment.Informs("Coupure d'eau jeudi")));
+            (To(deliveredTo: "maison@example.com", mailboxId: "maison", minutesAgo: 10), MailJudgment.Informs("Coupure d'eau jeudi")));
 
         var change = state.DismissAll(MailScope.Mailbox("perso"), Now);
 
