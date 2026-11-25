@@ -13,7 +13,8 @@ namespace Deckle.Audio.Views;
 
 // ── RecordingPage ───────────────────────────────────────────────────────────
 //
-// Settings page of the capture pipeline. Cached (NavigationCacheMode.Required);
+// The Microphone page, under the Dictation node of the rail: the device, then
+// what Deckle hears of it. Cached (NavigationCacheMode.Required);
 // the _initializing guard keeps the microphone combo from writing back to the
 // ViewModel during the sync pass.
 public sealed partial class RecordingPage : Page
@@ -34,7 +35,6 @@ public sealed partial class RecordingPage : Page
         // and die together, so the subscription needs no removal.
         ViewModel.MicrophoneNeeded += (_, _) => VoiceMeter.Stop();
         ComposeVoiceLevelSection();
-        ComposeRecordingLimitSection();
         ComposePreprocessingSection();
         ComposeExclusiveModeCard();
         LoadAndSync();
@@ -43,7 +43,7 @@ public sealed partial class RecordingPage : Page
     // ── Composed exclusive-mode card ──────────────────────────────────────────
     //
     // Under the microphone and its Windows properties: it says how the device
-    // is opened, so it belongs with the device, outside the Recording section
+    // is opened, so it belongs with the device, outside the Voice section
     // and its reset. The header's "Reset all" turns it back off.
     private SettingsComposer? _exclusiveModeComposer;
 
@@ -87,18 +87,6 @@ public sealed partial class RecordingPage : Page
                 VoiceMeter.Margin = new Thickness(padding.Left, 0, padding.Right, padding.Bottom);
             };
         }
-    }
-
-    // ── Composed maximum-recording-length card ────────────────────────────────
-    //
-    // Composed into its own host, under the voice level.
-    private SettingsComposer? _recordingLimitComposer;
-
-    private void ComposeRecordingLimitSection()
-    {
-        _recordingLimitComposer = new SettingsComposer(RecordingLimitHost, ViewModel);
-        _recordingLimitComposer.Compose(ViewModel.RecordingLimitSettings);
-        _recordingLimitComposer.DirtyChanged += OnComposedDirtyChanged;
     }
 
     // ── Composed pre-processing card ──────────────────────────────────────────
@@ -148,13 +136,12 @@ public sealed partial class RecordingPage : Page
     // of them; the meter, the level check and the listening test keep no value.
     private void GateResetLink()
     {
-        bool voiceDirty = _voiceLevelComposer?.IsDirty() ?? false;
-        bool recordingDirty =
-            (_recordingLimitComposer?.IsDirty() ?? false) ||
+        // The Voice section holds the voice level and the pre-processing.
+        bool voiceDirty =
+            (_voiceLevelComposer?.IsDirty() ?? false) ||
             (_preprocessingComposer?.IsDirty() ?? false);
         VoiceSection.IsResetEnabled = voiceDirty;
-        RecordingSection.IsResetEnabled = recordingDirty;
-        Header.IsResetAllEnabled = voiceDirty || recordingDirty
+        Header.IsResetAllEnabled = voiceDirty
             || (_exclusiveModeComposer?.IsDirty() ?? false);
     }
 
@@ -276,18 +263,10 @@ public sealed partial class RecordingPage : Page
     private void ResetVoice_Click(object sender, RoutedEventArgs e)
     {
         _voiceLevelComposer?.ResetAll();
-
-        DeckleSettingsUxSource.Log.SectionReset();
-        DeckleSettingsUxSource.Log.SectionResetDetail("Voice");
-    }
-
-    private void ResetRecording_Click(object sender, RoutedEventArgs e)
-    {
-        _recordingLimitComposer?.ResetAll();
         _preprocessingComposer?.ResetAll();
 
         DeckleSettingsUxSource.Log.SectionReset();
-        DeckleSettingsUxSource.Log.SectionResetDetail("Recording");
+        DeckleSettingsUxSource.Log.SectionResetDetail("Voice");
     }
 
     // The microphone device is not composed, so its reset is written here. The VM
@@ -297,7 +276,6 @@ public sealed partial class RecordingPage : Page
     private void ResetAll_Click(object sender, RoutedEventArgs e)
     {
         _voiceLevelComposer?.ResetAll();
-        _recordingLimitComposer?.ResetAll();
         _preprocessingComposer?.ResetAll();
         _exclusiveModeComposer?.ResetAll();
 
@@ -310,6 +288,6 @@ public sealed partial class RecordingPage : Page
         finally { _initializing = false; }
 
         DeckleSettingsUxSource.Log.SectionReset();
-        DeckleSettingsUxSource.Log.SectionResetDetail("Recording (all)");
+        DeckleSettingsUxSource.Log.SectionResetDetail("Microphone (all)");
     }
 }

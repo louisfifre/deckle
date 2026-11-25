@@ -246,7 +246,7 @@ public sealed partial class TranscriptionEngine : IDisposable
         _modelIncidentWorkId = workId;
         DeckleWhispSource.Log.ModelUnavailable(workId, reason, modelPath, useGpu, exType, exMessage);
         // A load_exception (GPU, driver) is not always the person's to fix, but
-        // the next good load closes it and the Transcription page is still where to look.
+        // the next good load closes it and the Dictation page is still where to look.
         UserIncidentRegistry.Instance.Open(UserIncidents.SpeechModel, reason);
     }
 

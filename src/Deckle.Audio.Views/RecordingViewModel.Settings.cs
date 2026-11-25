@@ -28,28 +28,6 @@ public partial class RecordingViewModel
             defaultValue: () => new CaptureSettings().VoiceLevelDbfs),
     ];
 
-    // Maximum recording length — a group: the master switch "Limit recording
-    // duration", off by default (the POCO's 0 = no limit), reveals one length in
-    // minutes, a field with a slider (a length is swept by feel, unlike the voice
-    // level). The POCO and the capture loop keep seconds; RecordingLimit and the
-    // two VM accessors do the conversion. The child's default is the length the
-    // switch restores, so the section reset returns the group to off.
-    public IReadOnlyList<SettingDescriptor> RecordingLimitSettings =>
-    [
-        Setting.Group("RecordingLimitCard",
-            () => LimitRecordingDuration,
-            value => LimitRecordingDuration = value,
-            [
-                Setting.Magnitude("RecordingLimitDurationCard",
-                    () => MaxRecordingDurationMinutes,
-                    value => MaxRecordingDurationMinutes = value,
-                    new MagnitudeArgs(RecordingLimit.MinMinutes, RecordingLimit.MaxMinutes,
-                        Unit: "min", Integer: true),
-                    defaultValue: () => RecordingLimit.DefaultMinutes),
-            ],
-            defaultValue: () => RecordingLimit.IsLimited(new CaptureSettings().MaxRecordingDurationSeconds)),
-    ];
-
     // Exclusive access to the microphone, off by default (it locks every other
     // application out of the microphone while a dictation runs). The default
     // reads the POCO initializer.

@@ -1,12 +1,12 @@
-namespace Deckle.Audio.Views;
+namespace Deckle.Audio;
 
 // ── RecordingLimit ───────────────────────────────────────────────────────────
 //
-// The maximum recording length as the Recording page shows it: a switch and a
+// The maximum recording length as Dictation > General shows it: a switch and a
 // length in minutes. The POCO and the capture loop keep seconds,
 // with 0 meaning "no limit", so this class is the one place the two meet. It is
 // pure (no settings service, no disk) so the rules are tested without a page.
-internal static class RecordingLimit
+public static class RecordingLimit
 {
     public const int MinMinutes = 1;
     public const int MaxMinutes = 120;

@@ -26,7 +26,7 @@ public sealed class TelemetrySettings
 }
 
 // Selects which audio a recording contributes to the corpus WAV. Values
-// persist as ints and the Transcription page casts its radio index straight to this
+// persist as ints and the Diagnostics page casts its radio index straight to this
 // enum: append only, never reorder.
 public enum AudioCorpusContent
 {

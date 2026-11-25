@@ -40,5 +40,5 @@ The small stateful object (`VoiceDetector`) that, fed one frame's RMS at a time,
 _Avoid_ : VAD (bare, ambiguous with the neural VAD), energy VAD.
 
 **Voice meter** :
-The instrument under the voice level on the Recording page (`VoiceLevelMeter`). While Listen is on it draws the microphone's live level on a fixed dB track, marks the voice level (and the detector's entry level, only when the entry margin is positive), and fills in the accent while its own voice detector says voiced. It shows and never writes: nothing is recorded, nothing persists, and the voice level is changed only in its field.
+The instrument under the voice level on the Microphone page (`VoiceLevelMeter`). While Listen is on it draws the microphone's live level on a fixed dB track, marks the voice level (and the detector's entry level, only when the entry margin is positive), and fills in the accent while its own voice detector says voiced. It shows and never writes: nothing is recorded, nothing persists, and the voice level is changed only in its field.
 _Avoid_ : level meter (bare, it says nothing of the voice level it is read against), VU meter (a different ballistic and scale).

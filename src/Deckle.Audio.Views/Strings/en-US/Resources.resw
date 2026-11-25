@@ -121,16 +121,10 @@
 
   <!-- RecordingPage — page chrome (x:Uid) -->
   <data name="RecordingPageHeader.Title" xml:space="preserve">
-    <value>Recording</value>
+    <value>Microphone</value>
   </data>
-  <!-- The section of a take: the maximum length and the pre-processing with
-       its checks (2026-11-07 review). Provisional, like every section title of
-       the page. -->
-  <data name="RecordingPageRecordingSection.Title" xml:space="preserve">
-    <value>Recording</value>
-  </data>
-  <!-- The section of the voice level and its meter, one card (2026-11-07
-       review, change 4). Provisional, like every section title of the page. -->
+  <!-- The section of what Deckle hears: the voice level and its meter, the
+       level check and the pre-processing with its listening test. -->
   <data name="RecordingPageVoiceSection.Title" xml:space="preserve">
     <value>Voice</value>
   </data>
@@ -240,13 +234,8 @@
     <value>Listen turned itself off after 2 minutes. Turn it on again to keep watching your level.</value>
   </data>
 
-  <!-- Composed maximum-recording-length group (switch + length field) -->
-  <data name="RecordingLimitCard.Header" xml:space="preserve">
-    <value>Limit recording duration</value>
-  </data>
-  <data name="RecordingLimitDurationCard.Header" xml:space="preserve">
-    <value>Maximum length</value>
-  </data>
+  <!-- The maximum recording length lives on Dictation > General now
+       (Deckle.Transcription.Views holds its strings). -->
 
   <!-- Composed pre-processing card (composer label key) -->
   <data name="RecordingPagePreprocessingCard.Header" xml:space="preserve">
@@ -356,6 +345,6 @@
   </data>
 
   <data name="SettingsModuleNavLabel" xml:space="preserve">
-    <value>Recording</value>
+    <value>Microphone</value>
   </data>
 </root>

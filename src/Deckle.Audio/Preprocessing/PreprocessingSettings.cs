@@ -21,7 +21,7 @@ public sealed class PreprocessingSettings
     // The opt-in toggle, and the whole control. Off by default. On = the DSP
     // runs on every recording and self-adjusts (the makeup lands near 0 dB on a
     // mic already at target, so it does nothing there). The mic level check on
-    // the Recording page advises whether turning it on is worth it; the user
+    // the Microphone page advises whether turning it on is worth it; the user
     // decides — nothing turns it on or off automatically.
     public bool Enabled { get; set; } = false;
 

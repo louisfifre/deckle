@@ -1,19 +1,19 @@
-using Deckle.Audio.Views;
+using Deckle.Audio;
 using Xunit;
 
-namespace Deckle.Audio.Views.Tests;
+namespace Deckle.Transcription.Views.Tests;
 
-// The maximum recording length as the Recording page shows it: a switch and a
+// The maximum recording length as Dictation > General shows it: a switch and a
 // length in minutes over a POCO that keeps seconds. A freshly built
-// RecordingViewModel is still syncing, so its setters change the values without
-// pushing to the settings service: nothing here touches the disk.
+// TranscriptionViewModel is still syncing, so its setters change the values
+// without pushing to the settings service: nothing here touches the disk.
 [Trait("Category", "unit")]
 public class RecordingLimitTests
 {
     [Fact]
     public void StoredZeroIsOffAndShowsTheDefaultLength()
     {
-        var vm = new RecordingViewModel { MaxRecordingDurationSeconds = 0 };
+        var vm = new TranscriptionViewModel { MaxRecordingDurationSeconds = 0 };
 
         Assert.False(vm.LimitRecordingDuration);
         Assert.Equal(RecordingLimit.DefaultMinutes, vm.MaxRecordingDurationMinutes);
@@ -22,7 +22,7 @@ public class RecordingLimitTests
     [Fact]
     public void SwitchingOnWritesTheDefaultLengthInSeconds()
     {
-        var vm = new RecordingViewModel();
+        var vm = new TranscriptionViewModel();
 
         vm.LimitRecordingDuration = true;
 
@@ -32,7 +32,7 @@ public class RecordingLimitTests
     [Fact]
     public void OffThenOnRestoresTheLastLength()
     {
-        var vm = new RecordingViewModel();
+        var vm = new TranscriptionViewModel();
         vm.LimitRecordingDuration = true;
         vm.MaxRecordingDurationMinutes = 45;
 
@@ -46,7 +46,7 @@ public class RecordingLimitTests
     [Fact]
     public void LengthEditedWhileOffIsKeptForTheNextSwitchOn()
     {
-        var vm = new RecordingViewModel();
+        var vm = new TranscriptionViewModel();
 
         vm.MaxRecordingDurationMinutes = 15;
         Assert.Equal(0, vm.MaxRecordingDurationSeconds);
@@ -61,7 +61,7 @@ public class RecordingLimitTests
     [InlineData(5400, 90)]   // inside the range, untouched
     public void StoredValueOutsideTheRangeShowsAtTheNearestEnd(int storedSeconds, int shownMinutes)
     {
-        var vm = new RecordingViewModel { MaxRecordingDurationSeconds = storedSeconds };
+        var vm = new TranscriptionViewModel { MaxRecordingDurationSeconds = storedSeconds };
 
         Assert.True(vm.LimitRecordingDuration);
         Assert.Equal(shownMinutes, vm.MaxRecordingDurationMinutes);
@@ -72,7 +72,7 @@ public class RecordingLimitTests
     [Fact]
     public void TypedLengthIsClampedToTheRange()
     {
-        var vm = new RecordingViewModel();
+        var vm = new TranscriptionViewModel();
         vm.LimitRecordingDuration = true;
 
         vm.MaxRecordingDurationMinutes = 500;
@@ -85,7 +85,7 @@ public class RecordingLimitTests
     [Fact]
     public void ClearedFieldIsIgnored()
     {
-        var vm = new RecordingViewModel();
+        var vm = new TranscriptionViewModel();
         vm.LimitRecordingDuration = true;
 
         vm.MaxRecordingDurationMinutes = double.NaN;

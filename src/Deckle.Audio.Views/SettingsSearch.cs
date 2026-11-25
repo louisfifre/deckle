@@ -5,10 +5,10 @@ namespace Deckle.Audio.Views;
 
 // ── SettingsSearch ────────────────────────────────────────────────────────────
 //
-// RecordingPage's contribution to the shell's cross-page search index: one
-// SettingSearchEntry per findable card on the page. The composition root reads
+// The Microphone page's (RecordingPage) contribution to the shell's cross-page
+// search index: one SettingSearchEntry per findable card on the page. The composition root reads
 // this list at boot and registers it against the module's nav descriptor, so a
-// query can reach a recording setting without the search box knowing this page.
+// query can reach a microphone setting without the search box knowing this page.
 //
 // Declared here as a plain static list rather than derived from the page or the
 // ViewModel because neither is available at indexing time: the composed cards live
@@ -28,8 +28,10 @@ public static class SettingsSearch
         // capture endpoints).
         new SettingSearchEntry
         {
+            // "recording": the page was named Recording before it moved under
+            // Dictation, so the old word still lands here.
             LabelKey = "GeneralMicrophoneCard",
-            Keywords = ["mic", "source"],
+            Keywords = ["mic", "source", "recording"],
         },
 
         // Link to the microphone's Windows Settings page (bespoke command).
@@ -52,13 +54,6 @@ public static class SettingsSearch
         {
             LabelKey = "RecordingVoiceLevelCard",
             Keywords = ["threshold", "dbfs", "speech", "sensitivity", "noise", "segmenter", "meter", "listen"],
-        },
-
-        // Maximum recording length (composed group: switch + length in minutes).
-        new SettingSearchEntry
-        {
-            LabelKey = "RecordingLimitCard",
-            Keywords = ["duration", "length", "limit", "minutes", "cap", "stop"],
         },
 
         // Transcription pre-processing toggle (composed).

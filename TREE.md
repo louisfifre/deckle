@@ -579,6 +579,7 @@ _Generated from `git ls-files` — do not edit by hand._
 │   │   ├── AutocorrectNotifications.cs
 │   │   ├── CrashSupervisor.cs
 │   │   ├── Deckle.App.csproj
+│   │   ├── DictationSettingsPages.cs
 │   │   ├── FileTranscriptionRun.cs
 │   │   ├── HudCompletionMessage.cs
 │   │   ├── InterfaceCaptureGate.cs
@@ -663,6 +664,7 @@ _Generated from `git ls-files` — do not edit by hand._
 │   │   ├── MicrophoneLevelFeed.cs
 │   │   ├── MicrophoneLevelFeedFailure.cs
 │   │   ├── ProbeResult.cs
+│   │   ├── RecordingLimit.cs
 │   │   ├── RecordingTailCalculator.cs
 │   │   ├── SpeakerOutput.cs
 │   │   ├── VoiceDetector.cs
@@ -673,7 +675,6 @@ _Generated from `git ls-files` — do not edit by hand._
 │   │   │   └── en-US/
 │   │   │       └── Resources.resw
 │   │   ├── Deckle.Audio.Views.csproj
-│   │   ├── RecordingLimit.cs
 │   │   ├── RecordingPage.xaml
 │   │   ├── RecordingPage.xaml.cs
 │   │   ├── RecordingSettingsModule.cs
@@ -2491,6 +2492,7 @@ _Generated from `git ls-files` — do not edit by hand._
 │   │   │   ├── TranscriptionViewModel.DictationExperience.cs
 │   │   │   ├── TranscriptionViewModel.Engine.cs
 │   │   │   ├── TranscriptionViewModel.Lexicon.cs
+│   │   │   ├── TranscriptionViewModel.RecordingLimit.cs
 │   │   │   ├── TranscriptionViewModel.Settings.cs
 │   │   │   ├── TranscriptionViewModel.SpeechEngine.cs
 │   │   │   └── TranscriptionViewModel.Streaming.cs
@@ -2498,8 +2500,6 @@ _Generated from `git ls-files` — do not edit by hand._
 │   │   ├── LexiconPage.xaml
 │   │   ├── LexiconPage.xaml.cs
 │   │   ├── SettingsSearch.cs
-│   │   ├── StreamingPage.xaml
-│   │   ├── StreamingPage.xaml.cs
 │   │   ├── TranscriptionPage.xaml
 │   │   ├── TranscriptionPage.xaml.cs
 │   │   └── TranscriptionSettingsModule.cs
@@ -2666,6 +2666,7 @@ _Generated from `git ls-files` — do not edit by hand._
 │   ├── Deckle.App.Tests/
 │   │   ├── Deckle.App.Tests.csproj
 │   │   ├── DictationRecoveryBugNotes.md
+│   │   ├── DictationSettingsPagesTests.cs
 │   │   ├── ExeIconBugNotes.md
 │   │   ├── ExeIconTests.cs
 │   │   ├── FileTranscriptionBugNotes.md
@@ -2725,7 +2726,7 @@ _Generated from `git ls-files` — do not edit by hand._
 │   │   └── VoiceLevelMeterScaleTests.cs
 │   ├── Deckle.Audio.Views.Tests/
 │   │   ├── Deckle.Audio.Views.Tests.csproj
-│   │   └── RecordingLimitTests.cs
+│   │   └── MicrophonePageTests.cs
 │   ├── Deckle.Autocorrect.Tests/
 │   │   ├── AccentFoldingTests.cs
 │   │   ├── AccentIndexTests.cs
@@ -3525,6 +3526,10 @@ _Generated from `git ls-files` — do not edit by hand._
 │   │   ├── WhispEventIdBugNotes.md
 │   │   ├── WhispModelLifecycleBugNotes.md
 │   │   └── WhispModelLifecycleTests.cs
+│   ├── Deckle.Transcription.Views.Tests/
+│   │   ├── Deckle.Transcription.Views.Tests.csproj
+│   │   ├── DictationGeneralPageTests.cs
+│   │   └── RecordingLimitTests.cs
 │   ├── Deckle.Vad.Tests/
 │   │   ├── Deckle.Vad.Tests.csproj
 │   │   ├── MessageTemplateDoctrineTests.cs
