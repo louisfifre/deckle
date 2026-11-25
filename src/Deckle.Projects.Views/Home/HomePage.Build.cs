@@ -71,6 +71,9 @@ internal sealed partial class HomePage
         {
             _fold.Update(loose);
         }
+        // Without a category on Home, the fold would hide the only projects
+        // there are behind a closed header: they show as the page's grid.
+        if (_fold is not null) _fold.Folds = HomeLayout.FoldsLooseProjects(store.Categories.Count);
 
         _categorySections.Clear();
         _categorySections.AddRange(sections);

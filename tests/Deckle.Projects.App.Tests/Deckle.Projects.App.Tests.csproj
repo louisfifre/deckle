@@ -1,0 +1,9 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <!-- The suite that owns Deckle Projects, the app. It references the app project
+       directly, like Deckle.App.Tests does for the published Deckle: the tests
+       reach its internal types through InternalsVisibleTo. No window or XAML is
+       created: what is tested here is plain code that lives in the app. -->
+  <ItemGroup>
+    <ProjectReference Include="..\..\src\Deckle.Projects.App\Deckle.Projects.App.csproj" />
+  </ItemGroup>
+</Project>

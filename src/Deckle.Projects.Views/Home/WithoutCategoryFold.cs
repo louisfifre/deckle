@@ -36,7 +36,12 @@ internal sealed class WithoutCategoryFold : UserControl
     private readonly Button _toggle;
     private readonly FontIcon _chevron;
     private readonly SectionHeaderLabel _label = new();
+    private readonly TextBlock _hint;
     private readonly StackPanel _body;
+
+    // False while Home has no category (HomeLayout): the header and the hint
+    // go, and the cards always show.
+    private bool _folds = true;
 
     public WithoutCategoryFold(ProjectsContext context, IProjectCardCommands commands, IReadOnlyList<ProjectEntry> projects)
     {
@@ -62,10 +67,10 @@ internal sealed class WithoutCategoryFold : UserControl
 
         Cards = new ProjectGrid(context, commands);
 
-        TextBlock hint = Themed.Text("TextFillColorSecondaryBrush", "CaptionTextBlockStyle");
-        hint.Text = ProjectsText.Get("Home_WithoutCategoryHint");
-        hint.VerticalAlignment = VerticalAlignment.Center;
-        _body = new StackPanel { Spacing = 12, Children = { hint, Cards } };
+        _hint = Themed.Text("TextFillColorSecondaryBrush", "CaptionTextBlockStyle");
+        _hint.Text = ProjectsText.Get("Home_WithoutCategoryHint");
+        _hint.VerticalAlignment = VerticalAlignment.Center;
+        _body = new StackPanel { Spacing = 12, Children = { _hint, Cards } };
 
         var panel = new StackPanel
         {
@@ -97,6 +102,18 @@ internal sealed class WithoutCategoryFold : UserControl
         }
     }
 
+    // Whether the projects sit in the fold or are Home's own grid: the page
+    // says it from the number of categories (HomeLayout).
+    public bool Folds
+    {
+        get => _folds;
+        set
+        {
+            _folds = value;
+            Apply();
+        }
+    }
+
     // The projects in no category as the store has them now.
     public void Update(IReadOnlyList<ProjectEntry> projects)
     {
@@ -108,6 +125,14 @@ internal sealed class WithoutCategoryFold : UserControl
 
     private void Apply()
     {
+        _toggle.Visibility = _folds ? Visibility.Visible : Visibility.Collapsed;
+        _hint.Visibility = _folds ? Visibility.Visible : Visibility.Collapsed;
+        if (!_folds)
+        {
+            _body.Visibility = Visibility.Visible;
+            return;
+        }
+
         bool open = IsOpen;
         _chevron.Glyph = open ? ProjectsGlyphs.ChevronUp : ProjectsGlyphs.ChevronDown;
         AutomationProperties.SetItemStatus(_toggle, ProjectsText.Get(open ? "Home_WithoutCategory_Expanded" : "Home_WithoutCategory_Collapsed"));
