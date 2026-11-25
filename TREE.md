@@ -3159,6 +3159,7 @@ _Generated from `git ls-files` — do not edit by hand._
 │   │   ├── Deckle.Llm.Tests.csproj
 │   │   ├── ImageRequestTests.cs
 │   │   ├── LlmUsageLogTests.cs
+│   │   ├── PromptTemplateFamilyTests.cs
 │   │   └── ReasoningOnTheWireTests.cs
 │   ├── Deckle.Mail.App.Tests/
 │   │   ├── Deckle.Mail.App.Tests.csproj
