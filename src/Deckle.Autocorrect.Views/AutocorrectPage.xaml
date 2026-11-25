@@ -26,29 +26,28 @@
 
                 <!-- ── Paragraph correction ─────────────────────────────────── -->
                 <!-- Autocorrect decides when a paragraph is offered a correction;
-                     the Rewrite module does the work. Present only with that
+                     the Rewrite module does the work. Its card sits under the
+                     master switch, in the same stack, present only with that
                      module and, like the exclusions, only while the master is on.
-                     The bar leads the section: it is what the card below needs. -->
-                <catalog:SettingsSection x:Name="ParagraphSection"
-                                         x:Uid="AutocorrectPageParagraphSection"
-                                         Visibility="Collapsed">
-                    <StackPanel Spacing="{StaticResource SettingsCardSpacing}">
-                        <InfoBar x:Name="ParagraphBar"
-                                 x:Uid="AutocorrectPage_ParagraphBar"
-                                 Severity="Informational"
-                                 IsOpen="False"
-                                 IsClosable="False"
-                                 catalog:InfoBarLayout.CollapseWhenClosed="True">
-                            <InfoBar.ActionButton>
-                                <Button x:Uid="AutocorrectPage_ParagraphBarSetup"
-                                        Click="ParagraphSetup_Click" />
-                            </InfoBar.ActionButton>
-                        </InfoBar>
+                     The bar leads the card: it is what the card needs. -->
+                <StackPanel x:Name="ParagraphGroup"
+                            Spacing="{StaticResource SettingsCardSpacing}"
+                            Visibility="Collapsed">
+                    <InfoBar x:Name="ParagraphBar"
+                             Severity="Informational"
+                             IsOpen="False"
+                             IsClosable="False"
+                             catalog:InfoBarLayout.CollapseWhenClosed="True">
+                        <InfoBar.ActionButton>
+                            <Button x:Name="ParagraphBarSetup"
+                                    x:Uid="AutocorrectPage_ParagraphBarSetup"
+                                    Click="ParagraphSetup_Click" />
+                        </InfoBar.ActionButton>
+                    </InfoBar>
 
-                        <StackPanel x:Name="ParagraphHost"
-                                    Spacing="{StaticResource SettingsCardSpacing}" />
-                    </StackPanel>
-                </catalog:SettingsSection>
+                    <StackPanel x:Name="ParagraphHost"
+                                Spacing="{StaticResource SettingsCardSpacing}" />
+                </StackPanel>
 
                 <!-- The two child pages (Lexical domains, Apps enrolled) are
                      reached from the rail, which expands this module's node;
@@ -67,8 +66,9 @@
                                          Tag="AutocorrectPage_Section_Exclusions">
                     <StackPanel Spacing="{StaticResource SettingsCardSpacing}">
 
-                        <!-- Where the words to keep live: Dictation > Lexicon, a
-                             clickable card shown only when that module is present
+                        <!-- First, so a long list of excluded words never pushes it
+                             out of sight. Where the words to keep live: Dictation >
+                             Lexicon, a clickable card shown only when that module is present
                              (AutocorrectSettingsModule.TranscriptionLexiconPresent).
                              Tag is the search index's scroll-to handle. -->
                         <controls:SettingsCard x:Name="DeclaredWordsCard"

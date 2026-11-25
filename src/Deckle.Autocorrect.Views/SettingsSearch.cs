@@ -40,14 +40,14 @@ public static class SettingsSearch
     private static readonly SettingSearchEntry ParagraphEntry = new()
     {
         LabelKey = "AutocorrectPage_ParagraphCard",
-        LiteralLabel = "Offer to correct a paragraph",
-        Keywords = ["paragraph", "shift+enter", "ollama", "correct", "rewrite", "local"],
+        LiteralLabel = "Correct a paragraph with Shift+Enter",
+        Keywords = ["paragraph", "shift+enter", "ollama", "correction", "correct", "rewrite", "local"],
     };
 
     private static readonly SettingSearchEntry YourWordsEntry = new()
     {
         LabelKey = "AutocorrectPage_DeclaredWordsCard",
-        LiteralLabel = "Your words",
+        LiteralLabel = "Lexicon",
         Keywords = ["lexicon", "dictation", "keep", "vocabulary", "declared"],
     };
 

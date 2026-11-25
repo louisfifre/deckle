@@ -190,9 +190,14 @@ public partial class App
             Autocorrect.Views.AutocorrectSettingsModule.ParagraphCorrectionPresent = context.RewritePresent;
             if (context.RewritePresent)
             {
-                Autocorrect.Views.AutocorrectSettingsModule.ParagraphCorrectionNeedsSetup = () =>
-                    Llm.Rewrite.ParagraphRewriteNotices.NeedsSetup(
-                        Llm.Rewrite.ParagraphRewriteAvailabilityMonitor.Instance.Current);
+                Autocorrect.Views.AutocorrectSettingsModule.ParagraphCorrectionSetup = () =>
+                    Llm.Rewrite.ParagraphRewriteAvailabilityMonitor.Instance.Current switch
+                    {
+                        Llm.Rewrite.ParagraphRewriteAvailability.OllamaUnreachable => Autocorrect.Views.ParagraphCorrectionSetup.OllamaNotRunning,
+                        Llm.Rewrite.ParagraphRewriteAvailability.ModelMissing      => Autocorrect.Views.ParagraphCorrectionSetup.ModelMissing,
+                        Llm.Rewrite.ParagraphRewriteAvailability.ProviderOff       => Autocorrect.Views.ParagraphCorrectionSetup.ProviderOff,
+                        _                                                          => Autocorrect.Views.ParagraphCorrectionSetup.None,
+                    };
                 Autocorrect.Views.AutocorrectSettingsModule.ParagraphCorrectionModel = Llm.Rewrite.ParagraphRewrite.Model;
                 Autocorrect.Views.AutocorrectSettingsModule.ParagraphCorrectionSetupPageTag =
                     Llm.Rewrite.Views.LlmSettingsModule.PageTag;

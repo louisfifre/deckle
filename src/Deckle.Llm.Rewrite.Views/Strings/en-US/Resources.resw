@@ -473,10 +473,10 @@
   </data>
 
   <data name="LlmProfile_UsedByDictation" xml:space="preserve">
-    <value>Dictation</value>
+    <value>Used by dictation</value>
   </data>
   <data name="LlmProvider_AlsoUsedByParagraphCorrection" xml:space="preserve">
-    <value>Also used by paragraph correction</value>
+    <value>Used by paragraph correction</value>
   </data>
   <data name="LlmProfile_NoModel" xml:space="preserve">
     <value>(no model)</value>

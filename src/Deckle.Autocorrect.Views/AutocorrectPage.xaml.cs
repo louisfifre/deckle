@@ -85,16 +85,23 @@ public sealed partial class AutocorrectPage : Page
 
     private void RefreshParagraphSection()
     {
-        ParagraphSection.Visibility = ParagraphCorrectionSection.IsShown(
+        ParagraphGroup.Visibility = ParagraphCorrectionSection.IsShown(
             AutocorrectSettingsModule.ParagraphCorrectionPresent, ViewModel.Enabled)
             ? Visibility.Visible
             : Visibility.Collapsed;
 
-        bool needsSetup = AutocorrectSettingsModule.ParagraphCorrectionNeedsSetup?.Invoke() ?? false;
-        ParagraphBar.Message = string.Format(
-            Loc.GetFrom(AutocorrectSettingsModule.ResourceLibrary, "AutocorrectPage_ParagraphBar_Message_Format"),
-            AutocorrectSettingsModule.ParagraphCorrectionModel);
-        ParagraphBar.IsOpen = ParagraphCorrectionSection.BarIsShown(ViewModel.ParagraphCorrection, needsSetup);
+        ParagraphCorrectionSetup setup = AutocorrectSettingsModule.ParagraphCorrectionSetup?.Invoke()
+            ?? ParagraphCorrectionSetup.None;
+        ParagraphBarText text = ParagraphCorrectionSection.BarFor(setup);
+        string model = AutocorrectSettingsModule.ParagraphCorrectionModel;
+        string library = AutocorrectSettingsModule.ResourceLibrary;
+        if (text.TitleKey is { } titleKey && text.MessageKey is { } messageKey)
+        {
+            ParagraphBar.Title = string.Format(Loc.GetFrom(library, titleKey), model);
+            ParagraphBar.Message = string.Format(Loc.GetFrom(library, messageKey), model);
+        }
+        ParagraphBarSetup.Visibility = text.HasAction ? Visibility.Visible : Visibility.Collapsed;
+        ParagraphBar.IsOpen = ParagraphCorrectionSection.BarIsShown(ViewModel.ParagraphCorrection, setup);
     }
 
     // ── No whole-page "Reset all" ─────────────────────────────────────────────

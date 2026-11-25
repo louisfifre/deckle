@@ -36,7 +36,7 @@ public static class AutocorrectSettingsModule
         "Deckle.Transcription.Views.LexiconPage, Deckle.Transcription.Views";
 
     // Whether the transcription module, which holds the person's lexicon, is
-    // present, so the page can lead to it from the "Your words" card. That
+    // present, so the page can lead to it from the "Lexicon" card. That
     // module is one this one does not reference; the App, which knows both,
     // sets it. Unset, the page says nothing about the lexicon.
     public static bool TranscriptionLexiconPresent { get; set; }
@@ -48,15 +48,15 @@ public static class AutocorrectSettingsModule
     // Rewrite module), the page has no Paragraph correction section.
     public static bool ParagraphCorrectionPresent { get; set; }
 
-    // Whether the local model that paragraph correction needs is missing, so
-    // the section says what to set up. Read when the page shows and again
-    // after each ParagraphCorrectionSetupChanged.
-    public static Func<bool>? ParagraphCorrectionNeedsSetup { get; set; }
+    // What paragraph correction lacks on this PC, so the bar says what to set
+    // up. Read when the page shows and again after each
+    // ParagraphCorrectionSetupChanged.
+    public static Func<ParagraphCorrectionSetup>? ParagraphCorrectionSetup { get; set; }
 
     // The model the bar names, taken from the Rewrite module's pinned model.
     public static string ParagraphCorrectionModel { get; set; } = "";
 
-    // Where "Set up Ollama in Rewriting" leads: the Rewriting page's tag.
+    // Where "Open Rewriting" leads: the Rewriting page's tag.
     public static string? ParagraphCorrectionSetupPageTag { get; set; }
 
     // Raised by the App when the answer of ParagraphCorrectionNeedsSetup may
