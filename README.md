@@ -57,12 +57,12 @@ Smaller touches outside the module list: a **taskbar cover** that masks the task
 
 | First commit | Commits | Active days | Lines added | Lines touched | Current tracked lines |
 |---:|---:|---:|---:|---:|---:|
-| 2026-04-01 | 5,398 | 146 | 758,849 | 1,151,483 | 366,905 |
+| 2026-04-01 | 5,422 | 146 | 759,650 | 1,153,219 | 366,733 |
 
 <picture>
   <source media="(prefers-color-scheme: dark)" srcset="docs/media/pulse-commits-dark.svg">
   <source media="(prefers-color-scheme: light)" srcset="docs/media/pulse-commits-light.svg">
-  <img alt="Commits per day, smoothed over 7 days, over the last 26 weeks: 4,531 in total, the busiest stretch averaged 118.6 a day." src="docs/media/pulse-commits-light.svg" width="100%">
+  <img alt="Commits per day, smoothed over 7 days, over the last 26 weeks: 4,555 in total, the busiest stretch averaged 118.6 a day." src="docs/media/pulse-commits-light.svg" width="100%" height="88">
 </picture>
 
 <sub>Generated from Git history on 2026-11-25. Counts include tracked text files only for the current line total.</sub>
