@@ -3515,7 +3515,7 @@ _Generated from `git ls-files` — do not edit by hand._
 │   │   ├── VadBugNotes.md
 │   │   ├── VadObservabilityCollection.cs
 │   │   ├── VadPathRedactionTests.cs
-│   │   └── VadServiceDownloadRetryTests.cs
+│   │   └── VadServiceSingleDownloadTests.cs
 │   ├── Deckle.Vision.Tests/
 │   │   ├── CaptureIncidentsBugNotes.md
 │   │   ├── CaptureIncidentsTests.cs

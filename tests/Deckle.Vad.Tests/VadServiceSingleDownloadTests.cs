@@ -11,10 +11,10 @@ namespace Deckle.Vad.Tests;
 // replaced by a fake: the real one reaches the network.
 [Trait("Category", "observability")]
 [Collection(VadObservabilityCollection.Name)]
-public sealed class VadServiceDownloadRetryTests : IDisposable
+public sealed class VadServiceSingleDownloadTests : IDisposable
 {
     private readonly string _modelsDirectory =
-        Path.Combine(Path.GetTempPath(), "deckle-vad-retry-" + Guid.NewGuid().ToString("N"));
+        Path.Combine(Path.GetTempPath(), "deckle-vad-download-" + Guid.NewGuid().ToString("N"));
 
     public void Dispose()
     {
