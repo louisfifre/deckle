@@ -403,7 +403,7 @@
     <value>Name each alias from its address</value>
   </data>
   <data name="MailboxNameAliases.Description" xml:space="preserve">
-    <value>shop@exemple.fr is shown as Shop. A name you give stays.</value>
+    <value>shop@example.com is shown as Shop. A name you give stays.</value>
   </data>
   <data name="MailboxNameAliasesToggle.OnContent" xml:space="preserve">
     <value>On</value>

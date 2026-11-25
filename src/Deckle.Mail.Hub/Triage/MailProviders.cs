@@ -8,8 +8,8 @@ public static class MailProviders
 {
     private static readonly Dictionary<string, MailServer> ByDomain = new(StringComparer.OrdinalIgnoreCase)
     {
-        // The spec's examples live on exemple.fr, an Infomaniak mailbox.
-        ["exemple.fr"] = new MailServer("Infomaniak", "mail.infomaniak.com", 993, TrashDays: 30),
+        // The spec's examples live on example.com, an Infomaniak mailbox.
+        ["example.com"] = new MailServer("Infomaniak", "mail.infomaniak.com", 993, TrashDays: 30),
         ["ik.me"] = new MailServer("Infomaniak", "mail.infomaniak.com", 993, TrashDays: 30),
         ["etik.com"] = new MailServer("Infomaniak", "mail.infomaniak.com", 993, TrashDays: 30),
         ["gmail.com"] = new MailServer("Google", "imap.gmail.com", 993, TrashDays: 30),

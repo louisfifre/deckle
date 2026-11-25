@@ -24,10 +24,10 @@ public class ImmutabilityTests
     [Fact]
     public void AMailboxKeepsTheAliasesItWasGiven()
     {
-        var aliases = new List<MailAlias> { new("shop@exemple.fr") };
+        var aliases = new List<MailAlias> { new("shop@example.com") };
         var mailbox = Perso with { Aliases = aliases };
 
-        aliases.Add(new MailAlias("facture@exemple.fr"));
+        aliases.Add(new MailAlias("facture@example.com"));
 
         Assert.Single(mailbox.Aliases);
     }

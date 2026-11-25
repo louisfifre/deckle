@@ -77,12 +77,12 @@ public class ListOrderTests
     public void TriageMixesEveryMailboxAndAMailboxPageKeepsItsOwn()
     {
         var state = Sorted(
-            (To(deliveredTo: "maison@exemple.fr", mailboxId: "maison", minutesAgo: 30), MailJudgment.Asks("Maison")),
+            (To(deliveredTo: "maison@example.com", mailboxId: "maison", minutesAgo: 30), MailJudgment.Asks("Maison")),
             (To(minutesAgo: 20), MailJudgment.Asks("Perso inbox")),
-            (To(deliveredTo: "shop@exemple.fr", minutesAgo: 10), MailJudgment.Asks("Perso shop")));
+            (To(deliveredTo: "shop@example.com", minutesAgo: 10), MailJudgment.Asks("Perso shop")));
 
         Assert.Equal(3, Rows(state).Count);
         Assert.Equal(["Perso inbox", "Perso shop"], Rows(state, MailScope.Mailbox("perso")).Select(row => row.Sentence));
-        Assert.Equal(["Perso shop"], Rows(state, MailScope.Alias("perso", "shop@exemple.fr")).Select(row => row.Sentence));
+        Assert.Equal(["Perso shop"], Rows(state, MailScope.Alias("perso", "shop@example.com")).Select(row => row.Sentence));
     }
 }

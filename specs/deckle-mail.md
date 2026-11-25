@@ -81,7 +81,7 @@ The frames are on canvas pages 15, 18 and 19; sizes, colours and wording are kep
 1. The navigation lists Triage and Activity first, then the mailboxes, then Settings at the foot.
 2. While there is no activity at all, neither by the user nor by the sorting, Activity is absent from the navigation. It shows from the first line.
 3. A mailbox that has aliases is a group header: it folds and unfolds, and opens no page. Its first child is Inbox, the page of the whole mailbox; its aliases follow. The children stand one step in from the header, as Windows draws a group. A mailbox with no alias is a single item that opens its page.
-4. A mailbox shows the name given when it was added, or its address when it was given none. Example: a mailbox named Perso shows « Perso »; maison@exemple.fr, added without a name, shows « maison@exemple.fr ».
+4. A mailbox shows the name given when it was added, or its address when it was given none. Example: a mailbox named Perso shows « Perso »; maison@example.com, added without a name, shows « maison@example.com ».
 5. Inbox stands for the main address of the mailbox. It is not renamed.
 6. By default each alias is named by the part of its address before the @, with a capital. Example: facture@ is named « Facture », shop@ « Shop ». The user can rename an alias by hand.
 7. A mailbox is marked by its initial alone, drawn as a glyph like the other icons of the navigation, with no circle around it.

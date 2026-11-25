@@ -43,7 +43,7 @@ public class OpenDecisionTests
     {
         // Open decision: whether one mail delivered to two of the person's mailboxes is one subject or two.
         var inPerso = To(id: "<shared@example.com>");
-        var inMaison = To(deliveredTo: "maison@exemple.fr", mailboxId: "maison", id: "<shared@example.com>");
+        var inMaison = To(deliveredTo: "maison@example.com", mailboxId: "maison", id: "<shared@example.com>");
         var state = Sorted((inPerso, MailJudgment.Asks("Réunion de copropriété jeudi")));
 
         Assert.True(state.Sort(inMaison, MailJudgment.Asks("Réunion de copropriété jeudi"), Now).IsUnchanged);

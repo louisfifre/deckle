@@ -52,7 +52,7 @@ public sealed class SampleAndSearchTests
                 .Concat(snapshot.Mailboxes.SelectMany(m => m.Aliases).Select(a => a.Address))
                 .Concat(snapshot.Subjects.SelectMany(s => s.Mails).Select(m => m.SenderAddress));
             Assert.All(addresses, a => Assert.True(
-                a.EndsWith("@exemple.fr", StringComparison.Ordinal) || a.EndsWith(".example", StringComparison.Ordinal), a));
+                a.EndsWith("@example.com", StringComparison.Ordinal) || a.EndsWith(".example", StringComparison.Ordinal), a));
         }
     }
 
@@ -80,7 +80,7 @@ public sealed class SampleAndSearchTests
     }
 
     [Theory]
-    [InlineData("moi@exemple.fr", "Infomaniak")]
+    [InlineData("moi@example.com", "Infomaniak")]
     [InlineData("someone@unknown.example", null)]
     public void AddMailboxFindsTheServerOfAKnownProvider(string address, string? provider)
     {
@@ -88,9 +88,9 @@ public sealed class SampleAndSearchTests
     }
 
     [Theory]
-    [InlineData("moi@exemple.fr", true)]
+    [InlineData("moi@example.com", true)]
     [InlineData("moi@", false)]
-    [InlineData("moi exemple.fr", false)]
+    [InlineData("moi example.com", false)]
     public void AddMailboxWaitsForSomethingThatLooksLikeAnAddress(string address, bool expected)
     {
         Assert.Equal(expected, MailProviders.LooksLikeAddress(address));
