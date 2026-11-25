@@ -5,7 +5,7 @@ namespace Deckle.Diagnostics;
 
 // Built once per emission by DispatchEventListener and shared by every sink.
 //
-// `Provider` is the EventSource Name (e.g. "Deckle-Chrono"), `EventName` the
+// `Provider` is the EventSource Name (e.g. "Deckle-Audio"), `EventName` the
 // method name on the provider. `FormattedMessage` is null when the provider
 // declared no Message template; LogLineFormatter then falls back to the
 // event name. `Milestone` is the ObservationTags.Milestone mark: a milestone the

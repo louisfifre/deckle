@@ -53,7 +53,7 @@ public sealed partial class DeckleLlmSource : DeckleEventSource
     // 18 retired.
     // 19 retired.
     // 20 retired.
-    public const int EvtEndpointSchemeNotAllowed    = 21;
+    // 21 retired.
     public const int EvtEndpointNonLoopbackHost     = 22;
     // 23 retired.
     public const int EvtSettingsLoaded              = 24;
@@ -73,7 +73,7 @@ public sealed partial class DeckleLlmSource : DeckleEventSource
     // 38 retired.
     // 39 retired.
     // 40 retired.
-    public const int EvtEndpointSchemeNotAllowedDetail = 41;
+    // 41 retired.
     public const int EvtEndpointNonLoopbackHostDetail  = 42;
     // 43 retired.
     // 44 retired.

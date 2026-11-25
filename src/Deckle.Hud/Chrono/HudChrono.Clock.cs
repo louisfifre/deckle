@@ -1,4 +1,4 @@
-using Deckle.Chrono;
+using System.Diagnostics;
 using Microsoft.UI.Xaml;
 using Microsoft.UI.Xaml.Controls;
 using Microsoft.UI.Xaml.Media;
@@ -7,7 +7,7 @@ namespace Deckle.Hud;
 
 // HudChrono — the chronometer face and its functional lifecycle.
 //
-// Turns the ChronoTimer's elapsed value into the six MM.SS.cc glyphs, and
+// Turns the stopwatch's elapsed value into the six MM.SS.cc glyphs, and
 // owns the start / stop / reset of that timer. The lifecycle is deliberately
 // separate from the Apply* paint methods (HudChrono.xaml.cs): ApplyState only
 // styles the card, it never touches the clock value or the digit text — so the
@@ -23,7 +23,7 @@ public sealed partial class HudChrono
     public static System.Func<int> MaxRecordingDurationSecondsProvider { get; set; }
         = () => int.MaxValue;
 
-    private readonly ChronoTimer _stopwatch = new();
+    private readonly Stopwatch _stopwatch = new();
 
     private int _lastMin = -1;
     private int _lastSec = -1;
@@ -46,7 +46,7 @@ public sealed partial class HudChrono
     public void StartClock()
     {
         ClearDigitDisplay();
-        _stopwatch.Start();   // ChronoTimer.Start == Stopwatch.Restart (zero + run)
+        _stopwatch.Restart(); // zero + run: a new take never inherits the previous time
         UpdateClock();        // paint 00.00.00 before the first vsync tick
         HookRendering();      // vsync drives UpdateClock while running
     }
@@ -105,7 +105,7 @@ public sealed partial class HudChrono
     private void UpdateClock()
     {
         int capSec = MaxRecordingDurationSecondsProvider();
-        var d = ChronoFormatter.Decompose(_stopwatch.Elapsed, capSec);
+        var d = ChronoDigits.Decompose(_stopwatch.Elapsed, capSec);
         int min = d.Minutes;
         int sec = d.Seconds;
         int cs  = d.Centiseconds;

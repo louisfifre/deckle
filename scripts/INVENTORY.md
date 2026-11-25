@@ -94,6 +94,9 @@ Run one with `pwsh -NoProfile -File scripts/<path> [arguments]`. An action names
 - `release/build-anytype-backend.ps1` — **Build the Anytype backend.** Rebuilds one anytype-cli release tag from source for Windows with the tantivy-go cross-allocator free fixed, then packages it in the layout of the official asset.
   - Actions: Anytype backend / build
   - Parameters: -Version <string>, -OutDir <string>, -Force
+- `release/draft-release-notes.ps1` — **Draft the public release notes.** Writes a draft of the public release notes of a version to artifacts/release-notes-<version>.md and prints its path.
+  - Actions: Draft the public release notes
+  - Parameters: -Version <string>, -Since <string>, -AlsoSay <string>, -Model <string>, -Target <string>, -ClaudeCommand <string>
 - `release/publish-app.ps1` — **Prepare or publish the app release.** Builds the two artifacts a Deckle GitHub Release carries: the installer stub and the self-contained app ZIP with its sha256 sidecar.
   - Actions: App release / prepare · App release / publish `-Publish` (danger) · Folders release / prepare `-App folders` · Folders release / publish draft `-App folders -Publish` (danger) · Mail release / prepare `-App mail` · Mail release / publish draft `-App mail -Publish` (danger)
   - Parameters: -App <string>, -Target <string>, -OutDir <string>, -Publish, -Notes <string>
