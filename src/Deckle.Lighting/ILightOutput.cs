@@ -20,12 +20,6 @@ public interface ILightOutput : IAsyncDisposable
     /// successfully and the driver is ready to accept colour pushes.</summary>
     bool IsConnected { get; }
 
-    /// <summary>True when state-change events observed from the sink
-    /// can be attributed back to this output's own writes. Consumers
-    /// use this to decide whether bridge-side events are useful for
-    /// external-change detection during the active session.</summary>
-    bool UsesStateEventAttribution => false;
-
     /// <summary>True when the connected output is a live stream that
     /// must keep receiving colour updates even when the desired colour
     /// has not changed. Consumers use this to bypass their delta gate

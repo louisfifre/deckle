@@ -1489,8 +1489,7 @@ _Generated from `git ls-files` — do not edit by hand._
 │   │   │   ├── HueLightState.cs
 │   │   │   ├── HueLightStateRestorer.cs
 │   │   │   ├── HueLocalDiscovery.cs
-│   │   │   ├── HueLocalDiscovery.Interop.cs
-│   │   │   └── HueProjectedState.cs
+│   │   │   └── HueLocalDiscovery.Interop.cs
 │   │   ├── Deckle.Lighting.csproj
 │   │   ├── DeckleLightingSource.cs
 │   │   ├── DeckleLightingSource.Discovery.cs
@@ -1513,7 +1512,6 @@ _Generated from `git ls-files` — do not edit by hand._
 │   │   │   ├── AmbientEngine.FirstFrame.cs
 │   │   │   ├── AmbientEngine.GroupPush.cs
 │   │   │   ├── AmbientEngine.Heartbeat.cs
-│   │   │   ├── AmbientEngine.HueEvents.cs
 │   │   │   ├── AmbientEngine.Lifecycle.cs
 │   │   │   ├── AmbientEngine.MultiLightPush.cs
 │   │   │   ├── AmbientEngine.PreviewScan.cs
@@ -1521,7 +1519,6 @@ _Generated from `git ls-files` — do not edit by hand._
 │   │   │   ├── AmbientEngine.PushLoop.cs
 │   │   │   ├── AmbientEngineState.cs
 │   │   │   ├── AmbientHeartbeatWindow.cs
-│   │   │   ├── AmbientHueChangeAttributor.cs
 │   │   │   ├── AmbientPreviewHealth.cs
 │   │   │   ├── AmbientPushCadence.cs
 │   │   │   ├── AmbientPushGate.cs
@@ -3081,7 +3078,6 @@ _Generated from `git ls-files` — do not edit by hand._
 │   │   ├── AmbientCaptureStartBugNotes.md
 │   │   ├── AmbientColorSmootherTests.cs
 │   │   ├── AmbientHeartbeatWindowTests.cs
-│   │   ├── AmbientHueChangeAttributorTests.cs
 │   │   ├── AmbientNearBlackTests.cs
 │   │   ├── AmbientObservabilityCollection.cs
 │   │   ├── AmbientPreviewBugNotes.md

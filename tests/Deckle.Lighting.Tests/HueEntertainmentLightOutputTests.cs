@@ -76,17 +76,6 @@ public sealed class HueEntertainmentLightOutputTests
     }
 
     [Fact]
-    public void EntertainmentOutputDoesNotUseStateEventAttribution()
-    {
-        var output = new HueEntertainmentLightOutput(
-            new FakeEntertainmentClient(),
-            CreateArea(),
-            new FakeEntertainmentTransport());
-
-        Assert.False(((ILightOutput)output).UsesStateEventAttribution);
-    }
-
-    [Fact]
     public void EntertainmentOutputRequiresContinuousColorUpdates()
     {
         var output = new HueEntertainmentLightOutput(

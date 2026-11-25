@@ -130,7 +130,6 @@ public sealed partial class AmbientEngine
             _output = await HueLightOutputFactory
                 .CreateAsync(_bridgeClient, ambient.HueLastGroupId, ct)
                 .ConfigureAwait(false);
-            _managedGroupId = ambient.HueLastGroupId;
 
             _capture = new ScreenCaptureService(ChooseCaptureRateHz(runId));
 
@@ -202,33 +201,6 @@ public sealed partial class AmbientEngine
                 _multiLightActive);
             _pushIntervalMs = 1000 / _pushRateHz;
 
-            if (_output.UsesStateEventAttribution)
-            {
-                // Fetch the v2 ↔ v1 id maps for EventStream-driven external
-                // change detection. Best effort : if the bridge happens to
-                // reject (rare ; older firmware, weird LAN), we log and
-                // continue without external-change detection — the engine
-                // still pushes normally until the next StartAsync.
-                try
-                {
-                    var maps = await _bridgeClient.FetchV2IdMapsAsync(ct).ConfigureAwait(false);
-                    _v2LightMap = maps.Lights;
-                    _v2GroupedLightMap = maps.GroupedLights;
-                }
-                catch (Exception ex)
-                {
-                    DeckleAmbientSource.Log.EventStreamSetupFailed(ex.GetType().Name, ex.Message);
-                    _v2LightMap = null;
-                    _v2GroupedLightMap = null;
-                }
-            }
-            else
-            {
-                _v2LightMap = null;
-                _v2GroupedLightMap = null;
-            }
-            ThrowIfStartAbortRequested();
-
             // Per-light config dump at engine start : an unmapped light
             // (LightZone.None) is skipped and a zero-brightness one is held
             // off, so without this log the user would think "ambient doesn't
@@ -271,7 +243,6 @@ public sealed partial class AmbientEngine
             _smoother.Clear();
             _blackLatch.Clear();
             _lastTickTimestamp = 0;
-            ClearHueAttributionStates();
             _stopReason = "user";
             lock (_emittedLock) _emittedColors.Clear();
 
@@ -282,18 +253,6 @@ public sealed partial class AmbientEngine
             AmbientCaptureGate.SetActive(true);
 
             _pushLoopTask = Task.Run(() => PushLoopAsync(_cts.Token), _cts.Token);
-
-            // Subscribe to the bridge's v2 EventStream so external state
-            // changes (Hue app, Home Assistant, physical Dimmer Switch)
-            // stop the pipeline cleanly. Skip if the v2 maps weren't
-            // fetched (FetchV2IdMapsAsync failed earlier) — without the
-            // maps we can't translate events.
-            if (_v2LightMap is not null || _v2GroupedLightMap is not null)
-            {
-                _eventStreamTask = Task.Run(
-                    () => _bridgeClient.StreamEventsAsync(OnResourceUpdate, _cts.Token),
-                    _cts.Token);
-            }
 
             CommitRunningOrThrow();
             SetState(AmbientEngineState.Running);
@@ -385,18 +344,6 @@ public sealed partial class AmbientEngine
         _multiLastPushed = null;
         _requiresContinuousColorUpdates = false;
 
-        // EventStream task was running on _cts.Token — already cancelled
-        // by Stop(). Await briefly to let the SSE socket close cleanly
-        // before we drop the dictionaries it reads against.
-        if (_eventStreamTask is not null)
-        {
-            await AwaitPipelineStepAsync(_eventStreamTask, "event_stream").ConfigureAwait(false);
-            _eventStreamTask = null;
-        }
-        _v2LightMap = null;
-        _v2GroupedLightMap = null;
-        _managedGroupId = null;
-        ClearHueAttributionStates();
         return firstFailure;
     }
 

@@ -94,7 +94,6 @@ public sealed partial class AmbientEngine : IAsyncDisposable
 
     private CancellationTokenSource? _cts;
     private Task? _pushLoopTask;
-    private Task? _eventStreamTask;
     private long _startTimestamp;
     private bool _disposed;
 
@@ -117,23 +116,11 @@ public sealed partial class AmbientEngine : IAsyncDisposable
     private readonly object _lifecycleLock = new();
     private bool _abortRequested;
 
-    // External-change detection state — populated at StartAsync from
-    // the bridge's CLIP v2 resource list. Used by OnResourceUpdate to
-    // translate event-side v2 UUIDs (what the EventStream carries)
-    // back to v1 ids (what the engine's push path takes), then attribute
-    // the event to either our own pending push or a bridge-side change
-    // Ambient should not fight.
-    private IReadOnlyDictionary<string, string>? _v2LightMap;          // v2_uuid → v1_light_id
-    private IReadOnlyDictionary<string, string>? _v2GroupedLightMap;   // v2_uuid → v1_group_id
-    private string? _managedGroupId;                                   // v1_group_id we are syncing
-
-    // Last successful self-push, per v1 id ("group:<id>" or "light:<id>"
-    // namespaced). Stores the Hue state we intended, not just the clock.
-    // EventStream carries state changes without caller provenance, so this
-    // is an attribution baseline: pending self-push echoes are ignored ;
-    // stable bridge changes that diverge from it stop the pipeline.
-    private readonly Dictionary<string, AmbientHueAttributionState> _hueAttributionStates = new();
-    private readonly object _hueAttributionLock = new();
+    // No watch on the bridge's event stream: while the Entertainment area
+    // streams, the bridge gives Deckle the lights and ignores other writes to
+    // them, so nothing outside can change them under the stream. The watch
+    // served the REST path, which wrote alongside the Hue app and Home
+    // Assistant; it left with that path on 2026-11-25.
 
     // Deferred-cleanup task spun by Stop() so the UI thread that
     // triggered the stop returns immediately while the DXGI duplication
