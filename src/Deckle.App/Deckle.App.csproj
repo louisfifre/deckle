@@ -124,7 +124,6 @@
                       Private="false"
                       OutputItemType="DeckleGatewayTarget"
                       GlobalPropertiesToRemove="RuntimeIdentifier;RuntimeIdentifierOverride;SelfContained" />
-    <ProjectReference Include="..\Deckle.Contributions\Deckle.Contributions.csproj" />
     <ProjectReference Include="..\Deckle.Hosting\Deckle.Hosting.csproj" />
     <ProjectReference Include="..\Deckle.Audio\Deckle.Audio.csproj" />
     <ProjectReference Include="..\Deckle.Audio.Views\Deckle.Audio.Views.csproj" />
