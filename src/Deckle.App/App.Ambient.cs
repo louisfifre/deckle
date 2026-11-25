@@ -15,8 +15,7 @@ public partial class App
         => _ = ApplyAmbientSettingsAsync();
 
     // Starts or stops the engine on Enabled, and restarts a running engine
-    // when the monitor or the pipeline shape changed: the engine reads those
-    // two only at start.
+    // when the monitor changed: the engine reads it only at start.
     private async Task ApplyAmbientSettingsAsync()
     {
         if (_ambientEngine is null) return;
