@@ -271,7 +271,8 @@ _Generated from `git ls-files` — do not edit by hand._
 │   │   │   ├── InspectContextBugNotes.md
 │   │   │   ├── launch-app.tests.ps1
 │   │   │   ├── perf-compare.tests.ps1
-│   │   │   └── read-log.tests.ps1
+│   │   │   ├── read-log.tests.ps1
+│   │   │   └── self-check.tests.ps1
 │   │   └── lib/
 │   │       ├── agent-skills-layout.tests.ps1
 │   │       ├── anytype-backend.tests.ps1
