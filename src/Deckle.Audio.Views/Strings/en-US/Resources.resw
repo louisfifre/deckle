@@ -123,6 +123,9 @@
   <data name="RecordingPageHeader.Title" xml:space="preserve">
     <value>Microphone</value>
   </data>
+  <data name="RecordingPageHeader.Description" xml:space="preserve">
+    <value>The microphone Deckle records from, and how it hears your voice.</value>
+  </data>
   <!-- The section of what Deckle hears: the voice level and its meter, the
        level check and the pre-processing with its listening test. -->
   <data name="RecordingPageVoiceSection.Title" xml:space="preserve">

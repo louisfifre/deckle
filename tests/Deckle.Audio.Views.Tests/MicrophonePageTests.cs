@@ -57,6 +57,7 @@ public class MicrophonePageTests
         Dictionary<string, string> resw = Resw();
 
         Assert.Equal("Microphone", resw["RecordingPageHeader.Title"]);
+        Assert.Equal("The microphone Deckle records from, and how it hears your voice.", resw["RecordingPageHeader.Description"]);
         Assert.Equal("Voice", resw["RecordingPageVoiceSection.Title"]);
     }
 

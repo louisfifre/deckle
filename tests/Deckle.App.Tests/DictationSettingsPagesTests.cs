@@ -92,6 +92,7 @@ public sealed class DictationSettingsPagesTests : IDisposable
     }
 
     [Theory]
+    [InlineData("cut off", "RecordingLimitCard", GeneralTag)]
     [InlineData("streaming", "TranscriptionStreamingEnabledCard", GeneralTag)]
     [InlineData("transcription", "TranscriptionStreamingEnabledCard", GeneralTag)]
     [InlineData("recording", "RecordingLimitCard", GeneralTag)]
