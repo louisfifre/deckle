@@ -148,10 +148,11 @@ public sealed partial class DeckleLlmSource
         if (IsEnabled()) WriteEvent(EvtRewriteCompleted, new object[] { caller, provider, elapsed_ms });
     }
 
-    // An interactive rewrite whose caller withdrew it: the offer deadline
-    // passed, or a keystroke made the paragraph stale. Expected, so not a
-    // Warning, and Verbose like the Started it closes: a cancellation is a
-    // normal end, and this one happens on every keystroke that outruns a model.
+    // An interactive rewrite whose caller withdrew it: a keystroke made the
+    // paragraph stale.
+    // Expected, so not a Warning, and Verbose like the Started it closes: a
+    // cancellation is a normal end, and this one happens on every keystroke
+    // that outruns a model.
     [Event(EvtRewriteCancelled,
            Level = EventLevel.Verbose,
            Keywords = (EventKeywords)Keywords.Pipeline,
