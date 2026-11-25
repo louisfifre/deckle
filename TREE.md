@@ -590,6 +590,7 @@ _Generated from `git ls-files` — do not edit by hand._
 │   │   ├── OpenFileAutoSave.cs
 │   │   ├── ProdUpdate.cs
 │   │   ├── Program.cs
+│   │   ├── QuitSequence.cs
 │   │   ├── SecondaryWindowPlacement.cs
 │   │   ├── TranscribeRewriteHistory.cs
 │   │   ├── TranscribeRewriteWindow.AutoSave.cs
@@ -2674,6 +2675,7 @@ _Generated from `git ls-files` — do not edit by hand._
 │   │   ├── ProdApplyUpdateTests.cs
 │   │   ├── ProdUpdateTests.cs
 │   │   ├── PublishedClosureTests.cs
+│   │   ├── QuitSequenceTests.cs
 │   │   ├── ReswMirrorTests.cs
 │   │   ├── SelfCheckBugNotes.md
 │   │   ├── SelfCheckTests.cs

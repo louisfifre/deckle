@@ -143,14 +143,14 @@ public partial class App
         var ui = Microsoft.UI.Dispatching.DispatcherQueue.GetForCurrentThread();
         _ = Task.Run(() =>
         {
-            try { engine.FinishInFlightWork(workId, QuitWorkBound); }
-            catch (Exception ex)
-            {
-                DeckleAppSource.Log.ShutdownStepFailed("work_drain", ex.GetType().Name, ex.Message);
-            }
-
-            if (ui is null || !ui.TryEnqueue(() => ExitApp(workId, stopwatch, restart)))
-                ExitApp(workId, stopwatch, restart);
+            QuitSequence.Run(
+                () => engine.FinishInFlightWork(workId, QuitWorkBound),
+                ex => DeckleAppSource.Log.ShutdownStepFailed("work_drain", ex.GetType().Name, ex.Message),
+                () =>
+                {
+                    if (ui is null || !ui.TryEnqueue(() => ExitApp(workId, stopwatch, restart)))
+                        ExitApp(workId, stopwatch, restart);
+                });
         });
     }
 
