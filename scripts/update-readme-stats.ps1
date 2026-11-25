@@ -124,7 +124,15 @@ if ($Commit) {
 
     $readmeDirty = @(Invoke-Git diff --name-only -- README.md).Count -gt 0
     if ($readmeDirty) {
-        $headReadme = @(Invoke-Git show 'HEAD:README.md') -join "`n"
+        # git writes the committed README as UTF-8; decode it as UTF-8 whatever
+        # the console's output encoding is, then put that encoding back.
+        $previousEncoding = [Console]::OutputEncoding
+        try {
+            [Console]::OutputEncoding = [System.Text.UTF8Encoding]::new($false)
+            $headReadme = @(Invoke-Git show 'HEAD:README.md') -join "`n"
+        } finally {
+            [Console]::OutputEncoding = $previousEncoding
+        }
         $workingReadme = Get-Content -LiteralPath $ReadmePath -Raw
         if ((Get-ReadmeWithoutPulse -Content $workingReadme) -cne (Get-ReadmeWithoutPulse -Content $headReadme)) {
             throw 'README commit stopped because README.md has changes outside the generated development pulse. Commit or revert them, then run again.'

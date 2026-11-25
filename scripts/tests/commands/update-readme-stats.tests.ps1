@@ -175,6 +175,32 @@ Stable content.
         throw 'README commit rejection should explain how to preserve manual changes'
     }
 
+    # The guard compares the committed README with the working one: it must not
+    # depend on the console's output encoding. Non-ASCII text outside the pulse,
+    # a legacy code page, and only the pulse section changed: the guard passes.
+    $accented = "Caf$([char]0xE9) $([char]0x2014) na$([char]0xEF)ve $([char]0x201C)quoted$([char]0x201D)"
+    $readmePath = Join-Path $root 'README.md'
+    $withText = (Get-Content -LiteralPath $readmePath -Raw -Encoding utf8) -replace '# Manual edit', "# $accented"
+    [IO.File]::WriteAllText($readmePath, $withText, [Text.UTF8Encoding]::new($false))
+    Invoke-TestGit add README.md | Out-Null
+    Invoke-TestGit commit -m 'test: non-ASCII README' | Out-Null
+    $sectionOnly = [regex]::Replace((Get-Content -LiteralPath $readmePath -Raw -Encoding utf8), '(?s)(<!-- deckle-stats:start -->).*?(<!-- deckle-stats:end -->)', '$1' + "`nstale pulse`n" + '$2')
+    [IO.File]::WriteAllText($readmePath, $sectionOnly, [Text.UTF8Encoding]::new($false))
+    $savedEncoding = [Console]::OutputEncoding
+    try {
+        [Console]::OutputEncoding = [Text.Encoding]::GetEncoding(850)
+        $env:DECKLE_TEST_SCRIPT = $scriptPath
+        $env:DECKLE_TEST_ROOT = $root
+        $legacyOutput = @(& pwsh -NoProfile -Command '[Console]::OutputEncoding = [Text.Encoding]::GetEncoding(850); & $env:DECKLE_TEST_SCRIPT -Target $env:DECKLE_TEST_ROOT -Commit' 2>&1)
+        $legacyExit = $LASTEXITCODE
+    } finally {
+        [Console]::OutputEncoding = $savedEncoding
+        Remove-Item Env:DECKLE_TEST_SCRIPT, Env:DECKLE_TEST_ROOT -ErrorAction SilentlyContinue
+    }
+    if ($legacyExit -ne 0 -or ($legacyOutput -join "`n") -like '*changes outside the generated development pulse*') {
+        throw ('The README guard should pass under a non-UTF-8 console encoding when only the pulse changed: ' + ($legacyOutput -join ' ').Substring(0, [math]::Min(600, ($legacyOutput -join ' ').Length)))
+    }
+
     Write-Host 'update-readme-stats.tests.ps1: PASS' -ForegroundColor Green
 } finally {
     if (Test-Path -LiteralPath $root) { Remove-Item -LiteralPath $root -Recurse -Force }
