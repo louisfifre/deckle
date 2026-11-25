@@ -17,10 +17,19 @@ public sealed class FolderSafetyTests : IDisposable
     [InlineData(@"C:\Tools\", @"C:\Tools\Deckle")]
     [InlineData(@"C:\Tools\Deckle", @"C:\Tools\Deckle")]
     [InlineData(@"C:\Tools\deckle\", @"C:\Tools\deckle")]
-    [InlineData(@"C:\", @"C:\Deckle")]
     public void Picking_a_shared_folder_installs_into_its_own_Deckle_folder(string picked, string expected)
     {
         Assert.Equal(expected, FolderSafety.OwnFolderUnder(picked));
+    }
+
+    // The bare root has no folder in it, so the expectation is joined from the input rather than written as a second path.
+    [Fact]
+    [Trait("Category", "regression")]
+    public void Picking_a_drive_root_installs_into_its_own_Deckle_folder()
+    {
+        string root = @"C:\";
+
+        Assert.Equal(Path.Combine(root, "Deckle"), FolderSafety.OwnFolderUnder(root));
     }
 
     [Fact]

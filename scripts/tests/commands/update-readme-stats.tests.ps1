@@ -57,113 +57,154 @@ Stable content.
         throw 'README commit should leave the repository clean'
     }
 
-    # The chart: two well-formed SVG files, one smooth line and one area under
-    # it, no bar, a fixed height, a transparent background, no script, no drive path, no personal data,
-    # and the README shows them in a picture element at the column's width.
+    # The pictures: the curve is one stretching svg (a viewBox, no width or
+    # height, no text, no circle), the three labels are fixed-size svgs holding
+    # one text each, and the README tags carry the sizes that make them keep
+    # their shape. Light and dark of each.
+    $inv = [Globalization.CultureInfo]::InvariantCulture
     $readmeText = Get-Content -LiteralPath (Join-Path $root 'README.md') -Raw
     $lastLinePoints = @{}
+    function Test-NoUnsafeContent {
+        param([string]$Name, [xml]$Xml, [string]$Text)
+        if (@($Xml.SelectNodes('//*[local-name()="rect" or local-name()="script" or local-name()="style" or local-name()="image" or local-name()="foreignObject"]')).Count -gt 0) {
+            throw "$Name should hold no bar, script, style, image or foreignObject"
+        }
+        if ($Text -match '(?i)background|<svg[^>]*\sfill=') { throw "$Name should have a transparent background" }
+        $scanned = $Text.Replace('http://www.w3.org/2000/svg', '')
+        if ($scanned -match '(?i)\b[a-z]:[\\/]|@|https?:|\bon\w+=') { throw "$Name should hold no drive path, address, link or event handler" }
+        foreach ($person in $env:USERNAME, $env:COMPUTERNAME) {
+            if ($person -and $Text -match [regex]::Escape($person)) { throw "$Name should hold no personal data" }
+        }
+    }
     foreach ($theme in 'light', 'dark') {
         $relative = "docs/media/pulse-commits-$theme.svg"
         if ($readmeText -notlike "*$relative*") { throw "The pulse section should reference $relative" }
         $svgText = Get-Content -LiteralPath (Join-Path $root $relative) -Raw
         $xml = [xml]$svgText
         $svgRoot = $xml.DocumentElement
-        if ($svgRoot.LocalName -ne 'svg') { throw "The $theme chart should be an svg document" }
-        # The picture has a fixed height and no viewBox of its own: it fills
-        # the column in width only, so its text keeps its size.
-        if ($svgRoot.HasAttribute('viewBox')) { throw "The $theme chart should have no viewBox on its root, so that its text does not scale" }
-        if ($svgRoot.GetAttribute('width') -ne '100%') { throw "The $theme chart should be 100% wide" }
-        if ($svgRoot.GetAttribute('height') -notmatch '^\d+$') { throw "The $theme chart should have a fixed height in pixels" }
-        if ($readmeText -notmatch ('<img [^>]*height="{0}"' -f $svgRoot.GetAttribute('height'))) {
-            throw 'The README image should repeat the chart height in pixels, because the chart has no ratio of its own'
+        if ($svgRoot.LocalName -ne 'svg') { throw "The $theme curve should be an svg document" }
+        # Nothing that must keep its shape lives in a stretching picture.
+        if (-not $svgRoot.HasAttribute('viewBox')) { throw "The $theme curve should have a viewBox on its root" }
+        if ($svgRoot.GetAttribute('viewBox') -ne '0 0 800 40') { throw "The $theme curve viewBox should be 0 0 800 40" }
+        if ($svgRoot.GetAttribute('preserveAspectRatio') -ne 'none') { throw "The $theme curve should stretch freely (preserveAspectRatio none)" }
+        if ($svgRoot.HasAttribute('width') -or $svgRoot.HasAttribute('height')) { throw "The $theme curve should have no width or height, so that it fills the box the README gives it" }
+        if (@($xml.SelectNodes('//*[local-name()="text" or local-name()="circle" or local-name()="ellipse"]')).Count -gt 0) {
+            throw "The $theme curve should hold no text, circle or ellipse, and no nested svg"
         }
-        # Transparent background: no rect, no background style, no fill on the root.
-        if ($svgText -match '(?i)background|<svg[^>]*\sfill=') { throw "The $theme chart should have a transparent background" }
-        # Only the curve stretches: one nested svg holds the two paths, with a
-        # non-scaling stroke; the text and the marker sit outside it.
-        $nested = @($xml.SelectNodes('/*/*[local-name()="g"]/*[local-name()="svg"]'))
-        if ($nested.Count -ne 1) { throw "The $theme chart should hold one nested svg for the curve" }
-        if ($nested[0].GetAttribute('preserveAspectRatio') -ne 'none') { throw "The $theme curve should stretch freely (preserveAspectRatio none)" }
-        $box = @($nested[0].GetAttribute('viewBox') -split '\s+' | ForEach-Object { [double]::Parse($_, [Globalization.CultureInfo]::InvariantCulture) })
-        if ($box.Count -ne 4) { throw "The $theme curve should have a viewBox" }
-        if ([double]::Parse($nested[0].GetAttribute('height'), [Globalization.CultureInfo]::InvariantCulture) -ne $box[3]) {
-            throw "The $theme curve viewBox height should equal its height in pixels"
-        }
-        if (@($nested[0].SelectNodes('.//*[local-name()="text" or local-name()="circle"]')).Count -gt 0) {
-            throw "The $theme chart should keep its text and marker outside the scaled part"
-        }
-        $outsideText = @($xml.SelectNodes('//*[local-name()="text"]'))
-        if ($outsideText.Count -lt 3) { throw "The $theme chart should hold the two date labels and the peak label" }
-        foreach ($text in $outsideText) {
-            if ($text.GetAttribute('x') -notmatch '%$') { throw "The $theme labels should be placed with percentages" }
-        }
-        if (@($nested[0].SelectNodes('.//*[local-name()="path" and @fill="none"]'))[0].GetAttribute('vector-effect') -ne 'non-scaling-stroke') {
-            throw "The $theme line should keep its thickness (non-scaling-stroke)"
-        }
-        if (@($xml.SelectNodes('//*[local-name()="rect"]')).Count -gt 0) { throw "The $theme chart should hold no bar" }
-        if (@($xml.SelectNodes('//*[local-name()="script" or local-name()="style" or local-name()="image" or local-name()="foreignObject"]')).Count -gt 0) {
-            throw "The $theme chart should hold no script, style, image or foreignObject"
-        }
+        if (@($xml.SelectNodes('/*/*[local-name()="svg"]')).Count -gt 0) { throw "The $theme curve should hold no nested svg" }
+        Test-NoUnsafeContent -Name "The $theme curve" -Xml $xml -Text $svgText
+        $box = @($svgRoot.GetAttribute('viewBox') -split '\s+' | ForEach-Object { [double]::Parse($_, $inv) })
         $paths = @($xml.SelectNodes('//*[local-name()="path"]'))
-        $linePaths = @($paths | Where-Object { $_.GetAttribute('fill') -eq 'none' })
+        $linePaths = @($paths | Where-Object { $_.GetAttribute('fill') -eq 'none' -and $_.GetAttribute('d') -match '^M[\d. ]+ C' })
         $areaPaths = @($paths | Where-Object { $_.GetAttribute('fill') -like 'url(#*' })
-        if ($paths.Count -ne 2 -or $linePaths.Count -ne 1 -or $areaPaths.Count -ne 1) {
-            throw "The $theme chart should hold one path for the line and one for the area"
+        $markerPaths = @($paths | Where-Object { $_.GetAttribute('fill') -eq 'none' -and $_.GetAttribute('d') -match '^M([\d.]+) ([\d.]+) L\1 \2$' })
+        if ($paths.Count -ne 3 -or $linePaths.Count -ne 1 -or $areaPaths.Count -ne 1 -or $markerPaths.Count -ne 1) {
+            throw "The $theme curve should hold one path for the line, one for the area and one zero-length path for the peak marker"
+        }
+        foreach ($stroked in $linePaths + $markerPaths) {
+            if ($stroked.GetAttribute('vector-effect') -ne 'non-scaling-stroke') { throw "The $theme strokes should keep their thickness (non-scaling-stroke)" }
+        }
+        if ($markerPaths[0].GetAttribute('stroke-linecap') -ne 'round') { throw "The $theme peak marker should have round caps, so that it stays round" }
+        $markerWidth = [double]::Parse($markerPaths[0].GetAttribute('stroke-width'), $inv)
+        $markerNumbers = @([regex]::Matches($markerPaths[0].GetAttribute('d'), '\d+(\.\d+)?') | ForEach-Object { [double]::Parse($_.Value, $inv) })
+        # Room for the stroke and the marker: 4 pixels of radius, one unit of y is one pixel, one unit of x is at least 0.375 pixel.
+        if ($markerNumbers[1] -lt $markerWidth / 2 -or $markerNumbers[0] -lt $markerWidth / 2 / 0.375 -or $markerNumbers[0] -gt $box[2] - $markerWidth / 2 / 0.375) {
+            throw "The $theme peak marker should not be clipped at the top or at the edges"
         }
         if ($linePaths[0].GetAttribute('stroke-linejoin') -ne 'round') { throw "The $theme line should have rounded joins" }
-        if (@($xml.SelectNodes('//*[local-name()="linearGradient"]')).Count -ne 1) {
-            throw "The $theme chart should hold one gradient for the area"
+        if (@($xml.SelectNodes('//*[local-name()="title"]')).Count -ne 1 -or @($xml.SelectNodes('//*[local-name()="desc"]')).Count -ne 1) {
+            throw "The $theme curve should keep its title and desc"
         }
+        if (@($xml.SelectNodes('//*[local-name()="linearGradient"]')).Count -ne 1) { throw "The $theme curve should hold one gradient for the area" }
+        $lineWidth = [double]::Parse($linePaths[0].GetAttribute('stroke-width'), $inv)
         foreach ($path in $linePaths + $areaPaths) {
             $d = $path.GetAttribute('d')
             if ($d -match '(?i)nan|infinity|e[+-]?\d') { throw "The $theme path should hold no NaN or exponent" }
             if ($d -notmatch '^M[\d. ]+( C[\d. ]+)+') { throw "The $theme path should be a smooth Bezier path" }
-            $numbers = @([regex]::Matches($d, '-?\d+(\.\d+)?') | ForEach-Object { [double]::Parse($_.Value, [Globalization.CultureInfo]::InvariantCulture) })
+            $numbers = @([regex]::Matches($d, '-?\d+(\.\d+)?') | ForEach-Object { [double]::Parse($_.Value, $inv) })
             for ($i = 0; $i -lt $numbers.Count; $i += 2) {
                 if ($numbers[$i] -lt 0 -or $numbers[$i] -gt $box[2] -or $numbers[$i + 1] -lt 0 -or $numbers[$i + 1] -gt $box[3]) {
                     throw "The $theme path should stay inside the viewBox"
+                }
+                if ($path -eq $linePaths[0] -and ($numbers[$i + 1] -lt $lineWidth / 2 -or $numbers[$i + 1] -gt $box[3] - $lineWidth / 2)) {
+                    throw "The $theme line stroke should not be clipped at the top or the bottom"
                 }
             }
         }
         if ($areaPaths[0].GetAttribute('d') -notlike ($linePaths[0].GetAttribute('d') + ' L*Z')) {
             throw "The $theme area should follow the line and close down to the baseline"
         }
-        $scanned = $svgText.Replace('http://www.w3.org/2000/svg', '')
-        if ($scanned -match '(?i)\b[a-z]:[\\/]|@|https?:|\bon\w+=') {
-            throw "The $theme chart should hold no drive path, address, link or event handler"
-        }
-        foreach ($name in $env:USERNAME, $env:COMPUTERNAME) {
-            if ($name -and $svgText -match [regex]::Escape($name)) { throw "The $theme chart should hold no personal data" }
-        }
         $lastLinePoints[$theme] = $linePaths[0].GetAttribute('d')
+
+        # The labels: fixed size, matching viewBox, one text each, no stretch.
+        foreach ($kind in 'start', 'end', 'peak') {
+            $labelRelative = "docs/media/pulse-label-$kind-$theme.svg"
+            if ($readmeText -notlike "*$labelRelative*") { throw "The pulse section should reference $labelRelative" }
+            $labelText = Get-Content -LiteralPath (Join-Path $root $labelRelative) -Raw
+            $labelXml = [xml]$labelText
+            $labelRoot = $labelXml.DocumentElement
+            foreach ($attribute in 'width', 'height', 'viewBox') {
+                if (-not $labelRoot.HasAttribute($attribute)) { throw "$labelRelative should have a $attribute on its root" }
+            }
+            if ($labelRoot.GetAttribute('width') -notmatch '^\d+$' -or $labelRoot.GetAttribute('height') -ne '16') { throw "$labelRelative should have a fixed size in pixels, 16 high" }
+            if ($labelRoot.GetAttribute('viewBox') -ne ('0 0 {0} {1}' -f $labelRoot.GetAttribute('width'), $labelRoot.GetAttribute('height'))) { throw "$labelRelative viewBox should match its size" }
+            if ($labelRoot.HasAttribute('preserveAspectRatio')) { throw "$labelRelative should not stretch" }
+            $texts = @($labelXml.SelectNodes('//*[local-name()="text"]'))
+            if ($texts.Count -ne 1) { throw "$labelRelative should hold one text" }
+            if (@($labelXml.SelectNodes('//*')).Count -ne 2) { throw "$labelRelative should hold nothing but its text" }
+            $expectedAnchor = if ($kind -eq 'start') { 'start' } else { 'end' }
+            if ($texts[0].GetAttribute('text-anchor') -ne $expectedAnchor) { throw "$labelRelative text should be anchored to the side it is pinned to" }
+            if ($texts[0].GetAttribute('font-size') -ne '13' -or $texts[0].GetAttribute('font-family') -notlike "*'Segoe UI'*") { throw "$labelRelative should keep the font stack and size" }
+            if ($texts[0].GetAttribute('x') -match '%') { throw "$labelRelative text should not be placed in percentages" }
+            # As wide as its text needs: at least 7 pixels a character.
+            if ([int]$labelRoot.GetAttribute('width') -lt 7 * $texts[0].InnerText.Length) { throw "$labelRelative should be wide enough for its text" }
+            Test-NoUnsafeContent -Name $labelRelative -Xml $labelXml -Text $labelText
+            # The README tag keeps the exact size and the side.
+            $tag = [regex]::Match($readmeText, ('<img [^>]*src="{0}"[^>]*>' -f [regex]::Escape("docs/media/pulse-label-$kind-light.svg")))
+            if (-not $tag.Success) { throw "The README should show the light $kind label in an img tag" }
+            if ($tag.Value -notmatch ('width="{0}"' -f $labelRoot.GetAttribute('width')) -or $tag.Value -notmatch ('height="{0}"' -f $labelRoot.GetAttribute('height'))) {
+                throw "The README tag of $labelRelative should carry the exact width and height of the picture"
+            }
+            $expectedAlign = if ($kind -eq 'start') { 'left' } else { 'right' }
+            if ($tag.Value -notmatch ('align="{0}"' -f $expectedAlign)) { throw "The README tag of $labelRelative should be pinned with align=$expectedAlign" }
+            if ($tag.Value -match '%') { throw "The README tag of $labelRelative should not use a percentage" }
+        }
     }
     if ($readmeText -notmatch '(?s)<picture>.*prefers-color-scheme: dark.*prefers-color-scheme: light.*</picture>') {
-        throw 'The pulse section should show the chart through a picture element with a dark and a light source'
+        throw 'The pulse section should show the pictures through picture elements with a dark and a light source'
     }
-    if ($readmeText -notmatch '<img [^>]*width="100%"') {
-        throw 'The README image should fill the column with width="100%"'
+    if ($readmeText -notmatch '<img [^>]*src="docs/media/pulse-commits-light.svg"[^>]*width="100%"[^>]*height="40"') {
+        throw 'The README curve should fill the column with width="100%" and have height="40"'
+    }
+    if ($readmeText -match '(?i)<img [^>]*height="88"|\sstyle=|\sclass=') { throw 'The README pulse should use no style, no class and no 88 pixel picture' }
+    # The order: table, peak label, curve, start and end labels, a break, the Generated line below.
+    $order = 'pulse-label-peak-light', 'pulse-commits-light', 'pulse-label-start-light', 'pulse-label-end-light', '<br clear="all">', '<sub>Generated from'
+    $cursor = $readmeText.IndexOf('| First commit')
+    foreach ($needle in $order) {
+        $cursor = $readmeText.IndexOf($needle, $cursor + 1)
+        if ($cursor -lt 0) {
+            throw 'The pulse section should hold the table, the peak label, the curve, the start and end labels, a break and the Generated line, in that order'
+        }
     }
     # All the seeded commits are from today: the curve rises to its highest
     # point at its right end (the smallest y of the line is the last point).
-    $lineNumbers = @([regex]::Matches($lastLinePoints['light'], '-?\d+(\.\d+)?') | ForEach-Object { [double]::Parse($_.Value, [Globalization.CultureInfo]::InvariantCulture) })
+    $lineNumbers = @([regex]::Matches($lastLinePoints['light'], '-?\d+(\.\d+)?') | ForEach-Object { [double]::Parse($_.Value, $inv) })
     $endY = $lineNumbers[-1]
     $startY = $lineNumbers[1]
     if ($endY -ge $startY) { throw 'Today''s commits should raise the right end of the curve above its start' }
 
     # The same input draws the same bytes.
-    $lightFile = Join-Path $root 'docs/media/pulse-commits-light.svg'
-    $darkFile = Join-Path $root 'docs/media/pulse-commits-dark.svg'
+    $mediaFiles = @(foreach ($theme in 'light', 'dark') { "pulse-commits-$theme.svg"; foreach ($kind in 'start', 'end', 'peak') { "pulse-label-$kind-$theme.svg" } })
     & $scriptPath -Target $root
-    $firstRun = @((Get-FileHash -LiteralPath $lightFile).Hash, (Get-FileHash -LiteralPath $darkFile).Hash)
+    $firstRun = @($mediaFiles | ForEach-Object { (Get-FileHash -LiteralPath (Join-Path $root "docs/media/$_")).Hash })
     & $scriptPath -Target $root
-    $secondRun = @((Get-FileHash -LiteralPath $lightFile).Hash, (Get-FileHash -LiteralPath $darkFile).Hash)
-    if (($firstRun -join ',') -cne ($secondRun -join ',')) { throw 'A second run should write byte-identical chart files' }
+    $secondRun = @($mediaFiles | ForEach-Object { (Get-FileHash -LiteralPath (Join-Path $root "docs/media/$_")).Hash })
+    if (($firstRun -join ',') -cne ($secondRun -join ',')) { throw 'A second run should write byte-identical picture files' }
     Invoke-TestGit checkout -- . | Out-Null
 
-    if (@(Invoke-TestGit ls-files 'docs/media/pulse-commits-light.svg' 'docs/media/pulse-commits-dark.svg').Count -ne 2) {
-        throw 'The pulse commit should carry both chart files'
+    if (@(Invoke-TestGit ls-files 'docs/media/pulse-*.svg').Count -ne 8) {
+        throw 'The pulse commit should carry the two curve files and the six label files'
     }
-
     $readmePath = Join-Path $root 'README.md'
     $manualEdit = (Get-Content -LiteralPath $readmePath -Raw) -replace '# Deckle test', '# Manual edit'
     [IO.File]::WriteAllText($readmePath, $manualEdit, [Text.UTF8Encoding]::new($false))

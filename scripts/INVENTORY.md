@@ -27,6 +27,9 @@ Run one with `pwsh -NoProfile -File scripts/<path> [arguments]`. An action names
   - Actions: Launch · Launch Mail `-App mail` · Launch Folders `-App folders`
   - Parameters: -App <string>, -Configuration Release|Debug, -Target <string>, -Wait
 - `menu.ps1` — Entry of the repository's terminal menu. (not in the menu)
+- `merge-branch.ps1` — **Merge a branch into main behind the merge gate.** The one way a branch enters main.
+  - Actions: Merge a branch into main behind the merge gate
+  - Parameters: -Branch <string>, -Target <string>, -Summary <string>, -NoMerge, -MainCheckout <string>
 - `read-log.ps1` — **Read Deckle's log.** Prints the latest entries of Deckle's diagnostics log, one line each: time, level, provider and event, message.
   - Actions: Inspect / log · Inspect / trace `-Trace`
   - Parameters: -Trace, -Last <int>, -Level <string>, -SinceMinutes <int>, -Match <string>, -Payload, -DataRoot <string>
