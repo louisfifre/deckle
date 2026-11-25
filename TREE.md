@@ -565,6 +565,7 @@ _Generated from `git ls-files` — do not edit by hand._
 │   │   ├── CrashSupervisor.cs
 │   │   ├── Deckle.App.csproj
 │   │   ├── FileTranscriptionRun.cs
+│   │   ├── HudCompletionMessage.cs
 │   │   ├── LogWindow.Chrome.cs
 │   │   ├── LogWindow.Interaction.cs
 │   │   ├── LogWindow.Model.cs
@@ -2662,6 +2663,7 @@ _Generated from `git ls-files` — do not edit by hand._
 │   │   ├── ExeIconTests.cs
 │   │   ├── FileTranscriptionBugNotes.md
 │   │   ├── FileTranscriptionRunTests.cs
+│   │   ├── HudCompletionTests.cs
 │   │   ├── HudFeedbackSinkTests.cs
 │   │   ├── MessageTemplateDoctrineTests.cs
 │   │   ├── MilestoneClosersTests.cs
