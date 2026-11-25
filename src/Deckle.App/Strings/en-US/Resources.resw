@@ -1280,7 +1280,7 @@
     <comment>{0} is the bridge's IP address. Shown while Deckle searches the local network for the paired bridge.</comment>
   </data>
   <data name="AmbientHue_ListGroups_Relocated_Format" xml:space="preserve">
-    <value>Found the bridge at {0}. Rooms loaded.</value>
+    <value>Found the bridge at {0}. Areas loaded.</value>
     <comment>{0} is the IP address where the paired bridge answered.</comment>
   </data>
   <data name="AmbientHue_ListGroups_NotFound_Format" xml:space="preserve">
@@ -1288,7 +1288,7 @@
     <comment>{0} is the bridge's IP address. "Find bridge" is the HueDiscoverButton label.</comment>
   </data>
   <data name="AmbientHue_ListGroups_Failed" xml:space="preserve">
-    <value>Couldn't load rooms. Try again.</value>
+    <value>Couldn't load the Entertainment areas. Try again.</value>
   </data>
   <data name="AmbientHue_ForgetDialog_Title" xml:space="preserve">
     <value>Forget Hue bridge?</value>
@@ -1310,15 +1310,12 @@
        src/Deckle.Lighting.Ambient.Views/Strings/en-US/Resources.resw, which
        stays the source of truth for wording. -->
   <data name="Settings_ResetAmbientDialog_Detail" xml:space="preserve">
-    <value>Your Hue bridge pairing, the selected light group, the display, the per-light zones and brightness, and whether Ambient Light is on stay as they are.</value>
+    <value>Your Hue bridge pairing, the selected Entertainment area, the display, the per-light zones and brightness, and whether Ambient Light is on stay as they are.</value>
   </data>
 
   <!-- AmbientPreviewCard and LightZonesCard code-behind (Loc.Get) —
        duplicated from src/Deckle.Lighting.Ambient.Views/Strings/en-US/
        Resources.resw, which stays the source of truth for wording. -->
-  <data name="AmbientPreview_GroupSwatch" xml:space="preserve">
-    <value>All lights</value>
-  </data>
   <data name="AmbientPreview_Capture_Format" xml:space="preserve">
     <value>{0} × {1}, {2}</value>
   </data>
@@ -1336,9 +1333,6 @@
   </data>
   <data name="AmbientPreview_Output_Stream" xml:space="preserve">
     <value>Streaming</value>
-  </data>
-  <data name="AmbientPreview_Output_Rest" xml:space="preserve">
-    <value>REST</value>
   </data>
   <!-- The Capture readout before any capture: the display's size, read from Windows. -->
   <data name="AmbientPreview_Display_Format" xml:space="preserve">
@@ -1361,7 +1355,16 @@
     <value>Your display isn't giving the preview any frame. Try again to restart the capture.</value>
   </data>
   <data name="AmbientHue_ListGroups_StoredGone" xml:space="preserve">
-    <value>The room you chose isn't on this bridge any more. Pick another one.</value>
+    <value>Your choice isn't an Entertainment area on this bridge. Pick one in the list.</value>
+  </data>
+  <data name="AmbientHue_ListGroups_NoArea" xml:space="preserve">
+    <value>This bridge has no Entertainment area. Create one in the Hue app, then select Load areas.</value>
+  </data>
+  <data name="AmbientStartFailed_NoArea" xml:space="preserve">
+    <value>Your choice isn't a Hue Entertainment area with lights. Create one in the Hue app, then pick it under Entertainment area.</value>
+  </data>
+  <data name="AmbientStartFailed_NoClientKey" xml:space="preserve">
+    <value>Deckle can't stream to this bridge yet. Pair the bridge again.</value>
   </data>
   <data name="AmbientLights_Zone_None" xml:space="preserve">
     <value>No zone</value>

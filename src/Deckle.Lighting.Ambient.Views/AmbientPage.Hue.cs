@@ -196,8 +196,8 @@ public sealed partial class AmbientPage
                 .PairAsync(target, ct: _huePairCts.Token)
                 .ConfigureAwait(true);
             // SyncHueBridgeUi fires via BridgeChanged event and flips
-            // the dot to success + label to Re-pair. The rooms load at once,
-            // as Load rooms would: the status row clears with it.
+            // the dot to success + label to Re-pair. The areas load at once,
+            // as Load areas would: the status row clears with it.
             await ListHueGroupsAsync().ConfigureAwait(true);
         }
         catch (OperationCanceledException)
@@ -223,7 +223,7 @@ public sealed partial class AmbientPage
     private async void OnHueListGroupsClick(object sender, RoutedEventArgs e)
         => await ListHueGroupsAsync().ConfigureAwait(true);
 
-    // Load rooms: the button's routine, also run once a pairing succeeds.
+    // Load areas: the button's routine, also run once a pairing succeeds.
     private async Task ListHueGroupsAsync()
     {
         if (!HuePairingService.Instance.IsPaired) return;
@@ -292,9 +292,11 @@ public sealed partial class AmbientPage
 
     private async Task LoadHueGroupsAsync()
     {
-        _hueGroups = await HuePairingService.Instance
+        // Entertainment areas only: Ambient streams to one, and an ordinary
+        // room or zone would only lead to a start that fails.
+        _hueGroups = HueGroupSelection.EntertainmentAreas(await HuePairingService.Instance
             .ListGroupsAsync()
-            .ConfigureAwait(true);
+            .ConfigureAwait(true));
 
         _hueGroupComboSuppress = true;
         HueGroupComboBox.Items.Clear();
@@ -319,12 +321,16 @@ public sealed partial class AmbientPage
             if (preselect < 0 && !string.IsNullOrEmpty(AmbientSettingsService.Instance.Current.HueLastGroupId))
                 SetHuePairStatus(Loc.Get("AmbientHue_ListGroups_StoredGone"));
         }
+        else
+        {
+            SetHuePairStatus(Loc.Get("AmbientHue_ListGroups_NoArea"));
+        }
         _hueGroupComboSuppress = false;
     }
 
-    // The page opens with the room it keeps: the list is read once, quietly,
-    // so the picker is not empty until Load rooms is pressed. A failure is
-    // said in the status line like a pressed Load rooms would.
+    // The page opens with the area it keeps: the list is read once, quietly,
+    // so the picker is not empty until Load areas is pressed. A failure is
+    // said in the status line like a pressed Load areas would.
     private async Task LoadStoredHueGroupAsync()
     {
         if (HueGroupComboBox.Items.Count > 0 || !HuePairingService.Instance.IsPaired) return;

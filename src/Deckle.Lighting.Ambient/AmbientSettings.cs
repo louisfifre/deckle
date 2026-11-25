@@ -7,7 +7,7 @@ namespace Deckle.Lighting.Ambient;
 //
 // Hue bridge coordinates stored here are the Ambient user's selected
 // target: bridge IP / id, the application username, and the last
-// selected light group. The Entertainment v2 DTLS pre-shared key
+// selected Entertainment area. The Entertainment v2 DTLS pre-shared key
 // (clientkey) is intentionally not stored in this JSON file; the Hue
 // driver persists it in Deckle.Security's DPAPI-backed vault.
 public sealed class AmbientSettings
@@ -32,8 +32,9 @@ public sealed class AmbientSettings
     /// at pairing. Sensitive but revocable from the Hue mobile app.</summary>
     public string? HueUsername { get; set; }
 
-    /// <summary>CLIP v1 id of the selected group (e.g. "1", "5"), not a
-    /// v2 UUID.</summary>
+    /// <summary>CLIP v1 id of the selected Entertainment area's group
+    /// (e.g. "5"), not a v2 UUID. A room or zone stored before Ambient ran
+    /// through Entertainment only fails the start with its reason.</summary>
     public string? HueLastGroupId { get; set; }
 
     /// <summary>Selected capture source. Null = follow whichever monitor
@@ -49,32 +50,20 @@ public sealed class AmbientSettings
     // the deserializer ignores members this class no longer declares, and the
     // next save drops the key.
 
-    // ── Multi-light zones ──────────────────────────────────────────
+    // ── Zones ───────────────────────────────────────────────────────
     //
-    // When the connected output is an IMultiLightOutput and the engine
-    // is told to run in multi-light mode, it pushes one colour per
-    // zone — top / bottom / left / right border of the screen — and
-    // every light assigned to a zone via <see cref="LightZones"/>
-    // receives that colour. Lights mapped to <see cref="LightZone.None"/>
-    // (or absent from the map entirely) are not driven by the engine
-    // and keep whatever state the bridge last gave them.
-    //
-    // When <see cref="UseMultiLight"/> is false (default), the engine
-    // falls back to the single-colour group push regardless of what
-    // <see cref="LightZones"/> holds, so the zone assignments survive
-    // switching back and forth.
+    // Ambient pushes one colour per zone — top / bottom / left / right
+    // border of the screen — and every light that follows a zone receives
+    // that colour. It is the only mode (Louis, 2026-11-25): the single-colour
+    // group mode left, and with it the "useMultiLight" switch; a settings
+    // file that still carries the key loads without it, and the next save
+    // drops it.
 
-    /// <summary>Master switch for the multi-light pipeline, read at engine
-    /// start. True only takes effect if the connected driver exposes
-    /// <see cref="Deckle.Lighting.IMultiLightOutput"/> ; otherwise the
-    /// engine logs a warning and falls back to single-colour push.</summary>
-    public bool UseMultiLight { get; set; } = false;
-
-    /// <summary>Per-light zone assignment, keyed by the driver's opaque
-    /// light id (Hue : CLIP v1 integer-as-string). Light ids missing from
-    /// the map default to <see cref="LightZone.None"/> at sampling time,
-    /// so a newly added bulb is skipped silently rather than tinted to an
-    /// arbitrary edge.</summary>
+    /// <summary>The person's per-light zone picks, keyed by the driver's
+    /// opaque light id (Hue : CLIP v1 integer-as-string). A light absent
+    /// from the map follows the edge its place in the Hue Entertainment area
+    /// suggests (LightZoneAssignment); a pick, <see cref="LightZone.None"/>
+    /// included, overrides it, so No zone is stored, not removed.</summary>
     public Dictionary<string, LightZone> LightZones { get; set; } = new();
 
     /// <summary>Per-light brightness multiplier in [0, 1], keyed by the
@@ -178,8 +167,7 @@ public sealed class AmbientSettings
     /// Lower values trade reactivity for stability. The value is defined
     /// per push tick at the 15 Hz reference rate and adapted to the
     /// measured time between push ticks (AmbientPushCadence.AdaptSmoothingAlpha);
-    /// it does not depend on the capture rate. Applied per-light in multi
-    /// mode, on the single group colour in group mode.</summary>
+    /// it does not depend on the capture rate. Applied per light.</summary>
     public double SmoothingAlpha { get; set; } = 0.15;
 }
 

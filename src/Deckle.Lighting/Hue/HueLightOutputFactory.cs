@@ -1,59 +1,31 @@
-using System.Text.Json;
+using System.Diagnostics.CodeAnalysis;
 
 namespace Deckle.Lighting;
 
+// Builds the one output Ambient drives: a Hue Entertainment stream over the
+// area that backs the selected group. There is no other path. A bridge with
+// no client key (paired before Entertainment existed) or a group no
+// Entertainment area describes cannot stream, and the factory says so with a
+// HueEntertainmentUnavailableException naming the reason, so the start fails
+// with a cause the Settings page can show instead of driving the lights
+// another, slower way in silence (decided 2026-11-25).
 public static class HueLightOutputFactory
 {
-    public static Task<ILightOutput> CreateConnectedPreferredAsync(
-        HueBridgeClient client,
-        string groupId,
-        CancellationToken ct = default)
-        => CreateConnectedPreferredAsync(new HueBridgeOutputFactoryBridge(client), groupId, ct);
-
-    public static async Task<ILightOutput> CreatePreferredAsync(
-        HueBridgeClient client,
-        string groupId,
-        CancellationToken ct = default)
-        => await CreatePreferredAsync(new HueBridgeOutputFactoryBridge(client), groupId, ct)
-            .ConfigureAwait(false);
-
-    internal static async Task<ILightOutput> CreatePreferredAsync(
-        IHueOutputFactoryBridge bridge,
-        string groupId,
-        CancellationToken ct)
-    {
-        ArgumentException.ThrowIfNullOrWhiteSpace(groupId);
-        ct.ThrowIfCancellationRequested();
-
-        var (area, areaReason) = await TryResolveEntertainmentAreaAsync(bridge, groupId, ct).ConfigureAwait(false);
-        if (area is { Channels.Count: > 0 } && !string.IsNullOrWhiteSpace(bridge.Credentials?.ClientKey))
-        {
-            DeckleLightingSource.Log.LightOutputSelected(EntertainmentOutputName, areaReason);
-            return bridge.CreateEntertainmentOutput(area, bridge.Credentials.ClientKey);
-        }
-
-        DeckleLightingSource.Log.LightOutputSelected(
-            RestOutputName,
-            string.IsNullOrWhiteSpace(bridge.Credentials?.ClientKey) ? "no_client_key" : areaReason);
-        return bridge.CreateRestOutput(groupId);
-    }
-
     private const string EntertainmentOutputName = "hue_entertainment";
-    private const string RestOutputName = "hue_rest";
 
-    public static Task<ILightOutput> ConnectPreparedPreferredAsync(
+    /// <summary>Builds the Entertainment output for the group, without
+    /// connecting it, and returns it with the area it streams to, whose light
+    /// placements give each light its suggested screen edge. Throws
+    /// <see cref="HueEntertainmentUnavailableException"/> when the bridge has
+    /// no client key or no Entertainment area describes the group; a failed
+    /// catalog request propagates as it came.</summary>
+    public static Task<(ILightOutput Output, HueEntertainmentArea Area)> CreateAsync(
         HueBridgeClient client,
-        ILightOutput output,
         string groupId,
         CancellationToken ct = default)
-        => ConnectPreparedPreferredAsync(
-            new HueBridgeOutputFactoryBridge(client),
-            output,
-            groupId,
-            output is HueEntertainmentLightOutput,
-            ct);
+        => CreateAsync(new HueBridgeOutputFactoryBridge(client), groupId, ct);
 
-    internal static async Task<ILightOutput> CreateConnectedPreferredAsync(
+    internal static async Task<(ILightOutput Output, HueEntertainmentArea Area)> CreateAsync(
         IHueOutputFactoryBridge bridge,
         string groupId,
         CancellationToken ct)
@@ -61,110 +33,55 @@ public static class HueLightOutputFactory
         ArgumentException.ThrowIfNullOrWhiteSpace(groupId);
         ct.ThrowIfCancellationRequested();
 
-        string restReason = "no_client_key";
-        ILightOutput? failedEntertainment = null;
-        if (!string.IsNullOrWhiteSpace(bridge.Credentials?.ClientKey))
+        if (!TryGetClientKey(bridge, out string? clientKey))
         {
-            var (area, areaReason) = await TryResolveEntertainmentAreaAsync(bridge, groupId, ct).ConfigureAwait(false);
-            restReason = areaReason;
-            if (area is { Channels.Count: > 0 })
-            {
-                var entertainment = bridge.CreateEntertainmentOutput(area, bridge.Credentials.ClientKey);
-                try
-                {
-                    await entertainment.ConnectAsync(ct).ConfigureAwait(false);
-                    DeckleLightingSource.Log.LightOutputSelected(EntertainmentOutputName, areaReason);
-                    return entertainment;
-                }
-                catch (OperationCanceledException)
-                {
-                    await DisposeOutputBestEffortAsync(entertainment).ConfigureAwait(false);
-                    throw;
-                }
-                catch (Exception ex)
-                {
-                    await DisposeOutputBestEffortAsync(entertainment).ConfigureAwait(false);
-                    LogEntertainmentFallback("connect_failed", ex);
-                    restReason = "connect_failed";
-                    failedEntertainment = entertainment;
-                    // The bridge may expose Entertainment but reject the
-                    // session at runtime (UDP/DTLS/firmware/firewall).
-                    // Keep Ambient usable through the established REST path.
-                }
-            }
+            throw new HueEntertainmentUnavailableException(
+                HueEntertainmentUnavailableReason.NoClientKey,
+                "The Hue bridge was paired without an Entertainment client key; pair it again.");
         }
 
-        var rest = bridge.CreateRestOutput(groupId);
-        InheritStatesFromFailedStart(rest, failedEntertainment);
-        await rest.ConnectAsync(ct).ConfigureAwait(false);
-        DeckleLightingSource.Log.LightOutputSelected(RestOutputName, restReason);
-        return rest;
+        var area = await ResolveEntertainmentAreaAsync(bridge, groupId, ct).ConfigureAwait(false);
+        if (area is not { Channels.Count: > 0 })
+        {
+            throw new HueEntertainmentUnavailableException(
+                HueEntertainmentUnavailableReason.NoEntertainmentArea,
+                $"No Hue Entertainment area with lights describes group '{groupId}'.");
+        }
+
+        DeckleLightingSource.Log.LightOutputSelected(EntertainmentOutputName, "entertainment_area_found");
+        return (bridge.CreateEntertainmentOutput(area, clientKey), area);
     }
 
-    internal static async Task<ILightOutput> ConnectPreparedPreferredAsync(
-        IHueOutputFactoryBridge bridge,
-        ILightOutput output,
-        string groupId,
-        bool allowRestFallback,
-        CancellationToken ct)
+    /// <summary>Connects an output <see cref="CreateAsync(HueBridgeClient, string, CancellationToken)"/>
+    /// built. On failure the output is disposed, which hands the lights back,
+    /// and the failure propagates.</summary>
+    public static async Task ConnectAsync(ILightOutput output, CancellationToken ct = default)
     {
         ArgumentNullException.ThrowIfNull(output);
-        ArgumentException.ThrowIfNullOrWhiteSpace(groupId);
         ct.ThrowIfCancellationRequested();
 
         try
         {
             await output.ConnectAsync(ct).ConfigureAwait(false);
-            return output;
         }
-        catch (OperationCanceledException)
+        catch
         {
             await DisposeOutputBestEffortAsync(output).ConfigureAwait(false);
             throw;
         }
-        catch (Exception ex) when (allowRestFallback)
-        {
-            await DisposeOutputBestEffortAsync(output).ConfigureAwait(false);
-            LogEntertainmentFallback("connect_failed", ex);
-
-            var rest = bridge.CreateRestOutput(groupId);
-            InheritStatesFromFailedStart(rest, output);
-            await rest.ConnectAsync(ct).ConfigureAwait(false);
-            DeckleLightingSource.Log.LightOutputSelected(RestOutputName, "connect_failed");
-            return rest;
-        }
     }
 
-    private static async Task<(HueEntertainmentArea? Area, string Reason)> TryResolveEntertainmentAreaAsync(
-        IHueOutputFactoryBridge bridge,
+    /// <summary>The Entertainment area that describes the group: the one
+    /// whose name equals the group's (case-insensitive), which is how the
+    /// bridge names the CLIP v1 group of an Entertainment area; otherwise the
+    /// one sharing the most lights with the group; otherwise null.</summary>
+    public static Task<HueEntertainmentArea?> ResolveEntertainmentAreaAsync(
+        HueBridgeClient client,
         string groupId,
-        CancellationToken ct)
-    {
-        try
-        {
-            var area = await ResolveEntertainmentAreaAsync(bridge, groupId, ct).ConfigureAwait(false);
-            return area is { Channels.Count: > 0 }
-                ? (area, "entertainment_area_found")
-                : (area, "no_entertainment_area");
-        }
-        catch (OperationCanceledException)
-        {
-            throw;
-        }
-        catch (Exception ex) when (
-            ex is JsonException or
-            HttpRequestException { StatusCode: not null })
-        {
-            LogEntertainmentFallback("catalog_failed", ex);
-            // A bridge-side rejection or an unsupported catalog shape means
-            // Entertainment is unavailable while REST can still work. A
-            // transport failure has no viable REST fallback because both
-            // paths share the same endpoint, so it must remain fatal.
-            return (null, "catalog_failed");
-        }
-    }
+        CancellationToken ct = default)
+        => ResolveEntertainmentAreaAsync(new HueBridgeOutputFactoryBridge(client), groupId, ct);
 
-    private static async Task<HueEntertainmentArea?> ResolveEntertainmentAreaAsync(
+    internal static async Task<HueEntertainmentArea?> ResolveEntertainmentAreaAsync(
         IHueOutputFactoryBridge bridge,
         string groupId,
         CancellationToken ct)
@@ -233,14 +150,10 @@ public static class HueLightOutputFactory
         return bestOverlap > 0 ? best : null;
     }
 
-    // The failed Entertainment start read the lights before its pre-prime
-    // dimmed them. The REST output takes that reading rather than taking its
-    // own after the fact, so the snapshot stays the one from before any
-    // light was touched, even if the Entertainment restore itself fell short.
-    private static void InheritStatesFromFailedStart(ILightOutput rest, ILightOutput? failed)
+    private static bool TryGetClientKey(IHueOutputFactoryBridge bridge, [NotNullWhen(true)] out string? clientKey)
     {
-        if (rest is HueRestLightOutput restOutput && failed is HueEntertainmentLightOutput entertainment)
-            restOutput.InheritStatesBeforeStreaming(entertainment.StatesBeforeStreaming);
+        clientKey = bridge.Credentials?.ClientKey;
+        return !string.IsNullOrWhiteSpace(clientKey);
     }
 
     private static async Task DisposeOutputBestEffortAsync(ILightOutput output)
@@ -251,9 +164,6 @@ public static class HueLightOutputFactory
             DeckleLightingSource.Log.HueStepFailedDetail("output_dispose", ex.GetType().Name, ex.Message);
         }
     }
-
-    private static void LogEntertainmentFallback(string reason, Exception ex)
-        => DeckleLightingSource.Log.EntertainmentRestFallback(reason, ex.GetType().Name, ex.Message);
 
     private sealed class HueBridgeOutputFactoryBridge : IHueOutputFactoryBridge
     {
@@ -277,9 +187,6 @@ public static class HueLightOutputFactory
 
         public ILightOutput CreateEntertainmentOutput(HueEntertainmentArea area, string clientKey)
             => new HueEntertainmentLightOutput(_client, area, clientKey);
-
-        public ILightOutput CreateRestOutput(string groupId)
-            => new HueRestLightOutput(_client, groupId, restoreStates: true);
     }
 }
 
@@ -290,5 +197,30 @@ internal interface IHueOutputFactoryBridge
     Task<IReadOnlyList<HueGroup>> ListGroupsAsync(CancellationToken ct);
     Task<IReadOnlyList<HueLight>> ListLightsInGroupAsync(string groupId, CancellationToken ct);
     ILightOutput CreateEntertainmentOutput(HueEntertainmentArea area, string clientKey);
-    ILightOutput CreateRestOutput(string groupId);
+}
+
+/// <summary>Why the bridge cannot stream to the selected group.</summary>
+public enum HueEntertainmentUnavailableReason
+{
+    /// <summary>The bridge was paired without the Entertainment client key,
+    /// which only a new pairing obtains.</summary>
+    NoClientKey,
+
+    /// <summary>No Entertainment area with lights describes the selected
+    /// group: the area was deleted or emptied, or the group is an ordinary
+    /// room or zone chosen before Ambient ran through Entertainment only.</summary>
+    NoEntertainmentArea,
+}
+
+/// <summary>Ambient cannot start because the bridge cannot stream to the
+/// selected group; <see cref="Reason"/> says why.</summary>
+public sealed class HueEntertainmentUnavailableException : InvalidOperationException
+{
+    public HueEntertainmentUnavailableException(HueEntertainmentUnavailableReason reason, string message)
+        : base(message)
+    {
+        Reason = reason;
+    }
+
+    public HueEntertainmentUnavailableReason Reason { get; }
 }

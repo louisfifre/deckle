@@ -1,7 +1,7 @@
 namespace Deckle.Lighting.Ambient;
 
 // Temporal smoothing of the tuned colour : one exponential moving
-// average per key ("group", or a light id in multi mode), in float on
+// average per key (a light id), in float on
 // the encoded channels. Damps small frame-to-frame jitter (moving
 // highlights in a dark scene) without dulling real cuts.
 //

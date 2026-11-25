@@ -68,7 +68,7 @@
 
         <!-- Commands act on the preview itself, never on a setting: show the
              zone bands over the grid, freeze the refresh to look at a frame.
-             The swatches share the row, one per light (or one for the group),
+             The swatches share the row, one per light,
              the colour the engine sends on the latest tick: beside the
              commands, where the eye finds them (Louis, 2026-10-14, did not
              find them under the stage). -->
@@ -77,7 +77,6 @@
                 <ToggleButton x:Name="ZonesToggle"
                               x:Uid="AmbientPreviewZonesToggle"
                               IsChecked="True"
-                              IsEnabled="False"
                               Click="ZonesToggle_Click" />
                 <ToggleButton x:Name="PauseToggle"
                               IsEnabled="False"

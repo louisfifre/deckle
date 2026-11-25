@@ -3,13 +3,16 @@ namespace Deckle.Lighting.Ambient;
 internal static class AmbientPushCadence
 {
     private const int SmoothingReferenceRateHz = 15;
-    private const int RestGroupRateHz = 15;
-    private const int RestMultiLightRateHz = 10;
 
-    public static int ResolveRateHz(int? preferredTransportRateHz, bool multiLight)
+    // The rate for an output that advertises none. The one output Ambient
+    // drives, Hue Entertainment, advertises 50 Hz; a future driver that
+    // says nothing gets the smoothing reference rate.
+    private const int DefaultRateHz = SmoothingReferenceRateHz;
+
+    public static int ResolveRateHz(int? preferredTransportRateHz)
         => preferredTransportRateHz is > 0
             ? preferredTransportRateHz.Value
-            : multiLight ? RestMultiLightRateHz : RestGroupRateHz;
+            : DefaultRateHz;
 
     public static double AdaptSmoothingAlpha(double referenceAlpha, int actualRateHz)
     {

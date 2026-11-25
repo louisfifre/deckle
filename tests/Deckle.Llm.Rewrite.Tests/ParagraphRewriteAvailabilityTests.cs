@@ -243,7 +243,10 @@ public sealed class ParagraphRewriteAvailabilityTests
 }
 
 // A degradation that repeats is one incident (deckle-logging): a PC without
-// Ollama is probed every thirty seconds and says so once.
+// Ollama is probed every thirty seconds and says so once. In the observability
+// collection: the monitors of ParagraphRewriteAvailabilityTests write the same
+// event, and a run beside them counted theirs too.
+[Collection(LlmRewriteObservabilityCollection.Name)]
 [Trait("Category", "observability")]
 public sealed class ParagraphRewriteAvailabilityLogTests
 {
