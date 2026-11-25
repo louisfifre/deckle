@@ -118,8 +118,8 @@
 
   <!-- AmbientPage strings consumed via x:Uid. Master state +
        Behaviour (colour per zone) + Fine tuning (Brightness
-       curve / floor / Reaction speed / Change threshold / Exposure /
-       Saturation) + Configuration (display, capture rate, Hue bridge
+       curve / floor / Reaction speed / Exposure /
+       Saturation) + Configuration (display, Hue bridge
        pairing). The live preview and the per-light rows (zone,
        brightness, Identify) follow further down. -->
   <data name="AmbientPageHeader.Title" xml:space="preserve">
