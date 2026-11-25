@@ -43,8 +43,8 @@ public sealed class AmbientSettings
     /// disconnected.</summary>
     public string? SelectedMonitorDeviceName { get; set; }
 
-    // No capture-rate setting: the rate is decided in code, the display's
-    // refresh rate held to a tier ceiling (AmbientCaptureCap). A settings
+    // No capture-rate setting: the rate is fixed in code at 60 frames a
+    // second (AmbientCaptureCap). A settings
     // file written before 2026-11-07 may still carry "captureFrameRateHz";
     // the deserializer ignores members this class no longer declares, and the
     // next save drops the key.

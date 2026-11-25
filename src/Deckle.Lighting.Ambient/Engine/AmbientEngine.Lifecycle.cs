@@ -130,7 +130,7 @@ public sealed partial class AmbientEngine
                 .ConfigureAwait(false);
             _managedGroupId = ambient.HueLastGroupId;
 
-            _capture = new ScreenCaptureService(ChooseCaptureRateHz(runId, ambient));
+            _capture = new ScreenCaptureService(ChooseCaptureRateHz(runId));
 
             // Subscribe before Start: the loop starts inside Start, and its
             // first frame, the whole desktop, is the only one a still screen
