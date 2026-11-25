@@ -45,24 +45,6 @@ public sealed partial class DeckleLlmSource
         if (IsEnabled()) WriteEvent(EvtShowModelInvalidJsonDetail, preview);
     }
 
-    [Event(EvtEndpointSchemeNotAllowed,
-           Level = EventLevel.Warning,
-           Keywords = (EventKeywords)Keywords.Lifecycle,
-           Message = "The Ollama endpoint scheme is not allowed — falling back to the default")]
-    public void EndpointSchemeNotAllowed()
-    {
-        if (IsEnabled()) WriteEvent(EvtEndpointSchemeNotAllowed);
-    }
-
-    [Event(EvtEndpointSchemeNotAllowedDetail,
-           Level = EventLevel.Verbose,
-           Keywords = (EventKeywords)Keywords.Lifecycle,
-           Message = "scheme={0} | fallback_url={1}")]
-    public void EndpointSchemeNotAllowedDetail(string scheme, string fallback_url)
-    {
-        if (IsEnabled()) WriteEvent(EvtEndpointSchemeNotAllowedDetail, scheme, fallback_url);
-    }
-
     [Event(EvtEndpointNonLoopbackHost,
            Level = EventLevel.Warning,
            Keywords = (EventKeywords)Keywords.Lifecycle,

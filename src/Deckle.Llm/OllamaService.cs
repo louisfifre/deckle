@@ -156,10 +156,6 @@ public sealed class OllamaService
 
     // ── Internal ────────────────────────────────────────────────────────────
 
-    // Default fallback when the user-configured endpoint cannot be parsed
-    // or is rejected by validation. Matches the Ollama out-of-the-box bind.
-    const string DefaultBaseUrl = "http://localhost:11434";
-
     // Schemes whose use is allowed for the Ollama endpoint. Anything else
     // (file://, ftp://, custom schemes) is rejected to avoid handing weird
     // URIs to HttpClient. Loopback validation is a soft warn (some users
@@ -176,15 +172,11 @@ public sealed class OllamaService
         get
         {
             string endpoint = _getEndpoint();
-            if (!Uri.TryCreate(endpoint, UriKind.Absolute, out var uri))
-                return DefaultBaseUrl;
-
-            if (!AllowedSchemes.Contains(uri.Scheme))
-            {
-                DeckleLlmSource.Log.EndpointSchemeNotAllowed();
-                DeckleLlmSource.Log.EndpointSchemeNotAllowedDetail(uri.Scheme, DefaultBaseUrl);
-                return DefaultBaseUrl;
-            }
+            // A mistyped endpoint is an error, not a quiet switch to the
+            // default address: the Rewriting page shows it as "Ollama not
+            // reachable" and asks to check the address.
+            if (!Uri.TryCreate(endpoint, UriKind.Absolute, out var uri) || !AllowedSchemes.Contains(uri.Scheme))
+                throw new UriFormatException("The Ollama address must be a full http:// or https:// address.");
 
             string host = uri.Host;
             bool isLoopback =
