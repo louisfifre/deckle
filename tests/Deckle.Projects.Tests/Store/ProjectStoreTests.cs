@@ -389,7 +389,21 @@ public sealed class ProjectStoreTests
     }
 
     [Fact]
-    public void ARefreshUpdatesTheLabelOfAStillListedPinAndLeavesAVanishedPinAsItWas()
+    public void ARefreshUpdatesTheLabelOfAPinWhoseScriptIsUnchanged()
+    {
+        using var scratch = new ScratchFolder();
+        var store = NewStore(scratch);
+        ProjectEntry a = store.AddProject(scratch.Folder("a")).Project;
+        store.Pin(a.Id, Pin("build-run.0", label: "Build", script: "build-run.ps1"));
+        IReadOnlyList<ScriptMenuEntry> listing = [new("build-run.0", "Build & run", "build-run.ps1", "", [])];
+
+        ProjectEntry after = store.RefreshPinned(a.Id, listing)!;
+
+        Assert.Equal(new PinnedAction(new ActionRef("build-run.0"), "Build & run", "build-run.ps1"), after.Pinned[0]);
+    }
+
+    [Fact]
+    public void ARefreshLeavesAVanishedPinAndAPinWhoseIdentifierNowNamesAnotherScriptAsTheyWere()
     {
         using var scratch = new ScratchFolder();
         var store = NewStore(scratch);
@@ -406,7 +420,7 @@ public sealed class ProjectStoreTests
 
         ProjectEntry after = store.RefreshPinned(a.Id, listing)!;
 
-        Assert.Equal(new PinnedAction(new ActionRef("build-run.0"), "Build & run", "build-run2.ps1"), after.Pinned[0]);
+        Assert.Equal(new PinnedAction(new ActionRef("build-run.0"), "Build", "build-run.ps1"), after.Pinned[0]);
         Assert.Equal(new PinnedAction(new ActionRef("old.0"), "Old thing", "old.ps1"), after.Pinned[1]);
         Assert.Equal(new PinnedAction(new ActionRef("self-check.0", "Debug"), "Self-check", "self-check.ps1"), after.Pinned[2]);
     }

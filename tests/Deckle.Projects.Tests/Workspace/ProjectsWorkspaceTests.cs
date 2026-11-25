@@ -201,7 +201,7 @@ public sealed class ProjectsWorkspaceTests : IDisposable
     public async Task AListedMenuBringsThePinsUpToDateAndIsCached()
     {
         ProjectEntry project = AddWithMenu("alpha");
-        _menus.Answer = new ScriptMenuListing.Listed([new ScriptMenuEntry("build-run.1", "Build and run", "build-run2.ps1", "", [])]);
+        _menus.Answer = new ScriptMenuListing.Listed([new ScriptMenuEntry("build-run.1", "Build and run", "build-run.ps1", "", [])]);
 
         ScriptMenuListing first = await _workspace.Menus.GetAsync(project, TestContext.Current.CancellationToken);
         ScriptMenuListing second = await _workspace.Menus.GetAsync(project, TestContext.Current.CancellationToken);
