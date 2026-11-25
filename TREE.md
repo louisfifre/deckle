@@ -74,7 +74,13 @@ _Generated from `git ls-files` — do not edit by hand._
 │   │   ├── board-hero.png
 │   │   ├── board-rewrite.png
 │   │   ├── pulse-commits-dark.svg
-│   │   └── pulse-commits-light.svg
+│   │   ├── pulse-commits-light.svg
+│   │   ├── pulse-label-end-dark.svg
+│   │   ├── pulse-label-end-light.svg
+│   │   ├── pulse-label-peak-dark.svg
+│   │   ├── pulse-label-peak-light.svg
+│   │   ├── pulse-label-start-dark.svg
+│   │   └── pulse-label-start-light.svg
 │   ├── research/
 │   │   ├── taskbar-briefs-2026-10-18/
 │   │   │   ├── brief-csharp-socle.md
