@@ -255,15 +255,32 @@ function Register-PublishedRelease {
     $changed = @(& git -C $RepoRoot status --porcelain -- CHANGELOG.md)
     if ($changed.Count -eq 0) {
         Write-WorkflowMessage -Output $WorkflowOutput -Message 'CHANGELOG.md already carried the release' -Role Muted
-        return
+    } else {
+        & git -C $RepoRoot add -- CHANGELOG.md
+        if ($LASTEXITCODE -ne 0) { throw 'git add CHANGELOG.md failed after GitHub publication' }
+        & git -C $RepoRoot commit -q -m "docs(changelog): record $tag"
+        if ($LASTEXITCODE -ne 0) { throw 'git commit of CHANGELOG.md failed after GitHub publication' }
     }
-    & git -C $RepoRoot add -- CHANGELOG.md
-    if ($LASTEXITCODE -ne 0) { throw 'git add CHANGELOG.md failed after GitHub publication' }
-    & git -C $RepoRoot commit -q -m "docs(changelog): record $tag"
-    if ($LASTEXITCODE -ne 0) { throw 'git commit of CHANGELOG.md failed after GitHub publication' }
+
+    # The README pulse and its chart show the numbers of this release. The
+    # release commit carries the version tag and must stay HEAD until the
+    # release is public, so the pulse is committed here, beside the changelog
+    # and under the same push. update-readme-stats.ps1 only commits, never
+    # pushes. A failure here is a warning: the release is already public.
+    $pulseScript = Join-Path $ScriptsDir 'update-readme-stats.ps1'
+    try {
+        & $pulseScript -Target $RepoRoot -Commit
+        if ($LASTEXITCODE -ne 0) { throw "update-readme-stats.ps1 failed (code $LASTEXITCODE)" }
+        Write-WorkflowMessage -Output $WorkflowOutput -Message 'README pulse and its chart refreshed'
+    } catch {
+        Write-WorkflowMessage -Output $WorkflowOutput -Message "README pulse not refreshed: $($_.Exception.Message). Run scripts/update-readme-stats.ps1 -Commit by hand." -Role Warning
+    }
+
+    $ahead = @(& git -C $RepoRoot rev-list '@{upstream}..HEAD')
+    if ($ahead.Count -eq 0) { return }
     & git -C $RepoRoot push origin main
-    if ($LASTEXITCODE -ne 0) { throw 'git push of the changelog commit failed after GitHub publication' }
-    Write-WorkflowMessage -Output $WorkflowOutput -Message 'CHANGELOG.md regenerated, committed and pushed'
+    if ($LASTEXITCODE -ne 0) { throw 'git push of the changelog and pulse commits failed after GitHub publication' }
+    Write-WorkflowMessage -Output $WorkflowOutput -Message 'CHANGELOG.md and the README pulse committed and pushed'
 }
 
 Write-OutputText -Text "Repo: $RepoRoot" -Role Muted

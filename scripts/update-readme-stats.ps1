@@ -5,7 +5,11 @@
     Regenerate the small "Development pulse" section in README.md from the
     local Git history. The section is bounded by invisible HTML comments so
     the visible README stays clean while automation has a stable replacement
-    target.
+    target. It also draws one small chart, the 7-day rolling mean of commits per
+    day over the last 26 weeks as a smooth curve, as two SVG files under
+    docs/media (a light and a dark one, which the section shows through a
+    picture element; they fill the README column in width, keep a fixed height and a fixed text size, and have a transparent background). The publication script runs
+    this one after a release; it never pushes.
 .NOTES
     section: Project
     order: 210
@@ -20,7 +24,8 @@ param(
     # Override the README path. Mostly useful for tests.
     [string]$ReadmePath,
 
-    # Commit the generated root README locally when it changes. Never pushes.
+    # Commit the generated root README and its chart files locally when they
+    # change. Never pushes.
     [switch]$Commit
 )
 
@@ -35,6 +40,12 @@ $Workflow = 'Update README pulse'
 $RepoRoot = $null
 $CommitCreated = $false
 $CommitSubject = 'docs(readme): refresh development pulse'
+$ChartDays = 182
+$ChartFiles = [ordered]@{
+    light = 'docs/media/pulse-commits-light.svg'
+    dark  = 'docs/media/pulse-commits-dark.svg'
+}
+$ChartPaths = @($ChartFiles.Values)
 
 trap {
     Write-ActionSummary `
@@ -106,14 +117,22 @@ if ($Commit) {
         throw 'README commit stopped because staged changes already exist. Commit or unstage them, then run again.'
     }
 
-    $otherTrackedPaths = @(Invoke-Git diff --name-only | Where-Object { $_ -cne 'README.md' })
+    $otherTrackedPaths = @(Invoke-Git diff --name-only | Where-Object { $_ -cne 'README.md' -and $_ -cnotin $ChartFiles.Values })
     if ($otherTrackedPaths.Count -gt 0) {
-        throw "README commit stopped because tracked changes exist outside README.md: $($otherTrackedPaths -join ', '). Commit or revert them, then run again."
+        throw "README commit stopped because tracked changes exist outside README.md and its chart:$($otherTrackedPaths -join ', '). Commit or revert them, then run again."
     }
 
     $readmeDirty = @(Invoke-Git diff --name-only -- README.md).Count -gt 0
     if ($readmeDirty) {
-        $headReadme = @(Invoke-Git show 'HEAD:README.md') -join "`n"
+        # git writes the committed README as UTF-8; decode it as UTF-8 whatever
+        # the console's output encoding is, then put that encoding back.
+        $previousEncoding = [Console]::OutputEncoding
+        try {
+            [Console]::OutputEncoding = [System.Text.UTF8Encoding]::new($false)
+            $headReadme = @(Invoke-Git show 'HEAD:README.md') -join "`n"
+        } finally {
+            [Console]::OutputEncoding = $previousEncoding
+        }
         $workingReadme = Get-Content -LiteralPath $ReadmePath -Raw
         if ((Get-ReadmeWithoutPulse -Content $workingReadme) -cne (Get-ReadmeWithoutPulse -Content $headReadme)) {
             throw 'README commit stopped because README.md has changes outside the generated development pulse. Commit or revert them, then run again.'
@@ -165,6 +184,154 @@ foreach ($path in (Invoke-Git ls-files)) {
 }
 Write-WorkflowMessage -Output $WorkflowOutput -Message ("{0} tracked text files / {1} current lines" -f (Format-Count $trackedTextFiles), (Format-Count $trackedTextLines))
 
+# One point per day over the last 26 weeks (182 days, the last one being
+# today), drawn as the 7-day rolling mean of commits per day: a smooth line
+# with a soft area under it. The accent is the logo's rest-gradient violet
+# (logo/palettes.md): #6366FF on a light page, #8B5CFF on a dark one. The
+# drawing is an SVG because a README can only show images; it is 100% wide and
+# a fixed height, with only the curve stretching. No script, no style block,
+# no font file: system fonts only.
+#
+# The height is a square-root scale: one very busy stretch would otherwise
+# flatten every other week to a line near the floor. Nothing is capped or
+# hidden; the curve keeps its order and the peak keeps the full height.
+function Get-DailyMeans {
+    param([string[]]$CommitDates, [int]$Days, [int]$Window)
+
+    $today = (Get-Date).Date
+    $first = $today.AddDays(-($Days - 1))
+    $pad = $Window - 1
+    $daily = [int[]]::new($Days + $pad)
+    foreach ($text in $CommitDates) {
+        $day = [datetime]::ParseExact($text, 'yyyy-MM-dd', $Culture)
+        $index = [int][math]::Floor(($day - $first).TotalDays) + $pad
+        if ($index -ge 0 -and $index -lt $daily.Count) { $daily[$index]++ }
+    }
+    $means = [double[]]::new($Days)
+    $total = 0
+    foreach ($i in 0..($Days - 1)) {
+        $sum = 0
+        foreach ($k in 0..($Window - 1)) { $sum += $daily[$i + $k] }
+        $means[$i] = $sum / $Window
+        $total += $daily[$i + $pad]
+    }
+    return [pscustomobject]@{ First = $first; Means = $means; Total = $total }
+}
+
+function Format-Coordinate {
+    param([double]$Value)
+    return $Value.ToString('0.##', $Culture)
+}
+
+# Catmull-Rom through the points, written as cubic Beziers. Control points
+# stay between the top and the baseline so the curve never leaves the chart.
+function ConvertTo-SmoothPath {
+    param([double[]]$X, [double[]]$Y, [double]$Top, [double]$Bottom)
+
+    $n = $X.Count
+    $parts = [System.Collections.Generic.List[string]]::new()
+    $parts.Add(('M{0} {1}' -f (Format-Coordinate $X[0]), (Format-Coordinate $Y[0])))
+    foreach ($i in 0..($n - 2)) {
+        $p0 = [math]::Max(0, $i - 1); $p3 = [math]::Min($n - 1, $i + 2)
+        $c1x = $X[$i] + ($X[$i + 1] - $X[$p0]) / 6
+        $c1y = [math]::Min($Bottom, [math]::Max($Top, $Y[$i] + ($Y[$i + 1] - $Y[$p0]) / 6))
+        $c2x = $X[$i + 1] - ($X[$p3] - $X[$i]) / 6
+        $c2y = [math]::Min($Bottom, [math]::Max($Top, $Y[$i + 1] - ($Y[$p3] - $Y[$i]) / 6))
+        $parts.Add(('C{0} {1} {2} {3} {4} {5}' -f (Format-Coordinate $c1x), (Format-Coordinate $c1y), (Format-Coordinate $c2x), (Format-Coordinate $c2y), (Format-Coordinate $X[$i + 1]), (Format-Coordinate $Y[$i + 1])))
+    }
+    return ($parts -join ' ')
+}
+
+function New-PulseChartSvg {
+    param(
+        [Parameter(Mandatory)][pscustomobject]$Daily,
+        [Parameter(Mandatory)][ValidateSet('light', 'dark')][string]$Theme
+    )
+
+    $accent = if ($Theme -eq 'dark') { '#8B5CFF' } else { '#6366FF' }
+    $muted  = if ($Theme -eq 'dark') { '#9198A1' } else { '#59636E' }
+
+    $means = $Daily.Means
+    $days = $means.Count
+    $peak = [double]($means | Measure-Object -Maximum).Maximum
+    $peakIndex = [array]::IndexOf($means, $peak)
+
+    # The picture has a fixed height in pixels and no viewBox of its own, so
+    # it fills the README column in width only: the text, the marker and the
+    # stroke keep their size at any column width. Only the curve and its area
+    # sit in a nested svg that stretches (preserveAspectRatio="none"); its
+    # viewBox height equals its height in pixels, so y is one to one. The
+    # background is left transparent.
+    $height = 88
+    $curveTop = 24; $curveHeight = 40; $curveWidth = 800
+    $inset = 1.5   # percent of the width kept free on each side
+    $span = 100 - 2 * $inset
+    $fontSize = 13
+    $xs = [double[]]::new($days); $ys = [double[]]::new($days)
+    foreach ($i in 0..($days - 1)) {
+        $xs[$i] = $curveWidth * $i / ($days - 1)
+        $level = if ($peak -gt 0) { [math]::Sqrt($means[$i] / $peak) } else { 0.0 }
+        $ys[$i] = $curveHeight - $curveHeight * $level
+    }
+    $line = ConvertTo-SmoothPath -X $xs -Y $ys -Top 0 -Bottom $curveHeight
+    $area = '{0} L{1} {3} L{2} {3} Z' -f $line, (Format-Coordinate $xs[$days - 1]), (Format-Coordinate $xs[0]), $curveHeight
+
+    $firstLabel = $Daily.First.ToString('d MMM yyyy', $Culture)
+    $lastLabel  = $Daily.First.AddDays($days - 1).ToString('d MMM yyyy', $Culture)
+    $peakDay    = $Daily.First.AddDays($peakIndex).ToString('d MMM', $Culture)
+    $peakPerDay = $peak.ToString('0.#', $Culture)
+
+    $marker = @()
+    if ($peak -gt 0) {
+        $peakPercent = $inset + $span * $peakIndex / ($days - 1)
+        $anchor = 'middle'; $labelPercent = $peakPercent
+        if ($peakPercent -lt 12) { $anchor = 'start'; $labelPercent = $inset }
+        elseif ($peakPercent -gt 88) { $anchor = 'end'; $labelPercent = 100 - $inset }
+        $marker = @(
+            ('  <circle cx="{0}%" cy="{1}" r="4" fill="{2}"/>' -f (Format-Coordinate $peakPercent), (Format-Coordinate ($curveTop + $ys[$peakIndex])), $accent),
+            ('  <text x="{0}%" y="{1}" text-anchor="{2}" font-size="{3}" font-weight="600" fill="{4}">{5}</text>' -f (Format-Coordinate $labelPercent), (Format-Coordinate ($curveTop + $ys[$peakIndex] - 9)), $anchor, $fontSize, $accent, $peakDay)
+        )
+    }
+
+    $lines = @(
+        ('<svg xmlns="http://www.w3.org/2000/svg" width="100%" height="{0}" role="img" aria-labelledby="t d">' -f $height),
+        '  <title id="t">Commits per day, last 26 weeks, smoothed over 7 days</title>',
+        ('  <desc id="d">{0} commits between {1} and {2}; the busiest 7 days averaged {3} a day, around {4}.</desc>' -f $Daily.Total, $firstLabel, $lastLabel, $peakPerDay, $peakDay),
+        '  <defs>',
+        '    <linearGradient id="fade" x1="0" y1="0" x2="0" y2="1">',
+        ('      <stop offset="0" stop-color="{0}" stop-opacity="0.38"/>' -f $accent),
+        ('      <stop offset="1" stop-color="{0}" stop-opacity="0"/>' -f $accent),
+        '    </linearGradient>',
+        '  </defs>',
+        '  <g font-family="-apple-system, BlinkMacSystemFont, ''Segoe UI'', Helvetica, Arial, sans-serif">',
+        ('  <svg x="{0}%" y="{1}" width="{2}%" height="{3}" viewBox="0 0 {4} {3}" preserveAspectRatio="none" overflow="visible">' -f (Format-Coordinate $inset), $curveTop, (Format-Coordinate $span), $curveHeight, $curveWidth),
+        ('    <path d="{0}" fill="url(#fade)" stroke="none"/>' -f $area),
+        ('    <path d="{0}" fill="none" stroke="{1}" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" vector-effect="non-scaling-stroke"/>' -f $line, $accent),
+        '  </svg>'
+    ) + $marker + @(
+        ('  <text x="{0}%" y="{1}" text-anchor="start" font-size="{2}" fill="{3}">{4}</text>' -f (Format-Coordinate $inset), ($height - 5), $fontSize, $muted, $firstLabel),
+        ('  <text x="{0}%" y="{1}" text-anchor="end" font-size="{2}" fill="{3}">{4}</text>' -f (Format-Coordinate (100 - $inset)), ($height - 5), $fontSize, $muted, $lastLabel),
+        '  </g>',
+        '</svg>'
+    )
+    return (($lines -join "`n") + "`n")
+}
+
+Write-WorkflowStep -Output $WorkflowOutput -Message 'Draw the daily commit curve'
+$daily = Get-DailyMeans -CommitDates $dates -Days $ChartDays -Window 7
+$chartTotal = [int]$daily.Total
+$chartPeak = ([double]($daily.Means | Measure-Object -Maximum).Maximum).ToString('0.#', $Culture)
+$utf8NoBomChart = [System.Text.UTF8Encoding]::new($false)
+foreach ($theme in $ChartFiles.Keys) {
+    $chartPath = Join-Path $RepoRoot $ChartFiles[$theme]
+    $null = New-Item -ItemType Directory -Force -Path (Split-Path -Parent $chartPath)
+    $svg = New-PulseChartSvg -Daily $daily -Theme $theme
+    if (-not (Test-Path -LiteralPath $chartPath) -or [System.IO.File]::ReadAllText($chartPath) -cne $svg) {
+        [System.IO.File]::WriteAllText($chartPath, $svg, $utf8NoBomChart)
+    }
+}
+Write-WorkflowMessage -Output $WorkflowOutput -Message ('{0} commits over {1} days, busiest 7 days averaged {2} a day' -f (Format-Count $chartTotal), $ChartDays, $chartPeak)
+
 $generatedDate = (Get-Date).ToString('yyyy-MM-dd', $Culture)
 
 function Write-StatsSummary {
@@ -189,6 +356,12 @@ $StartMarker
 | First commit | Commits | Active days | Lines added | Lines touched | Current tracked lines |
 |---:|---:|---:|---:|---:|---:|
 | $firstDate | $(Format-Count $commitCount) | $(Format-Count $activeDays) | $(Format-Count $additions) | $(Format-Count $touched) | $(Format-Count $trackedTextLines) |
+
+<picture>
+  <source media="(prefers-color-scheme: dark)" srcset="$($ChartFiles['dark'])">
+  <source media="(prefers-color-scheme: light)" srcset="$($ChartFiles['light'])">
+  <img alt="Commits per day, smoothed over 7 days, over the last 26 weeks: $(Format-Count $chartTotal) in total, the busiest stretch averaged $chartPeak a day." src="$($ChartFiles['light'])" width="100%" height="88">
+</picture>
 
 <sub>Generated from Git history on $generatedDate. Counts include tracked text files only for the current line total.</sub>
 $EndMarker
@@ -226,10 +399,10 @@ if ($normalizedUpdated -ne $normalizedReadme) {
 }
 
 if ($Commit) {
-    $readmePending = @(Invoke-Git diff --name-only -- README.md).Count -gt 0
+    $readmePending = @(Invoke-Git status --porcelain -- README.md @ChartPaths).Count -gt 0
     if ($readmePending) {
         Write-WorkflowStep -Output $WorkflowOutput -Message 'Commit README development pulse'
-        Invoke-Git add -- README.md | Out-Null
+        Invoke-Git add -- README.md @ChartPaths | Out-Null
         Invoke-Git commit -m $CommitSubject | Out-Null
         $CommitCreated = $true
         Write-WorkflowMessage -Output $WorkflowOutput -Message $CommitSubject
