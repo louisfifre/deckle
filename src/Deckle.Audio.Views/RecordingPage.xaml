@@ -33,12 +33,13 @@
                 <!-- No module switch card on this page: recording is the core
                      capture pipeline, not a module that can be turned off. -->
 
-                <!-- The device first: the microphone, its Windows input volume and
-                     how it is opened. The microphone card is bespoke (runtime
-                     enumeration of the capture endpoints, not a composed
-                     value), so the section has no reset of its own; the
-                     header's "Reset all" returns it to the system default. -->
-                <catalog:SettingsSection x:Uid="RecordingPageMicrophoneSection">
+                <!-- The microphone stands first, under no title: it is the base
+                     setting of the page, and a block about the device earns no
+                     heading, the same form as the General page's top block
+                     (maintainer, 2026-10-15). Bespoke: runtime enumeration of
+                     the capture endpoints, not a composed value, so it has no
+                     card reset of its own; the header's "Reset all" returns it
+                     to the system default. -->
                 <StackPanel Spacing="{StaticResource SettingsCardSpacing}">
                     <controls:SettingsCard x:Name="AudioInputCard"
                                            x:Uid="GeneralMicrophoneCard"
@@ -66,7 +67,6 @@
                     <StackPanel x:Name="ExclusiveModeHost"
                                 Spacing="{StaticResource SettingsCardSpacing}" />
                 </StackPanel>
-                </catalog:SettingsSection>
 
                 <!-- ── Voice ───────────────────────────────────────────────── -->
                 <!-- What Deckle hears: the voice level and its meter, one card

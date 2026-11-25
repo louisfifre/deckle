@@ -52,12 +52,11 @@ public class MicrophonePageTests
     }
 
     [Fact]
-    public void TheTwoSectionsAreMicrophoneThenVoice()
+    public void TheHeaderIsMicrophoneAndTheVoiceSectionIsTitled()
     {
         Dictionary<string, string> resw = Resw();
 
         Assert.Equal("Microphone", resw["RecordingPageHeader.Title"]);
-        Assert.Equal("Microphone", resw["RecordingPageMicrophoneSection.Title"]);
         Assert.Equal("Voice", resw["RecordingPageVoiceSection.Title"]);
     }
 
