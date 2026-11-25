@@ -2662,6 +2662,7 @@ _Generated from `git ls-files` — do not edit by hand._
 │   ├── Deckle.App.Tests/
 │   │   ├── Deckle.App.Tests.csproj
 │   │   ├── DictationRecoveryBugNotes.md
+│   │   ├── DictationSettingsPagesTests.cs
 │   │   ├── ExeIconBugNotes.md
 │   │   ├── ExeIconTests.cs
 │   │   ├── FileTranscriptionBugNotes.md
@@ -2720,7 +2721,8 @@ _Generated from `git ls-files` — do not edit by hand._
 │   │   ├── VoiceDetectorTests.cs
 │   │   └── VoiceLevelMeterScaleTests.cs
 │   ├── Deckle.Audio.Views.Tests/
-│   │   └── Deckle.Audio.Views.Tests.csproj
+│   │   ├── Deckle.Audio.Views.Tests.csproj
+│   │   └── MicrophonePageTests.cs
 │   ├── Deckle.Autocorrect.Tests/
 │   │   ├── AccentFoldingTests.cs
 │   │   ├── AccentIndexTests.cs
@@ -3517,6 +3519,7 @@ _Generated from `git ls-files` — do not edit by hand._
 │   │   └── WhispModelLifecycleTests.cs
 │   ├── Deckle.Transcription.Views.Tests/
 │   │   ├── Deckle.Transcription.Views.Tests.csproj
+│   │   ├── DictationGeneralPageTests.cs
 │   │   └── RecordingLimitTests.cs
 │   ├── Deckle.Vad.Tests/
 │   │   ├── Deckle.Vad.Tests.csproj
