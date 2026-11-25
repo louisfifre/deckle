@@ -27,6 +27,7 @@ public partial class TranscriptionViewModel : ObservableObject
         UseGpu = engine.UseGpu;
         VadEnabled = true;
         StreamingEnabled = false;
+        MaxRecordingDurationSeconds = new Deckle.Audio.CaptureSettings().MaxRecordingDurationSeconds;
 
         // Speech-trim seeds read from the POCO initializers (their single
         // source), overwritten by Load().
@@ -91,6 +92,9 @@ public partial class TranscriptionViewModel : ObservableObject
             SegMarginMs = s.Streaming.Segmenter.MarginMs;
             MinSpeechMs = s.Streaming.MinSpeechMs;
             LoadLexicon(s);
+
+            // The recording cap lives in the capture settings, not here.
+            MaxRecordingDurationSeconds = Deckle.Audio.CaptureSettingsService.Instance.Current.MaxRecordingDurationSeconds;
 
             // The shell's SettingsService persists these, not TranscriptionSettings.
             var shell = SettingsService.Instance.Current;

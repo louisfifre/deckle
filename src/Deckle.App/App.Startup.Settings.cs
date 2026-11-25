@@ -148,15 +148,12 @@ public partial class App
 
         if (context.TranscriptionPresent)
         {
-            // The microphone level, a developer capture, is the Diagnostics
-            // page's own card under Detailed logs, no longer a contribution.
-            RegisterSettingsModule(Audio.Views.RecordingSettingsModule.Describe(order: 50), Audio.Views.SettingsSearch.Entries);
-            // One module, three rail entries: the module's page (General under the
-            // node) then Lexicon and Streaming nested under it, each registered
-            // on its own so the search index resolves page coordinates per page.
-            RegisterSettingsModule(Transcription.Views.TranscriptionSettingsModule.Describe(order: 100), Transcription.Views.SettingsSearch.Entries);
-            RegisterSettingsModule(Transcription.Views.TranscriptionSettingsModule.DescribeLexicon(order: 105), Transcription.Views.SettingsSearch.LexiconEntries);
-            RegisterSettingsModule(Transcription.Views.TranscriptionSettingsModule.DescribeStreaming(order: 110), Transcription.Views.SettingsSearch.StreamingEntries);
+            // The Dictation node and its three pages, General then Microphone
+            // and Lexicon nested under it, each registered on its own so the
+            // search index resolves page coordinates per page. The microphone
+            // level, a developer capture, is the Diagnostics page's own card
+            // under Detailed logs, no longer a contribution.
+            DictationSettingsPages.Register(RegisterSettingsModule);
             ContributeDiagnostics(
                 Transcription.Views.TranscriptionTelemetryViewModel.Contribution(order: 100),
                 "Deckle.Transcription.Views",

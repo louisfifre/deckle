@@ -714,10 +714,10 @@
     <value>Problem · {0}</value>
   </data>
   <data name="TrayIncident_Module_Recording" xml:space="preserve">
-    <value>Recording</value>
+    <value>Microphone</value>
   </data>
   <data name="TrayIncident_Module_Transcription" xml:space="preserve">
-    <value>Transcription</value>
+    <value>Dictation</value>
   </data>
   <data name="TrayIncident_Module_Notifications" xml:space="preserve">
     <value>Notifications</value>
@@ -1007,7 +1007,7 @@
 
   <!-- TranscriptionPage Reset all dialog -->
   <data name="Settings_ResetTranscriptionDialog_Detail" xml:space="preserve">
-    <value>The Lexicon and Streaming pages keep their own values.</value>
+    <value>Transcribe as you speak stays as you set it. The Lexicon and Microphone pages keep their own values.</value>
   </data>
 
   <!-- DiagnosticsPage Telemetry + whole-page reset dialogs -->
