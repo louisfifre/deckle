@@ -49,8 +49,7 @@ public sealed class RecoverTakeFromAudioTests : IDisposable
         var textStore = new DictationRecoveryStore(Path.Combine(_root, "dictation.dat"));
         using var engine = new TranscriptionEngine(
             new StreamingHost(), backend, new ScriptedMicrophoneCapture(utteranceCount: 0),
-            clipboard, recovery: textStore, takeAudio: takeAudio,
-            captureTail: TestCaptureTail);
+            clipboard, recovery: textStore, takeAudio: takeAudio);
         var statuses = new ConcurrentQueue<string>();
         var finished = new ConcurrentQueue<TranscriptionOutcome>();
         engine.StatusChanged += statuses.Enqueue;
@@ -87,8 +86,7 @@ public sealed class RecoverTakeFromAudioTests : IDisposable
         var backend = new SequencedBackend([TestInference, "bonjour", "Deckle"]);
         using var engine = new TranscriptionEngine(
             new StreamingHost(), backend, new ScriptedMicrophoneCapture(utteranceCount: 0),
-            new RecordingClipboardWriter(),
-            captureTail: TestCaptureTail);
+            new RecordingClipboardWriter());
         var statuses = new ConcurrentQueue<string>();
         var phases = new ConcurrentQueue<StatusPhase>();
         engine.StatusChanged += statuses.Enqueue;
@@ -109,8 +107,7 @@ public sealed class RecoverTakeFromAudioTests : IDisposable
         var backend = new SequencedBackend([TestInference, "bonjour", "Deckle"], modelLoaded: false);
         var clipboard = new RecordingClipboardWriter();
         using var engine = new TranscriptionEngine(
-            new StreamingHost(), backend, new ScriptedMicrophoneCapture(utteranceCount: 0), clipboard,
-            captureTail: TestCaptureTail);
+            new StreamingHost(), backend, new ScriptedMicrophoneCapture(utteranceCount: 0), clipboard);
 
         RecoveredTake result = await engine.RecoverTakeFromAudioAsync(Utterances(2))
             .WaitAsync(TimeSpan.FromSeconds(10), TestContext.Current.CancellationToken);
@@ -126,8 +123,7 @@ public sealed class RecoverTakeFromAudioTests : IDisposable
         var backend = new SequencedBackend([TestInference, "bonjour", "Deckle"]);
         using var engine = new TranscriptionEngine(
             new StreamingHost(), backend, new ScriptedMicrophoneCapture(utteranceCount: 0),
-            new RecordingClipboardWriter(),
-            captureTail: TestCaptureTail);
+            new RecordingClipboardWriter());
         ToggleResult? hotkey = null;
         RecoveredTake? second = null;
         engine.StatusChanged += status =>
@@ -151,8 +147,7 @@ public sealed class RecoverTakeFromAudioTests : IDisposable
         var backend = new SequencedBackend([TestInference, "bonjour", "Deckle"]);
         using var engine = new TranscriptionEngine(
             new StreamingHost(), backend, new ScriptedMicrophoneCapture(utteranceCount: 2),
-            new RecordingClipboardWriter(),
-            captureTail: TestCaptureTail);
+            new RecordingClipboardWriter());
         Assert.Equal(ToggleResult.Started, engine.RequestToggle());
         await backend.AllCallsCompleted.Task.WaitAsync(
             TimeSpan.FromSeconds(5), TestContext.Current.CancellationToken);
@@ -169,8 +164,7 @@ public sealed class RecoverTakeFromAudioTests : IDisposable
         var clipboard = new RecordingClipboardWriter();
         using var engine = new TranscriptionEngine(
             new StreamingHost(), new SequencedBackend([TestInference]),
-            new ScriptedMicrophoneCapture(utteranceCount: 0), clipboard,
-            captureTail: TestCaptureTail);
+            new ScriptedMicrophoneCapture(utteranceCount: 0), clipboard);
 
         RecoveredTake result = await engine.RecoverTakeFromAudioAsync(new float[16_000])
             .WaitAsync(TimeSpan.FromSeconds(10), TestContext.Current.CancellationToken);
@@ -188,8 +182,7 @@ public sealed class RecoverTakeFromAudioTests : IDisposable
             new StreamingHost(),
             new SequencedBackend([], modelLoaded: false, loadFails: true),
             new ScriptedMicrophoneCapture(utteranceCount: 0),
-            clipboard,
-            captureTail: TestCaptureTail);
+            clipboard);
         try
         {
             RecoveredTake result = await engine.RecoverTakeFromAudioAsync(Utterances(2))
@@ -219,8 +212,7 @@ public sealed class RecoverTakeFromAudioTests : IDisposable
             new StreamingHost(),
             new SequencedBackend([]),
             new ScriptedMicrophoneCapture(utteranceCount: 0),
-            clipboard,
-            captureTail: TestCaptureTail);
+            clipboard);
 
         RecoveredTake result = await engine.RecoverTakeFromAudioAsync(Utterances(2))
             .WaitAsync(TimeSpan.FromSeconds(10), TestContext.Current.CancellationToken);
@@ -252,8 +244,7 @@ public sealed class RecoverTakeFromAudioTests : IDisposable
             new StreamingHost(),
             new SequencedBackend([TestInference, "bonjour", "Deckle"]),
             new ScriptedMicrophoneCapture(utteranceCount: 0),
-            new RefusingClipboardWriter(),
-            captureTail: TestCaptureTail);
+            new RefusingClipboardWriter());
 
         RecoveredTake result = await engine.RecoverTakeFromAudioAsync(Utterances(2))
             .WaitAsync(TimeSpan.FromSeconds(10), TestContext.Current.CancellationToken);

@@ -143,17 +143,5 @@ public partial class App
             context.Compose(ModuleIds.Anytype, StartAnytypeRuntime);
         else
             context.Skip(ModuleIds.Anytype, SkipNotPresent);
-
-        // The contributed modules (PublishedComposition), none today:
-        // nothing runs at start, the tray builds the window the first time it
-        // opens it. Logged so the boot names the module.
-        foreach (Contributions.IContribution contribution in PublishedComposition.All)
-        {
-            if (contribution.Descriptor is not { } module) continue;
-            if (ModulePresence.IsPresent(module.Id))
-                context.Compose(module.Id, () => { });
-            else
-                context.Skip(module.Id, SkipNotPresent);
-        }
     }
 }

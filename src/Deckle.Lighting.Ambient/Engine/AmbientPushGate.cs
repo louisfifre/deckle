@@ -33,6 +33,12 @@ internal enum AmbientPushDecision
 // fault.
 internal static class AmbientPushGate
 {
+    /// <summary>The sum-of-absolute-channel-deltas threshold, on the 0-765
+    /// scale: a change under it is held or dropped, a change at or above it
+    /// goes out. It is fixed in code; no setting changes it. On a slow fade
+    /// it shows as small steps.</summary>
+    public const int ChangeThreshold = 8;
+
     public static AmbientPushDecision Decide(
         LightColor target,
         (int R, int G, int B) previous,

@@ -30,8 +30,7 @@ public sealed class LiveTranscriptionPipelineTests
             new StreamingHost(),
             backend,
             capture,
-            clipboard,
-            captureTail: TestCaptureTail);
+            clipboard);
         var statuses = new ConcurrentQueue<string>();
         var segments = new ConcurrentQueue<string>();
         var snapshots = new ConcurrentQueue<TranscriptSnapshot>();
@@ -115,8 +114,7 @@ public sealed class LiveTranscriptionPipelineTests
             new StreamingHost(),
             backend,
             capture,
-            new RecordingClipboardWriter(),
-            captureTail: TestCaptureTail);
+            new RecordingClipboardWriter());
 
         Assert.Equal(ToggleResult.IgnoredBusy, engine.RequestToggle());
 
@@ -148,8 +146,7 @@ public sealed class LiveTranscriptionPipelineTests
             new StreamingHost(),
             backend,
             capture,
-            new RecordingClipboardWriter(),
-            captureTail: TestCaptureTail);
+            new RecordingClipboardWriter());
         var finished = new TaskCompletionSource<TranscriptionOutcome>(
             TaskCreationOptions.RunContinuationsAsynchronously);
         engine.TranscriptionFinished += outcome => finished.TrySetResult(outcome);
@@ -170,11 +167,12 @@ public sealed class LiveTranscriptionPipelineTests
         Assert.True(contexts[2].ContinuesPreviousCall);   // second utterance
     }
 
-    // 2026-10-21: the Stop press cancelled the capture token at once, so the
-    // last word the user was still finishing as they pressed was never recorded.
+    // 2026-11-25: the microphone stops at the gesture that stops the dictation.
+    // A hidden 400 ms tail used to keep it open after the press; nothing said
+    // after the press is kept now.
     [Fact]
     [Trait("Category", "regression")]
-    public async Task CaptureKeepsRunningForAShortTailAfterTheStopPress()
+    public async Task CaptureStopsAtTheStopPress()
     {
         CancellationToken testCancellation = TestContext.Current.CancellationToken;
         var capture = new ScriptedMicrophoneCapture(utteranceCount: 2);
@@ -192,28 +190,16 @@ public sealed class LiveTranscriptionPipelineTests
         await backend.AllCallsCompleted.Task.WaitAsync(
             TimeSpan.FromSeconds(5), testCancellation);
 
-        long pressTimestamp = System.Diagnostics.Stopwatch.GetTimestamp();
         Assert.Equal(ToggleResult.Stopped, engine.RequestToggle());
 
-        // The press returned, the HUD would already read "transcribing", and
-        // the microphone is still listening.
-        Assert.False(capture.RecordToken.IsCancellationRequested);
-
-        // A second press inside the tail finds the engine already stopping.
+        // The press returned: the capture token is already cancelled, with no
+        // wait, so the microphone is closing and nothing said from here on is
+        // recorded. The state has left Recording too: a second press finds the
+        // engine already stopping.
+        Assert.True(capture.RecordToken.IsCancellationRequested);
         Assert.Equal(ToggleResult.IgnoredBusy, engine.RequestToggle());
 
         await finished.Task.WaitAsync(TimeSpan.FromSeconds(5), testCancellation);
-
-        // Only the floor is asserted: the tail is 400 ms (a private constant of
-        // the engine), and a timer may fire a little early, so 300 ms still
-        // tells "kept listening" from "cancelled at once". A ceiling would only
-        // measure how loaded the machine is; "the capture does stop" is already
-        // what the bounded wait on `finished` above proves.
-        TimeSpan tail = System.Diagnostics.Stopwatch.GetElapsedTime(
-            pressTimestamp, capture.StopObservedTimestamp);
-        Assert.True(
-            tail >= TimeSpan.FromMilliseconds(300),
-            $"The capture stopped {tail.TotalMilliseconds:F0} ms after the press.");
     }
 
     // 2026-10-21: a short noise blip decoded into twelve doubtful tokens was
@@ -236,8 +222,7 @@ public sealed class LiveTranscriptionPipelineTests
             new StreamingHost(),
             backend,
             new ScriptedMicrophoneCapture(utteranceCount: 2),
-            clipboard,
-            captureTail: TestCaptureTail);
+            clipboard);
 
         await RunOneTakeAsync(engine, backend, testCancellation);
 
@@ -256,8 +241,7 @@ public sealed class LiveTranscriptionPipelineTests
             new StreamingHost(),
             backend,
             new ScriptedMicrophoneCapture(utteranceCount: 2),
-            new RecordingClipboardWriter(),
-            captureTail: TestCaptureTail);
+            new RecordingClipboardWriter());
 
         await RunOneTakeAsync(engine, backend, testCancellation);
 
@@ -282,8 +266,7 @@ public sealed class LiveTranscriptionPipelineTests
             new StreamingHost(),
             backend,
             capture,
-            clipboard,
-            captureTail: TestCaptureTail);
+            clipboard);
         var utterances = new ConcurrentQueue<TranscribedUtterance>();
         var finished = new TaskCompletionSource<TranscriptionOutcome>(
             TaskCreationOptions.RunContinuationsAsynchronously);
@@ -334,8 +317,7 @@ public sealed class LiveTranscriptionPipelineTests
                 backend,
                 capture,
                 new RecordingClipboardWriter(),
-                recovery: store,
-                captureTail: TestCaptureTail);
+                recovery: store);
             var finished = new TaskCompletionSource<TranscriptionOutcome>(
                 TaskCreationOptions.RunContinuationsAsynchronously);
             var ready = new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously);
@@ -390,8 +372,7 @@ public sealed class LiveTranscriptionPipelineTests
                 new SequencedBackend([TestInference, "bonjour", "Deckle"]),
                 new ScriptedMicrophoneCapture(utteranceCount: 2, CaptureOutcome.MicError),
                 clipboard,
-                recovery: store,
-                captureTail: TestCaptureTail);
+                recovery: store);
 
             await RunTakeToIdleAsync(engine, store, "bonjour\n\nDeckle", testCancellation);
 
@@ -424,8 +405,7 @@ public sealed class LiveTranscriptionPipelineTests
                 new ScriptedMicrophoneCapture(utteranceCount: 2),
                 clipboard,
                 rewrite,
-                recovery: store,
-                captureTail: TestCaptureTail);
+                recovery: store);
 
             await RunTakeToIdleAsync(engine, store, "bonjour\n\nDeckle", testCancellation);
 
@@ -442,7 +422,9 @@ public sealed class LiveTranscriptionPipelineTests
     }
 
     // Starts a take, waits until the recovery file holds the expected text,
-    // stops it, and returns once the worker has settled back to idle.
+    // stops it, and returns once the take has announced its end and the worker
+    // has settled back to idle. Ready is raised before the end of the take is
+    // announced, so both signals are awaited.
     private static async Task RunTakeToIdleAsync(
         TranscriptionEngine engine,
         DictationRecoveryStore store,
@@ -451,6 +433,8 @@ public sealed class LiveTranscriptionPipelineTests
     {
         int stopped = 0;
         var ready = new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously);
+        var finished = new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously);
+        engine.TranscriptionFinished += _ => finished.TrySetResult();
         engine.StatusChanged += status =>
         {
             // Only the Ready the worker raises once it has settled counts.
@@ -472,6 +456,7 @@ public sealed class LiveTranscriptionPipelineTests
 
         Volatile.Write(ref stopped, 1);
         Assert.Equal(ToggleResult.Stopped, engine.RequestToggle());
+        await finished.Task.WaitAsync(TimeSpan.FromSeconds(5), testCancellation);
         await ready.Task.WaitAsync(TimeSpan.FromSeconds(5), testCancellation);
     }
     // Each utterance is longer than the minimum threshold and ends on a full
@@ -494,8 +479,7 @@ public sealed class LiveTranscriptionPipelineTests
             backend,
             capture,
             clipboard,
-            rewrite,
-            captureTail: TestCaptureTail);
+            rewrite);
 
         await RunOneTakeAsync(engine, backend, testCancellation);
 
@@ -528,8 +512,7 @@ public sealed class LiveTranscriptionPipelineTests
             backend,
             capture,
             clipboard,
-            rewrite,
-            captureTail: TestCaptureTail);
+            rewrite);
 
         await RunOneTakeAsync(engine, backend, testCancellation);
 
@@ -557,7 +540,7 @@ public sealed class LiveTranscriptionPipelineTests
         RewriteProfile byLength = host.Llm.Profiles[1];
         byLength.Id = "by-length";
         host.Llm.Dictation.Steps = [new RewriteStep { FromChars = fromChars, ProfileId = "by-length" }];
-        using var engine = new TranscriptionEngine(host, backend, capture, clipboard, rewrite, captureTail: TestCaptureTail);
+        using var engine = new TranscriptionEngine(host, backend, capture, clipboard, rewrite);
 
         await RunOneTakeAsync(engine, backend, testCancellation);
 
@@ -578,7 +561,7 @@ public sealed class LiveTranscriptionPipelineTests
         StreamingHost host = RewritingHost(batchRewriting: false);
         host.Llm.Enabled = false;
         host.Llm.Profiles[1].Id = "shortcut";
-        using var engine = new TranscriptionEngine(host, backend, capture, clipboard, rewrite, captureTail: TestCaptureTail);
+        using var engine = new TranscriptionEngine(host, backend, capture, clipboard, rewrite);
 
         await RunOneTakeAsync(engine, backend, testCancellation, rewriteProfileId: "shortcut");
 
@@ -596,8 +579,7 @@ public sealed class LiveTranscriptionPipelineTests
             new StreamingHost(),
             backend,
             new ScriptedMicrophoneCapture(utteranceCount: 2),
-            new RecordingClipboardWriter(),
-            captureTail: TestCaptureTail);
+            new RecordingClipboardWriter());
 
         await RunOneTakeAsync(engine, backend, testCancellation);
 
@@ -619,12 +601,12 @@ public sealed class LiveTranscriptionPipelineTests
     {
         CancellationToken testCancellation = TestContext.Current.CancellationToken;
         using var listener = new TestEventListener("Deckle-Whisp");
+        var clipboard = new RecordingClipboardWriter();
         using var engine = new TranscriptionEngine(
             new StreamingHost(),
             new SequencedBackend([TestInference]),
             new ScriptedMicrophoneCapture(utteranceCount: 0),
-            new RecordingClipboardWriter(),
-            captureTail: TestCaptureTail);
+            clipboard);
         var finished = new TaskCompletionSource<TranscriptionOutcome>(
             TaskCreationOptions.RunContinuationsAsynchronously);
         var ready = new TaskCompletionSource(
@@ -650,6 +632,75 @@ public sealed class LiveTranscriptionPipelineTests
         Assert.Equal(PayloadOf(started, "work_id"), PayloadOf(ended, "work_id"));
         Assert.Equal(TakeOutcomes.None, PayloadOf(ended, "outcome"));
         Assert.Equal(TakeEndReasons.NoText, PayloadOf(ended, "reason"));
+        // Nothing was said: the person's clipboard keeps what it held.
+        Assert.Equal(0, clipboard.WriteCount);
+    }
+
+    // The clipboard refused the copy. The person is told, the take counts as
+    // not delivered, and the recovery file still holds what was said, so the
+    // dictation is not lost.
+    [Fact]
+    [Trait("Category", "regression")]
+    public async Task ARefusedClipboardCopyIsAnnouncedAndTheRecoveryFileKeepsTheDictation()
+    {
+        CancellationToken testCancellation = TestContext.Current.CancellationToken;
+        string root = Path.Combine(AppContext.BaseDirectory, $"live-recovery-{Guid.NewGuid():N}");
+        try
+        {
+            using var listener = new TestEventListener("Deckle-Whisp");
+            var store = new DictationRecoveryStore(Path.Combine(root, "dictation.dat"));
+            var clipboard = new RecordingClipboardWriter { Status = ClipboardWriteStatus.SetDataFailed };
+            using var engine = new TranscriptionEngine(
+                new StreamingHost(),
+                new SequencedBackend([TestInference, "bonjour", "Deckle"]),
+                new ScriptedMicrophoneCapture(utteranceCount: 2),
+                clipboard,
+                recovery: store);
+            var outcomes = new ConcurrentQueue<TranscriptionOutcome>();
+            engine.TranscriptionFinished += outcomes.Enqueue;
+
+            await RunTakeToIdleAsync(engine, store, "bonjour\n\nDeckle", testCancellation);
+
+            Assert.Equal([TranscriptionOutcome.None], outcomes.ToArray());
+            Assert.Equal(1, clipboard.WriteCount);
+            EventWrittenEventArgs told = Assert.Single(
+                listener.Events,
+                e => e.EventName == nameof(DeckleWhispSource.UserFeedbackEmitted)
+                    && (string?)PayloadOf(e, "title") == Loc.Get("Engine_ClipboardCopyFailed_Refused_Title"));
+            Assert.Equal(Loc.Get("Engine_ClipboardCopyFailed_Refused_Body"), PayloadOf(told, "body"));
+            Assert.Equal(DictationRecoveryReadStatus.Restored, store.TryRead(out string kept));
+            Assert.Equal("bonjour\n\nDeckle", kept);
+        }
+        finally
+        {
+            if (Directory.Exists(root)) Directory.Delete(root, recursive: true);
+        }
+    }
+
+    // A mic heard too quiet raises a warning, once, and the take goes on:
+    // what is said afterwards is still delivered.
+    [Fact]
+    [Trait("Category", "regression")]
+    public async Task AQuietMicrophoneWarnsOnceAndTheTakeStillDelivers()
+    {
+        CancellationToken testCancellation = TestContext.Current.CancellationToken;
+        using var listener = new TestEventListener("Deckle-Whisp");
+        var backend = new SequencedBackend([TestInference, "bonjour", "Deckle"]);
+        var clipboard = new RecordingClipboardWriter();
+        using var engine = new TranscriptionEngine(
+            new StreamingHost(),
+            backend,
+            new ScriptedMicrophoneCapture(utteranceCount: 2, lowAudioAfterStart: true),
+            clipboard);
+
+        await RunOneTakeAsync(engine, backend, testCancellation);
+
+        EventWrittenEventArgs warning = Assert.Single(
+            listener.Events,
+            e => e.EventName == nameof(DeckleWhispSource.UserFeedbackEmitted)
+                && (string?)PayloadOf(e, "title") == Loc.Get("Engine_LowAudio_Title"));
+        Assert.Equal(Loc.Get("Engine_LowAudio_Body"), PayloadOf(warning, "body"));
+        Assert.Equal("bonjour\n\nDeckle", clipboard.Text);
     }
 
     [Fact]
@@ -744,8 +795,6 @@ public sealed class LiveTranscriptionPipelineTests
         }
 
         public GenerationResult RewriteParagraph(string paragraph, CancellationToken cancellationToken) => default;
-
-        public GenerationResult RewriteSentence(string sentence, CancellationToken cancellationToken) => default;
     }
 
     // Fails every whole-take rewrite, the one step left after the raw copy.
@@ -762,8 +811,6 @@ public sealed class LiveTranscriptionPipelineTests
         }
 
         public GenerationResult RewriteParagraph(string paragraph, CancellationToken cancellationToken) => default;
-
-        public GenerationResult RewriteSentence(string sentence, CancellationToken cancellationToken) => default;
     }
 
     internal sealed class StreamingHost : ITranscriptionEngineHost
@@ -801,19 +848,25 @@ public sealed class LiveTranscriptionPipelineTests
         private const int FrameSamples = 800;
         private readonly int _utteranceCount;
         private readonly CaptureOutcome _outcome;
+        private readonly bool _lowAudioAfterStart;
 
+        // lowAudioAfterStart makes the fake raise LowAudioDetected once, right
+        // after the capture starts: the mic the real capture reports as heard
+        // too quiet in its first seconds.
         public ScriptedMicrophoneCapture(
             int utteranceCount,
-            CaptureOutcome outcome = CaptureOutcome.Completed)
+            CaptureOutcome outcome = CaptureOutcome.Completed,
+            bool lowAudioAfterStart = false)
         {
             _utteranceCount = utteranceCount;
             _outcome = outcome;
+            _lowAudioAfterStart = lowAudioAfterStart;
         }
 
         public event Action<float>? AudioLevel { add { } remove { } }
         public event Action<CaptureFrame>? Frame;
         public event Action? CaptureStarted;
-        public event Action? LowAudioDetected { add { } remove { } }
+        public event Action? LowAudioDetected;
 
         // The token the engine handed to Record, and the moment the fake saw it
         // fire (Stopwatch timestamp), so a test can tell when capture stopped.
@@ -833,6 +886,8 @@ public sealed class LiveTranscriptionPipelineTests
         {
             RecordToken = cancellationToken;
             CaptureStarted?.Invoke();
+            if (_lowAudioAfterStart)
+                LowAudioDetected?.Invoke();
             var captured = new List<float>();
             for (int utterance = 0; utterance < _utteranceCount; utterance++)
             {
@@ -867,13 +922,6 @@ public sealed class LiveTranscriptionPipelineTests
     // is always that one, whether the model was loaded or not; the utterances
     // follow. Its text never reaches the take.
     internal const string TestInference = "test inference";
-
-    // The capture tail of the engines these tests build, in place of the
-    // 400 ms the product keeps after a stop press, which every take of the
-    // suite would otherwise pay. Not zero, so capture still runs a little past
-    // the press. CaptureKeepsRunningForAShortTailAfterTheStopPress keeps the
-    // product value, since the tail is what it proves.
-    internal static readonly TimeSpan TestCaptureTail = TimeSpan.FromMilliseconds(20);
 
     internal sealed class SequencedBackend : IAsrBackend
     {
@@ -975,6 +1023,10 @@ public sealed class LiveTranscriptionPipelineTests
         public int WriteCount => Volatile.Read(ref _writeCount);
         public string? Text { get; private set; }
 
+        // What the next writes answer: Success, or a refusal the way Windows
+        // gives one. A refused write is still counted, and still recorded.
+        public ClipboardWriteStatus Status { get; set; } = ClipboardWriteStatus.Success;
+
         // Every text written, in order.
         public string[] Texts => _texts.ToArray();
 
@@ -984,7 +1036,7 @@ public sealed class LiveTranscriptionPipelineTests
             _texts.Enqueue(text);
             Interlocked.Increment(ref _writeCount);
             return new ClipboardWriteResult(
-                ClipboardWriteStatus.Success,
+                Status,
                 text.Length,
                 text.Length,
                 (text.Length + 1) * 2,

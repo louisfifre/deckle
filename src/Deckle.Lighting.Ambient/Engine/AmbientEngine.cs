@@ -193,7 +193,6 @@ public sealed partial class AmbientEngine : IAsyncDisposable
     private double _brightnessCurveY2     = 1.00;
     private bool   _minBrightnessEnabled  = true;
     private int    _minBrightness         = 0;
-    private int    _changeThreshold       = 6;
     private BorderThicknessMode _borderMode   = BorderThicknessMode.Share;
     private double              _borderDepth  = 0.33;
     private int                 _borderCells  = 8;

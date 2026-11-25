@@ -17,12 +17,10 @@ namespace Deckle.Diagnostics;
 // `WindowPositioned` is the common trunk emitted by every site that positions
 // or resizes a window. Stacked overlays ALSO emit `OverlaySlotAssigned`, popups
 // anchored to a parent control ALSO emit `PopupAnchored`, and topmost
-// no-activate surfaces may ALSO emit `WindowZOrderState`. `WindowResizeSettled`
-// and its per-frame companion `WindowResizeFrame` stand alone: a resize
-// coalescer, not a positioning site, raises them.
+// no-activate surfaces may ALSO emit `WindowZOrderState`.
 //
 // Two tiers. The measurements above are governed by the Windowing activity:
-// they cost P/Invokes and run per show or per resize frame. A failure is not a
+// they cost P/Invokes and run per show. A failure is not a
 // measurement: `WindowShowFailed`, `WindowPlacementFailed` and the incident
 // recovery bypass the activity, so a HUD that never appeared
 // leaves a trace on a default install. `WindowingProbe.Report*` runs the
@@ -68,8 +66,8 @@ public sealed class DeckleWindowingSource : DeckleEventSource
     public const int EvtOverlaySlotAssigned  = 2;
     public const int EvtPopupAnchored        = 3;
     public const int EvtWindowZOrderState    = 4;
-    public const int EvtWindowResizeSettled  = 5;
-    public const int EvtWindowResizeFrame    = 6;
+    // 5 retired.
+    // 6 retired.
     public const int EvtWindowLoadComplete   = 7;
     public const int EvtWindowShowFailed     = 8;
     public const int EvtWindowPlacementFailed = 9;
@@ -171,40 +169,6 @@ public sealed class DeckleWindowingSource : DeckleEventSource
             first_occluding_above_class,
             first_occluding_above_topmost,
             setpos_ok, last_error);
-    }
-
-    // One rolled-up event per *settled* resize, emitted by ResizeCoalescer at
-    // the boundary where the window does its single deferred recompute.
-    // `trigger` is a closed 2-value vocabulary: "gesture" (a user drag
-    // bracketed by WM_ENTERSIZEMOVE / WM_EXITSIZEMOVE, `frames` = the WM_SIZE
-    // frames coalesced into the one recompute, `duration_ms` = the gesture
-    // wall-clock) or "direct" (a WM_SIZE outside any gesture — maximize / snap /
-    // programmatic SetWindowPos — with `frames`=1 and `duration_ms`=0).
-    [Event(EvtWindowResizeSettled,
-           Level = EventLevel.Verbose,
-           Keywords = (EventKeywords)Keywords.Windowing,
-           Message = "window={0} | trigger={1} | frames={2} | duration_ms={3}")]
-    public void WindowResizeSettled(string window, string trigger, int frames, long duration_ms)
-    {
-        if (!IsWindowingDetailEnabled()) return;
-        WriteEvent(EvtWindowResizeSettled, window, trigger, frames, duration_ms);
-    }
-
-    // Per-frame companion to `WindowResizeSettled`, for each coalesced WM_SIZE
-    // of a drag gesture. `since_prev_ms` is the cadence Windows drives the
-    // modal resize loop at; `relayout_ms` is WinUI's synchronous layout pass
-    // for this frame (it runs inside DefSubclassProc). A near-zero
-    // `relayout_ms` under a tight `since_prev_ms` points the lag below the
-    // framework, at composition/present, not at Deckle's draw.
-    [Event(EvtWindowResizeFrame,
-           Level = EventLevel.Verbose,
-           Keywords = (EventKeywords)Keywords.Windowing,
-           Message = "window={0} | frame={1} | size={2},{3} | since_prev_ms={4} | relayout_ms={5}")]
-    public void WindowResizeFrame(
-        string window, int frame, int size_w, int size_h, long since_prev_ms, long relayout_ms)
-    {
-        if (!IsWindowingDetailEnabled()) return;
-        WriteEvent(EvtWindowResizeFrame, window, frame, size_w, size_h, since_prev_ms, relayout_ms);
     }
 
     // Lazy first-open construction cost of a secondary window. `load_ms` spans

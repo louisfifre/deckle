@@ -138,7 +138,6 @@ public sealed partial class DeckleAmbientSource : DeckleEventSource
     public const int EvtCaptureLost                     = 103;
     public const int EvtPipelineIncidentAbandoned       = 104;
     public const int EvtPipelineAbortIgnoredDetail      = 105;
-    public const int EvtPresetSelectionReplaced         = 106;
 
     // ── Preview scan ─────────────────────────────────────────────────────
     public const int EvtPreviewScanStarting             = 107;

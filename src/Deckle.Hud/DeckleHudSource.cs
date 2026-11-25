@@ -47,6 +47,7 @@ public sealed class DeckleHudSource : DeckleEventSource
     public const int EvtCleanupFailed             = 25;
     public const int EvtFadeInEnded               = 26;
     // 27, 28 retired: the HUD settings store, removed with the Playground.
+    public const int EvtHudFirstFramePresented    = 29;
 
     // Callers test this before any measurement made only for the log.
     [NonEvent]
@@ -203,6 +204,21 @@ public sealed class DeckleHudSource : DeckleEventSource
     {
         if (!IsHudDetailEnabled((EventKeywords)Keywords.Lifecycle)) return;
         WriteEvent(EvtStateChanged, from, to, reason, alpha, dpi);
+    }
+
+    // The HUD reached the screen: one per state change that a shortcut press
+    // caused, written on the first frame of the new state. `hud_visible_ms` runs
+    // from that press, so the lag the person feels at a stop reads straight
+    // off the log. Not governed: it is the figure of one unit of work, and
+    // the logs must hold it without the detailed logs.
+    [Event(EvtHudFirstFramePresented,
+           Level = EventLevel.Informational,
+           Keywords = (EventKeywords)Keywords.Lifecycle,
+           Tags = ObservationTags.Summary,
+           Message = "The HUD reached the screen")]
+    public void HudFirstFramePresented(string state, int hud_visible_ms)
+    {
+        if (IsEnabled()) WriteEvent(EvtHudFirstFramePresented, state, hud_visible_ms);
     }
 
     // ─── Live transcript panel visibility ──────────────────────────────

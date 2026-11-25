@@ -117,9 +117,6 @@ public partial class App
             if (window is not null) names[WindowNative.GetWindowHandle(window)] = name;
         }
         Add(_logWindow, "log");
-        foreach ((string name, Microsoft.UI.Xaml.Window window) in
-                 _publishedHost?.OpenNamedWindows.Select(w => (w.Key, w.Value)) ?? [])
-            Add(window, name);
         Add(_hudWindow, "hud");
         return names;
     }

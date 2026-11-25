@@ -12,7 +12,6 @@ public sealed class AmbientStartSettingsTests
 
         var started = AmbientStartSettings.From(settings, performanceMode: false);
         settings.SmoothingAlpha = 0.5;
-        settings.ChangeThreshold = 20;
 
         Assert.Equal("", started.ChangedSettings(AmbientStartSettings.From(settings, performanceMode: false)));
     }

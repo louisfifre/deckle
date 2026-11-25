@@ -35,11 +35,6 @@ public partial class App
             WindowTheme.Apply(window, source);
             windows++;
         }
-        foreach (Microsoft.UI.Xaml.Window window in app._publishedHost?.OpenWindows ?? [])
-        {
-            WindowTheme.Apply(window, source);
-            windows++;
-        }
 
         DeckleAppSource.Log.ThemeApplied(theme.ToString(), source, windows);
     }

@@ -43,21 +43,6 @@ public sealed class RewriteProfileTriggerTests
         Assert.False(read.Profiles[1].HasActiveHotkey);
     }
 
-    // The fields from before the steps are read to migrate, never written.
-    [Fact]
-    public void TheFieldsFromBeforeTheStepsAreNotWritten()
-    {
-        var settings = new LlmSettings();
-        LlmSettingsNormalizer.Apply(settings);
-
-        string json = JsonSerializer.Serialize(settings, FileOptions);
-
-        Assert.DoesNotContain("activeProfileId", json);
-        Assert.DoesNotContain("lengthSwitch", json);
-        Assert.DoesNotContain("batchRewriting", json);
-        Assert.DoesNotContain("startAtLength", json);
-    }
-
     // A length typed in the field is any value on its grain, not one of a
     // few presets: the next load keeps it as it is.
     [Fact]

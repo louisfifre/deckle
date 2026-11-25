@@ -37,7 +37,6 @@ public sealed partial class AmbientEngine
                 _brightnessCurveY2     = ambient.BrightnessCurveY2;
                 _minBrightnessEnabled  = ambient.MinBrightnessEnabled;
                 _minBrightness         = ambient.MinBrightness;
-                _changeThreshold       = ambient.ChangeThreshold;
                 _smoothingAlpha        = ambient.SmoothingAlpha;
                 _borderMode            = ambient.BorderMode;
                 _borderDepth           = ambient.BorderDepth;

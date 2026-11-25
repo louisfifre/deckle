@@ -23,8 +23,7 @@ public sealed class FileToTextTests : IDisposable
         new(new StreamingHost(),
             backend,
             new ScriptedMicrophoneCapture(utteranceCount: 0),
-            new RecordingClipboardWriter(),
-            captureTail: TestCaptureTail);
+            new RecordingClipboardWriter());
 
     [Fact]
     public async Task TheTextComesBackAndNoFileIsWritten()

@@ -34,7 +34,6 @@
     <ProjectReference Include="..\Deckle.Core\Deckle.Core.csproj" />
     <ProjectReference Include="..\Deckle.Diagnostics\Deckle.Diagnostics.csproj" />
     <ProjectReference Include="..\Deckle.Localization\Deckle.Localization.csproj" />
-    <ProjectReference Include="..\Deckle.Presets\Deckle.Presets.csproj" />
     <ProjectReference Include="..\Deckle.Vision\Deckle.Vision.csproj" />
     <ProjectReference Include="..\Deckle.Catalog\Deckle.Catalog.csproj" />
     <!-- Shell: the page and both cards use the instrumented

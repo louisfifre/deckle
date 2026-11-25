@@ -15,26 +15,6 @@ public sealed partial class TranscriptionEngine
 {
     // ── StateMachine partial — RequestToggle + WorkerRun + state transitions ────────────────────────────────────────
 
-    // How long capture keeps running after the Stop press. The press lands
-    // while the user is still finishing the last word, and the capture loop
-    // would otherwise stop within one device period, cutting that word. The tail
-    // catches its end plus a little real trailing silence, which the speech
-    // model also ends on better than on a clipped word. The HUD has already switched to
-    // "transcribing" on the press, so the tail is hidden behind that transition.
-    // 400 ms: long enough to cover the end of a word and a breath, short enough
-    // that the added wait stays under the threshold where a stop feels laggy.
-    // Measured 2026-11-21 (docs/research/research--fin-de-prise--2026-11-21.md,
-    // tool benchmark/capture-tail): Whisper replayed on 196 raw corpus takes cut
-    // to 300 and 200 ms. The last word changed no more often than between two
-    // runs of the same audio at 300 ms, and slightly more at 200 ms, within a
-    // noise of about 10 points. A shorter tail saves 100 to 200 ms; the data
-    // cannot rule out a small loss of final words at 200 ms, and says nothing
-    // about a longer tail (no audio exists past 400 ms). Not proven: kept.
-    // Not a setting: nobody should tune it per take. Only tests pass another
-    // value, through the internal constructor, so that the suites do not wait
-    // 400 ms after every stop press (_captureTail).
-    private const int CAPTURE_TAIL_AFTER_STOP_MS = 400;
-
     // ── Hotkey toggle entry point ───────────────────────────────────────────
     //
     // All hotkey Start/Stop traffic flows through here. The engine
@@ -74,21 +54,18 @@ public sealed partial class TranscriptionEngine
             // Stopped by the strategy at the backend handoff (monolithic) or
             // after the consumer drain (streaming). The CAS above makes this
             // run at most once per recording. It starts at the press, so the
-            // capture tail below is part of the stop-to-pipeline time the log
-            // reports.
+            // stop-to-pipeline time the log reports is counted from the gesture.
             _stopToPipelineSw = System.Diagnostics.Stopwatch.StartNew();
 
-            // Signal the capture loop to drain and return, after a short tail
-            // (see CAPTURE_TAIL_AFTER_STOP_MS). Only this user Stop press gets
-            // the tail: Dispose cancels _recordCts at once so shutdown is never
-            // delayed, and the file pipeline's token is cancelled by Dispose
-            // only. A press landing inside the tail finds the state already
-            // Stopping and is refused as IgnoredBusy above. A cap hit inside
-            // the tail is harmless: its Recording → Stopping CAS simply fails.
-            // CancelAfter is safe even if Record() has already returned or the
-            // worker has disposed the source (ObjectDisposedException caught;
-            // disposing the source also disposes its pending timer).
-            try { _recordCts?.CancelAfter(_captureTail); }
+            // The press ends the recording at once: the capture token is
+            // cancelled here, and nothing said after the gesture is kept. The
+            // microphone closes within one device period, and the HUD and tray
+            // already read "transcribing" from this same press. A second press
+            // finds the state already Stopping and is refused as IgnoredBusy
+            // above. Cancel is safe even if Record() has already returned or
+            // the worker has disposed the source (ObjectDisposedException
+            // caught).
+            try { _recordCts?.Cancel(); }
             catch (ObjectDisposedException) { /* worker raced our cancel */ }
             return ToggleResult.Stopped;
         }
@@ -110,14 +87,13 @@ public sealed partial class TranscriptionEngine
     // Called by the streaming consumer when the prime fails while the capture
     // is still running: recording on into a channel nobody reads helps no one.
     // It is the engine's counterpart of the user's Stop in RequestToggle, with
-    // no capture tail (nothing is worth catching) and one difference the
-    // pipeline must know about: MicrophoneCapture reports a cancelled capture as
+    // one difference the pipeline must know about: MicrophoneCapture reports a cancelled capture as
     // Completed, whoever cancelled it, so the reason travels in _selfStopReason,
     // written BEFORE the cancel so that the pipeline reads it once Record
     // returns.
     //
     // The state CAS makes a hotkey press during the shutdown IgnoredBusy, like a
-    // press inside a user Stop's tail. Its result is not checked: when a user
+    // second press after a user Stop. Its result is not checked: when a user
     // Stop or the cap already moved the state, the take is ending anyway, and
     // the reason still decides how (a failed prime must not end as "no text").
     // A prime cancelled by Dispose leaves no failure and no stop: Dispose

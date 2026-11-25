@@ -96,4 +96,58 @@ public sealed class DeckleHudSourceTests : IDisposable
         Assert.Equal("COMException", ev.Payload?[1]);
         Assert.Equal("The parameter is incorrect.", ev.Payload?[2]);
     }
+
+    // The event is written by default, without the detailed logs.
+    [Fact]
+    public void HudFirstFramePresentedIsWrittenWithoutDetailedLogs()
+    {
+        OperationalLogAdmission.Configure(static _ => false);
+        using var listener = new TestEventListener("Deckle-Hud");
+
+        DeckleHudSource.Log.HudFirstFramePresented("Transcribing", 42);
+
+        var ev = Assert.Single(listener.Events);
+        Assert.Equal(DeckleHudSource.EvtHudFirstFramePresented, ev.EventId);
+        Assert.Equal(EventLevel.Informational, ev.Level);
+        Assert.Equal("Transcribing", ev.Payload?[0]);
+        Assert.Equal(42, ev.Payload?[1]);
+    }
+
+    // One event per armed state change, however many frames follow.
+    [Fact]
+    public void FirstFrameProbeWritesOncePerArm()
+    {
+        OperationalLogAdmission.Configure(static _ => false);
+        using var listener = new TestEventListener("Deckle-Hud");
+        var probe = new HudFirstFrameProbe();
+        long press = System.Diagnostics.Stopwatch.GetTimestamp();
+
+        probe.OnFrame(DeckleHudSource.Log, press);
+        probe.Arm("Transcribing", press);
+        probe.OnFrame(DeckleHudSource.Log, press + System.Diagnostics.Stopwatch.Frequency / 10);
+        probe.OnFrame(DeckleHudSource.Log, press + System.Diagnostics.Stopwatch.Frequency / 5);
+
+        var ev = Assert.Single(listener.Events);
+        Assert.Equal("Transcribing", ev.Payload?[0]);
+        Assert.Equal(100, ev.Payload?[1]);
+        Assert.False(probe.IsArmed);
+    }
+
+    [Fact]
+    public void FirstFrameProbeReportsOnlyTheLatestStateWhenReArmed()
+    {
+        using var listener = new TestEventListener("Deckle-Hud");
+        var probe = new HudFirstFrameProbe();
+        long press = System.Diagnostics.Stopwatch.GetTimestamp();
+
+        probe.Arm("Charging", press);
+        probe.Arm("Transcribing", press);
+        probe.OnFrame(DeckleHudSource.Log, press);
+        probe.Arm("Recording", press);
+        probe.Cancel();
+        probe.OnFrame(DeckleHudSource.Log, press);
+
+        var ev = Assert.Single(listener.Events);
+        Assert.Equal("Transcribing", ev.Payload?[0]);
+    }
 }
