@@ -9,7 +9,7 @@
          first one, opened when keyboard focus lands anywhere inside it. On the
          root that is a stray "F5" under the window whenever focus arrives by
          keyboard; the buttons' own tooltips say what the keys do. -->
-    <Grid x:Name="RootGrid" KeyboardAcceleratorPlacementMode="Hidden">
+    <Grid x:Name="RootGrid" KeyboardAcceleratorPlacementMode="Hidden" SizeChanged="OnRootSizeChanged">
         <Grid.Resources>
             <!-- The three numbered lines of the empty state (12.11). -->
             <Style x:Key="EmptyStepCard" TargetType="Grid">
@@ -42,6 +42,7 @@
             <KeyboardAccelerator Key="Up" Modifiers="Menu" Invoked="OnUpAccelerator" />
             <KeyboardAccelerator Key="L" Modifiers="Control" Invoked="OnAddressAccelerator" />
             <KeyboardAccelerator Key="D" Modifiers="Menu" Invoked="OnAddressAccelerator" />
+            <KeyboardAccelerator Key="P" Modifiers="Menu,Shift" Invoked="OnDetailsAccelerator" />
         </Grid.KeyboardAccelerators>
 
         <!-- The top row is the title bar itself (spec, Window: one row, no
@@ -69,15 +70,19 @@
                 <Grid Margin="4,0,0,0" ColumnSpacing="4">
                     <Grid.ColumnDefinitions>
                         <ColumnDefinition Width="Auto" />
-                        <!-- The address bar's floor is its icon and a few
-                             letters: at the window's minimum width, with the
-                             active tool's name shown, a larger one pushed the
-                             tools and search out of the row. -->
-                        <ColumnDefinition Width="*" MinWidth="96" />
-                        <ColumnDefinition Width="Auto" />
+                        <!-- The address field's floor is its icon, the search
+                             button inside it and a few letters. The title bar
+                             keeps a drag margin before the caption buttons, so at
+                             the window's minimum width (the narrow layout, with Back
+                             and Up, the tools as glyphs and the details toggle) a
+                             floor of 96 clipped the toggle's pressed fill. -->
+                        <ColumnDefinition Width="*" MinWidth="80" />
                         <ColumnDefinition Width="Auto" />
                     </Grid.ColumnDefinitions>
 
+                    <!-- The row, left to right: back, forward, up, refresh, the
+                         address field with search inside it, the tools, the
+                         divider, the details toggle. -->
                     <StackPanel Orientation="Horizontal" Spacing="2">
                         <Button x:Name="BackButton" Style="{StaticResource SubtleButtonStyle}" Width="36" Height="32" Padding="0" Click="OnBackClick">
                             <FontIcon Glyph="&#xE72B;" FontSize="16" />
@@ -93,45 +98,69 @@
                         </Button>
                     </StackPanel>
 
-                    <local:AddressBar x:Name="Address" Grid.Column="1" Margin="2,0" />
+                    <local:AddressBar x:Name="Address" Grid.Column="1" Margin="2,0">
+                        <local:AddressBar.TrailingContent>
+                            <!-- Search goes through PowerToys Command Palette (spec,
+                                 Search). It sits inside the address field, at its
+                                 right end. A click asks whether it is installed, then
+                                 opens the small panel under the button (12.13, Open
+                                 9): absent, it says so and offers PowerToys' page;
+                                 present, it gives the palette's shortcut. -->
+                            <Button x:Name="SearchButton" Style="{StaticResource SubtleButtonStyle}" Width="28" Height="24" Padding="0" Click="OnSearchClick">
+                                <FontIcon Glyph="&#xE721;" FontSize="14" />
+                                <FlyoutBase.AttachedFlyout>
+                                    <Flyout x:Name="SearchFlyout" Placement="BottomEdgeAlignedRight">
+                                        <Grid MaxWidth="320">
+                                            <StackPanel x:Name="SearchAbsentPanel" Spacing="12">
+                                                <StackPanel Spacing="4">
+                                                    <TextBlock x:Uid="SearchAbsentTitle" Style="{StaticResource BodyStrongTextBlockStyle}" TextWrapping="Wrap" />
+                                                    <TextBlock x:Uid="SearchAbsentBody" TextWrapping="Wrap" />
+                                                </StackPanel>
+                                                <StackPanel Orientation="Horizontal" Spacing="8" HorizontalAlignment="Right">
+                                                    <Button x:Uid="SearchInstallPowerToys" Style="{StaticResource AccentButtonStyle}" Click="OnInstallPowerToysClick" />
+                                                    <Button x:Uid="SearchLater" Click="OnSearchLaterClick" />
+                                                </StackPanel>
+                                            </StackPanel>
+                                            <TextBlock x:Name="SearchPresentText" x:Uid="SearchInCommandPalette" TextWrapping="Wrap" Visibility="Collapsed" />
+                                        </Grid>
+                                    </Flyout>
+                                </FlyoutBase.AttachedFlyout>
+                            </Button>
+                        </local:AddressBar.TrailingContent>
+                    </local:AddressBar>
 
-                    <!-- One button per tool; the active one is pressed and
-                         shows its name (spec, Window). Built from the tool
-                         catalog in code. -->
-                    <StackPanel x:Name="ToolButtons" Grid.Column="2" Orientation="Horizontal" Spacing="2" Margin="2,0">
-                        <StackPanel.Resources>
-                            <SolidColorBrush x:Key="ToggleButtonBackground" Color="Transparent" />
-                            <SolidColorBrush x:Key="ToggleButtonBorderBrush" Color="Transparent" />
-                            <SolidColorBrush x:Key="ToggleButtonBackgroundDisabled" Color="Transparent" />
-                            <SolidColorBrush x:Key="ToggleButtonBorderBrushDisabled" Color="Transparent" />
-                        </StackPanel.Resources>
+                    <!-- One toggle per tool but Files, each with its glyph
+                         and its name; the pressed one is the active tool
+                         (spec, Window). Files has none: it is what shows
+                         when none is pressed. Built from the tool catalog in
+                         code. The divider and the details-pane toggle sit
+                         after them. -->
+                    <StackPanel Grid.Column="2" Orientation="Horizontal" Spacing="2" Margin="2,0">
+                        <StackPanel x:Name="ToolButtons" Orientation="Horizontal" Spacing="2">
+                            <StackPanel.Resources>
+                                <SolidColorBrush x:Key="ToggleButtonBackground" Color="Transparent" />
+                                <SolidColorBrush x:Key="ToggleButtonBorderBrush" Color="Transparent" />
+                                <SolidColorBrush x:Key="ToggleButtonBackgroundDisabled" Color="Transparent" />
+                                <SolidColorBrush x:Key="ToggleButtonBorderBrushDisabled" Color="Transparent" />
+                            </StackPanel.Resources>
+                        </StackPanel>
+
+                        <Rectangle Width="1" Height="20" Margin="4,0" VerticalAlignment="Center"
+                                   Fill="{ThemeResource DividerStrokeColorDefaultBrush}" />
+
+                        <!-- Whether the details panel shows: the person's
+                             choice, on at first and kept for this window's
+                             life only. -->
+                        <ToggleButton x:Name="DetailsToggle" Width="36" Height="32" Padding="0" IsChecked="True" Click="OnDetailsToggleClick">
+                            <ToggleButton.Resources>
+                                <SolidColorBrush x:Key="ToggleButtonBackground" Color="Transparent" />
+                                <SolidColorBrush x:Key="ToggleButtonBorderBrush" Color="Transparent" />
+                                <SolidColorBrush x:Key="ToggleButtonBackgroundDisabled" Color="Transparent" />
+                                <SolidColorBrush x:Key="ToggleButtonBorderBrushDisabled" Color="Transparent" />
+                            </ToggleButton.Resources>
+                            <FontIcon Glyph="&#xE90D;" FontSize="16" />
+                        </ToggleButton>
                     </StackPanel>
-
-                    <!-- Search goes through PowerToys Command Palette (spec,
-                         Search). A click asks whether it is installed, then
-                         opens the small panel under the button (12.13, Open
-                         9): absent, it says so and offers PowerToys' page;
-                         present, it gives the palette's shortcut. -->
-                    <Button x:Name="SearchButton" Grid.Column="3" Style="{StaticResource SubtleButtonStyle}" Width="36" Height="32" Padding="0" Margin="0,0,4,0" Click="OnSearchClick">
-                        <FontIcon Glyph="&#xE721;" FontSize="16" />
-                        <FlyoutBase.AttachedFlyout>
-                            <Flyout x:Name="SearchFlyout" Placement="BottomEdgeAlignedRight">
-                                <Grid MaxWidth="320">
-                                    <StackPanel x:Name="SearchAbsentPanel" Spacing="12">
-                                        <StackPanel Spacing="4">
-                                            <TextBlock x:Uid="SearchAbsentTitle" Style="{StaticResource BodyStrongTextBlockStyle}" TextWrapping="Wrap" />
-                                            <TextBlock x:Uid="SearchAbsentBody" TextWrapping="Wrap" />
-                                        </StackPanel>
-                                        <StackPanel Orientation="Horizontal" Spacing="8" HorizontalAlignment="Right">
-                                            <Button x:Uid="SearchInstallPowerToys" Style="{StaticResource AccentButtonStyle}" Click="OnInstallPowerToysClick" />
-                                            <Button x:Uid="SearchLater" Click="OnSearchLaterClick" />
-                                        </StackPanel>
-                                    </StackPanel>
-                                    <TextBlock x:Name="SearchPresentText" x:Uid="SearchInCommandPalette" TextWrapping="Wrap" Visibility="Collapsed" />
-                                </Grid>
-                            </Flyout>
-                        </FlyoutBase.AttachedFlyout>
-                    </Button>
                 </Grid>
             </TitleBar.Content>
         </TitleBar>
@@ -141,7 +170,10 @@
              row. Its display mode is set in code (NavigationPane,
              specs/deckle-navigation-pane.md); its own toggle is hidden because
              the title bar's opens it. Its content area brings the layer fill
-             and the rounded top left corner the boards draw. -->
+             and the stroke the boards draw; the three resources below make
+             it a card, rounded on its four corners and inset from the
+             window's right and bottom edges. The Left display mode sets none
+             of them itself, so these apply (generic.xaml, NavigationView). -->
         <NavigationView x:Name="Nav"
                         Grid.Row="1"
                         IsPaneToggleButtonVisible="False"
@@ -152,10 +184,29 @@
                         OpenPaneLength="280"
                         SelectionFollowsFocus="Disabled"
                         ItemInvoked="OnNavItemInvoked">
-            <NavigationView.FooterMenuItems>
-                <NavigationViewItem x:Name="AddFolderItem" SelectsOnInvoked="False">
+            <!-- Written out in four parts: a keyed Thickness of "1" ends the
+                 app in XAML parsing here. -->
+            <NavigationView.Resources>
+                <Thickness x:Key="NavigationViewContentMargin">0,0,8,8</Thickness>
+                <StaticResource x:Key="NavigationViewContentGridCornerRadius" ResourceKey="OverlayCornerRadius" />
+                <Thickness x:Key="NavigationViewContentGridBorderThickness">1,1,1,1</Thickness>
+            </NavigationView.Resources>
+
+            <!-- Home first, then its separator, then the added folders, which
+                 the window puts after them (PaneLeadingItems). -->
+            <NavigationView.MenuItems>
+                <NavigationViewItem x:Name="HomeItem">
                     <NavigationViewItem.Icon>
-                        <FontIcon Glyph="&#xE8F4;" />
+                        <FontIcon Glyph="&#xE80F;" />
+                    </NavigationViewItem.Icon>
+                </NavigationViewItem>
+                <NavigationViewItemSeparator />
+            </NavigationView.MenuItems>
+
+            <NavigationView.FooterMenuItems>
+                <NavigationViewItem x:Name="AddItem" SelectsOnInvoked="False">
+                    <NavigationViewItem.Icon>
+                        <FontIcon Glyph="&#xE710;" />
                     </NavigationViewItem.Icon>
                 </NavigationViewItem>
             </NavigationView.FooterMenuItems>

@@ -18,9 +18,7 @@ namespace Deckle.Folders.App;
 // button that opens an application.
 internal static partial class FoldersSelfCheck
 {
-    // The window's minimum width, in DIPs (FoldersWindow.ApplyChrome), and
-    // the size it is drawn at.
-    private const int FoldersMinimumWidth = 840;
+    // The size the window is drawn at, in DIPs.
     private const int FoldersDrawnWidth = 1280;
     private const int FoldersDrawnHeight = 800;
 
@@ -79,7 +77,7 @@ internal static partial class FoldersSelfCheck
                 window.SetPaneOpenForReview(paneOpen);
                 await Task.Delay(300);
                 IReadOnlyList<string> labels = window.ShowFolderMenuForReview(documents);
-                Check(labels.Count == 3, $"The folder's menu holds {labels.Count} items, not 3.");
+                Check(labels.Count == 4, $"The folder's menu holds {labels.Count} items, not 4.");
                 await Task.Delay(300);
             }, keepPopups: true);
             window.HideFolderMenuForReview();
@@ -125,20 +123,28 @@ internal static partial class FoldersSelfCheck
         window.SetPaneOpenForReview(false);
         await window.RemoveFolderForReviewAsync(vanished);
 
-        // A name longer than the bar, in the file tool, whose name the top
-        // row shows, at the window's minimum width.
+        // A name longer than the field, in the file tool, in the field's full
+        // form.
         string longName = Path.Combine(samples,
             "Un dossier au nom vraiment très long, bien plus long que la barre d'adresse ne peut le montrer");
         await Capture("address-long-name", async () =>
         {
             Directory.CreateDirectory(longName);
             await window.AddFolderForReviewAsync(longName);
-            ResizeFolders(window, FoldersMinimumWidth, FoldersDrawnHeight);
+            ResizeFolders(window, LongNameWidth, FoldersDrawnHeight);
+            await Task.Delay(400);
+            // The segments show in the full form, where a long one is cut.
+            Check(window.OpenAddressFullForReview(), "The address field did not open its full form.");
             await Task.Delay(400);
             Check(window.AddressCutsASegmentForReview, "The long segment of the address bar is not cut.");
         });
         ResizeFolders(window, FoldersDrawnWidth, FoldersDrawnHeight);
     }
+
+    // Narrow enough that the long name does not fit, wide enough for the
+    // drive and the icon to leave it room: the window's narrow layouts are
+    // photographed by their own states.
+    private const int LongNameWidth = 1000;
 
     private static void ResizeFolders(FoldersWindow window, int widthDip, int heightDip)
     {

@@ -97,6 +97,7 @@
                       Margin="0,4,0,0"
                       SelectionMode="Single"
                       IsItemClickEnabled="False"
+                      ContainerContentChanging="OnContainerContentChanging"
                       SelectionChanged="OnSelectionChanged"
                       DoubleTapped="OnRowsDoubleTapped"
                       KeyDown="OnRowsKeyDown">
@@ -127,10 +128,16 @@
                                 <ColumnDefinition Width="{StaticResource SizeColumnWidth}" />
                             </Grid.ColumnDefinitions>
                             <StackPanel Orientation="Horizontal" Spacing="12" Margin="{x:Bind Indent}">
-                                <FontIcon Glyph="{x:Bind Glyph}"
-                                          FontSize="16"
-                                          Foreground="{ThemeResource TextFillColorSecondaryBrush}"
-                                          VerticalAlignment="Center" />
+                                <!-- The glyph stays until the shell's icon comes
+                                     (and for the row of the place's own files,
+                                     which has none), in the same 16 px cell. -->
+                                <Grid Width="16" Height="16" VerticalAlignment="Center">
+                                    <FontIcon Glyph="{x:Bind Glyph}"
+                                              FontSize="16"
+                                              Foreground="{ThemeResource TextFillColorSecondaryBrush}"
+                                              Visibility="{x:Bind GlyphVisibility, Mode=OneWay}" />
+                                    <Image Source="{x:Bind Icon, Mode=OneWay}" Stretch="Uniform" />
+                                </Grid>
                                 <TextBlock Text="{x:Bind Name, Mode=OneWay}"
                                            TextTrimming="CharacterEllipsis"
                                            VerticalAlignment="Center" />

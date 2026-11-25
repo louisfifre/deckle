@@ -76,7 +76,9 @@ trap {
             Launch        = $LaunchMode
             Error         = $_.Exception.Message
         })
-    throw
+    # `throw $_`, not a bare `throw`: in a trap a bare throw raises a new error whose
+    # message is "ScriptHalted" and the real one never reaches the caller.
+    throw $_
 }
 
 # The default is the repo holding this script copy, so VS Code's Run on the

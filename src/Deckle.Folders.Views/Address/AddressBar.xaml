@@ -3,7 +3,9 @@
     xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
     xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
     xmlns:local="using:Deckle.Folders.Views"
-    xmlns:catalog="using:Deckle.Catalog">
+    xmlns:catalog="using:Deckle.Catalog"
+    UseSystemFocusVisuals="False"
+    LostFocus="OnFieldLostFocus">
 
     <!-- File Explorer's address bar (spec, Window): the path as segments, a
          chevron after a segment that lists the folders inside it, a click on
@@ -16,13 +18,37 @@
          template (PART_ChevronTextBlock), not a control, so it cannot open a
          list. The template's separator glyph is emptied through its
          lightweight-styling key, and each segment carries a real chevron
-         Button with a MenuFlyout instead. -->
+         Button with a MenuFlyout instead.
+
+         The field has three modes (boards 24/11, C1, F1): short at rest
+         (drive, an ellipsis, the current name), full after a click (the
+         drive then the segments), and the text field after a click on the
+         empty part of the full one. At Home it holds the Home glyph and
+         "Home". The search button sits at the field's right end, in every
+         mode. -->
+    <UserControl.Resources>
+        <!-- The separator between the plain parts of the short and full
+             forms: the crumbs' chevron glyph, as text, since nothing in it
+             is clickable. -->
+        <Style x:Key="AddressSeparatorStyle" TargetType="TextBlock">
+            <Setter Property="FontFamily" Value="{ThemeResource SymbolThemeFontFamily}" />
+            <Setter Property="Text" Value="&#xE76C;" />
+            <Setter Property="FontSize" Value="10" />
+            <Setter Property="Foreground" Value="{ThemeResource TextFillColorSecondaryBrush}" />
+            <Setter Property="VerticalAlignment" Value="Center" />
+            <Setter Property="IsHitTestVisible" Value="False" />
+        </Style>
+    </UserControl.Resources>
     <Grid x:Name="Frame"
           Height="32"
           Background="{ThemeResource ControlFillColorDefaultBrush}"
           BorderBrush="{ThemeResource ControlElevationBorderBrush}"
           BorderThickness="1"
           CornerRadius="{ThemeResource ControlCornerRadius}">
+        <Grid.ColumnDefinitions>
+            <ColumnDefinition Width="*" />
+            <ColumnDefinition Width="Auto" />
+        </Grid.ColumnDefinitions>
 
         <Grid x:Name="SegmentsMode"
               Background="Transparent"
@@ -31,6 +57,7 @@
               Tapped="OnSegmentsModeTapped"
               SizeChanged="OnSegmentsModeSizeChanged">
             <Grid.ColumnDefinitions>
+                <ColumnDefinition Width="Auto" />
                 <ColumnDefinition Width="Auto" />
                 <ColumnDefinition Width="*" />
             </Grid.ColumnDefinitions>
@@ -47,10 +74,33 @@
                 <catalog:IconChoiceView x:Name="RootIcon" />
             </Button>
 
+            <!-- At Home the same slot holds the Home glyph, which opens
+                 nothing. -->
+            <FontIcon x:Name="HomeIcon"
+                      Glyph="&#xE80F;"
+                      FontSize="16"
+                      Margin="6,0"
+                      VerticalAlignment="Center"
+                      Visibility="Collapsed" />
+
+            <!-- The drive, shared by the short and the full forms; plain
+                 text, nothing to click. -->
+            <StackPanel x:Name="DrivePrefix"
+                        Grid.Column="1"
+                        Orientation="Horizontal"
+                        Spacing="8"
+                        Margin="4,0,6,0"
+                        VerticalAlignment="Center"
+                        SizeChanged="OnDrivePrefixSizeChanged">
+                <TextBlock x:Name="DriveLabel" VerticalAlignment="Center" />
+                <TextBlock Style="{StaticResource AddressSeparatorStyle}" />
+            </StackPanel>
+
             <BreadcrumbBar x:Name="Crumbs"
-                           Grid.Column="1"
+                           Grid.Column="2"
                            HorizontalAlignment="Left"
                            VerticalAlignment="Center"
+                           Visibility="Collapsed"
                            ItemClicked="OnCrumbClicked">
                 <BreadcrumbBar.Resources>
                     <x:String x:Key="BreadcrumbBarChevronLeftToRight">&#x200B;</x:String>
@@ -89,11 +139,32 @@
                 </BreadcrumbBar.ItemTemplate>
             </BreadcrumbBar>
 
-            <TextBlock x:Name="Placeholder"
-                       Grid.Column="1"
+            <!-- The short form's end: what the segments hide, then the current
+                 folder's name, cut with an ellipsis when too long. -->
+            <Grid x:Name="ShortTail"
+                  Grid.Column="2"
+                  Margin="0,0,6,0"
+                  VerticalAlignment="Center">
+                <Grid.ColumnDefinitions>
+                    <ColumnDefinition Width="Auto" />
+                    <ColumnDefinition Width="Auto" />
+                    <ColumnDefinition Width="*" />
+                </Grid.ColumnDefinitions>
+                <TextBlock x:Name="HiddenSegments" Text="&#x2026;" Margin="0,0,8,0" VerticalAlignment="Center" />
+                <TextBlock x:Name="HiddenSeparator" Grid.Column="1" Margin="0,0,8,0" Style="{StaticResource AddressSeparatorStyle}" />
+                <TextBlock x:Name="CurrentName"
+                           Grid.Column="2"
+                           VerticalAlignment="Center"
+                           TextWrapping="NoWrap"
+                           TextTrimming="CharacterEllipsis"
+                           IsTextTrimmedChanged="OnCurrentNameTrimmedChanged" />
+            </Grid>
+
+            <!-- Home's only segment: not clickable, no chevron. -->
+            <TextBlock x:Name="HomeLabel"
+                       Grid.Column="2"
                        Margin="6,0"
                        VerticalAlignment="Center"
-                       Foreground="{ThemeResource TextFillColorSecondaryBrush}"
                        Visibility="Collapsed" />
         </Grid>
 
@@ -106,5 +177,12 @@
                         QuerySubmitted="OnPathSubmitted"
                         KeyDown="OnPathKeyDown"
                         LostFocus="OnPathLostFocus" />
+
+        <!-- What the window puts at the field's right end (the search
+             button), outside the modes so it stays in each of them. -->
+        <ContentPresenter x:Name="TrailingHost"
+                          Grid.Column="1"
+                          Margin="0,0,2,0"
+                          VerticalAlignment="Center" />
     </Grid>
 </UserControl>

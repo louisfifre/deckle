@@ -39,16 +39,16 @@ public sealed partial class FoldersWindow : Window
         Address.IconChosen += OnFolderIconChosen;
 
         BuildToolButtons();
-        // The rail the first time (spec, Window: the pane reduced to icons),
-        // then as the user left it (specs/deckle-navigation-pane.md). Attached
-        // before the items, which read whether the pane is open.
-        _pane = NavigationPane.Attach(Nav, windowKey: "folders", openAtFirst: false);
+        // Open the first time (boards 24/11, A2), then as the user left it
+        // (specs/deckle-navigation-pane.md). Attached before the items, which
+        // read whether the pane is open.
+        _pane = NavigationPane.Attach(Nav, windowKey: "folders", openAtFirst: true);
         SyncFolderItems();
         // The icon provider's shell threads end with the window.
         Closed += (_, _) => _icons.Dispose();
 
-        if (_folders.Folders.Count > 0) _ = NavigateTo(FolderPlace.AtRoot(_folders.Folders[0]));
-        else ShowEmptyState();
+        // The window opens at Home, with or without added folders.
+        NavigateHome();
     }
 
     public void ShowAndActivate()
@@ -83,10 +83,10 @@ public sealed partial class FoldersWindow : Window
             Math.Min((int)(800 * scale), work.Height)));
 
         var presenter = OverlappedPresenter.Create();
-        // The narrowest the top row holds whole: the buttons, the active
-        // tool with its name, search, and an address bar of its icon and a
-        // few letters (FoldersWindow.xaml).
-        presenter.PreferredMinimumWidth = (int)(840 * scale);
+        // The narrowest layout is the narrow one (FoldersWindow.Widths.cs): Back
+        // and Up, the current folder's name, the tools as icons and the details
+        // toggle hold whole in the top row from here up.
+        presenter.PreferredMinimumWidth = (int)(640 * scale);
         presenter.PreferredMinimumHeight = (int)(480 * scale);
         AppWindow.SetPresenter(presenter);
     }
@@ -101,10 +101,13 @@ public sealed partial class FoldersWindow : Window
         // The active tool may say what Refresh does for it (FoldersWindow.Tools.cs).
         SetRefreshLabel(null);
         Label(SearchButton, "Search");
+        ToolTipService.SetToolTip(DetailsToggle, FoldersText.Get("Details_Toggle_Tip"));
+        AutomationProperties.SetName(DetailsToggle, FoldersText.Get("Details_Toggle"));
         AutomationProperties.SetName(ToolButtons, FoldersText.Get("Tools_Group"));
         AutomationProperties.SetName(DetailsPanel, FoldersText.Get("Details_Panel"));
         AutomationProperties.SetName(Nav, FoldersText.Get("Folders_Pane"));
-        AddFolderItem.Content = FoldersText.Get("Folders_Add");
+        HomeItem.Content = FoldersText.Get("Nav_Home");
+        AddItem.Content = FoldersText.Get("Folders_AddMenu");
         EmptyAddLabel.Text = FoldersText.Get("Folders_Add");
     }
 

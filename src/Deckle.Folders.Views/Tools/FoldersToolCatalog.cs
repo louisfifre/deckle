@@ -3,8 +3,9 @@ using Deckle.Core;
 namespace Deckle.Folders.Views;
 
 // The tools of the window, in the order of their buttons in the top row
-// (boards: Fichiers, Photos, Tailles, Carte). One line per tool; the first is
-// the one a folder opens in (12.20).
+// (boards: Photos, Tailles, Carte; Files, the first, has no button: it shows
+// when none is pressed). One line per tool; the first is the one a folder
+// opens in (12.20).
 //
 // The file tool and the photo tool show and set the same photo marks, so they
 // share one queue for the marks' store: a write from one is done before the

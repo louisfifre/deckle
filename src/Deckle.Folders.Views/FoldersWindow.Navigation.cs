@@ -4,20 +4,41 @@ using Deckle.Core;
 
 namespace Deckle.Folders.Views;
 
-// Where the window stands, and Back, Forward, Up and Refresh.
+// Where the window stands, Home or a folder, and Back, Forward, Up and Refresh.
 public sealed partial class FoldersWindow
 {
-    private readonly NavigationHistory<FolderPlace> _history = new();
+    // Home and folders in one history, so Back and Forward cross both as File
+    // Explorer's do (boards 24/11, A2).
+    private readonly NavigationHistory<Destination> _history = new();
 
-    private FolderPlace? Place => _history.Current;
+    // The folder the window stands in; null at Home and while the history has
+    // forgotten where it stood.
+    private FolderPlace? Place => (_history.Current as FolderDestination)?.Place;
+
+    private bool AtHome => _history.Current is HomeDestination;
 
     // Going to a new folder starts with nothing selected and no panel (12.20);
     // the selection stays only while the folder stays.
     private Task NavigateTo(FolderPlace place)
     {
-        if (!_history.Navigate(place)) return Task.CompletedTask;
+        if (!_history.Navigate(new FolderDestination(place))) return Task.CompletedTask;
         _selection = null;
         return ShowPlaceAsync();
+    }
+
+    private void NavigateHome()
+    {
+        if (!_history.Navigate(HomeDestination.Instance)) return;
+        _selection = null;
+        ShowHome();
+    }
+
+    // What Back and Forward arrive at: Home or a folder.
+    private void ShowDestination()
+    {
+        _selection = null;
+        if (AtHome) ShowHome();
+        else _ = ShowPlaceAsync();
     }
 
     private int _placeRequest;
@@ -34,6 +55,7 @@ public sealed partial class FoldersWindow
         _unreachableShown = null;
         EmptyState.Visibility = Visibility.Collapsed;
         CentreHost.Visibility = Visibility.Visible;
+        MarkActiveTool();
         SetTopRowEnabled(true);
         BackButton.IsEnabled = _history.CanGoBack;
         ForwardButton.IsEnabled = _history.CanGoForward;
@@ -49,22 +71,46 @@ public sealed partial class FoldersWindow
             ShowUnreachable(place.Root, reach);
             return;
         }
+        _showingFolder = true;
         await ShowCurrentToolAsync();
     }
 
-    // With no folder added, every button of the top row is disabled except
-    // the pane's, and the address bar says "No folder" (12.11).
-    private void ShowEmptyState()
+    // Home: one tile per added folder (HomeView), no tool and no panel, so
+    // the three tool toggles and the details toggle are disabled and none is
+    // pressed; Up has nowhere to go, Back and Forward follow the history, and
+    // Refresh asks the disk about every added folder again. With no folder
+    // added the empty state shows instead, and every button of the top row is
+    // disabled except the pane's (12.11).
+    private void ShowHome()
     {
         ++_placeRequest;
         _showing?.Cancel();
         _unreachableShown = null;
-        CentreHost.Content = null;
-        CentreHost.Visibility = Visibility.Collapsed;
-        EmptyState.Visibility = Visibility.Visible;
+        _showingFolder = false;
         Select(null, null);
+        MarkActiveTool();
         SetTopRowEnabled(false);
-        Address.ShowNone();
+        SelectHomeItem();
+        Address.ShowHome();
+
+        if (_folders.Folders.Count == 0)
+        {
+            CentreHost.Content = null;
+            CentreHost.Visibility = Visibility.Collapsed;
+            EmptyState.Visibility = Visibility.Visible;
+            return;
+        }
+
+        EmptyState.Visibility = Visibility.Collapsed;
+        CentreHost.Visibility = Visibility.Visible;
+        // Built again from the store each time, so a folder added, removed or
+        // given a new icon shows.
+        Home.Show(Grouping);
+        CentreHost.Content = Home;
+        BackButton.IsEnabled = _history.CanGoBack;
+        ForwardButton.IsEnabled = _history.CanGoForward;
+        RefreshButton.IsEnabled = true;
+        SearchButton.IsEnabled = true;
     }
 
     private void SetTopRowEnabled(bool enabled)
@@ -81,15 +127,13 @@ public sealed partial class FoldersWindow
     private void GoBack()
     {
         if (_history.GoBack() is null) return;
-        _selection = null;
-        _ = ShowPlaceAsync();
+        ShowDestination();
     }
 
     private void GoForward()
     {
         if (_history.GoForward() is null) return;
-        _selection = null;
-        _ = ShowPlaceAsync();
+        ShowDestination();
     }
 
     private void GoUp()
@@ -99,9 +143,16 @@ public sealed partial class FoldersWindow
 
     // Re-runs the current tool on the current folder (spec, Open 17). It
     // asks the disk again about every added folder too, so one that came
-    // back, its drive plugged in again, loses its mark and opens.
+    // back, its drive plugged in again, loses its mark and opens. At Home it
+    // shows Home again.
     private void Refresh()
     {
+        if (AtHome)
+        {
+            _reachChecked = CheckFolderReachAsync();
+            ShowHome();
+            return;
+        }
         if (Place is null) return;
         _reachChecked = CheckFolderReachAsync();
         _ = ShowPlaceAsync();
@@ -145,6 +196,12 @@ public sealed partial class FoldersWindow
     // bar cuts a segment's name.
     public async Task RefreshForReviewAsync()
     {
+        if (AtHome)
+        {
+            Refresh();
+            await _reachChecked;
+            return;
+        }
         if (Place is null) return;
         _reachChecked = CheckFolderReachAsync();
         await ShowPlaceAsync();
@@ -154,6 +211,22 @@ public sealed partial class FoldersWindow
     public string? CurrentFolderForReview => Place?.Root.Path;
 
     public bool CanGoBackForReview => _history.CanGoBack;
+
+    public bool CanGoForwardForReview => _history.CanGoForward;
+
+    public bool AtHomeForReview => AtHome;
+
+    // A tile of the Home page, as a click on it opens it.
+    public bool OpenHomeTileForReview(string path)
+    {
+        if (_folders.Find(path) is not { } folder) return false;
+        OpenHomeTile(folder);
+        return true;
+    }
+
+    public void GoBackForReview() => GoBack();
+
+    public void NavigateHomeForReview() => NavigateHome();
 
     public bool AddressCutsASegmentForReview => Address.HasTrimmedSegment;
 

@@ -8,7 +8,8 @@ namespace Deckle.Folders.App;
 // several items selected with the panel of the group, in each display, which
 // keeps the selection; the sample's very long name selected, in each display,
 // its tooltip checked against its ellipsis since no image keeps a popup open; and the sample's
-// empty folder. Nothing is opened nor sent to the Recycle Bin. It ends where
+// empty folder; then the panel hidden by its toggle, and shown with nothing
+// selected. Nothing is opened nor sent to the Recycle Bin. It ends where
 // it began: in the root of the sample, in the list, "notes-2023.zip"
 // selected, so the states after it see what they saw before.
 internal static partial class FoldersSelfCheck
@@ -37,6 +38,20 @@ internal static partial class FoldersSelfCheck
 
         await capture("files-empty-folder", () => window.OpenForReviewAsync(SampleFolder.EmptyFolderName));
         await window.OpenForReviewAsync("..");
+        await window.SelectForReviewAsync("notes-2023.zip");
+
+        // The panel's two other states: hidden by the toggle (the centre
+        // takes the width), and shown with nothing selected (its one line).
+        await capture("details-hidden", () =>
+        {
+            window.SetDetailsOnForReview(false);
+            return Task.CompletedTask;
+        });
+        await capture("details-nothing-selected", async () =>
+        {
+            window.SetDetailsOnForReview(true);
+            await window.ClearSelectionForReviewAsync();
+        });
         await window.SelectForReviewAsync("notes-2023.zip");
     }
 }
