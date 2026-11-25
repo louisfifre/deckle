@@ -3224,6 +3224,7 @@ _Generated from `git ls-files` — do not edit by hand._
 │   │   ├── ExecutableLocatorTests.cs
 │   │   ├── Fixture.cs
 │   │   ├── ForegroundChangeMappingTests.cs
+│   │   ├── IsolatedDataRoot.cs
 │   │   ├── KeyValuesReaderTests.cs
 │   │   ├── MessageTemplateDoctrineTests.cs
 │   │   ├── MilestoneClosersTests.cs
