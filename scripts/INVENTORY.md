@@ -9,7 +9,7 @@ Run one with `pwsh -NoProfile -File scripts/<path> [arguments]`. An action names
 - `build-locked.ps1` — Run one dotnet build or test under the machine-wide Deckle build lock. (not in the menu)
   - Parameters: -Project <string> (required), -Test, -Configuration <string>, -DotnetArgs <string[]>
 - `build-run.ps1` — **Build the app.** Build Deckle for the chosen configuration (x64) and, unless told not to, launch the fresh build.
-  - Actions: Build & run · Build (no run) `-NoRun` · Build & run Mail `-App mail` · Build & run Folders `-App folders`
+  - Actions: Build & run · Build (no run) `-NoRun` · Build & run Mail `-App mail` · Build & run Folders `-App folders` · Build & run Projects `-App projects`
   - Parameters: -App <string>, -NoRun, -Wait, -Configuration Release|Debug, -Target <string>, -NoAutoRestart, -HudZOrderSelfTest
 - `build-server-watchdog.ps1` — Shut the .NET build servers down after five idle minutes. (not in the menu)
   - Parameters: -StateDir <string>, -Arm, -Run, -IdleMinutes <int>, -TickSeconds <int>

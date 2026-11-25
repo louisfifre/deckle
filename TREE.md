@@ -226,6 +226,7 @@ _Generated from `git ls-files` — do not edit by hand._
 │   │   ├── script-discovery.psm1
 │   │   ├── script-output.ps1
 │   │   ├── source-metrics.psm1
+│   │   ├── standalone-app-release.psm1
 │   │   ├── terminal-interaction.psm1
 │   │   └── version.ps1
 │   ├── maintenance/
@@ -267,6 +268,7 @@ _Generated from `git ls-files` — do not edit by hand._
 │   │   │   ├── fetch-autocorrect-data.tests.ps1
 │   │   │   ├── inspect-context.tests.ps1
 │   │   │   ├── InspectContextBugNotes.md
+│   │   │   ├── launch-app.tests.ps1
 │   │   │   ├── perf-compare.tests.ps1
 │   │   │   └── read-log.tests.ps1
 │   │   └── lib/
@@ -280,7 +282,8 @@ _Generated from `git ls-files` — do not edit by hand._
 │   │       ├── resource-inventory.tests.ps1
 │   │       ├── script-inventory.tests.ps1
 │   │       ├── script-layout.tests.ps1
-│   │       └── source-metrics.tests.ps1
+│   │       ├── source-metrics.tests.ps1
+│   │       └── standalone-app-release.tests.ps1
 │   ├── build-locked.ps1
 │   ├── build-run.ps1  — Build the app Build Deckle for the chosen configuration (x64) and, unless told not to, launch…
 │   ├── build-server-watchdog.ps1
@@ -1032,10 +1035,14 @@ _Generated from `git ls-files` — do not edit by hand._
 │   │   │   ├── AddedFolderReach.cs
 │   │   │   ├── AddedFolderStore.cs
 │   │   │   ├── DeckleFoldersSource.AddedFolders.cs
+│   │   │   ├── FolderGroup.cs
+│   │   │   ├── FolderGrouping.cs
 │   │   │   └── FolderIconRule.cs
 │   │   ├── Browsing/
 │   │   │   ├── AddressResolver.cs
+│   │   │   ├── AddressShortForm.cs
 │   │   │   ├── DeckleFoldersSource.FileRecycling.cs
+│   │   │   ├── Destination.cs
 │   │   │   ├── FolderListing.cs
 │   │   │   └── FolderPlace.cs
 │   │   ├── Formatting/
@@ -1130,11 +1137,13 @@ _Generated from `git ls-files` — do not edit by hand._
 │   │   ├── FoldersSelfCheck.cs
 │   │   ├── FoldersSelfCheck.FileSelection.cs
 │   │   ├── FoldersSelfCheck.FolderIcons.cs
+│   │   ├── FoldersSelfCheck.Groups.cs
 │   │   ├── FoldersSelfCheck.Map.cs
 │   │   ├── FoldersSelfCheck.Photos.cs
 │   │   ├── FoldersSelfCheck.Previews.cs
 │   │   ├── FoldersSelfCheck.Search.cs
 │   │   ├── FoldersSelfCheck.Sizes.cs
+│   │   ├── FoldersSelfCheck.Widths.cs
 │   │   ├── FoldersWalkContext.cs
 │   │   ├── LlmPhotoDescriptionModel.cs
 │   │   └── Program.cs
@@ -1147,6 +1156,9 @@ _Generated from `git ls-files` — do not edit by hand._
 │   │   │   └── AddressCrumb.cs
 │   │   ├── Details/
 │   │   │   └── DetailsSheet.cs
+│   │   ├── Home/
+│   │   │   ├── HomeView.xaml
+│   │   │   └── HomeView.xaml.cs
 │   │   ├── Icons/
 │   │   │   ├── IFileIconProvider.cs
 │   │   │   └── ShellFileIconProvider.cs
@@ -1215,14 +1227,18 @@ _Generated from `git ls-files` — do not edit by hand._
 │   │   │   ├── IFoldersTool.cs
 │   │   │   └── ToolPlaceholderView.cs
 │   │   ├── Deckle.Folders.Views.csproj
+│   │   ├── FolderGroupDialog.cs
 │   │   ├── FoldersGlyphs.cs
 │   │   ├── FoldersText.cs
 │   │   ├── FoldersWindow.External.cs
 │   │   ├── FoldersWindow.FolderIcon.cs
 │   │   ├── FoldersWindow.Folders.cs
+│   │   ├── FoldersWindow.Groups.cs
+│   │   ├── FoldersWindow.Home.cs
 │   │   ├── FoldersWindow.Navigation.cs
 │   │   ├── FoldersWindow.Review.cs
 │   │   ├── FoldersWindow.Tools.cs
+│   │   ├── FoldersWindow.Widths.cs
 │   │   ├── FoldersWindow.xaml
 │   │   └── FoldersWindow.xaml.cs
 │   ├── Deckle.Home/
@@ -1942,6 +1958,7 @@ _Generated from `git ls-files` — do not edit by hand._
 │   │   │   ├── CardGridCapacity.cs
 │   │   │   ├── CardMeta.cs
 │   │   │   ├── DeckleProjectsSource.Window.cs
+│   │   │   ├── HomeLayout.cs
 │   │   │   └── ProjectsTarget.cs
 │   │   ├── Readouts/
 │   │   │   ├── Manifests/
@@ -2000,6 +2017,16 @@ _Generated from `git ls-files` — do not edit by hand._
 │   │   │   └── ProjectsWorkspace.cs
 │   │   ├── Deckle.Projects.csproj
 │   │   └── DeckleProjectsSource.cs
+│   ├── Deckle.Projects.App/
+│   │   ├── app.manifest
+│   │   ├── App.xaml
+│   │   ├── App.xaml.cs
+│   │   ├── Composition.cs
+│   │   ├── Deckle.Projects.App.csproj
+│   │   ├── DeckleProjectsAppSource.cs
+│   │   ├── Program.cs
+│   │   ├── ProjectsContribution.cs
+│   │   └── ProjectsDataCopy.cs
 │   ├── Deckle.Projects.Views/
 │   │   ├── Controls/
 │   │   │   ├── Breadcrumb.cs
@@ -2905,11 +2932,14 @@ _Generated from `git ls-files` — do not edit by hand._
 │   │   │   └── SearchRoutingTests.cs
 │   │   ├── AddedFolderStoreTests.cs
 │   │   ├── AddressResolverTests.cs
+│   │   ├── AddressShortFormTests.cs
 │   │   ├── Deckle.Folders.Tests.csproj
 │   │   ├── DeckleFoldersSourceEventIdTests.cs
 │   │   ├── DeckleFoldersSourceTests.cs
 │   │   ├── DenyListing.cs
+│   │   ├── DestinationHistoryTests.cs
 │   │   ├── EntryFormatTests.cs
+│   │   ├── FolderGroupingTests.cs
 │   │   ├── FolderIconRuleTests.cs
 │   │   ├── FolderListingBugNotes.md
 │   │   ├── FolderListingTests.cs
@@ -3220,6 +3250,11 @@ _Generated from `git ls-files` — do not edit by hand._
 │   ├── Deckle.Presets.Tests/
 │   │   ├── Deckle.Presets.Tests.csproj
 │   │   └── PresetFamilyTests.cs
+│   ├── Deckle.Projects.App.Tests/
+│   │   ├── Deckle.Projects.App.Tests.csproj
+│   │   ├── DeckleProjectsAppSourceTests.cs
+│   │   ├── ProjectsAppIdentityTests.cs
+│   │   └── ProjectsDataCopyTests.cs
 │   ├── Deckle.Projects.Tests/
 │   │   ├── Formatting/
 │   │   │   └── FormattingTests.cs
@@ -3227,6 +3262,8 @@ _Generated from `git ls-files` — do not edit by hand._
 │   │   │   └── ProjectOpenerTests.cs
 │   │   ├── Presentation/
 │   │   │   ├── ActionStatesTests.cs
+│   │   │   ├── HomeLayoutBugNotes.md
+│   │   │   ├── HomeLayoutTests.cs
 │   │   │   └── PresentationTests.cs
 │   │   ├── Readouts/
 │   │   │   ├── AgentReadingTests.cs
