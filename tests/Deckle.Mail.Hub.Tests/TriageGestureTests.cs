@@ -121,6 +121,29 @@ public sealed class TriageGestureTests
         Assert.Equal(0, session.SetAsideCount(MailFilter.All));
     }
 
+    // The mails the sorting set aside wait in the mailbox until the person
+    // ends the day; no other gesture sends them.
+    [Fact]
+    public void SetAsideMailsGoToTheTrashWhenTheDayEndsAndNotBefore()
+    {
+        (TriageSession session, SampleMailHubSource source, _) = Open();
+        int setAside = session.SetAsideCount(MailFilter.All);
+        Assert.True(setAside > 0);
+
+        session.MoveToTrash("s-camille");
+        session.AddTask("s-drive", session.Today);
+        session.DismissAllInfo(MailFilter.All);
+        session.UndoLast();
+
+        Assert.DoesNotContain(source.Applied, g => g.Kind == MailGestureKind.EndDay);
+        Assert.Equal(setAside, session.Activity.Count(a => a.AwaitsEndOfDay));
+
+        session.EndDay();
+
+        Assert.Equal(1, source.Applied.Count(g => g.Kind == MailGestureKind.EndDay));
+        Assert.DoesNotContain(session.Activity, a => a.AwaitsEndOfDay);
+    }
+
     [Fact]
     public void DoneForTodayIsEmphasisedOnlyWhenEveryRowIsTreated()
     {

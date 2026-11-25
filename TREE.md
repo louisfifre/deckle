@@ -182,6 +182,7 @@ _Generated from `git ls-files` — do not edit by hand._
 │   │   │   ├── execution.ps1
 │   │   │   ├── flows.ps1
 │   │   │   ├── launcher.ps1
+│   │   │   ├── logo.ps1
 │   │   │   └── logs.ps1
 │   │   ├── script-discovery/
 │   │   │   ├── catalog.ps1
@@ -265,12 +266,15 @@ _Generated from `git ls-files` — do not edit by hand._
 │   │   │   ├── build-locked.tests.ps1
 │   │   │   ├── build-server-watchdog.tests.ps1
 │   │   │   ├── BuildServerWatchdogBugNotes.md
+│   │   │   ├── deploy-prod.tests.ps1
 │   │   │   ├── fetch-autocorrect-data.tests.ps1
 │   │   │   ├── inspect-context.tests.ps1
 │   │   │   ├── InspectContextBugNotes.md
 │   │   │   ├── launch-app.tests.ps1
 │   │   │   ├── perf-compare.tests.ps1
-│   │   │   └── read-log.tests.ps1
+│   │   │   ├── read-log.tests.ps1
+│   │   │   ├── self-check.tests.ps1
+│   │   │   └── update-readme-stats.tests.ps1
 │   │   └── lib/
 │   │       ├── agent-skills-layout.tests.ps1
 │   │       ├── anytype-backend.tests.ps1
@@ -299,6 +303,7 @@ _Generated from `git ls-files` — do not edit by hand._
 │   ├── resource-validation.allowlist.json
 │   ├── self-check.ps1  — Self-check the built app Runs a built app of the suite once in its self-check mode and judges its report…
 │   ├── stats.ps1  — Repository statistics Walk every project under src\ and build one file inventory per Deckle module, w…
+│   ├── update-readme-stats.ps1  — Update the README pulse Regenerate the small "Development pulse" section in README.md from the local Gi…
 │   ├── verify-branch-server.ps1
 │   └── verify-branch.ps1  — Verify a branch on win-serv Sends a committed branch to the verification machine, win-serv, which builds it…
 ├── specs/
@@ -565,12 +570,14 @@ _Generated from `git ls-files` — do not edit by hand._
 │   │   ├── CrashSupervisor.cs
 │   │   ├── Deckle.App.csproj
 │   │   ├── FileTranscriptionRun.cs
+│   │   ├── HudCompletionMessage.cs
 │   │   ├── LogWindow.Chrome.cs
 │   │   ├── LogWindow.Interaction.cs
 │   │   ├── LogWindow.Model.cs
 │   │   ├── LogWindow.Notices.cs
 │   │   ├── LogWindow.xaml
 │   │   ├── LogWindow.xaml.cs
+│   │   ├── OpenFileAutoSave.cs
 │   │   ├── ProdUpdate.cs
 │   │   ├── Program.cs
 │   │   ├── SecondaryWindowPlacement.cs
@@ -699,6 +706,7 @@ _Generated from `git ls-files` — do not edit by hand._
 │   │   ├── Injection/
 │   │   │   ├── InjectionPlan.cs
 │   │   │   ├── ITextInjector.cs
+│   │   │   ├── ParagraphReplacementPlan.cs
 │   │   │   └── TextInjector.cs
 │   │   ├── Interop/
 │   │   │   └── KeyboardStateInterop.cs
@@ -2549,6 +2557,7 @@ _Generated from `git ls-files` — do not edit by hand._
 │   │   ├── AnytypeUtilityToolCatalogTests.cs
 │   │   ├── AssemblyInfo.cs
 │   │   ├── Deckle.Anytype.Mcp.Tests.csproj
+│   │   ├── FakeAnytypeSpace.cs
 │   │   ├── FakeSecretVault.cs
 │   │   ├── ManagementToolCatalogTests.cs
 │   │   ├── McpClientTokensBugNotes.md
@@ -2565,7 +2574,8 @@ _Generated from `git ls-files` — do not edit by hand._
 │   │   ├── ProviderKeywordsTests.cs
 │   │   ├── SchemaAdminToolCatalogTests.cs
 │   │   ├── SpacePlanToolCatalogTests.cs
-│   │   └── ToolCatalogTests.cs
+│   │   ├── ToolCatalogTests.cs
+│   │   └── ToolCatalogWiringTests.cs
 │   ├── Deckle.Anytype.Tests/
 │   │   ├── Fixtures/
 │   │   │   └── Experiences/
@@ -2662,9 +2672,11 @@ _Generated from `git ls-files` — do not edit by hand._
 │   │   ├── ExeIconTests.cs
 │   │   ├── FileTranscriptionBugNotes.md
 │   │   ├── FileTranscriptionRunTests.cs
+│   │   ├── HudCompletionTests.cs
 │   │   ├── HudFeedbackSinkTests.cs
 │   │   ├── MessageTemplateDoctrineTests.cs
 │   │   ├── MilestoneClosersTests.cs
+│   │   ├── OpenFileAutoSaveTests.cs
 │   │   ├── ProdApplyUpdateTests.cs
 │   │   ├── ProdUpdateTests.cs
 │   │   ├── PublishedClosureTests.cs
@@ -2756,6 +2768,7 @@ _Generated from `git ls-files` — do not edit by hand._
 │   │   ├── MistouchMiningMaintenanceTests.cs
 │   │   ├── MorphalouReaderTests.cs
 │   │   ├── PairModelTrainerTests.cs
+│   │   ├── ParagraphReplacementPlanTests.cs
 │   │   ├── PersonalDictionaryTests.cs
 │   │   ├── PersonalLexiconWithTermsTests.cs
 │   │   ├── PersonalWordAdmissionTests.cs
@@ -3057,7 +3070,8 @@ _Generated from `git ls-files` — do not edit by hand._
 │   │   ├── TrackpadEnginePressDelayTests.cs
 │   │   ├── TrackpadObservabilityBugNotes.md
 │   │   ├── TrackpadObservabilityCollection.cs
-│   │   └── TrackpadSettingsTests.cs
+│   │   ├── TrackpadSettingsTests.cs
+│   │   └── WindowsGestureNeutralizerTests.cs
 │   ├── Deckle.Install.Tests/
 │   │   ├── Deckle.Install.Tests.csproj
 │   │   ├── FolderSafetyTests.cs
@@ -3159,6 +3173,7 @@ _Generated from `git ls-files` — do not edit by hand._
 │   │   ├── Deckle.Llm.Tests.csproj
 │   │   ├── ImageRequestTests.cs
 │   │   ├── LlmUsageLogTests.cs
+│   │   ├── PromptTemplateFamilyTests.cs
 │   │   └── ReasoningOnTheWireTests.cs
 │   ├── Deckle.Mail.App.Tests/
 │   │   ├── Deckle.Mail.App.Tests.csproj
@@ -3170,6 +3185,7 @@ _Generated from `git ls-files` — do not edit by hand._
 │   │   ├── NavigationTests.cs
 │   │   ├── SampleAndSearchTests.cs
 │   │   ├── TaskDayTests.cs
+│   │   ├── TrashNoticeTests.cs
 │   │   ├── TriageGestureTests.cs
 │   │   └── TypesetTests.cs
 │   ├── Deckle.Mail.Tests/
@@ -3224,6 +3240,8 @@ _Generated from `git ls-files` — do not edit by hand._
 │   │   ├── ExecutableLocatorTests.cs
 │   │   ├── Fixture.cs
 │   │   ├── ForegroundChangeMappingTests.cs
+│   │   ├── HdrRuleEffectTests.cs
+│   │   ├── IsolatedDataRoot.cs
 │   │   ├── KeyValuesReaderTests.cs
 │   │   ├── MessageTemplateDoctrineTests.cs
 │   │   ├── MilestoneClosersTests.cs
@@ -3232,6 +3250,7 @@ _Generated from `git ls-files` — do not edit by hand._
 │   │   ├── OrchestrationIncidentTests.cs
 │   │   ├── OrchestrationObservabilityCollection.cs
 │   │   ├── ProfileTransactionTests.cs
+│   │   ├── RuntimeRulesTests.cs
 │   │   ├── ScanOnDiskTests.cs
 │   │   ├── SteamLibraryScanEdgeCaseTests.cs
 │   │   └── SteamLibraryTests.cs

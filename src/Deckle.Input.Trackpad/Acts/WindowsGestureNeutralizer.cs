@@ -45,24 +45,38 @@ public static class WindowsGestureNeutralizer
 
     private sealed record GestureBackup(Dictionary<string, int?> Values);
 
-    private static string BackupPath =>
+    // Where the app keeps the backup. Evaluated at each use: the module
+    // directory is created on the way.
+    private static string DefaultBackupPath() =>
         Path.Combine(AppPaths.GetModuleDirectory("trackpad"), BackupFileName);
 
-    public static bool TryNeutralize()
+    public static bool TryNeutralize() => TryNeutralize(KeyPath, DefaultBackupPath);
+
+    public static bool TryRestore() => TryRestore(KeyPath, DefaultBackupPath);
+
+    public static bool AreNeutralized() => AreNeutralized(KeyPath);
+
+    public static bool HasBackup() => HasBackup(DefaultBackupPath);
+
+    // The same acts over a registry key (HKCU-relative) and a backup file the
+    // caller names: the app passes the real ones above, the tests a throwaway
+    // key and a temporary file, so no test reads or writes the user's trackpad.
+    internal static bool TryNeutralize(string keyPath, Func<string> backupPathOf)
     {
         try
         {
+            string backupPath = backupPathOf();
             // Backup first, and only if one does not already exist — a second
             // neutralize after a first would otherwise snapshot the zeros and
             // destroy the genuine originals.
-            if (!File.Exists(BackupPath))
+            if (!File.Exists(backupPath))
             {
-                var backup = ReadCurrentValues();
-                PersistBackup(backup);
+                var backup = ReadCurrentValues(keyPath);
+                PersistBackup(backup, backupPath);
                 DeckleTrackpadSource.Log.GesturesNeutralizedDetail(SummarizeBackup(backup));
             }
 
-            using var key = Registry.CurrentUser.CreateSubKey(KeyPath, writable: true);
+            using var key = Registry.CurrentUser.CreateSubKey(keyPath, writable: true);
             if (key is null)
             {
                 DeckleTrackpadSource.Log.GestureWriteFailed("neutralize", "key_unavailable", "", "");
@@ -83,16 +97,17 @@ public static class WindowsGestureNeutralizer
         }
     }
 
-    public static bool TryRestore()
+    internal static bool TryRestore(string keyPath, Func<string> backupPathOf)
     {
         try
         {
+            string backupPath = backupPathOf();
             // No backup file → nothing to restore. Not an error: the act was
             // never run, or has already been restored.
-            if (!File.Exists(BackupPath))
+            if (!File.Exists(backupPath))
                 return false;
 
-            string json = File.ReadAllText(BackupPath);
+            string json = File.ReadAllText(backupPath);
             var backup = JsonSerializer.Deserialize<GestureBackup>(json);
             if (backup?.Values is null)
             {
@@ -100,7 +115,7 @@ public static class WindowsGestureNeutralizer
                 return false;
             }
 
-            using var key = Registry.CurrentUser.CreateSubKey(KeyPath, writable: true);
+            using var key = Registry.CurrentUser.CreateSubKey(keyPath, writable: true);
             if (key is null)
             {
                 DeckleTrackpadSource.Log.GestureWriteFailed("restore", "key_unavailable", "", "");
@@ -120,7 +135,7 @@ public static class WindowsGestureNeutralizer
 
             // Restore done — drop the backup so a subsequent neutralize takes a
             // fresh snapshot of whatever the values are then.
-            File.Delete(BackupPath);
+            File.Delete(backupPath);
             DeckleTrackpadSource.Log.GesturesRestored();
             return true;
         }
@@ -132,11 +147,11 @@ public static class WindowsGestureNeutralizer
         }
     }
 
-    public static bool AreNeutralized()
+    internal static bool AreNeutralized(string keyPath)
     {
         try
         {
-            using var key = Registry.CurrentUser.OpenSubKey(KeyPath, writable: false);
+            using var key = Registry.CurrentUser.OpenSubKey(keyPath, writable: false);
             if (key is null) return false;
 
             foreach (string name in ValueNames)
@@ -156,25 +171,25 @@ public static class WindowsGestureNeutralizer
         }
     }
 
-    public static bool HasBackup()
+    internal static bool HasBackup(Func<string> backupPathOf)
     {
         try
         {
-            return File.Exists(BackupPath);
+            return File.Exists(backupPathOf());
         }
         catch (Exception ex)
         {
-            // BackupPath creates the module directory, which can throw.
+            // The default backup path creates the module directory, which can throw.
             DeckleTrackpadSource.Log.GestureStateUnreadable(
                 "has_backup", ex.GetType().Name, ex.Message);
             return false;
         }
     }
 
-    private static GestureBackup ReadCurrentValues()
+    private static GestureBackup ReadCurrentValues(string keyPath)
     {
         var values = new Dictionary<string, int?>(ValueNames.Length);
-        using var key = Registry.CurrentUser.OpenSubKey(KeyPath, writable: false);
+        using var key = Registry.CurrentUser.OpenSubKey(keyPath, writable: false);
         foreach (string name in ValueNames)
         {
             object? raw = key?.GetValue(name);
@@ -183,11 +198,11 @@ public static class WindowsGestureNeutralizer
         return new GestureBackup(values);
     }
 
-    private static void PersistBackup(GestureBackup backup)
+    private static void PersistBackup(GestureBackup backup, string backupPath)
     {
         string json = JsonSerializer.Serialize(
             backup, new JsonSerializerOptions { WriteIndented = true });
-        File.WriteAllText(BackupPath, json);
+        File.WriteAllText(backupPath, json);
     }
 
     private static string SummarizeBackup(GestureBackup backup)
