@@ -277,7 +277,12 @@ public sealed partial class FoldersWindow
         var opened = new TaskCompletionSource<ContentDialog>(TaskCreationOptions.RunContinuationsAsynchronously);
         _ = FolderGroupDialog.AskAsync(root, null, n => _folders.IsGroupNameTaken(n), opened.SetResult);
         ContentDialog dialog = await opened.Task;
-        ((TextBox)((StackPanel)dialog.Content).Children[0]).Text = typedName;
+        var field = (TextBox)((StackPanel)dialog.Content).Children[0];
+        // Opened can come before the field's template is loaded; a text set before
+        // then raises no TextChanged, so the dialog never hears it, which a person
+        // typing in a loaded field does not meet.
+        for (int loading = 0; !field.IsLoaded && loading < 2000; loading += 50) await Task.Delay(50);
+        field.Text = typedName;
         _reviewDialog = dialog;
         // The field's change reaches the dialog's button on the dispatcher, a
         // moment after the text is set.
