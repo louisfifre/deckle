@@ -33,7 +33,7 @@ public sealed partial class LogWindow : Window, ILogWindowSink
         // here rather than on the UI thread.
         _pendingEntries.Enqueue(new LogEntry(entry));
 
-        // Drop the oldest instead of BoundedWriteQueue's wait: an emitter on
+        // Drop the oldest instead of waiting: an emitter on
         // the UI thread would block on a queue only the UI thread drains. The
         // count and the queue move apart for an instant under contention, so
         // the bound is approximate by a few entries, never open-ended.

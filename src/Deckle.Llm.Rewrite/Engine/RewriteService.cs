@@ -277,10 +277,10 @@ public class RewriteService : IRewriteService
         }
         catch (OperationCanceledException) when (cancellationToken.IsCancellationRequested)
         {
-            // The interactive deadline or a keystroke that made the request
-            // stale: both are expected, so no Warning, but the rewrite this
-            // method started still gets its end. A cancellation says nothing
-            // about the server, so the incident stays as it was.
+            // A keystroke that made the request stale: expected, so no
+            // Warning, but the rewrite this method started still gets its
+            // end. A cancellation says nothing about the server, so the
+            // incident stays as it was.
             sw.Stop();
             DeckleLlmSource.Log.RewriteCancelled(caller, providerId, sw.ElapsedMilliseconds);
             return default;

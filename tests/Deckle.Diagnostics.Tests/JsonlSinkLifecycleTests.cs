@@ -14,7 +14,7 @@ public sealed class JsonlSinkLifecycleTests
     {
         string directory = NewTempDirectory("flush");
         string path = Path.Combine(directory, "ordered.jsonl");
-        var sink = NewSink(path, queueCapacity: 4);
+        var sink = NewSink(path, queueCapacity: 256);
 
         try
         {
@@ -39,7 +39,7 @@ public sealed class JsonlSinkLifecycleTests
     {
         string directory = NewTempDirectory("dispose");
         string path = Path.Combine(directory, "drain.jsonl");
-        var sink = NewSink(path, queueCapacity: 2);
+        var sink = NewSink(path, queueCapacity: 256);
 
         try
         {
@@ -77,6 +77,30 @@ public sealed class JsonlSinkLifecycleTests
             Assert.Equal(2, SharedFileReader.ReadAllLines(Path.Combine(directory, "0.jsonl")).Count());
             for (int i = 1; i < 6; i++)
                 Assert.Single(SharedFileReader.ReadAllLines(Path.Combine(directory, $"{i}.jsonl")));
+        }
+        finally
+        {
+            sink.Dispose();
+            Directory.Delete(directory, recursive: true);
+        }
+    }
+
+    [Fact]
+    public void TheRoutedDatasetSinkLosesNoRowWhenItsQueueIsSmall()
+    {
+        string directory = NewTempDirectory("routed-no-loss");
+        var sink = new RoutedJsonlSink(
+            pathResolver: _ => Path.Combine(directory, "corpus.jsonl"),
+            kindLabel: "routed_test",
+            predicate: static _ => true,
+            queueCapacity: 2);
+
+        try
+        {
+            for (int i = 0; i < 300; i++) sink.Write(Entry(i, route: 0));
+            sink.Flush();
+
+            Assert.Equal(300, SharedFileReader.ReadAllLines(Path.Combine(directory, "corpus.jsonl")).Count());
         }
         finally
         {

@@ -7,6 +7,9 @@ namespace Deckle.Diagnostics;
 // Dynamic destinations are held in a fixed-size LRU. Eviction flushes and
 // closes the least recently used stream before a new one opens, so an evolving
 // corpus cannot turn path diversity into an unbounded handle cache.
+//
+// The dataset is the user's data: when the queue is full, producers wait for
+// the disk and no row is dropped (unlike JsonlSink, whose log drops).
 public sealed class RoutedJsonlSink : IFlushableLogSink
 {
     private const int DefaultQueueCapacity = 1024;

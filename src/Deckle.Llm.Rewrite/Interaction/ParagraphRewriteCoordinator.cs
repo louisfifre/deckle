@@ -4,7 +4,9 @@ namespace Deckle.Llm.Rewrite;
 
 // Owns the asynchronous offer lifecycle. Every input mutation advances the
 // revision and cancels the in-flight request, so a result can surface only for
-// the exact caret state that requested it.
+// the exact caret state that requested it. A request has no time limit: the
+// offer shows whenever the model is done, however long that takes, and only
+// typing again (a mutation) takes it back.
 public sealed class ParagraphRewriteCoordinator : IDisposable
 {
     private readonly IRewriteService _service;
@@ -31,7 +33,7 @@ public sealed class ParagraphRewriteCoordinator : IDisposable
             if (_disposed) return;
             CancelRequest();
             revision = ++_revision;
-            request = new CancellationTokenSource(ParagraphRewrite.Deadline);
+            request = new CancellationTokenSource();
             _request = request;
         }
 
