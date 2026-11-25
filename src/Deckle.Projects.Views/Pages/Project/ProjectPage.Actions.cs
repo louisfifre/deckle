@@ -54,7 +54,7 @@ internal sealed partial class ProjectPage
 
             // Until the menu has answered nothing is known against the pin, so
             // the card is offered; the engine refuses a start that cannot be made.
-            bool menuGivesIt = entries is null || entries.Any(e => e.Gives(pin.Action));
+            bool menuGivesIt = entries is null || entries.Any(e => e.GivesPin(pin));
             PinnedCardState state = ActionStates.ForCard(
                 pin, running, board.LastResult(project.Id, pin.Action), menuGivesIt, canStart, now);
 

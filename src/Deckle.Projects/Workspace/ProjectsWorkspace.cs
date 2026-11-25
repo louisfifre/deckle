@@ -105,7 +105,7 @@ public sealed class ProjectsWorkspace : IDisposable
         PinnedAction? main = project?.MainAction;
         return project is null || main is null
             ? Task.FromResult(new StartOutcome(null, StartRefusal.NotPinned))
-            : Runner.StartAsync(project, main);
+            : StartIfListed(project, main);
     }
 
     // Runs a pinned action of the project.
@@ -114,6 +114,18 @@ public sealed class ProjectsWorkspace : IDisposable
         ProjectEntry? project = Store.Find(projectId);
         PinnedAction? pin = project?.Pinned.FirstOrDefault(p => p.Action == action);
         return project is null || pin is null
+            ? Task.FromResult(new StartOutcome(null, StartRefusal.NotPinned))
+            : StartIfListed(project, pin);
+    }
+
+    // A pin the last listing of the menu does not give (it vanished, or its id
+    // now names another script) is not started: a run goes by the id, so it
+    // would run something else. Before any listing nothing is known against the
+    // pin, and the runner decides.
+    private Task<StartOutcome> StartIfListed(ProjectEntry project, PinnedAction pin)
+    {
+        IReadOnlyList<ScriptMenuEntry>? listed = Menus.Cached(project.Id);
+        return listed is not null && !listed.Any(e => e.GivesPin(pin))
             ? Task.FromResult(new StartOutcome(null, StartRefusal.NotPinned))
             : Runner.StartAsync(project, pin);
     }

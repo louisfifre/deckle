@@ -321,8 +321,8 @@ public sealed class ProjectStore
             for (int i = 0; i < p.Pinned.Count; i++)
             {
                 PinnedAction pin = p.Pinned[i];
-                ScriptMenuEntry? entry = entries.FirstOrDefault(e => e.Gives(pin.Action));
-                if (entry is null || entry.Script != pin.Script || entry.Label == pin.Label) continue;
+                ScriptMenuEntry? entry = entries.FirstOrDefault(e => e.GivesPin(pin));
+                if (entry is null || entry.Label == pin.Label) continue;
                 updated ??= [.. p.Pinned];
                 updated[i] = pin with { Label = entry.Label };
             }

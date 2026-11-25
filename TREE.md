@@ -3276,6 +3276,7 @@ _Generated from `git ls-files` — do not edit by hand._
 │   │   │   ├── ProjectsSampleWorldTests.cs
 │   │   │   └── SampleGitIsolationTests.cs
 │   │   ├── ScriptMenu/
+│   │   │   ├── ScriptMenuEntryTests.cs
 │   │   │   ├── ScriptMenuParserTests.cs
 │   │   │   └── ScriptMenuReaderTests.cs
 │   │   ├── Store/

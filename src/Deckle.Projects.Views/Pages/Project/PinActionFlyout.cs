@@ -109,7 +109,7 @@ internal sealed class PinActionList : UserControl
         {
             foreach (PinnedAction pin in project.Pinned)
             {
-                if (entries.Any(e => e.Gives(pin.Action))) continue;
+                if (entries.Any(e => e.GivesPin(pin))) continue;
                 list.Children.Add(MakeRow(pin.Action, pin.Label, pin.Script, pin.Action.Variant, gone: true));
             }
         }

@@ -213,6 +213,22 @@ public sealed class ProjectsWorkspaceTests : IDisposable
     }
 
     [Fact]
+    public async Task APinWhoseIdentifierNowNamesAnotherScriptIsNotStarted()
+    {
+        ProjectEntry project = AddWithMenu("alpha");
+        _menus.Answer = new ScriptMenuListing.Listed([new ScriptMenuEntry("build-run.1", "Build", "build-run2.ps1", "", [])]);
+        await _workspace.Menus.GetAsync(project, TestContext.Current.CancellationToken);
+
+        StartOutcome main = await _workspace.StartMainActionAsync(project.Id);
+        StartOutcome pinned = await _workspace.StartPinnedActionAsync(project.Id, new ActionRef("build-run.1"));
+
+        Assert.Equal(StartRefusal.NotPinned, main.Refusal);
+        Assert.Equal(StartRefusal.NotPinned, pinned.Refusal);
+        Assert.Empty(_launcher.Commands);
+        Assert.Equal("build-run.ps1", _workspace.Store.Find(project.Id)!.MainAction!.Script);
+    }
+
+    [Fact]
     public async Task AMenuThatIsNotListedIsNotCachedSoTheNextAskReadsAgain()
     {
         ProjectEntry project = AddWithMenu("alpha");
