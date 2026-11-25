@@ -9,7 +9,7 @@ public sealed class OllamaServiceEndpointTests
 {
     [Theory]
     [InlineData("localhost:11434")]
-    [InlineData("ftp://192.168.0.1:11434")]
+    [InlineData("ftp://192.0.2.10:11434")]
     [InlineData("not an address")]
     [InlineData("")]
     public async Task AMistypedEndpointIsNotAvailableAndListingItFails(string endpoint)
