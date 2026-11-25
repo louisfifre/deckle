@@ -1615,8 +1615,7 @@ _Generated from `git ls-files` — do not edit by hand._
 │   │   ├── Engine/
 │   │   │   ├── ParagraphRewrite.cs
 │   │   │   ├── RewriteFailureMessage.cs
-│   │   │   ├── RewriteService.cs
-│   │   │   └── SentenceRewrite.cs
+│   │   │   └── RewriteService.cs
 │   │   ├── Gate/
 │   │   │   ├── DiffAlignment.cs
 │   │   │   ├── DiffGateVerdict.cs
@@ -3164,7 +3163,6 @@ _Generated from `git ls-files` — do not edit by hand._
 │   │   ├── RewriteServiceCacheTests.cs
 │   │   ├── RewriteServiceFeedbackTests.cs
 │   │   ├── SentenceBoundaryTests.cs
-│   │   ├── SentenceRewriteTests.cs
 │   │   └── StepTimelineLayoutTests.cs
 │   ├── Deckle.Llm.Tests/
 │   │   ├── ClaudePromptCacheTests.cs

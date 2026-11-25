@@ -744,8 +744,6 @@ public sealed class LiveTranscriptionPipelineTests
         }
 
         public GenerationResult RewriteParagraph(string paragraph, CancellationToken cancellationToken) => default;
-
-        public GenerationResult RewriteSentence(string sentence, CancellationToken cancellationToken) => default;
     }
 
     // Fails every whole-take rewrite, the one step left after the raw copy.
@@ -762,8 +760,6 @@ public sealed class LiveTranscriptionPipelineTests
         }
 
         public GenerationResult RewriteParagraph(string paragraph, CancellationToken cancellationToken) => default;
-
-        public GenerationResult RewriteSentence(string sentence, CancellationToken cancellationToken) => default;
     }
 
     internal sealed class StreamingHost : ITranscriptionEngineHost
