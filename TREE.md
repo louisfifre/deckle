@@ -1597,7 +1597,6 @@ _Generated from `git ls-files` — do not edit by hand._
 │   │   ├── DeckleLlmSource.Persistence.cs
 │   │   ├── DeckleLlmSource.Providers.cs
 │   │   ├── DeckleLlmSource.Rewrite.cs
-│   │   ├── DeckleLlmSource.RuntimeStatus.cs
 │   │   └── OllamaService.cs
 │   ├── Deckle.Llm.Rewrite/
 │   │   ├── Availability/
@@ -3485,7 +3484,6 @@ _Generated from `git ls-files` — do not edit by hand._
 │   │   │   └── LexiconTermsTests.cs
 │   │   ├── CorpusRecordSkippedTests.cs
 │   │   ├── Deckle.Transcription.Tests.csproj
-│   │   ├── DeckleLlmSourceTests.cs
 │   │   ├── DeckleWhispSourceEventIdTests.cs
 │   │   ├── DeckleWhispSourceTests.cs
 │   │   ├── DictationEndCaptureBugNotes.md
