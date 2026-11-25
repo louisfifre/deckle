@@ -3170,6 +3170,7 @@ _Generated from `git ls-files` — do not edit by hand._
 │   │   ├── NavigationTests.cs
 │   │   ├── SampleAndSearchTests.cs
 │   │   ├── TaskDayTests.cs
+│   │   ├── TrashNoticeTests.cs
 │   │   ├── TriageGestureTests.cs
 │   │   └── TypesetTests.cs
 │   ├── Deckle.Mail.Tests/
