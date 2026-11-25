@@ -18,11 +18,8 @@ public sealed partial class TranscribeRewriteWindow
     private FileTranscriptionItem? _openFile;
     private DispatcherQueueTimer? _autoSaveTimer;
 
-    // The field's text as it stood when it was last in step with the .txt: at
-    // the opening, then after each write. RichEdit hands text back with its
-    // own line breaks, so comparing with the file's text would rewrite a file
-    // that was only looked at.
-    private string _savedText = "";
+    // The decision to write, and the text last in step with the .txt.
+    private OpenFileAutoSave? _autoSave;
 
     private void ScheduleAutoSave()
     {
@@ -42,27 +39,20 @@ public sealed partial class TranscribeRewriteWindow
     private void SaveOpenFile()
     {
         _autoSaveTimer?.Stop();
-        if (_openFile is not { OutputPath: { } path } file) return;
-        string text = ReadText();
-        if (text == _savedText) return;
-        try
-        {
-            File.WriteAllText(path, text);
-            _savedText = text;
-            file.Text = text;
-        }
-        catch (Exception ex) when (ex is IOException or UnauthorizedAccessException)
-        {
-            DeckleWindowingSource.Log.WindowOperationFailed(
-                "transcribe-rewrite", "autosave", "exception", ex.GetType().Name, ex.Message);
-            ShowNotice(InfoBarSeverity.Error,
-                "TranscribeRewrite_AutoSaveFailed_Title", "TranscribeRewrite_AutoSaveFailed_Body");
-        }
+        if (_autoSave is null) return;
+        OpenFileAutoSave.Result result = _autoSave.Save(ReadText());
+        if (result.Outcome != OpenFileAutoSave.Outcome.Failed) return;
+        Exception ex = result.Error!;
+        DeckleWindowingSource.Log.WindowOperationFailed(
+            "transcribe-rewrite", "autosave", "exception", ex.GetType().Name, ex.Message);
+        ShowNotice(InfoBarSeverity.Error,
+            "TranscribeRewrite_AutoSaveFailed_Title", "TranscribeRewrite_AutoSaveFailed_Body");
     }
 
     private void CloseOpenFile()
     {
         SaveOpenFile();
         _openFile = null;
+        _autoSave = null;
     }
 }

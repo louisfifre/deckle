@@ -189,7 +189,7 @@ public sealed partial class TranscribeRewriteWindow
         _history.Clear();
         WriteText(item.Text);
         _openFile = item;
-        _savedText = ReadText();
+        _autoSave = new OpenFileAutoSave(item, ReadText());
         _sourceAudioPath = item.Path;
         FileCrumbs.ItemsSource = new[] { Loc.Get("TranscribeRewrite_AllFiles"), item.Name };
         FileHeader.Visibility = Visibility.Visible;

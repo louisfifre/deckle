@@ -572,6 +572,7 @@ _Generated from `git ls-files` — do not edit by hand._
 │   │   ├── LogWindow.Notices.cs
 │   │   ├── LogWindow.xaml
 │   │   ├── LogWindow.xaml.cs
+│   │   ├── OpenFileAutoSave.cs
 │   │   ├── ProdUpdate.cs
 │   │   ├── Program.cs
 │   │   ├── SecondaryWindowPlacement.cs
@@ -2667,6 +2668,7 @@ _Generated from `git ls-files` — do not edit by hand._
 │   │   ├── HudFeedbackSinkTests.cs
 │   │   ├── MessageTemplateDoctrineTests.cs
 │   │   ├── MilestoneClosersTests.cs
+│   │   ├── OpenFileAutoSaveTests.cs
 │   │   ├── ProdApplyUpdateTests.cs
 │   │   ├── ProdUpdateTests.cs
 │   │   ├── PublishedClosureTests.cs
