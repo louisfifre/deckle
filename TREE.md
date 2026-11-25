@@ -3244,7 +3244,8 @@ _Generated from `git ls-files` — do not edit by hand._
 │   │   │   ├── RunWrapperBehaviourTests.cs
 │   │   │   └── RunWrapperTests.cs
 │   │   ├── Sample/
-│   │   │   └── ProjectsSampleWorldTests.cs
+│   │   │   ├── ProjectsSampleWorldTests.cs
+│   │   │   └── SampleGitIsolationTests.cs
 │   │   ├── ScriptMenu/
 │   │   │   ├── ScriptMenuParserTests.cs
 │   │   │   └── ScriptMenuReaderTests.cs
