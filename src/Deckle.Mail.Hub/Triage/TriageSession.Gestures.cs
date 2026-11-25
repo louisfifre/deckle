@@ -5,6 +5,15 @@ namespace Deckle.Mail.Hub;
 // Activity, and hands the gesture to the source. A gesture that cannot apply
 // (a row already treated, a task without Anytype) returns false and changes
 // nothing.
+public enum TrashOutcome
+{
+    // The person refused the first-trash notice: nothing happened.
+    Declined,
+    // The person went on but the gesture could not apply (row gone or treated).
+    NotApplied,
+    Applied,
+}
+
 public sealed partial class TriageSession
 {
     // Rows treated in this window, last gesture last: Ctrl+Z undoes the top.
@@ -28,6 +37,19 @@ public sealed partial class TriageSession
         Treat(row, GestureResult.Task(day));
         _source.Apply(new MailGesture(MailGestureKind.AddTask, subjectId, day));
         return true;
+    }
+
+    // The gesture of the person: the first time, the notice is asked and the
+    // mail goes to the trash only if it is accepted. The views hand the
+    // session the way to ask; the decision is the session's.
+    public async Task<TrashOutcome> MoveToTrashAsync(string subjectId, Func<Task<bool>> askNotice)
+    {
+        if (!IsTrashNoticeAccepted)
+        {
+            if (!await askNotice()) return TrashOutcome.Declined;
+            AcceptTrashNotice();
+        }
+        return MoveToTrash(subjectId) ? TrashOutcome.Applied : TrashOutcome.NotApplied;
     }
 
     public bool MoveToTrash(string subjectId)
