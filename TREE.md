@@ -700,7 +700,6 @@ _Generated from `git ls-files` — do not edit by hand._
 │   │   │   ├── MistouchFamilyCorrector.cs
 │   │   │   ├── QwertyAdjacency.cs
 │   │   │   ├── TrainerReport.cs
-│   │   │   ├── TypoOptions.cs
 │   │   │   └── WordShape.cs
 │   │   ├── Injection/
 │   │   │   ├── InjectionPlan.cs

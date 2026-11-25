@@ -19,8 +19,8 @@ public class PersonalLexiconWithTermsTests
         var french = FrequencyLexicon.LoadTsv(new StringReader("bonjour\t300\n"));
         var declared = new PersonalLexiconWithTerms(Empty, () => ["Bonjuor"]);
 
-        Assert.NotNull(new ConservativeTypoCorrector(french, null, Empty, null).Evaluate("bonjuor", []));
-        Assert.Null(new ConservativeTypoCorrector(french, null, declared, null).Evaluate("bonjuor", []));
+        Assert.NotNull(new ConservativeTypoCorrector(french, null, Empty).Evaluate("bonjuor", []));
+        Assert.Null(new ConservativeTypoCorrector(french, null, declared).Evaluate("bonjuor", []));
     }
 
     [Fact]

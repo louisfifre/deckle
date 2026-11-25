@@ -25,7 +25,7 @@ public class CorrectionTraceTests
     }
 
     private static ConservativeTypoCorrector Typo() =>
-        new(French(), english: null, personal: null, options: null);
+        new(French(), english: null, personal: null);
 
     [Fact]
     public void RecordsAFiredLexicalGate()
