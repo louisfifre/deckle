@@ -1,15 +1,14 @@
-using Deckle.Chrono;
 using Xunit;
 
-namespace Deckle.Chrono.Tests;
+namespace Deckle.Hud.Tests;
 
 [Trait("Category", "unit")]
-public class ChronoFormatterTests
+public class ChronoDigitsTests
 {
     [Fact]
     public void DecomposeReturnsZeroForTimeSpanZero()
     {
-        var d = ChronoFormatter.Decompose(TimeSpan.Zero);
+        var d = ChronoDigits.Decompose(TimeSpan.Zero);
 
         Assert.Equal(0, d.Minutes);
         Assert.Equal(0, d.Seconds);
@@ -23,7 +22,7 @@ public class ChronoFormatterTests
         // centiseconds = milliseconds / 10 (670ms → 67cs).
         var elapsed = new TimeSpan(0, 1, 23, 45, 670);
 
-        var d = ChronoFormatter.Decompose(elapsed);
+        var d = ChronoDigits.Decompose(elapsed);
 
         Assert.Equal(83, d.Minutes);
         Assert.Equal(45, d.Seconds);
@@ -36,7 +35,7 @@ public class ChronoFormatterTests
         // Keeps the two-digit slot, and the HUD's width, stable for long sessions.
         var elapsed = TimeSpan.FromMinutes(105);
 
-        var d = ChronoFormatter.Decompose(elapsed);
+        var d = ChronoDigits.Decompose(elapsed);
 
         Assert.Equal(5, d.Minutes);
     }
@@ -46,7 +45,7 @@ public class ChronoFormatterTests
     {
         var elapsed = TimeSpan.FromSeconds(120);
 
-        var d = ChronoFormatter.Decompose(elapsed, capSeconds: 0);
+        var d = ChronoDigits.Decompose(elapsed, capSeconds: 0);
 
         Assert.Equal(2, d.Minutes);
         Assert.Equal(0, d.Seconds);
@@ -57,7 +56,7 @@ public class ChronoFormatterTests
     {
         var elapsed = TimeSpan.FromSeconds(120);
 
-        var d = ChronoFormatter.Decompose(elapsed, capSeconds: 60);
+        var d = ChronoDigits.Decompose(elapsed, capSeconds: 60);
 
         Assert.Equal(1, d.Minutes);
         Assert.Equal(0, d.Seconds);
@@ -68,23 +67,9 @@ public class ChronoFormatterTests
     {
         var elapsed = TimeSpan.FromSeconds(30);
 
-        var d = ChronoFormatter.Decompose(elapsed, capSeconds: 60);
+        var d = ChronoDigits.Decompose(elapsed, capSeconds: 60);
 
         Assert.Equal(0, d.Minutes);
         Assert.Equal(30, d.Seconds);
-    }
-
-    [Fact]
-    public void FormatMmSsCsPadsAllComponentsToTwoDigits()
-    {
-        var elapsed = new TimeSpan(0, 0, 3, 4, 50);
-
-        Assert.Equal("03:04.05", ChronoFormatter.FormatMmSsCs(elapsed));
-    }
-
-    [Fact]
-    public void FormatMmSsCsReturnsZeroFormattedForZero()
-    {
-        Assert.Equal("00:00.00", ChronoFormatter.FormatMmSsCs(TimeSpan.Zero));
     }
 }

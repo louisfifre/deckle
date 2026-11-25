@@ -61,7 +61,7 @@ _Avoid_ : event (what happened, which an entry records).
 What happened, declared by a provider with named fields. One emission becomes one log entry in each sink that takes it.
 
 **Provider** :
-The source that declares and emits a family of events, one `EventSource` per area, such as `Deckle-Chrono`. A reader filters on it to see one area.
+The source that declares and emits a family of events, one `EventSource` per area, such as `Deckle-Audio`. A reader filters on it to see one area.
 
 **Level** :
 The severity of an entry, the .NET `EventLevel` names from `Critical` through `Error`, `Warning` and `Informational` to `Verbose`. A `Warning` says the work went on degraded, an `Error` that it stopped. The level sets the shape of an event's message: a sentence alone at `Informational`, `name={n}` pairs only at `Verbose`, and at `Warning` and above a sentence, a line break, then the pairs.
