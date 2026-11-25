@@ -64,10 +64,19 @@ public partial class App
             case ToggleResult.Stopped:
                 DeckleAppSource.Log.HotkeyStop();
                 // Acknowledged here at once: the next engine status only fires
-                // after the streaming drain decodes the queued tail, so the chrono
+                // after the streaming drain decodes the queued speech, so the chrono
                 // would keep ticking and the stop would feel laggy. The later
                 // status-driven SwitchToTranscribing is an idempotent no-op.
                 _hudWindow?.SwitchToTranscribing();
+                // The tray and the windows leave Recording at the press too:
+                // the microphone closes here, while the next engine status
+                // waits for the drain and can come seconds later.
+                string transcribing = Deckle.Localization.Loc.Get("Status_Transcribing");
+                _tray?.UpdateStatus(
+                    _quitPending ? QuitPendingStatus(transcribing) : transcribing,
+                    isRecording: false);
+                _lastRecordingState = false;
+                ApplyRecordingStateToWindows(false);
                 break;
 
             case ToggleResult.IgnoredBusy:
