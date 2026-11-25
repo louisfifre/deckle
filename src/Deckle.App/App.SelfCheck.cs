@@ -238,6 +238,8 @@ public partial class App
         {
             // The Rewriting page with its dictation steps shown (App.SelfCheck.Rewriting.cs).
             SeedRewritingSample(whileSpeaking: true);
+            // The Autocorrect page with its switch on (App.SelfCheck.Autocorrect.cs).
+            SeedAutocorrectOn();
 
             Step("settings");
             Settings.SettingsWindow settings = EnsureSettingsWindow();
