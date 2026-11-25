@@ -74,11 +74,6 @@ public sealed partial class AmbientEngine
                 (_hbPushDurationsMs ??= new List<double>(128)).Add(pushMs);
 
             _lastR = color.R; _lastG = color.G; _lastB = color.B;
-            // Stamp the pushed Hue state for echo discrimination — the
-            // bridge emits a grouped_light EventStream update for this
-            // PUT, sometimes later than a pure timing window can cover.
-            if (_managedGroupId is not null)
-                RecordHuePush("group:" + _managedGroupId, color, DateTimeOffset.UtcNow);
             _pushedCount++;
             if (heartbeatDetailEnabled) _hbPushed++;
             if (pushDetailEnabled)

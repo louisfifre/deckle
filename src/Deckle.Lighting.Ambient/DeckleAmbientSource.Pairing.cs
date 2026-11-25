@@ -47,7 +47,8 @@ public sealed partial class DeckleAmbientSource
     }
 
     // client_key_present = false means the Entertainment streaming key is
-    // missing from the vault, so Ambient lighting falls back to REST pushes.
+    // missing from the vault, so Ambient cannot start until the bridge is
+    // paired again.
     [Event(EvtBridgeRestoredFromSettings,
            Level = EventLevel.Informational,
            Keywords = (EventKeywords)Keywords.Lifecycle,

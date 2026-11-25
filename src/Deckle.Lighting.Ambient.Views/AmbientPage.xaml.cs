@@ -192,19 +192,39 @@ public sealed partial class AmbientPage : Page
 
     // The engine reports a failed start as Error, then Off. The banner says it
     // while the switch stays on, and goes when a start begins again or the
-    // switch goes off (ResyncFromSettings).
+    // switch goes off (ResyncFromSettings). When the cause is one the person
+    // fixes, in the Hue app or by pairing again, the banner says which; the
+    // failure is read on the engine thread, before the hop to the UI.
     private AmbientEngine? _engine;
 
     private void OnEngineStateChanged(AmbientEngineState state)
-        => DispatcherQueue.TryEnqueueObserved(
+    {
+        string? message = state == AmbientEngineState.Error
+            ? StartFailedMessage(_engine?.LastStartFailure ?? AmbientStartFailure.Other)
+            : null;
+        DispatcherQueue.TryEnqueueObserved(
             operation: "ui-update", caller: "ambient-page-start-failed",
             callback: () =>
             {
-                if (state == AmbientEngineState.Error) StartFailedInfoBar.IsOpen = true;
+                if (state == AmbientEngineState.Error)
+                {
+                    StartFailedInfoBar.Message = message ?? string.Empty;
+                    StartFailedInfoBar.IsOpen = true;
+                }
                 else if (state is AmbientEngineState.Starting or AmbientEngineState.Running)
+                {
                     StartFailedInfoBar.IsOpen = false;
+                }
             },
             rejectSource: "AMBIENT", rejectWhat: "start failed banner");
+    }
+
+    private static string? StartFailedMessage(AmbientStartFailure failure) => failure switch
+    {
+        AmbientStartFailure.NoEntertainmentArea => Loc.Get("AmbientStartFailed_NoArea"),
+        AmbientStartFailure.NoClientKey         => Loc.Get("AmbientStartFailed_NoClientKey"),
+        _                                       => null,
+    };
 
     // Pulls the persisted state the bespoke cards show: the display picker
     // and the NotPaired banner. Guarded by _loading so the display combo's

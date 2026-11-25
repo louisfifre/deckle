@@ -141,13 +141,12 @@ public sealed partial class AmbientEngine
             // Cross-cutting Cancellation sub-provider: map _stopReason (local
             // engine vocabulary) to the sub-provider's closed vocabulary:
             // "user" stays as-is, stops driven by an upstream event (capture
-            // lost, external Hue interference) are "upstream". Age is computed
+            // lost, a push the bridge refuses) are "upstream". Age is computed
             // from the Stopwatch armed at pipeline start.
             string reason = _stopReason switch
             {
                 "user"                    => CancellationReasons.User,
                 "capture_lost"            => CancellationReasons.Upstream,
-                "external"                => CancellationReasons.Upstream,
                 "push_rejected"           => CancellationReasons.Upstream,
                 "frame_processing_failed" => CancellationReasons.Upstream,
                 _                         => CancellationReasons.User,

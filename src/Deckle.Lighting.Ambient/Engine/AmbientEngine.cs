@@ -18,8 +18,8 @@ namespace Deckle.Lighting.Ambient;
 //
 //   - Group mode (default). One sRGB average over the whole frame, one
 //     push to the connected group via <see cref="ILightOutput.SetColorAsync"/>.
-//     Every driver supports this path. REST runs at 15 Hz; a streaming
-//     driver can advertise its preferred rate.
+//     Every driver supports this path, at the rate the driver advertises
+//     (Hue Entertainment: 50 Hz).
 //
 //   - Multi-light mode. One sRGB sample per screen-border zone (top /
 //     bottom / left / right), broadcast to every light assigned to
@@ -27,10 +27,7 @@ namespace Deckle.Lighting.Ambient;
 //     via <see cref="IMultiLightOutput.SetLightColorsAsync"/>. Only
 //     enabled when UseMultiLight is set, the driver implements
 //     <see cref="IMultiLightOutput"/> AND it reports at least one light.
-//     REST cadence is throttled to 10 Hz to keep the per-second PUT
-//     count within the Hue REST CLIP v1 comfort zone (3 lights × 10 Hz
-//     = 30 PUT/s). A batch streaming driver can override that transport
-//     constraint. The four zones are sampled once per tick from a border
+//     The four zones are sampled once per tick from a border
 //     band (AmbientSettings.BorderMode / BorderDepth / BorderCells),
 //     HyperHDR's <c>horizontalDepth</c> / <c>verticalDepth</c> collapsed
 //     to one user value.
@@ -94,7 +91,6 @@ public sealed partial class AmbientEngine : IAsyncDisposable
 
     private CancellationTokenSource? _cts;
     private Task? _pushLoopTask;
-    private Task? _eventStreamTask;
     private long _startTimestamp;
     private bool _disposed;
 
@@ -117,27 +113,15 @@ public sealed partial class AmbientEngine : IAsyncDisposable
     private readonly object _lifecycleLock = new();
     private bool _abortRequested;
 
-    // External-change detection state — populated at StartAsync from
-    // the bridge's CLIP v2 resource list. Used by OnResourceUpdate to
-    // translate event-side v2 UUIDs (what the EventStream carries)
-    // back to v1 ids (what the engine's push path takes), then attribute
-    // the event to either our own pending push or a bridge-side change
-    // Ambient should not fight.
-    private IReadOnlyDictionary<string, string>? _v2LightMap;          // v2_uuid → v1_light_id
-    private IReadOnlyDictionary<string, string>? _v2GroupedLightMap;   // v2_uuid → v1_group_id
-    private string? _managedGroupId;                                   // v1_group_id we are syncing
-
-    // Last successful self-push, per v1 id ("group:<id>" or "light:<id>"
-    // namespaced). Stores the Hue state we intended, not just the clock.
-    // EventStream carries state changes without caller provenance, so this
-    // is an attribution baseline: pending self-push echoes are ignored ;
-    // stable bridge changes that diverge from it stop the pipeline.
-    private readonly Dictionary<string, AmbientHueAttributionState> _hueAttributionStates = new();
-    private readonly object _hueAttributionLock = new();
+    // No watch on the bridge's event stream: while the Entertainment area
+    // streams, the bridge gives Deckle the lights and ignores other writes to
+    // them, so nothing outside can change them under the stream. The watch
+    // served the REST path, which wrote alongside the Hue app and Home
+    // Assistant; it left with that path on 2026-11-25.
 
     // Deferred-cleanup task spun by Stop() so the UI thread that
     // triggered the stop returns immediately while the DXGI duplication
-    // + sampler GPU buffers + Hue REST output get torn down on the
+    // + sampler GPU buffers + Hue Entertainment output get torn down on the
     // thread pool. StartAsync / DisposeAsync await this before they
     // touch the engine's owned deps, so a Start + Stop + Start sequence
     // serialises cleanly without holding the duplication past Stop.
@@ -176,9 +160,9 @@ public sealed partial class AmbientEngine : IAsyncDisposable
     private long _hbSkippedSlots;
     private int  _hbPushFailures;
 
-    // Wall-clock cost of each push await, for the heartbeat : REST includes
-    // the bridge HTTP round-trip, Entertainment the DTLS/UDP send plus any
-    // local back-pressure. Drops are not counted.
+    // Wall-clock cost of each push await, for the heartbeat : the
+    // Entertainment DTLS/UDP send plus any local back-pressure. Drops are not
+    // counted.
     private List<double>? _hbPushDurationsMs;
 
     // Tuning snapshot, refreshed at the top of each tick from _host.Ambient
@@ -286,11 +270,14 @@ public sealed partial class AmbientEngine : IAsyncDisposable
     public long CapturedFrames
         => _capture is { IsRunning: true } capture ? capture.FrameCount : 0;
 
-    /// <summary>True when the connected output is a live stream (Hue
-    /// Entertainment), false when it is a persistent-state transport
-    /// (REST), null while no output is connected. The preview names the
-    /// transport so a REST fallback is seen, not guessed.</summary>
-    public bool? OutputIsLiveStream => _output?.RequiresContinuousColorUpdates;
+    /// <summary>True while the engine holds its light output, the Hue
+    /// Entertainment stream. The preview names it as the transport.</summary>
+    public bool HasOutput => _output is not null;
+
+    /// <summary>Why the last start failed, set before the Error state is
+    /// raised so a subscriber reads it on Error. Meaningless before the
+    /// first failure.</summary>
+    public AmbientStartFailure LastStartFailure { get; private set; }
 
     // Error is a transient blip : the engine raises Off right after it,
     // so a subscriber gets two consecutive callbacks (Error then Off).

@@ -506,12 +506,7 @@ public sealed partial class AmbientPreviewCard : UserControl
         // The scan sends nothing: Off, never a transport.
         OutputReadout.Value = engine.IsPreviewScanning
             ? Loc.Get("AmbientPreview_Output_Off")
-            : engine.OutputIsLiveStream switch
-            {
-                true  => Loc.Get("AmbientPreview_Output_Stream"),
-                false => Loc.Get("AmbientPreview_Output_Rest"),
-                null  => null,
-            };
+            : engine.HasOutput ? Loc.Get("AmbientPreview_Output_Stream") : null;
 
         UpdateRate(engine);
     }

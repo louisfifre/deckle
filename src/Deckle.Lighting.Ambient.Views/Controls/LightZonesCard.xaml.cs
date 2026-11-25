@@ -13,7 +13,7 @@ using Deckle.Localization;
 namespace Deckle.Lighting.Ambient.Views;
 
 // Per-light settings of the "Colour per zone" mode: for each light of the
-// selected Hue group, the screen edge it follows (AmbientSettings.LightZones),
+// selected Entertainment area, the screen edge it follows (AmbientSettings.LightZones),
 // its brightness (AmbientSettings.LightBrightness, 1.0 when absent) and an
 // Identify button that flashes it for three seconds.
 //
@@ -315,14 +315,14 @@ public sealed partial class LightZonesCard : UserControl
 
     private async Task IdentifyAsync(Button button, string lightId)
     {
-        if (_placement?.Output is not { } output) return;
+        if (_placement?.Bridge is not { } bridge) return;
 
         var originalContent = button.Content;
         button.IsEnabled = false;
         button.Content   = Loc.Get("AmbientLights_Identifying");
         try
         {
-            await output.IdentifyLightAsync(lightId).ConfigureAwait(true);
+            await bridge.IdentifyLightAsync(lightId).ConfigureAwait(true);
             await Task.Delay(IdentifyFlashDuration).ConfigureAwait(true);
         }
         catch (Exception ex)
@@ -331,7 +331,7 @@ public sealed partial class LightZonesCard : UserControl
         }
         finally
         {
-            try { await output.StopIdentifyAsync(lightId).ConfigureAwait(true); }
+            try { await bridge.StopIdentifyAsync(lightId).ConfigureAwait(true); }
             catch { /* best effort: the bridge ends the flash on its own */ }
 
             button.Content   = originalContent;

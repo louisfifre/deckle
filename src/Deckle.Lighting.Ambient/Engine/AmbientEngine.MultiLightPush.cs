@@ -157,15 +157,8 @@ public sealed partial class AmbientEngine
             if (heartbeatDetailEnabled)
                 (_hbPushDurationsMs ??= new List<double>(128)).Add(pushMs);
 
-            // Stamp pushed Hue states for echo discrimination — the
-            // bridge emits a light EventStream update for each PUT,
-            // sometimes later than a pure timing window can cover.
-            var nowUtc = DateTimeOffset.UtcNow;
             foreach (var (id, pushedColor) in toPush)
-            {
                 _multiLastPushed[id] = (pushedColor.R, pushedColor.G, pushedColor.B);
-                RecordHuePush("light:" + id, pushedColor, nowUtc);
-            }
             _pushedCount++;
             if (heartbeatDetailEnabled) _hbPushed++;
             if (pushDetailEnabled)

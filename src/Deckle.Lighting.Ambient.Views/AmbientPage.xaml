@@ -85,10 +85,13 @@
                     </InfoBar>
 
                     <!-- bespoke: the engine could not start while the switch is
-                         on. Title only, opened by the engine's Error state and
-                         closed when a start begins again or the switch goes
-                         off. The switch keeps the person's choice; the next
-                         settings change retries the start. -->
+                         on. Opened by the engine's Error state and closed when a
+                         start begins again or the switch goes off; its message
+                         names the cause when the person can fix it (no
+                         Entertainment area, a pairing without the stream key),
+                         and stays empty otherwise. The switch keeps the
+                         person's choice; the next settings change retries the
+                         start. -->
                     <InfoBar x:Name="StartFailedInfoBar"
                              x:Uid="AmbientStartFailedInfoBar"
                              IsClosable="False"
@@ -120,7 +123,7 @@
                         <StackPanel Spacing="{StaticResource SettingsCardSpacing}">
 
                             <!-- bespoke: a multi-step pairing flow (discover, pair with the
-                                 link-button countdown, load rooms, forget behind a
+                                 link-button countdown, load areas, forget behind a
                                  confirmation), commands and live status rather than stored
                                  values. The bridge state is owned by the process-wide
                                  HuePairingService, so a re-pair or forget from anywhere takes
@@ -172,7 +175,7 @@
                                         </StackPanel>
                                     </controls:SettingsCard>
 
-                                    <!-- Entertainment group / room. Hidden until a bridge
+                                    <!-- Entertainment area, the only kind Ambient streams to. Hidden until a bridge
                                          is paired (SyncHueBridgeUi): a setting that does
                                          not apply is not greyed. -->
                                     <controls:SettingsCard x:Name="HueGroupCard"
@@ -254,7 +257,7 @@
                             <StackPanel x:Name="BehaviourHost"
                                         Spacing="{StaticResource SettingsCardSpacing}" />
 
-                            <!-- bespoke: one row per light of the selected Hue group
+                            <!-- bespoke: one row per light of the selected Entertainment area
                                  (zone, brightness, Identify) — the set of lights is only
                                  known at runtime, from the bridge. Shown under the
                                  per-zone group, only while it is on and a group is

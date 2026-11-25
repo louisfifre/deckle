@@ -26,7 +26,10 @@ internal enum AmbientPushDecision
 //   - A change at or above the threshold goes out.
 //   - A smaller change is held on a continuous output (Hue Entertainment
 //     streams a full frame on every tick, so the previous colour is sent
-//     again) and dropped on a persistent one (Hue REST keeps its state).
+//     again) and dropped on a persistent one, which keeps its state on its
+//     own. Ambient drives Hue Entertainment only today; the persistent case
+//     stays for a driver that keeps state, such as a future Home Assistant
+//     one.
 //
 // A lamp that stops following while the screen is still is this gate
 // dropping unchanged pushes (the heartbeat's dropped count), not a capture
