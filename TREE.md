@@ -3137,6 +3137,7 @@ _Generated from `git ls-files` — do not edit by hand._
 │   │   ├── DictationBatchRewriterTests.cs
 │   │   ├── DictationStepsNormalizerTests.cs
 │   │   ├── LlmResetDefaultsTests.cs
+│   │   ├── LlmRewriteObservabilityCollection.cs
 │   │   ├── LlmSettingsBugNotes.md
 │   │   ├── LlmSettingsFileTests.cs
 │   │   ├── LlmSettingsFixtures.cs
