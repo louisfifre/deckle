@@ -39,7 +39,7 @@ public static class SettingsSearch
         new() { LabelKey = "AmbientMonitorCard", Keywords = ["monitor", "screen", "display"] },
         new() { LabelKey = "HueBridgeExpander", Keywords = ["philips", "pair", "connect"] },
         new() { LabelKey = "HueBridgeAddressCard", Keywords = ["ip", "discover", "network"] },
-        new() { LabelKey = "HueBridgeGroupCard", Keywords = ["group", "entertainment", "lights"] },
+        new() { LabelKey = "HueBridgeGroupCard", Keywords = ["area", "entertainment", "lights", "room"] },
         new() { LabelKey = "HueBridgeForgetCard", Keywords = ["remove", "unpair", "delete"] },
     ];
 }

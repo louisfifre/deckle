@@ -18,7 +18,7 @@ public enum AmbientStartFailure
     NoClientKey,
 
     /// <summary>No Hue Entertainment area with lights backs the selected
-    /// room; one is created in the Hue app.</summary>
+    /// group; one is created in the Hue app.</summary>
     NoEntertainmentArea,
 }
 

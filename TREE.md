@@ -3096,6 +3096,7 @@ _Generated from `git ls-files` — do not edit by hand._
 │   │   ├── FrameProcessingCauseTests.cs
 │   │   ├── HueCredentialPayloadBugNotes.md
 │   │   ├── HueEndpointResolverTests.cs
+│   │   ├── HueGroupSelectionTests.cs
 │   │   ├── LightPlacementResolverTests.cs
 │   │   ├── MessageTemplateDoctrineTests.cs
 │   │   ├── MilestoneClosersTests.cs

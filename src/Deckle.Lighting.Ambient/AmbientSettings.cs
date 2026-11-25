@@ -7,7 +7,7 @@ namespace Deckle.Lighting.Ambient;
 //
 // Hue bridge coordinates stored here are the Ambient user's selected
 // target: bridge IP / id, the application username, and the last
-// selected light group. The Entertainment v2 DTLS pre-shared key
+// selected Entertainment area. The Entertainment v2 DTLS pre-shared key
 // (clientkey) is intentionally not stored in this JSON file; the Hue
 // driver persists it in Deckle.Security's DPAPI-backed vault.
 public sealed class AmbientSettings
@@ -32,8 +32,9 @@ public sealed class AmbientSettings
     /// at pairing. Sensitive but revocable from the Hue mobile app.</summary>
     public string? HueUsername { get; set; }
 
-    /// <summary>CLIP v1 id of the selected group (e.g. "1", "5"), not a
-    /// v2 UUID.</summary>
+    /// <summary>CLIP v1 id of the selected Entertainment area's group
+    /// (e.g. "5"), not a v2 UUID. A room or zone stored before Ambient ran
+    /// through Entertainment only fails the start with its reason.</summary>
     public string? HueLastGroupId { get; set; }
 
     /// <summary>Selected capture source. Null = follow whichever monitor
