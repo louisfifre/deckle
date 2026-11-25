@@ -431,7 +431,7 @@
        Settings page is that page's SettingsModuleNavLabel, so a rename
        cannot leave the message pointing at a page that is gone. -->
   <data name="Feedback_SpeechNotSetUp_Title" xml:space="preserve">
-    <value>Transcription isn't set up</value>
+    <value>Dictation isn't set up</value>
   </data>
   <data name="Feedback_SpeechNotSetUp_Body_Format" xml:space="preserve">
     <value>Set it up in Settings › {0}.</value>
@@ -605,7 +605,7 @@
     <value>Open Rewriting settings</value>
   </data>
   <data name="TranscribeRewrite_SpeechNotSetUp_Title" xml:space="preserve">
-    <value>Transcription isn't set up</value>
+    <value>Dictation isn't set up</value>
   </data>
   <data name="TranscribeRewrite_SpeechNotSetUp_Body" xml:space="preserve">
     <value>Set up transcription in Settings to transcribe a file.</value>
@@ -714,10 +714,10 @@
     <value>Problem · {0}</value>
   </data>
   <data name="TrayIncident_Module_Recording" xml:space="preserve">
-    <value>Recording</value>
+    <value>Microphone</value>
   </data>
   <data name="TrayIncident_Module_Transcription" xml:space="preserve">
-    <value>Transcription</value>
+    <value>Dictation</value>
   </data>
   <data name="TrayIncident_Module_Notifications" xml:space="preserve">
     <value>Notifications</value>
@@ -1007,7 +1007,7 @@
 
   <!-- TranscriptionPage Reset all dialog -->
   <data name="Settings_ResetTranscriptionDialog_Detail" xml:space="preserve">
-    <value>The Lexicon and Streaming pages keep their own values.</value>
+    <value>Transcribe as you speak stays as you set it. The Lexicon and Microphone pages keep their own values.</value>
   </data>
 
   <!-- DiagnosticsPage Telemetry + whole-page reset dialogs -->

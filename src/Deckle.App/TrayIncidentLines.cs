@@ -25,8 +25,8 @@ internal static class TrayIncidentLines
 
     internal sealed record Line(string Module, string PageTag);
 
-    // Modules without a ModuleIds entry: the microphone belongs to Recording,
-    // the elevated toasts to Notifications.
+    // Modules without a ModuleIds entry: the microphone belongs to Recording
+    // (its page reads Microphone), the elevated toasts to Notifications.
     internal const string RecordingModule     = "recording";
     internal const string NotificationsModule = "notifications";
 
@@ -39,7 +39,7 @@ internal static class TrayIncidentLines
         new(UserIncidents.PrecisionScroll, ModuleIds.PrecisionScroll,   PrecisionScrollSettingsModule.PageTag),
         new(UserIncidents.Microphone,      RecordingModule,             RecordingSettingsModule.PageTag),
         new(UserIncidents.SpeechModel,     ModuleIds.Transcription,     TranscriptionSettingsModule.PageTag),
-        new(UserIncidents.VadModel,        ModuleIds.Transcription,     TranscriptionSettingsModule.StreamingPageTag),
+        new(UserIncidents.VadModel,        ModuleIds.Transcription,     TranscriptionSettingsModule.PageTag),
         new(UserIncidents.AnytypeBackend,  ModuleIds.Anytype,           GeneralPageTag),
         new(UserIncidents.AnytypeGateway,  ModuleIds.Anytype,           GeneralPageTag),
         new(UserIncidents.HueEvents,       ModuleIds.Ambient,           AmbientSettingsModule.PageTag),

@@ -5,7 +5,7 @@ using Deckle.Catalog;
 
 namespace Deckle.Transcription.Views;
 
-// The Lexicon page of the Transcription module. Its own view model instance
+// The Lexicon page of the Dictation node. Its own view model instance
 // reloads from the persisted settings on every navigation, like the module's
 // other pages, so an edit made on another page is picked up and this page never
 // writes a stale copy.

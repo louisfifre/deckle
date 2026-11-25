@@ -97,46 +97,68 @@ public sealed partial class TranscriptionPage : Page
     // so the subscription catches Load()'s refresh; held in fields so it lives as
     // long as the cached page.
 
+    // The value composers whose values the page's Reset all covers. The streaming
+    // switch is composed apart (_switchComposer) and is not in this list: on or
+    // off is the person's choice, not a value, so neither the reset nor its gate
+    // reads it.
     private readonly List<SettingsComposer> _composers = new();
-    private SettingsComposer? _behaviourComposer;
+    // The Segmentation section's composers: counted by Reset all and its gate
+    // only while the section is shown (developer mode on at navigation).
+    private readonly List<SettingsComposer> _segmentationComposers = new();
+    private SettingsComposer? _switchComposer;
+    private SettingsComposer? _overlayComposer;
+    private SettingsComposer? _recordingLimitComposer;
+    private bool _segmentationShown;
 
     private void ComposeSettings()
     {
-        SettingsComposer behaviourComposer = ComposeRegion(
-            BehaviourHost,
-            ViewModel.BehaviourSettings,
-            composer => composer.DirtyChanged += (_, _) =>
-                BehaviourSection.IsResetEnabled = composer.IsDirty());
-        _behaviourComposer = behaviourComposer;
+        _switchComposer = new SettingsComposer(StreamingSwitchHost, ViewModel);
+        _switchComposer.Compose(ViewModel.StreamingSwitch);
+
+        _overlayComposer = ComposeRegion(BehaviourHost, ViewModel.BehaviourSettings);
+        _recordingLimitComposer = ComposeRegion(RecordingLimitHost, ViewModel.RecordingLimitSettings);
 
         ComposeRegion(SpeechEngineHost, ViewModel.SpeechEngineSettings);
         ComposeRegion(ModelsDirectoryHost, ViewModel.ModelsDirectorySettingsManifest);
         ComposeRegion(UseGpuHost, ViewModel.UseGpuSettingsManifest);
-        // The lexicon and streaming manifests compose on LexiconPage and
-        // StreamingPage, this module's other pages; the dataset consents compose
-        // on the Diagnostics page (TranscriptionTelemetryViewModel).
+
+        ComposeRegion(SegmentationHost, ViewModel.SegmentationSettings, _segmentationComposers);
+        ComposeRegion(SilenceGuardsHost, ViewModel.SilenceGuardSettings, _segmentationComposers);
+        // The lexicon manifest composes on LexiconPage, this module's other
+        // page; the dataset consents compose on the Diagnostics page
+        // (TranscriptionTelemetryViewModel).
     }
 
     private SettingsComposer ComposeRegion(
         Panel host,
         IReadOnlyList<SettingDescriptor> settings,
-        Action<SettingsComposer>? configure = null)
+        List<SettingsComposer>? into = null)
     {
         var composer = new SettingsComposer(host, ViewModel);
-        configure?.Invoke(composer);
         // Subscribed before Compose so its closing RefreshAll lands the first gate.
         composer.DirtyChanged += (_, _) => GateResetAll();
         composer.Compose(settings);
-        _composers.Add(composer);
+        (into ?? _composers).Add(composer);
         return composer;
     }
+
+    // The composers Reset all covers right now: the page's own, plus the
+    // Segmentation section's while it is shown. Hidden values are neither reset
+    // nor counted by the gate.
+    private IEnumerable<SettingsComposer> ResettableComposers() =>
+        _segmentationShown ? _composers.Concat(_segmentationComposers) : _composers;
 
     // The page-level "Reset all" is active-when-dirty: enabled only while some
     // value on the page differs from its default. Re-gated off every composer's
     // DirtyChanged, and once after Load() (OnNavigatedTo), since Load() raises no
     // PropertyChanged on a clean profile.
-    private void GateResetAll() =>
-        Header.IsResetAllEnabled = _composers.Any(c => c.IsDirty());
+    private void GateResetAll()
+    {
+        Header.IsResetAllEnabled = ResettableComposers().Any(c => c.IsDirty());
+        // The section's own wheel follows its two composed regions, not the switch.
+        WhileYouSpeakSection.IsResetEnabled =
+            (_overlayComposer?.IsDirty() ?? false) || (_recordingLimitComposer?.IsDirty() ?? false);
+    }
 
     // NavigationCacheMode.Required reuses the page instance. On every navigation
     // we reload settings from the POCO via the VM.
@@ -150,6 +172,12 @@ public sealed partial class TranscriptionPage : Page
         _startupParakeetEncoder = ViewModel.ParakeetEncoder;
         _initializing = false;
         UpdateRestartState();
+
+        // The Segmentation section follows developer mode, read here at each
+        // navigation: a person who turns it on in General finds the section on
+        // coming back to this page.
+        _segmentationShown = SettingsService.Instance.Current.Developer.DeveloperMode;
+        SegmentationSection.Visibility = _segmentationShown ? Visibility.Visible : Visibility.Collapsed;
         GateResetAll();
 
         // Speech isn't provisioned until the model is on disk. When it isn't,
@@ -211,11 +239,14 @@ public sealed partial class TranscriptionPage : Page
 
     // ── Reset handlers ──────────────────────────────────────────────────────
 
-    private void ResetBehaviour_Click(object sender, RoutedEventArgs e)
+    // The section's reset covers the overlay and the recording length, never the
+    // streaming switch.
+    private void ResetWhileYouSpeak_Click(object sender, RoutedEventArgs e)
     {
-        _behaviourComposer?.ResetAll();
+        _overlayComposer?.ResetAll();
+        _recordingLimitComposer?.ResetAll();
         DeckleSettingsUxSource.Log.SectionReset();
-        DeckleSettingsUxSource.Log.SectionResetDetail("Dictation experience");
+        DeckleSettingsUxSource.Log.SectionResetDetail("While you speak");
     }
 
     // ── Restart state — highlight + footer ─────────────────────────────────
@@ -268,12 +299,13 @@ public sealed partial class TranscriptionPage : Page
     {
         DeckleWhispSource.Log.PageResetAll();
 
-        // Resets exactly the cards this page shows, the way StreamingPage resets
-        // its own: every card is composed, so each composer drives its cards to
-        // their POCO-sourced defaults. The lexicon and streaming values live in
-        // the same TranscriptionSettings but belong to their own pages, so they
-        // stay. The overlay card lives in AppSettings.
-        foreach (SettingsComposer composer in _composers) composer.ResetAll();
+        // Resets exactly the cards this page shows: every card is composed, so
+        // each composer drives its cards to their POCO-sourced defaults. The
+        // lexicon values live in the same TranscriptionSettings but belong to
+        // their own page, so they stay; so does the streaming switch, and the
+        // Segmentation values while the section is hidden. The overlay card
+        // lives in AppSettings and the recording length in the capture settings.
+        foreach (SettingsComposer composer in ResettableComposers().ToList()) composer.ResetAll();
         UpdateRestartState();
     }
 }

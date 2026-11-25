@@ -5,14 +5,15 @@ namespace Deckle.Transcription.Views;
 // ── TranscriptionSettingsModule ─────────────────────────────────────────────────────
 //
 // The transcription module's own nav identity for the Settings shell. The module
-// declares its pages, their icons and their label keys here; the composition root
-// supplies only the Order. Registered from App.OnLaunched via SettingsModuleRegistry.
+// declares its pages, their icons and their label keys here; the composition
+// root supplies only the Order. Registered from App.OnLaunched via SettingsModuleRegistry.
 //
-// Three pages, one module: the module's own page, which the rail shows as
-// General under the Transcription node (overlay, engine and models folder,
-// the restart footer), then Lexicon (the person's own words) and Streaming
-// (the pipeline switch, segmentation, silence and noise filtering) nested
-// under it.
+// The rail shows the module as the Dictation node. Its pages: the module's own
+// page, which the rail shows as General under the node (the streaming switch,
+// the overlay and the recording length, then the engine and models folder and,
+// in developer mode, the segmentation; the restart footer), then Microphone (the
+// audio module's page, which nests itself under this node on the module id
+// below) and Lexicon (the person's own words).
 public static class TranscriptionSettingsModule
 {
     // The PRI subtree of the nav labels and the search entries: the pages'
@@ -23,9 +24,10 @@ public static class TranscriptionSettingsModule
     // that compiles the pages.
     public const string PageTag = "Deckle.Transcription.Views.TranscriptionPage, Deckle.Transcription.Views";
     public const string LexiconPageTag = "Deckle.Transcription.Views.LexiconPage, Deckle.Transcription.Views";
-    public const string StreamingPageTag = "Deckle.Transcription.Views.StreamingPage, Deckle.Transcription.Views";
 
-    private const string ModuleId = "whisp";
+    // The node's id, public so the Microphone page of the audio module, which
+    // cannot reference this assembly, names it on a string of its own.
+    public const string ModuleId = "whisp";
 
     public static SettingsModuleDescriptor Describe(int order) => new()
     {
@@ -46,17 +48,6 @@ public static class TranscriptionSettingsModule
         PageTag = LexiconPageTag,
         OwningAssembly = ResourceLibrary,
         LabelKey = "SettingsModuleNavLabel_Lexicon",
-        Glyph = Glyphs.Speech,
-        Order = order,
-    };
-
-    public static SettingsModuleDescriptor DescribeStreaming(int order) => new()
-    {
-        Id = "whisp-streaming",
-        ParentId = ModuleId,
-        PageTag = StreamingPageTag,
-        OwningAssembly = ResourceLibrary,
-        LabelKey = "SettingsModuleNavLabel_Streaming",
         Glyph = Glyphs.Speech,
         Order = order,
     };

@@ -234,7 +234,7 @@ public sealed class DeckleAudioSource : DeckleEventSource
         if (IsEnabled()) WriteEvent(EvtCaptureModeFallback, purpose, reason, error_code, error_name, endpoint_id, device_name);
     }
 
-    // The Recording page's link to the Windows microphone properties did not
+    // The Microphone page's link to the Windows microphone properties did not
     // open them: the launcher refused the ms-settings URI or threw. target is
     // default (the system default input) or device (the selected endpoint).
     // The person clicked and nothing happened, so it is a Warning.

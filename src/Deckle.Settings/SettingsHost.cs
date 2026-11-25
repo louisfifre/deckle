@@ -35,7 +35,7 @@ public static class SettingsHost
     public static Func<bool>? IsSpeechProvisioned;
 
     // What a Parakeet model folder holds, for the speech engine card of the
-    // Transcription page. The argument is the folder as configured, empty for
+    // Dictation page. The argument is the folder as configured, empty for
     // the default one. Answered by the App, which composes the Parakeet child
     // module that knows the folder's layout; Deckle.Transcription.Views must
     // not reference that module. Unwired (null) shows no state at all.

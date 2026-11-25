@@ -2,7 +2,7 @@ namespace Deckle.Audio;
 
 // ── VoiceLevelMeterScale ──────────────────────────────────────────────────────
 //
-// The arithmetic of the voice meter on the Recording page, kept out of the
+// The arithmetic of the voice meter on the Microphone page, kept out of the
 // control so it is testable without XAML: where a dBFS value falls on the
 // track, how the bar rises and falls between two packets, and how long the
 // peak tick holds. Pure functions; the control owns every piece of state.

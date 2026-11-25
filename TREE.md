@@ -578,6 +578,7 @@ _Generated from `git ls-files` — do not edit by hand._
 │   │   ├── AutocorrectNotifications.cs
 │   │   ├── CrashSupervisor.cs
 │   │   ├── Deckle.App.csproj
+│   │   ├── DictationSettingsPages.cs
 │   │   ├── FileTranscriptionRun.cs
 │   │   ├── HudCompletionMessage.cs
 │   │   ├── InterfaceCaptureGate.cs
@@ -662,6 +663,7 @@ _Generated from `git ls-files` — do not edit by hand._
 │   │   ├── MicrophoneLevelFeed.cs
 │   │   ├── MicrophoneLevelFeedFailure.cs
 │   │   ├── ProbeResult.cs
+│   │   ├── RecordingLimit.cs
 │   │   ├── RecordingTailCalculator.cs
 │   │   ├── SpeakerOutput.cs
 │   │   ├── VoiceDetector.cs
@@ -672,7 +674,6 @@ _Generated from `git ls-files` — do not edit by hand._
 │   │   │   └── en-US/
 │   │   │       └── Resources.resw
 │   │   ├── Deckle.Audio.Views.csproj
-│   │   ├── RecordingLimit.cs
 │   │   ├── RecordingPage.xaml
 │   │   ├── RecordingPage.xaml.cs
 │   │   ├── RecordingSettingsModule.cs
@@ -1468,6 +1469,7 @@ _Generated from `git ls-files` — do not edit by hand._
 │   │   │   ├── HueBridge.cs
 │   │   │   ├── HueBridgeClient.cs
 │   │   │   ├── HueBridgeClient.Dtos.cs
+│   │   │   ├── HueBridgeClient.EventStream.cs
 │   │   │   ├── HueBridgeClient.Identity.cs
 │   │   │   ├── HueBridgeClient.LightState.cs
 │   │   │   ├── HueBridgeClient.Pairing.cs
@@ -1480,19 +1482,23 @@ _Generated from `git ls-files` — do not edit by hand._
 │   │   │   ├── HueEntertainmentFrameBuilder.cs
 │   │   │   ├── HueEntertainmentLightOutput.cs
 │   │   │   ├── HueEntertainmentTransport.cs
+│   │   │   ├── HueEventStreamEpisode.cs
+│   │   │   ├── HueEventStreamModels.cs
 │   │   │   ├── HueGroup.cs
 │   │   │   ├── HueLight.cs
 │   │   │   ├── HueLightOutputFactory.cs
 │   │   │   ├── HueLightState.cs
 │   │   │   ├── HueLightStateRestorer.cs
 │   │   │   ├── HueLocalDiscovery.cs
-│   │   │   └── HueLocalDiscovery.Interop.cs
+│   │   │   ├── HueLocalDiscovery.Interop.cs
+│   │   │   ├── HueProjectedState.cs
+│   │   │   └── HueRestLightOutput.cs
 │   │   ├── Deckle.Lighting.csproj
 │   │   ├── DeckleLightingSource.cs
 │   │   ├── DeckleLightingSource.Discovery.cs
 │   │   ├── DeckleLightingSource.Entertainment.cs
 │   │   ├── DeckleLightingSource.GroupsAndColor.cs
-│   │   ├── DeckleLightingSource.Inventory.cs
+│   │   ├── DeckleLightingSource.InventoryAndEventStream.cs
 │   │   ├── DeckleLightingSource.Pairing.cs
 │   │   ├── ILightOutput.cs
 │   │   ├── LightColor.cs
@@ -1507,7 +1513,9 @@ _Generated from `git ls-files` — do not edit by hand._
 │   │   │   ├── AmbientEngine.CaptureRate.cs
 │   │   │   ├── AmbientEngine.cs
 │   │   │   ├── AmbientEngine.FirstFrame.cs
+│   │   │   ├── AmbientEngine.GroupPush.cs
 │   │   │   ├── AmbientEngine.Heartbeat.cs
+│   │   │   ├── AmbientEngine.HueEvents.cs
 │   │   │   ├── AmbientEngine.Lifecycle.cs
 │   │   │   ├── AmbientEngine.MultiLightPush.cs
 │   │   │   ├── AmbientEngine.PreviewScan.cs
@@ -1515,17 +1523,16 @@ _Generated from `git ls-files` — do not edit by hand._
 │   │   │   ├── AmbientEngine.PushLoop.cs
 │   │   │   ├── AmbientEngineState.cs
 │   │   │   ├── AmbientHeartbeatWindow.cs
+│   │   │   ├── AmbientHueChangeAttributor.cs
 │   │   │   ├── AmbientPreviewHealth.cs
 │   │   │   ├── AmbientPushCadence.cs
 │   │   │   ├── AmbientPushGate.cs
-│   │   │   ├── AmbientStartFailure.cs
 │   │   │   ├── AmbientZoneSampler.cs
 │   │   │   ├── HueEndpointResolver.cs
 │   │   │   ├── HueGroupSelection.cs
 │   │   │   ├── HuePairingService.cs
 │   │   │   ├── LightPlacementResolver.cs
 │   │   │   ├── LightZone.cs
-│   │   │   ├── LightZoneAssignment.cs
 │   │   │   ├── LightZoneSuggester.cs
 │   │   │   └── SrgbColor.cs
 │   │   ├── AmbientCaptureCap.cs
@@ -2481,6 +2488,7 @@ _Generated from `git ls-files` — do not edit by hand._
 │   │   │   ├── TranscriptionViewModel.DictationExperience.cs
 │   │   │   ├── TranscriptionViewModel.Engine.cs
 │   │   │   ├── TranscriptionViewModel.Lexicon.cs
+│   │   │   ├── TranscriptionViewModel.RecordingLimit.cs
 │   │   │   ├── TranscriptionViewModel.Settings.cs
 │   │   │   ├── TranscriptionViewModel.SpeechEngine.cs
 │   │   │   └── TranscriptionViewModel.Streaming.cs
@@ -2488,8 +2496,6 @@ _Generated from `git ls-files` — do not edit by hand._
 │   │   ├── LexiconPage.xaml
 │   │   ├── LexiconPage.xaml.cs
 │   │   ├── SettingsSearch.cs
-│   │   ├── StreamingPage.xaml
-│   │   ├── StreamingPage.xaml.cs
 │   │   ├── TranscriptionPage.xaml
 │   │   ├── TranscriptionPage.xaml.cs
 │   │   └── TranscriptionSettingsModule.cs
@@ -2656,6 +2662,7 @@ _Generated from `git ls-files` — do not edit by hand._
 │   ├── Deckle.App.Tests/
 │   │   ├── Deckle.App.Tests.csproj
 │   │   ├── DictationRecoveryBugNotes.md
+│   │   ├── DictationSettingsPagesTests.cs
 │   │   ├── ExeIconBugNotes.md
 │   │   ├── ExeIconTests.cs
 │   │   ├── FileTranscriptionBugNotes.md
@@ -2715,7 +2722,7 @@ _Generated from `git ls-files` — do not edit by hand._
 │   │   └── VoiceLevelMeterScaleTests.cs
 │   ├── Deckle.Audio.Views.Tests/
 │   │   ├── Deckle.Audio.Views.Tests.csproj
-│   │   └── RecordingLimitTests.cs
+│   │   └── MicrophonePageTests.cs
 │   ├── Deckle.Autocorrect.Tests/
 │   │   ├── AccentFoldingTests.cs
 │   │   ├── AccentIndexTests.cs
@@ -3075,6 +3082,7 @@ _Generated from `git ls-files` — do not edit by hand._
 │   │   ├── AmbientCaptureStartBugNotes.md
 │   │   ├── AmbientColorSmootherTests.cs
 │   │   ├── AmbientHeartbeatWindowTests.cs
+│   │   ├── AmbientHueChangeAttributorTests.cs
 │   │   ├── AmbientNearBlackTests.cs
 │   │   ├── AmbientObservabilityCollection.cs
 │   │   ├── AmbientPreviewBugNotes.md
@@ -3085,7 +3093,6 @@ _Generated from `git ls-files` — do not edit by hand._
 │   │   ├── AmbientPushGateTests.cs
 │   │   ├── AmbientRunBugNotes.md
 │   │   ├── AmbientRunLogTests.cs
-│   │   ├── AmbientStartFailureTests.cs
 │   │   ├── AmbientStartSettingsTests.cs
 │   │   ├── AmbientTableTemplateTests.cs
 │   │   ├── AmbientUserIncidentTests.cs
@@ -3096,9 +3103,7 @@ _Generated from `git ls-files` — do not edit by hand._
 │   │   ├── FrameProcessingCauseTests.cs
 │   │   ├── HueCredentialPayloadBugNotes.md
 │   │   ├── HueEndpointResolverTests.cs
-│   │   ├── HueGroupSelectionTests.cs
 │   │   ├── LightPlacementResolverTests.cs
-│   │   ├── LightZoneAssignmentTests.cs
 │   │   ├── MessageTemplateDoctrineTests.cs
 │   │   ├── MilestoneClosersTests.cs
 │   │   └── SummaryTagTests.cs
@@ -3107,6 +3112,7 @@ _Generated from `git ls-files` — do not edit by hand._
 │   │   │   └── dns-sd-pending-status-lifetime.json
 │   │   ├── CredentialPayloadTests.cs
 │   │   ├── Deckle.Lighting.Tests.csproj
+│   │   ├── DeckleLightingSourceTests.cs
 │   │   ├── HueBridgeClientIdentityTests.cs
 │   │   ├── HueBridgeClientNoAnswerRegressionTests.cs
 │   │   ├── HueCredentialPayloadBugNotes.md
@@ -3115,9 +3121,13 @@ _Generated from `git ls-files` — do not edit by hand._
 │   │   ├── HueEntertainmentFrameBuilderTests.cs
 │   │   ├── HueEntertainmentLightOutputTests.cs
 │   │   ├── HueEntertainmentRestoreRegressionTests.cs
+│   │   ├── HueEventStreamBugNotes.md
+│   │   ├── HueEventStreamEpisodeTests.cs
+│   │   ├── HueEventStreamUserIncidentTests.cs
 │   │   ├── HueLightOutputFactoryTests.cs
 │   │   ├── HueLocalDiscoveryRegressionTests.cs
 │   │   ├── HueLocalDiscoveryTests.cs
+│   │   ├── HueRestRestoreRegressionTests.cs
 │   │   ├── LightingCancellationLogTests.cs
 │   │   ├── LightingObservabilityCollection.cs
 │   │   ├── MessageTemplateDoctrineTests.cs
@@ -3507,6 +3517,10 @@ _Generated from `git ls-files` — do not edit by hand._
 │   │   ├── WhispEventIdBugNotes.md
 │   │   ├── WhispModelLifecycleBugNotes.md
 │   │   └── WhispModelLifecycleTests.cs
+│   ├── Deckle.Transcription.Views.Tests/
+│   │   ├── Deckle.Transcription.Views.Tests.csproj
+│   │   ├── DictationGeneralPageTests.cs
+│   │   └── RecordingLimitTests.cs
 │   ├── Deckle.Vad.Tests/
 │   │   ├── Deckle.Vad.Tests.csproj
 │   │   ├── MessageTemplateDoctrineTests.cs
