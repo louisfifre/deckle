@@ -20,7 +20,9 @@ internal sealed class AutocorrectEngineHarness : IDisposable
     public readonly RecordingInjector Injector;
     public readonly TypedWordTracker Tracker = new();
     public readonly ICorrectionPolicy Policy;
-    public AutocorrectSettings Settings = new();
+    // The default surface is a notepad process, so the harness enrolls it: the
+    // settings' own default enrolls no app.
+    public AutocorrectSettings Settings = new() { Apps = { ["notepad"] = true } };
     public readonly AutocorrectEngine Engine;
 
     public readonly List<CorrectionDecision> Applied = new();
