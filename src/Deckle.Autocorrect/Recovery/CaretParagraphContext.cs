@@ -5,8 +5,6 @@ namespace Deckle.Autocorrect;
 // recreates that gesture separately.
 public static class CaretParagraphContext
 {
-    public const int MaxParagraphLength = 4096;
-
     public static CaretParagraphContextResult ExtractClosed(
         string textBeforeCaret,
         bool reachedDocumentStart)
@@ -51,8 +49,6 @@ public static class CaretParagraphContext
         string paragraph = textBeforeCaret[start..end];
         if (string.IsNullOrWhiteSpace(paragraph))
             return Reject(CaretParagraphContextReasons.EmptyText);
-        if (paragraph.Length > MaxParagraphLength)
-            return Reject(CaretParagraphContextReasons.ParagraphTooLong);
 
         return new CaretParagraphContextResult(
             true,
@@ -86,5 +82,4 @@ public static class CaretParagraphContextReasons
     public const string EmptyText = "empty_text";
     public const string ClosingReturnNotFound = "closing_return_not_found";
     public const string BoundaryNotFound = "boundary_not_found";
-    public const string ParagraphTooLong = "paragraph_too_long";
 }
