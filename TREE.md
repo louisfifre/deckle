@@ -662,6 +662,7 @@ _Generated from `git ls-files` — do not edit by hand._
 │   │   ├── MicrophoneLevelFeed.cs
 │   │   ├── MicrophoneLevelFeedFailure.cs
 │   │   ├── ProbeResult.cs
+│   │   ├── RecordingLimit.cs
 │   │   ├── RecordingTailCalculator.cs
 │   │   ├── SpeakerOutput.cs
 │   │   ├── VoiceDetector.cs
@@ -672,7 +673,6 @@ _Generated from `git ls-files` — do not edit by hand._
 │   │   │   └── en-US/
 │   │   │       └── Resources.resw
 │   │   ├── Deckle.Audio.Views.csproj
-│   │   ├── RecordingLimit.cs
 │   │   ├── RecordingPage.xaml
 │   │   ├── RecordingPage.xaml.cs
 │   │   ├── RecordingSettingsModule.cs
