@@ -873,6 +873,13 @@ public sealed class LiveTranscriptionPipelineTests
         public CancellationToken RecordToken { get; private set; }
         public long StopObservedTimestamp { get; private set; }
 
+        // StopObserved completes when the capture sees its token fire. When
+        // HoldAfterStop is set, Record then waits for it before it returns: the
+        // take stays stopping, so a test can press while the engine ends it.
+        public TaskCompletionSource StopObserved { get; } = new(
+            TaskCreationOptions.RunContinuationsAsynchronously);
+        public ManualResetEventSlim? HoldAfterStop { get; init; }
+
         // Set to make the next probes fail the way an unplugged microphone does.
         public bool ProbeFails { get; set; }
 
@@ -907,6 +914,9 @@ public sealed class LiveTranscriptionPipelineTests
             if (!cancellationToken.WaitHandle.WaitOne(TimeSpan.FromSeconds(5)))
                 throw new TimeoutException("The scripted live capture was not stopped.");
             StopObservedTimestamp = System.Diagnostics.Stopwatch.GetTimestamp();
+            StopObserved.TrySetResult();
+            if (HoldAfterStop is not null && !HoldAfterStop.Wait(TimeSpan.FromSeconds(5)))
+                throw new TimeoutException("The held capture was never released.");
 
             return new CaptureResult(
                 captured.ToArray(),
@@ -955,6 +965,13 @@ public sealed class LiveTranscriptionPipelineTests
         // When set, call i reports this segment instead of a perfect one.
         private readonly IReadOnlyList<TranscriptionSegment>? _scriptedSegments;
 
+        // When set, the model load waits for it before it answers, so a test
+        // decides whether a press lands before or after the load's result.
+        // LoadEntered completes once the engine has asked for the load.
+        public ManualResetEventSlim? HoldLoad { get; init; }
+        public TaskCompletionSource LoadEntered { get; } = new(
+            TaskCreationOptions.RunContinuationsAsynchronously);
+
         public string Name => "test";
         public bool IsModelLoaded => _modelLoaded;
         public string? DetectedAccelerator => "test";
@@ -968,6 +985,10 @@ public sealed class LiveTranscriptionPipelineTests
 
         public Task<ModelLoadResult> LoadModelAsync(CancellationToken ct)
         {
+            LoadEntered.TrySetResult();
+            if (HoldLoad is not null && !HoldLoad.Wait(TimeSpan.FromSeconds(5)))
+                throw new TimeoutException("The held model load was never released.");
+
             if (_loadFails)
                 return Task.FromResult(new ModelLoadResult(false, 0, null, "load_failed"));
 
