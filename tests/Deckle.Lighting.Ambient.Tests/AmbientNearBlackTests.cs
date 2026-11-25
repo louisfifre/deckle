@@ -181,18 +181,14 @@ public sealed class AmbientNearBlackTests
             minBrightnessEnabled: false,
             minBrightness: 0);
 
-    // The two tunings the sequences run under. True : the Ambient preset
+    // The two tunings the sequences run under. True : the shipping defaults
     // (the shadow-lifting curve, the slow alpha). False : the gamma-like
     // curve (0.42, 0, 1, 1) with alpha 0.30, the reference tuning the
     // rounding-boundary sequence is built for.
     private static AmbientSettings SettingsFor(bool ambientPreset)
     {
         var settings = new AmbientSettings();
-        if (ambientPreset)
-        {
-            AmbientPresets.All.Single(p => p.Id == AmbientPresets.RealisticSlow).Values.ApplyTo(settings);
-        }
-        else
+        if (!ambientPreset)
         {
             settings.BrightnessCurveX1 = 0.42;
             settings.BrightnessCurveY1 = 0.00;

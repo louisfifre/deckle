@@ -1530,12 +1530,9 @@ _Generated from `git ls-files` — do not edit by hand._
 │   │   │   └── SrgbColor.cs
 │   │   ├── AmbientCaptureCap.cs
 │   │   ├── AmbientCaptureTarget.cs
-│   │   ├── AmbientPresets.cs
-│   │   ├── AmbientPresetStore.cs
 │   │   ├── AmbientSettings.cs
 │   │   ├── AmbientSettingsService.cs
 │   │   ├── AmbientStartSettings.cs
-│   │   ├── AmbientTuning.cs
 │   │   ├── Deckle.Lighting.Ambient.csproj
 │   │   ├── DeckleAmbientSource.CaptureAndSampling.cs
 │   │   ├── DeckleAmbientSource.CaptureRate.cs
@@ -3093,8 +3090,6 @@ _Generated from `git ls-files` — do not edit by hand._
 │   │   ├── AmbientHueChangeAttributorTests.cs
 │   │   ├── AmbientNearBlackTests.cs
 │   │   ├── AmbientObservabilityCollection.cs
-│   │   ├── AmbientPresetSelectionLogTests.cs
-│   │   ├── AmbientPresetsTests.cs
 │   │   ├── AmbientPreviewBugNotes.md
 │   │   ├── AmbientPreviewGeometryTests.cs
 │   │   ├── AmbientPreviewRobustnessTests.cs

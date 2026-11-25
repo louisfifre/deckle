@@ -117,7 +117,7 @@
   </resheader>
 
   <!-- AmbientPage strings consumed via x:Uid. Master state +
-       Behaviour (Preset, colour per zone) + Fine tuning (Brightness
+       Behaviour (colour per zone) + Fine tuning (Brightness
        curve / floor / Reaction speed / Change threshold / Exposure /
        Saturation) + Configuration (display, capture rate, Hue bridge
        pairing). The live preview and the per-light rows (zone,
@@ -150,24 +150,6 @@
   <!-- ── Behaviour ─────────────────────────────────────────── -->
   <data name="AmbientPageBehaviourSection.Title" xml:space="preserve">
     <value>Behaviour</value>
-  </data>
-  <!-- Preset options, read as "<key>.Content" (the preset's LabelKey,
-       PresetFamily.SelectorOptions). No surface selects a preset today; the
-       names stay with the presets they name. -->
-  <data name="AmbientPresetVividFast.Content" xml:space="preserve">
-    <value>Vivid Fast</value>
-  </data>
-  <data name="AmbientPresetVividSlow.Content" xml:space="preserve">
-    <value>Vivid Slow</value>
-  </data>
-  <data name="AmbientPresetRealisticFast.Content" xml:space="preserve">
-    <value>Realistic Fast</value>
-  </data>
-  <data name="AmbientPresetRealisticSlow.Content" xml:space="preserve">
-    <value>Realistic Slow</value>
-  </data>
-  <data name="AmbientPresetCustom.Content" xml:space="preserve">
-    <value>Custom</value>
   </data>
   <data name="AmbientZonesGroup.Header" xml:space="preserve">
     <value>Colour per zone</value>
