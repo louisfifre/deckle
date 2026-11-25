@@ -38,13 +38,13 @@ public class DeckleAmbientSourceTests
     {
         using var listener = new TestEventListener("Deckle-Ambient");
 
-        DeckleAmbientSource.Log.PipelineRestartDetail("UseMultiLight");
+        DeckleAmbientSource.Log.PipelineRestartDetail("SelectedMonitorDeviceName");
 
         var ev = Assert.Single(listener.Events);
         Assert.Equal(DeckleAmbientSource.EvtPipelineRestartDetail, ev.EventId);
         Assert.Equal(EventLevel.Verbose, ev.Level);
         Assert.True(ev.HasKeyword(Keywords.Lifecycle));
-        Assert.Equal("UseMultiLight", ev.Payload?[0]);
+        Assert.Equal("SelectedMonitorDeviceName", ev.Payload?[0]);
     }
 
     [Fact]

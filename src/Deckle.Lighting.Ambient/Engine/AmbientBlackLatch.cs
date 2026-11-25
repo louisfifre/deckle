@@ -2,8 +2,8 @@ using Deckle.Lighting;
 
 namespace Deckle.Lighting.Ambient;
 
-// The single quantisation to 8 bits, with a black latch per key ("group"
-// or a light id). Plain rounding sends any max channel under half a step
+// The single quantisation to 8 bits, with a black latch per key (a light
+// id). Plain rounding sends any max channel under half a step
 // (0.5/255) to black, so under a shadow-crushing curve a steady dark but
 // non-black frame would turn the lamp off. The latch splits that threshold
 // in two : a lit key goes black only below EnterBlack, a black key lights

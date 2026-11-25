@@ -12,15 +12,16 @@ using Deckle.Localization;
 
 namespace Deckle.Lighting.Ambient.Views;
 
-// Per-light settings of the "Colour per zone" mode: for each light of the
-// selected Entertainment area, the screen edge it follows (AmbientSettings.LightZones),
-// its brightness (AmbientSettings.LightBrightness, 1.0 when absent) and an
-// Identify button that flashes it for three seconds.
+// Per-light settings: for each light of the selected Entertainment area, the
+// screen edge it follows, its brightness (AmbientSettings.LightBrightness,
+// 1.0 when absent) and an Identify button that flashes it for three seconds.
 //
-// Visible only while UseMultiLight is on, a bridge is paired and a group is
-// selected (HueLastGroupId) — hidden, never greyed, otherwise. The group's
-// lights come from LightPlacementResolver; a light with no stored zone shows
-// No zone, and only the person's pick writes the store.
+// Visible while a bridge is paired and an area is selected (HueLastGroupId) —
+// hidden, never greyed, otherwise. The area's lights come from
+// LightPlacementResolver. A light the person never assigned shows the edge
+// its place in the Hue app's Entertainment setup suggests, which is the edge
+// the engine drives it on (LightZoneAssignment); opening the card writes
+// nothing, and only the person's pick, No zone included, is stored.
 //
 // Sync: AmbientSettingsService.Changed and HuePairingService.BridgeChanged
 // fire off the UI thread and are marshalled here. A new group (or bridge)
@@ -99,8 +100,7 @@ public sealed partial class LightZonesCard : UserControl
         string? groupId = settings.HueLastGroupId;
         var bridge = HuePairingService.Instance.Bridge;
 
-        bool show = settings.UseMultiLight
-                 && !string.IsNullOrEmpty(groupId)
+        bool show = !string.IsNullOrEmpty(groupId)
                  && bridge is { IsPaired: true };
         Visibility = show ? Visibility.Visible : Visibility.Collapsed;
         if (!show) return;
@@ -171,15 +171,13 @@ public sealed partial class LightZonesCard : UserControl
 
         // Opening the card reads the store and never writes it: a light the
         // person set to No zone stays out of Ambient Light on the next visit,
-        // and a light never assigned shows No zone until they pick an edge.
+        // and a light never assigned shows the edge its placement suggests.
         _syncingRows = true;
         try
         {
             foreach (var light in lights)
             {
-                var zone = settings.LightZones.TryGetValue(light.Id, out var stored)
-                    ? stored
-                    : LightZone.None;
+                var zone = ZoneOf(settings, light.Id);
                 LightsExpander.Items.Add(BuildRow(light, zone, settings));
             }
         }
@@ -259,8 +257,7 @@ public sealed partial class LightZonesCard : UserControl
         {
             foreach (var row in _rows)
             {
-                var zone = settings.LightZones.TryGetValue(row.LightId, out var z) ? z : LightZone.None;
-                row.ZoneButton.Content = LabelFor(zone);
+                row.ZoneButton.Content = LabelFor(ZoneOf(settings, row.LightId));
 
                 double percent = BrightnessPercentOf(settings, row.LightId);
                 if (Math.Abs(row.BrightnessSlider.Value - percent) > 0.5)
@@ -273,15 +270,20 @@ public sealed partial class LightZonesCard : UserControl
         }
     }
 
+    private LightZone ZoneOf(AmbientSettings settings, string lightId)
+        => LightZoneAssignment.Resolve(lightId, settings.LightZones, _placement?.SuggestedZones);
+
     // Writes replace the whole dictionary instead of mutating it: the push
     // loop reads these maps on its own thread every tick, and swapping a
     // reference is atomic where adding a key to a live Dictionary is not.
+    // No zone is stored like any edge: an absent key means "follow the
+    // placement", so removing it would bring the suggested edge back.
     private static void WriteZone(AmbientSettings settings, string lightId, LightZone zone)
     {
-        var zones = new Dictionary<string, LightZone>(settings.LightZones);
-        if (zone == LightZone.None) zones.Remove(lightId);
-        else                        zones[lightId] = zone;
-        settings.LightZones = zones;
+        settings.LightZones = new Dictionary<string, LightZone>(settings.LightZones)
+        {
+            [lightId] = zone,
+        };
     }
 
     private void OnZonePicked(string lightId, LightZone zone)

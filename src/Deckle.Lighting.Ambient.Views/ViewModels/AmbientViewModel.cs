@@ -72,10 +72,7 @@ public partial class AmbientViewModel : ObservableObject
     [ObservableProperty]
     public partial int BorderCells { get; set; }
 
-    // ── Pipeline ─────────────────────────────────────────────────────────────
-
-    [ObservableProperty]
-    public partial bool UseMultiLight { get; set; }
+    // ── Module switch ────────────────────────────────────────────────────────
 
     [ObservableProperty]
     public partial bool Enabled { get; set; }
@@ -83,7 +80,7 @@ public partial class AmbientViewModel : ObservableObject
     // ── Command-enable flag ──────────────────────────────────────────────────
     //
     // Enabled only when the tuning surface (the seven tuning values, floor,
-    // zone sampling, pipeline shape) differs from
+    // zone sampling) differs from
     // the shipping defaults — drives the Reset all button in the page's title
     // row. Recomputed on every Load(), and every live-save edit round-trips
     // through Load() via the AmbientSettingsService.Changed observer, so the
@@ -93,8 +90,8 @@ public partial class AmbientViewModel : ObservableObject
 
     // ── Setter side-effects ──────────────────────────────────────────────────
     //
-    // The tuning setters write the store and save. Pipeline-shape changes
-    // (UseMultiLight, the floor) write and save too. The store's Changed event
+    // The tuning setters write the store and save. The floor and the module
+    // switch write and save too. The store's Changed event
     // re-fires Load() on the page so the VM observes the new values (the
     // OnXxxChanged side-effects are suppressed by _isSyncing during Load).
 
@@ -194,16 +191,6 @@ public partial class AmbientViewModel : ObservableObject
         AmbientSettingsService.Instance.Save();
     }
 
-    partial void OnUseMultiLightChanged(bool value)
-    {
-        if (_isSyncing) return;
-        string modeLabel = value ? "per-zone" : "group";
-        DeckleAmbientSource.Log.PipelineModeChanged();
-        DeckleAmbientSource.Log.PipelineModeChangedDetail(modeLabel);
-        AmbientSettingsService.Instance.Current.UseMultiLight = value;
-        AmbientSettingsService.Instance.Save();
-    }
-
     partial void OnEnabledChanged(bool value)
     {
         if (_isSyncing) return;
@@ -232,7 +219,6 @@ public partial class AmbientViewModel : ObservableObject
         BorderMode             = d.BorderMode;
         BorderDepth            = d.BorderDepth;
         BorderCells            = d.BorderCells;
-        UseMultiLight          = d.UseMultiLight;
         Enabled                = d.Enabled;
 
         // _isSyncing stays true — Load() flips it to false.
@@ -257,7 +243,6 @@ public partial class AmbientViewModel : ObservableObject
             BorderMode            = s.BorderMode;
             BorderDepth           = s.BorderDepth;
             BorderCells           = s.BorderCells;
-            UseMultiLight         = s.UseMultiLight;
             Enabled               = s.Enabled;
         }
         finally
@@ -270,7 +255,7 @@ public partial class AmbientViewModel : ObservableObject
     // ── Reset to defaults ────────────────────────────────────────────────────
     //
     // Snaps the tuning surface back to the shipping defaults: the seven
-    // tuning values, the floor, the zone-sampling band and the pipeline shape.
+    // tuning values, the floor and the zone-sampling band.
     // Connection state (bridge pairing, last group, monitor), the per-light
     // rows (LightZones, LightBrightness) and the pipeline on/off flag
     // are deliberately preserved : a reset shouldn't unpair the lights, forget a
@@ -293,7 +278,6 @@ public partial class AmbientViewModel : ObservableObject
         cur.MinBrightnessEnabled = d.MinBrightnessEnabled;
         cur.MinBrightness        = d.MinBrightness;
         ApplyZoneSamplingDefaults(cur, d);
-        cur.UseMultiLight      = d.UseMultiLight;
 
         service.Save();
     }
@@ -326,7 +310,6 @@ public partial class AmbientViewModel : ObservableObject
             s.MinBrightness         != d.MinBrightness ||
             s.BorderMode            != d.BorderMode ||
             s.BorderDepth           != d.BorderDepth ||
-            s.BorderCells           != d.BorderCells ||
-            s.UseMultiLight         != d.UseMultiLight;
+            s.BorderCells           != d.BorderCells;
     }
 }

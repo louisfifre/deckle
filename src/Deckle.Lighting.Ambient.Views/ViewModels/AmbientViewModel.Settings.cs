@@ -26,17 +26,16 @@ public partial class AmbientViewModel
             defaultValue: () => new AmbientSettings().Enabled),
     ];
 
-    // Behaviour: per-zone colours with their band shape. The two band sliders
-    // share one place and show only the one the chosen band mode reads. The
-    // measure is a dropdown, not radio buttons: two options the eye need not
-    // compare at a glance, and their labels say what each does (Louis,
-    // 2026-10-15).
+    // Behaviour: the band shape of the per-zone colours. Colour per zone is
+    // Ambient's only mode (Louis, 2026-11-25), so the fold has no switch: it
+    // holds the band settings. The two band sliders share one place and show
+    // only the one the chosen band mode reads. The measure is a dropdown, not
+    // radio buttons: two options the eye need not compare at a glance, and
+    // their labels say what each does (Louis, 2026-10-15).
     public IReadOnlyList<SettingDescriptor> BehaviourSettings =>
     [
-        Setting.Group(
+        Setting.Section(
             "AmbientZonesGroup",
-            () => UseMultiLight,
-            value => UseMultiLight = value,
             [
                 Setting.Choice<BorderThicknessMode>(
                     "AmbientBorderModeCard",
@@ -61,8 +60,7 @@ public partial class AmbientViewModel
                     new MagnitudeArgs(4, 24, Integer: true),
                     visibleWhen: () => BorderMode == BorderThicknessMode.Cells,
                     defaultValue: () => new AmbientSettings().BorderCells),
-            ],
-            defaultValue: () => new AmbientSettings().UseMultiLight),
+            ]),
     ];
 
     // Fine tuning: flat cards, the brightness curve first at full width (the
@@ -96,7 +94,7 @@ public partial class AmbientViewModel
                 return new CurvePoints(d.BrightnessCurveX1, d.BrightnessCurveY1, d.BrightnessCurveX2, d.BrightnessCurveY2);
             }),
         // The floor is a switch with one level behind it, so it is a fold
-        // governed by its switch, the shape the zones group has above. The level
+        // governed by its switch. The level
         // reads in percent like the curve it is drawn on; the Hue scale (0-254)
         // stays the stored value and the engine's.
         Setting.Group(

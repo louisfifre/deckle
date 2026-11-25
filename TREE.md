@@ -1507,7 +1507,6 @@ _Generated from `git ls-files` — do not edit by hand._
 │   │   │   ├── AmbientEngine.CaptureRate.cs
 │   │   │   ├── AmbientEngine.cs
 │   │   │   ├── AmbientEngine.FirstFrame.cs
-│   │   │   ├── AmbientEngine.GroupPush.cs
 │   │   │   ├── AmbientEngine.Heartbeat.cs
 │   │   │   ├── AmbientEngine.Lifecycle.cs
 │   │   │   ├── AmbientEngine.MultiLightPush.cs
@@ -1526,6 +1525,7 @@ _Generated from `git ls-files` — do not edit by hand._
 │   │   │   ├── HuePairingService.cs
 │   │   │   ├── LightPlacementResolver.cs
 │   │   │   ├── LightZone.cs
+│   │   │   ├── LightZoneAssignment.cs
 │   │   │   ├── LightZoneSuggester.cs
 │   │   │   └── SrgbColor.cs
 │   │   ├── AmbientCaptureCap.cs
@@ -3098,6 +3098,7 @@ _Generated from `git ls-files` — do not edit by hand._
 │   │   ├── HueEndpointResolverTests.cs
 │   │   ├── HueGroupSelectionTests.cs
 │   │   ├── LightPlacementResolverTests.cs
+│   │   ├── LightZoneAssignmentTests.cs
 │   │   ├── MessageTemplateDoctrineTests.cs
 │   │   ├── MilestoneClosersTests.cs
 │   │   └── SummaryTagTests.cs

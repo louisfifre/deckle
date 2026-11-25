@@ -17,16 +17,28 @@ public sealed class AmbientStartSettingsTests
     }
 
     [Fact]
-    public void EachStartSettingIsNamedWhenItChanges()
+    public void TheMonitorIsNamedWhenItChanges()
     {
         var settings = new AmbientSettings();
         var started = AmbientStartSettings.From(settings);
 
         settings.SelectedMonitorDeviceName = @"\\.\DISPLAY2";
-        settings.UseMultiLight = !settings.UseMultiLight;
 
         Assert.Equal(
-            "SelectedMonitorDeviceName,UseMultiLight",
+            "SelectedMonitorDeviceName",
             started.ChangedSettings(AmbientStartSettings.From(settings)));
+    }
+
+    // A zone pick or a per-light brightness is read on every tick, so a
+    // change to one never restarts the run.
+    [Fact]
+    public void AZonePickDoesNotRestartTheRun()
+    {
+        var settings = new AmbientSettings();
+        var started = AmbientStartSettings.From(settings);
+
+        settings.LightZones = new Dictionary<string, LightZone> { ["1"] = LightZone.Left };
+
+        Assert.Equal("", started.ChangedSettings(AmbientStartSettings.From(settings)));
     }
 }

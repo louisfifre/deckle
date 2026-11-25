@@ -14,16 +14,18 @@ public static class HueLightOutputFactory
     private const string EntertainmentOutputName = "hue_entertainment";
 
     /// <summary>Builds the Entertainment output for the group, without
-    /// connecting it. Throws <see cref="HueEntertainmentUnavailableException"/>
-    /// when the bridge has no client key or no Entertainment area describes
-    /// the group; a failed catalog request propagates as it came.</summary>
-    public static Task<ILightOutput> CreateAsync(
+    /// connecting it, and returns it with the area it streams to, whose light
+    /// placements give each light its suggested screen edge. Throws
+    /// <see cref="HueEntertainmentUnavailableException"/> when the bridge has
+    /// no client key or no Entertainment area describes the group; a failed
+    /// catalog request propagates as it came.</summary>
+    public static Task<(ILightOutput Output, HueEntertainmentArea Area)> CreateAsync(
         HueBridgeClient client,
         string groupId,
         CancellationToken ct = default)
         => CreateAsync(new HueBridgeOutputFactoryBridge(client), groupId, ct);
 
-    internal static async Task<ILightOutput> CreateAsync(
+    internal static async Task<(ILightOutput Output, HueEntertainmentArea Area)> CreateAsync(
         IHueOutputFactoryBridge bridge,
         string groupId,
         CancellationToken ct)
@@ -47,7 +49,7 @@ public static class HueLightOutputFactory
         }
 
         DeckleLightingSource.Log.LightOutputSelected(EntertainmentOutputName, "entertainment_area_found");
-        return bridge.CreateEntertainmentOutput(area, clientKey);
+        return (bridge.CreateEntertainmentOutput(area, clientKey), area);
     }
 
     /// <summary>Connects an output <see cref="CreateAsync(HueBridgeClient, string, CancellationToken)"/>

@@ -391,9 +391,6 @@
     <value>Output</value>
   </data>
   <!-- AmbientPreviewCard code-behind (Loc.Get) — mirrored in Deckle.App. -->
-  <data name="AmbientPreview_GroupSwatch" xml:space="preserve">
-    <value>All lights</value>
-  </data>
   <data name="AmbientPreview_Capture_Format" xml:space="preserve">
     <value>{0} × {1}, {2}</value>
   </data>
@@ -447,7 +444,7 @@
     <value>Lights</value>
   </data>
   <data name="AmbientLightsExpander.Description" xml:space="preserve">
-    <value>A light with no screen edge keeps its current state.</value>
+    <value>Each light starts on the screen edge nearest its place in your Hue Entertainment area. Pick another edge, or No zone to leave a light out.</value>
   </data>
   <data name="AmbientLightsEmptyState.Text" xml:space="preserve">
     <value>No lights in this area.</value>
