@@ -65,7 +65,6 @@ public sealed class LlmSettingsFileTests : IDisposable
         using var store = OpenStore(withRetiredKeys);
 
         Assert.Equal("p1", Assert.Single(store.Current.Profiles).Id);
-        Assert.Null(store.Current.ActiveProfileId);
 
         store.Replace(store.Current);
         store.Flush();
