@@ -8,7 +8,7 @@
     xmlns:catalog="using:Deckle.Catalog"
     Visibility="Collapsed">
 
-    <!-- One SettingsCard per light of the selected Hue group, built in
+    <!-- One SettingsCard per light of the selected Entertainment area, built in
          code-behind (the set is only known at runtime): zone picker,
          brightness slider, Identify. The header's ProgressRing runs while
          the bridge is asked for the group's lights. -->

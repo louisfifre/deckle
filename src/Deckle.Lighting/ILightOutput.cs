@@ -5,8 +5,8 @@ namespace Deckle.Lighting;
 // colour at the cadence the consumer chooses, disconnect cleanly. Every
 // driver supports the single-colour push. Drivers that can address
 // individual lights within their connected scope also implement
-// <see cref="IMultiLightOutput"/> ; consumers query for the capability
-// with a runtime cast and fall back to the single-colour push.
+// <see cref="IMultiLightOutput"/>, which Ambient requires: it drives each
+// light on its screen edge and has no single-colour mode (2026-11-25).
 //
 // Lifecycle. Construction is cheap and never touches the network;
 // ConnectAsync must succeed before any push; DisposeAsync is idempotent.
@@ -20,22 +20,16 @@ public interface ILightOutput : IAsyncDisposable
     /// successfully and the driver is ready to accept colour pushes.</summary>
     bool IsConnected { get; }
 
-    /// <summary>True when state-change events observed from the sink
-    /// can be attributed back to this output's own writes. Consumers
-    /// use this to decide whether bridge-side events are useful for
-    /// external-change detection during the active session.</summary>
-    bool UsesStateEventAttribution => false;
-
     /// <summary>True when the connected output is a live stream that
     /// must keep receiving colour updates even when the desired colour
     /// has not changed. Consumers use this to bypass their delta gate
-    /// while keeping persistent-state outputs such as REST throttled.</summary>
+    /// while keeping persistent-state outputs throttled.</summary>
     bool RequiresContinuousColorUpdates => false;
 
     /// <summary>Driver-recommended colour update rate for a live output,
     /// in updates per second. Null leaves cadence selection to the consumer.
     /// This is a transport capability, not a user preference: persistent
-    /// state outputs such as REST normally leave it unspecified, while a
+    /// state outputs normally leave it unspecified, while a
     /// streaming transport can advertise the rate needed for smoothness and
     /// packet-loss tolerance.</summary>
     int? PreferredColorUpdateRateHz => null;
@@ -53,10 +47,7 @@ public interface ILightOutput : IAsyncDisposable
 
 // Capability sub-interface : exposed by drivers that can address
 // individual lights independently within the connected scope. AmbientEngine
-// queries with `output is IMultiLightOutput` at start ; if yes, the
-// multi-light pipeline runs, otherwise it falls back to the
-// <see cref="ILightOutput.SetColorAsync"/> path with a single average
-// colour.
+// requires it at start and refuses an output without it.
 //
 // A separate interface rather than an optional method: a driver that
 // cannot address individual fixtures (one DMX universe driving one

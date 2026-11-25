@@ -37,26 +37,6 @@ public sealed partial class DeckleAmbientSource
         WriteEvent(EvtTuningChanged, setting, value);
     }
 
-    [Event(EvtPipelineModeChanged,
-           Level = EventLevel.Informational,
-           Keywords = (EventKeywords)Keywords.Pipeline,
-           Message = "The ambient pipeline mode changed")]
-    public void PipelineModeChanged()
-    {
-        if (IsEnabled(EventLevel.Informational, (EventKeywords)Keywords.Pipeline))
-            WriteEvent(EvtPipelineModeChanged);
-    }
-
-    [Event(EvtPipelineModeChangedDetail,
-           Level = EventLevel.Verbose,
-           Keywords = (EventKeywords)Keywords.Pipeline,
-           Message = "mode={0}")]
-    public void PipelineModeChangedDetail(string mode)
-    {
-        if (!IsAmbientDetailEnabled(EventLevel.Verbose, (EventKeywords)Keywords.Pipeline)) return;
-        WriteEvent(EvtPipelineModeChangedDetail, mode);
-    }
-
     // ── Settings persistence ────────────────────────────────────────────
 
     [Event(EvtSettingsLoadWarning,

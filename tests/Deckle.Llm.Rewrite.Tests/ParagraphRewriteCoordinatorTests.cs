@@ -6,6 +6,7 @@ using Xunit;
 
 namespace Deckle.Llm.Rewrite.Tests;
 
+[Collection(LlmRewriteObservabilityCollection.Name)]
 [Trait("Category", "unit")]
 public sealed class ParagraphRewriteCoordinatorTests
 {

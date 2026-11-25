@@ -3,6 +3,10 @@ using Xunit;
 
 namespace Deckle.Lighting.Ambient.Tests;
 
+// The Lights card lists the lights of the selected Entertainment area, the
+// lights the stream drives, each with the screen edge its placement in the
+// Hue app suggests. Finding the area itself is the output factory's, tested
+// in Deckle.Lighting.Tests (HueLightOutputFactoryTests).
 [Trait("Category", "unit")]
 public sealed class LightPlacementResolverTests
 {
@@ -13,46 +17,45 @@ public sealed class LightPlacementResolverTests
         => new(id, name, placements, []);
 
     [Fact]
-    public void AnAreaNamedLikeTheGroupWinsOverABetterOverlap()
+    public void TheAreaListsItsLightsInItsOwnOrderOnce()
     {
-        var named   = Area("a", "Living room", Placement("9"));
-        var overlap = Area("b", "TV", Placement("1"), Placement("2"));
+        var area = Area("a", "TV", Placement("3"), Placement("1"), Placement("3"));
 
-        var match = LightPlacementResolver.MatchEntertainmentArea(
-            "living ROOM", ["1", "2"], [overlap, named]);
+        var (lights, _) = LightPlacementResolver.Build(area, new Dictionary<string, bool>());
 
-        Assert.NotNull(match);
-        Assert.Same(named, match.Area);
-        Assert.Equal(EntertainmentAreaMatchKind.Name, match.Kind);
+        Assert.Equal(["3", "1"], lights.Select(l => l.Id));
+        Assert.Equal("Light 3", lights[0].Name);
     }
 
     [Fact]
-    public void WithoutANameMatchTheAreaSharingTheMostLightsWins()
+    public void ALightTheBridgeReportsUnreachableIsOffline()
     {
-        var one = Area("a", "Desk", Placement("1"));
-        var two = Area("b", "TV", Placement("1"), Placement("2"), Placement("7"));
+        var area = Area("a", "TV", Placement("1"), Placement("2"));
 
-        var match = LightPlacementResolver.MatchEntertainmentArea(
-            "Living room", ["1", "2", "3"], [one, two]);
+        var (lights, _) = LightPlacementResolver.Build(
+            area, new Dictionary<string, bool> { ["1"] = false });
 
-        Assert.NotNull(match);
-        Assert.Same(two, match.Area);
-        Assert.Equal(EntertainmentAreaMatchKind.Overlap, match.Kind);
-        Assert.Equal(2, match.Overlap);
+        Assert.False(lights[0].IsReachable);
+        Assert.True(lights[1].IsReachable);
     }
 
     [Fact]
-    public void NoNameAndNoSharedLightMeansNoMatch()
+    public void EveryPlacedLightGetsTheZoneItsPositionSuggests()
     {
-        var area = Area("a", "Desk", Placement("8"));
+        var area = Area("a", "TV",
+            Placement("1", x: -0.8),
+            Placement("2", z: 0.9),
+            Placement("3", x: 0.8));
 
-        Assert.Null(LightPlacementResolver.MatchEntertainmentArea("Living room", ["1"], [area]));
-        Assert.Null(LightPlacementResolver.MatchEntertainmentArea("Living room", [], [area]));
-        Assert.Null(LightPlacementResolver.MatchEntertainmentArea(null, ["1"], []));
+        var (_, suggestions) = LightPlacementResolver.Build(area, new Dictionary<string, bool>());
+
+        Assert.Equal(LightZone.Left, suggestions["1"]);
+        Assert.Equal(LightZone.Top, suggestions["2"]);
+        Assert.Equal(LightZone.Right, suggestions["3"]);
     }
 
     [Fact]
-    public void SuggestionsCoverOnlyTheLightsOfTheGroup()
+    public void SuggestionsCoverOnlyTheLightsAsked()
     {
         var area = Area("a", "TV",
             Placement("1", x: -0.8),
