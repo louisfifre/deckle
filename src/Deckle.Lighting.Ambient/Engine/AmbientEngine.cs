@@ -18,8 +18,8 @@ namespace Deckle.Lighting.Ambient;
 //
 //   - Group mode (default). One sRGB average over the whole frame, one
 //     push to the connected group via <see cref="ILightOutput.SetColorAsync"/>.
-//     Every driver supports this path. REST runs at 15 Hz; a streaming
-//     driver can advertise its preferred rate.
+//     Every driver supports this path, at the rate the driver advertises
+//     (Hue Entertainment: 50 Hz).
 //
 //   - Multi-light mode. One sRGB sample per screen-border zone (top /
 //     bottom / left / right), broadcast to every light assigned to
@@ -27,10 +27,7 @@ namespace Deckle.Lighting.Ambient;
 //     via <see cref="IMultiLightOutput.SetLightColorsAsync"/>. Only
 //     enabled when UseMultiLight is set, the driver implements
 //     <see cref="IMultiLightOutput"/> AND it reports at least one light.
-//     REST cadence is throttled to 10 Hz to keep the per-second PUT
-//     count within the Hue REST CLIP v1 comfort zone (3 lights × 10 Hz
-//     = 30 PUT/s). A batch streaming driver can override that transport
-//     constraint. The four zones are sampled once per tick from a border
+//     The four zones are sampled once per tick from a border
 //     band (AmbientSettings.BorderMode / BorderDepth / BorderCells),
 //     HyperHDR's <c>horizontalDepth</c> / <c>verticalDepth</c> collapsed
 //     to one user value.
@@ -124,7 +121,7 @@ public sealed partial class AmbientEngine : IAsyncDisposable
 
     // Deferred-cleanup task spun by Stop() so the UI thread that
     // triggered the stop returns immediately while the DXGI duplication
-    // + sampler GPU buffers + Hue REST output get torn down on the
+    // + sampler GPU buffers + Hue Entertainment output get torn down on the
     // thread pool. StartAsync / DisposeAsync await this before they
     // touch the engine's owned deps, so a Start + Stop + Start sequence
     // serialises cleanly without holding the duplication past Stop.
@@ -163,9 +160,9 @@ public sealed partial class AmbientEngine : IAsyncDisposable
     private long _hbSkippedSlots;
     private int  _hbPushFailures;
 
-    // Wall-clock cost of each push await, for the heartbeat : REST includes
-    // the bridge HTTP round-trip, Entertainment the DTLS/UDP send plus any
-    // local back-pressure. Drops are not counted.
+    // Wall-clock cost of each push await, for the heartbeat : the
+    // Entertainment DTLS/UDP send plus any local back-pressure. Drops are not
+    // counted.
     private List<double>? _hbPushDurationsMs;
 
     // Tuning snapshot, refreshed at the top of each tick from _host.Ambient

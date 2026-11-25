@@ -196,9 +196,7 @@ public sealed partial class AmbientEngine
                 _multiLightActive = false;
             }
 
-            _pushRateHz = AmbientPushCadence.ResolveRateHz(
-                _output.PreferredColorUpdateRateHz,
-                _multiLightActive);
+            _pushRateHz = AmbientPushCadence.ResolveRateHz(_output.PreferredColorUpdateRateHz);
             _pushIntervalMs = 1000 / _pushRateHz;
 
             // Per-light config dump at engine start : an unmapped light

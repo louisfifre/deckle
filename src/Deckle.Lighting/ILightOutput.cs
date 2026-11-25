@@ -23,13 +23,13 @@ public interface ILightOutput : IAsyncDisposable
     /// <summary>True when the connected output is a live stream that
     /// must keep receiving colour updates even when the desired colour
     /// has not changed. Consumers use this to bypass their delta gate
-    /// while keeping persistent-state outputs such as REST throttled.</summary>
+    /// while keeping persistent-state outputs throttled.</summary>
     bool RequiresContinuousColorUpdates => false;
 
     /// <summary>Driver-recommended colour update rate for a live output,
     /// in updates per second. Null leaves cadence selection to the consumer.
     /// This is a transport capability, not a user preference: persistent
-    /// state outputs such as REST normally leave it unspecified, while a
+    /// state outputs normally leave it unspecified, while a
     /// streaming transport can advertise the rate needed for smoothness and
     /// packet-loss tolerance.</summary>
     int? PreferredColorUpdateRateHz => null;
