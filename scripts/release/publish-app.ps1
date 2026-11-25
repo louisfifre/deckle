@@ -59,7 +59,6 @@ $ScriptsDir = Split-Path -Parent $ScriptDir                 # scripts/
 $GitDir = Join-Path $ScriptsDir 'git'                       # the versions pack
 $LibDir = Join-Path $ScriptsDir 'lib'
 . (Join-Path $LibDir 'action-summary.ps1')
-. (Join-Path $LibDir 'deckle-process.ps1')
 . (Join-Path $LibDir 'native-console.ps1')
 . (Join-Path $LibDir 'version.ps1')
 Import-Module (Join-Path $LibDir 'release-validation.psm1') -Force
@@ -108,7 +107,7 @@ if ($Target) {
 
 # A standalone app (Folders, Mail) takes its own path and ends here: a portable
 # ZIP and its sha256, and with -Publish a private draft release under its own
-# tag. Nothing on this path stops a running app, builds an installer, marks a
+# tag. Nothing on this path builds an installer, marks a
 # release, touches CHANGELOG.md or makes anything public: the Deckle path below
 # keeps those acts.
 if ($App -cne 'deckle') {
@@ -291,7 +290,7 @@ if ($LASTEXITCODE -eq 0 -and $remoteUrl) {
 }
 
 # A public release is immutable input to remote machines: prove its source
-# before stopping Deckle or spending minutes in NativeAOT.
+# before spending minutes in NativeAOT.
 if ($Publish) {
     Write-WorkflowStep -Output $WorkflowOutput -Message 'Fetch and validate release source'
     & git -C $RepoRoot fetch origin main --tags --prune
@@ -417,8 +416,8 @@ $SetupPath       = Join-Path $OutDir $SetupName
 $InstallerCsproj = Join-Path $RepoRoot 'src\Deckle.Installer\Deckle.Installer.csproj'
 $InstallerPubDir = Join-Path $OutDir 'installer'
 
-# Generate or validate notes before stopping the running app. A changelog
-# failure is a source failure, not a reason to interrupt Deckle.
+# Generate or validate the notes before the long builds: a changelog failure
+# is a source failure, found early.
 if ($Publish) {
     if (-not $Notes) {
         $Notes = Join-Path $OutDir 'release-notes.md'
@@ -428,14 +427,6 @@ if ($Publish) {
     } elseif (-not (Test-Path -LiteralPath $Notes -PathType Leaf)) {
         throw "Release notes file not found: $Notes"
     }
-}
-
-# A running Release instance keeps the app DLLs locked, and the publish below
-# would retry the copy until it fails.
-Write-WorkflowStep -Output $WorkflowOutput -Message 'Stop running Deckle instance'
-Stop-DeckleProcess -WriteEvent {
-    param([string]$Role, [string]$Message)
-    Write-WorkflowMessage -Output $WorkflowOutput -Message $Message -Role $Role
 }
 
 # win-x64 via RuntimeIdentifierOverride, NOT `-r win-x64`. A plain RID
