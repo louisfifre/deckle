@@ -1332,6 +1332,7 @@ _Generated from `git ls-files` — do not edit by hand._
 │   │   ├── AnimationGate.cs
 │   │   ├── Deckle.Hud.csproj
 │   │   ├── DeckleHudSource.cs
+│   │   ├── HudFirstFrameProbe.cs
 │   │   ├── HudMessage.xaml
 │   │   ├── HudMessage.xaml.cs
 │   │   └── ProximityRollupAggregator.cs
