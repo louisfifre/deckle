@@ -57,7 +57,13 @@ Smaller touches outside the module list: a **taskbar cover** that masks the task
 
 | First commit | Commits | Active days | Lines added | Lines touched | Current tracked lines |
 |---:|---:|---:|---:|---:|---:|
-| 2026-04-01 | 5,332 | 146 | 755,708 | 1,144,803 | 367,576 |
+| 2026-04-01 | 5,362 | 146 | 758,138 | 1,147,343 | 369,550 |
+
+<picture>
+  <source media="(prefers-color-scheme: dark)" srcset="docs/media/pulse-commits-dark.svg">
+  <source media="(prefers-color-scheme: light)" srcset="docs/media/pulse-commits-light.svg">
+  <img alt="Commits per week over the last 26 weeks: 4,439 in total, the busiest week had 692." src="docs/media/pulse-commits-light.svg" width="720">
+</picture>
 
 <sub>Generated from Git history on 2026-11-25. Counts include tracked text files only for the current line total.</sub>
 <!-- deckle-stats:end -->

@@ -1,0 +1,36 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="720" height="120" viewBox="0 0 720 120" role="img" aria-labelledby="t d">
+  <title id="t">Commits per week, last 26 weeks</title>
+  <desc id="d">4439 commits between 1 Jun 2026 and 23 Nov 2026; the busiest week had 692.</desc>
+  <g font-family="-apple-system, BlinkMacSystemFont, 'Segoe UI', Helvetica, Arial, sans-serif">
+  <line x1="8" y1="89" x2="712" y2="89" stroke="#3D444D" stroke-width="1"/>
+  <rect x="17.54" y="75.97" width="8" height="10.03" rx="2" fill="#8B5CFF" fill-opacity="0.45"/>
+  <rect x="44.62" y="69.17" width="8" height="16.83" rx="2" fill="#8B5CFF" fill-opacity="0.45"/>
+  <rect x="71.69" y="74.35" width="8" height="11.65" rx="2" fill="#8B5CFF" fill-opacity="0.45"/>
+  <rect x="98.77" y="83" width="8" height="3" rx="2" fill="#8B5CFF" fill-opacity="0.45"/>
+  <rect x="125.85" y="74.91" width="8" height="11.09" rx="2" fill="#8B5CFF" fill-opacity="0.45"/>
+  <rect x="152.92" y="83" width="8" height="3" rx="2" fill="#8B5CFF" fill-opacity="0.45"/>
+  <rect x="180" y="71.35" width="8" height="14.65" rx="2" fill="#8B5CFF" fill-opacity="0.45"/>
+  <rect x="207.08" y="78.8" width="8" height="7.2" rx="2" fill="#8B5CFF" fill-opacity="0.45"/>
+  <rect x="234.15" y="59.13" width="8" height="26.87" rx="2" fill="#8B5CFF" fill-opacity="0.45"/>
+  <rect x="261.23" y="83" width="8" height="3" rx="2" fill="#8B5CFF" fill-opacity="0.45"/>
+  <rect x="288.31" y="80.25" width="8" height="5.75" rx="2" fill="#8B5CFF" fill-opacity="0.45"/>
+  <rect x="315.38" y="83" width="8" height="3" rx="2" fill="#8B5CFF" fill-opacity="0.45"/>
+  <rect x="342.46" y="83" width="8" height="3" rx="2" fill="#8B5CFF" fill-opacity="0.45"/>
+  <rect x="369.54" y="83" width="8" height="3" rx="2" fill="#8B5CFF" fill-opacity="0.45"/>
+  <rect x="396.62" y="83" width="8" height="3" rx="2" fill="#8B5CFF" fill-opacity="0.45"/>
+  <rect x="423.69" y="84" width="8" height="2" rx="2" fill="#8B5CFF" fill-opacity="0.18"/>
+  <rect x="450.77" y="84" width="8" height="2" rx="2" fill="#8B5CFF" fill-opacity="0.18"/>
+  <rect x="477.85" y="83" width="8" height="3" rx="2" fill="#8B5CFF" fill-opacity="0.45"/>
+  <rect x="504.92" y="69.33" width="8" height="16.67" rx="2" fill="#8B5CFF" fill-opacity="0.45"/>
+  <rect x="532" y="38.66" width="8" height="47.34" rx="2" fill="#8B5CFF" fill-opacity="0.45"/>
+  <rect x="559.08" y="35.75" width="8" height="50.25" rx="2" fill="#8B5CFF" fill-opacity="0.45"/>
+  <rect x="586.15" y="79.85" width="8" height="6.15" rx="2" fill="#8B5CFF" fill-opacity="0.45"/>
+  <rect x="613.23" y="47.8" width="8" height="38.2" rx="2" fill="#8B5CFF" fill-opacity="0.45"/>
+  <rect x="640.31" y="30" width="8" height="56" rx="2" fill="#8B5CFF" fill-opacity="1"/>
+  <rect x="667.38" y="68.12" width="8" height="17.88" rx="2" fill="#8B5CFF" fill-opacity="0.45"/>
+  <rect x="694.46" y="72.57" width="8" height="13.43" rx="2" fill="#8B5CFF" fill-opacity="0.45"/>
+  <text x="648.31" y="22" text-anchor="end" font-size="11" font-weight="600" fill="#8B5CFF">692 commits, week of 9 Nov</text>
+  <text x="8" y="106" text-anchor="start" font-size="11" fill="#9198A1">1 Jun 2026</text>
+  <text x="712" y="106" text-anchor="end" font-size="11" fill="#9198A1">23 Nov 2026</text>
+  </g>
+</svg>
