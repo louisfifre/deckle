@@ -699,6 +699,7 @@ _Generated from `git ls-files` — do not edit by hand._
 │   │   ├── Injection/
 │   │   │   ├── InjectionPlan.cs
 │   │   │   ├── ITextInjector.cs
+│   │   │   ├── ParagraphReplacementPlan.cs
 │   │   │   └── TextInjector.cs
 │   │   ├── Interop/
 │   │   │   └── KeyboardStateInterop.cs
@@ -2756,6 +2757,7 @@ _Generated from `git ls-files` — do not edit by hand._
 │   │   ├── MistouchMiningMaintenanceTests.cs
 │   │   ├── MorphalouReaderTests.cs
 │   │   ├── PairModelTrainerTests.cs
+│   │   ├── ParagraphReplacementPlanTests.cs
 │   │   ├── PersonalDictionaryTests.cs
 │   │   ├── PersonalLexiconWithTermsTests.cs
 │   │   ├── PersonalWordAdmissionTests.cs
@@ -3159,6 +3161,7 @@ _Generated from `git ls-files` — do not edit by hand._
 │   │   ├── Deckle.Llm.Tests.csproj
 │   │   ├── ImageRequestTests.cs
 │   │   ├── LlmUsageLogTests.cs
+│   │   ├── PromptTemplateFamilyTests.cs
 │   │   └── ReasoningOnTheWireTests.cs
 │   ├── Deckle.Mail.App.Tests/
 │   │   ├── Deckle.Mail.App.Tests.csproj

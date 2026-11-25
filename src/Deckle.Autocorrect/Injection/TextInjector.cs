@@ -1,5 +1,4 @@
 using System.Runtime.InteropServices;
-using System.Globalization;
 using Deckle.Core;
 using Deckle.Input;
 
@@ -22,8 +21,6 @@ public sealed class TextInjector : ITextInjector
     private const uint KEYEVENTF_UNICODE = 0x0004;
 
     private const ushort VK_BACK = 0x08;
-    private const ushort VK_RETURN = 0x0D;
-    private const ushort VK_SHIFT = 0x10;
 
     private static readonly int InputSize = Marshal.SizeOf<INPUT>();
 
@@ -74,26 +71,14 @@ public sealed class TextInjector : ITextInjector
     /// offer on every intervening edit or caret move.</summary>
     public bool ReplaceClosedParagraph(string original, string replacement)
     {
-        int backspaces = StringInfo.ParseCombiningCharacters(original).Length + 1;
-        var inputs = new INPUT[(backspaces + replacement.Length) * 2 + 4];
-        int i = 0;
-
-        for (int b = 0; b < backspaces; b++)
+        var keys = ParagraphReplacementPlan.Compute(original, replacement);
+        var inputs = new INPUT[keys.Count];
+        for (int i = 0; i < inputs.Length; i++)
         {
-            inputs[i++] = KeyEvent(VK_BACK, 0, 0);
-            inputs[i++] = KeyEvent(VK_BACK, 0, KEYEVENTF_KEYUP);
+            var key = keys[i];
+            uint flags = (key.IsUnicode ? KEYEVENTF_UNICODE : 0) | (key.Release ? KEYEVENTF_KEYUP : 0);
+            inputs[i] = KeyEvent(key.VirtualKey, key.Unit, flags);
         }
-
-        foreach (char unit in replacement)
-        {
-            inputs[i++] = KeyEvent(0, unit, KEYEVENTF_UNICODE);
-            inputs[i++] = KeyEvent(0, unit, KEYEVENTF_UNICODE | KEYEVENTF_KEYUP);
-        }
-
-        inputs[i++] = KeyEvent(VK_SHIFT, 0, 0);
-        inputs[i++] = KeyEvent(VK_RETURN, 0, 0);
-        inputs[i++] = KeyEvent(VK_RETURN, 0, KEYEVENTF_KEYUP);
-        inputs[i] = KeyEvent(VK_SHIFT, 0, KEYEVENTF_KEYUP);
         return Send(inputs);
     }
 
