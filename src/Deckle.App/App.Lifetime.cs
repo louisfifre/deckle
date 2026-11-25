@@ -74,10 +74,6 @@ public partial class App
     // The figure is an estimate from the pipeline's stages, not a measure.
     private static readonly TimeSpan QuitWorkBound = TimeSpan.FromSeconds(60);
 
-    // Time the HUD keeps its "copied" confirmation on screen before
-    // the process exits; without it the person never sees the take arrived.
-    private static readonly TimeSpan QuitConfirmationHold = TimeSpan.FromMilliseconds(800);
-
     private int _quitStarted;
 
     // Read by the engine's status handler (App.Startup.Shell.cs) so the tray
@@ -90,9 +86,10 @@ public partial class App
     // Every path that ends the app arrives here: tray Quit, the three restarts,
     // the update and the data move. Work in flight is finished first (the
     // decision of 2026-11-07): a dictation is stopped as a hotkey release would
-    // and delivers its text, then Deckle exits. The wait runs off the UI thread,
-    // which stays free to paint the HUD; the teardown comes back to it, because
-    // the resident mutex and the foreground hook belong to it.
+    // and delivers its text, then Deckle exits as soon as the text is copied,
+    // with no pause to show "Copied" (decision of 2026-11-25). The wait runs
+    // off the UI thread, which stays free to paint the HUD; the teardown comes
+    // back to it, because the resident mutex and the foreground hook belong to it.
     //
     // Judged not to need a wait, with the reason:
     //   - paragraph rewrite: only an offer the person has not accepted; nothing
@@ -104,8 +101,9 @@ public partial class App
     //     made it, and Anytype's own backend commits or drops a write whole.
     //   - model downloads: written to a .partial file and renamed at the end
     //     (Downloader), run from a setup window the person watches.
-    // A Windows session end does not reach this method (no WM_ENDSESSION
-    // handler exists), and Windows grants seconds there, not a minute.
+    // A Windows session end does not reach this method: SessionEndWatcher
+    // answers WM_ENDSESSION by draining the log only, and Windows grants
+    // seconds there, not a minute.
     private void QuitApp(Action? restart = null)
     {
         if (Interlocked.Exchange(ref _quitStarted, 1) != 0)
@@ -145,13 +143,11 @@ public partial class App
         var ui = Microsoft.UI.Dispatching.DispatcherQueue.GetForCurrentThread();
         _ = Task.Run(() =>
         {
-            DrainResult drained = DrainResult.TimedOut;
-            try { drained = engine.FinishInFlightWork(workId, QuitWorkBound); }
+            try { engine.FinishInFlightWork(workId, QuitWorkBound); }
             catch (Exception ex)
             {
                 DeckleAppSource.Log.ShutdownStepFailed("work_drain", ex.GetType().Name, ex.Message);
             }
-            if (drained == DrainResult.Finished) Thread.Sleep(QuitConfirmationHold);
 
             if (ui is null || !ui.TryEnqueue(() => ExitApp(workId, stopwatch, restart)))
                 ExitApp(workId, stopwatch, restart);
