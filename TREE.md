@@ -1290,6 +1290,7 @@ _Generated from `git ls-files` — do not edit by hand._
 │   │   └── WindowTheme.cs
 │   ├── Deckle.Hud/
 │   │   ├── Chrono/
+│   │   │   ├── ChronoDigits.cs
 │   │   │   ├── GLOSSARY.md  — glossary-deckle-hud-chrono Chrono HUD element vocabulary. It names the face's eight elements and the accen…
 │   │   │   ├── HudChrono.Clock.cs
 │   │   │   ├── HudChrono.Reveal.cs
@@ -2990,6 +2991,7 @@ _Generated from `git ls-files` — do not edit by hand._
 │   │   ├── AnimationOfferTests.cs
 │   │   ├── AnimationPreferenceBugNotes.md
 │   │   ├── AnimationPreferenceTests.cs
+│   │   ├── ChronoDigitsTests.cs
 │   │   ├── ConicPaletteTests.cs
 │   │   ├── Deckle.Hud.Tests.csproj
 │   │   ├── DeckleHudSourceTests.cs
