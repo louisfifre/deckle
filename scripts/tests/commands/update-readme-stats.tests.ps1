@@ -58,7 +58,7 @@ Stable content.
     }
 
     # The chart: two well-formed SVG files, one smooth line and one area under
-    # it, no bar, no fixed size, no script, no drive path, no personal data,
+    # it, no bar, a fixed height, a transparent background, no script, no drive path, no personal data,
     # and the README shows them in a picture element at the column's width.
     $readmeText = Get-Content -LiteralPath (Join-Path $root 'README.md') -Raw
     $lastLinePoints = @{}
@@ -69,13 +69,36 @@ Stable content.
         $xml = [xml]$svgText
         $svgRoot = $xml.DocumentElement
         if ($svgRoot.LocalName -ne 'svg') { throw "The $theme chart should be an svg document" }
-        if (-not $svgRoot.HasAttribute('viewBox')) { throw "The $theme chart should have a viewBox" }
-        if ($svgRoot.HasAttribute('width') -or $svgRoot.HasAttribute('height')) {
-            throw "The $theme chart should have no fixed width or height, so that it stretches"
+        # The picture has a fixed height and no viewBox of its own: it fills
+        # the column in width only, so its text keeps its size.
+        if ($svgRoot.HasAttribute('viewBox')) { throw "The $theme chart should have no viewBox on its root, so that its text does not scale" }
+        if ($svgRoot.GetAttribute('width') -ne '100%') { throw "The $theme chart should be 100% wide" }
+        if ($svgRoot.GetAttribute('height') -notmatch '^\d+$') { throw "The $theme chart should have a fixed height in pixels" }
+        if ($readmeText -notmatch ('<img [^>]*height="{0}"' -f $svgRoot.GetAttribute('height'))) {
+            throw 'The README image should repeat the chart height in pixels, because the chart has no ratio of its own'
         }
-        $box = @($svgRoot.GetAttribute('viewBox') -split '\s+' | ForEach-Object { [double]::Parse($_, [Globalization.CultureInfo]::InvariantCulture) })
-        if ($box.Count -ne 4 -or $box[2] / $box[3] -lt 6 -or $box[2] / $box[3] -gt 10) {
-            throw "The $theme chart should be a wide flat box, about 8:1"
+        # Transparent background: no rect, no background style, no fill on the root.
+        if ($svgText -match '(?i)background|<svg[^>]*\sfill=') { throw "The $theme chart should have a transparent background" }
+        # Only the curve stretches: one nested svg holds the two paths, with a
+        # non-scaling stroke; the text and the marker sit outside it.
+        $nested = @($xml.SelectNodes('/*/*[local-name()="g"]/*[local-name()="svg"]'))
+        if ($nested.Count -ne 1) { throw "The $theme chart should hold one nested svg for the curve" }
+        if ($nested[0].GetAttribute('preserveAspectRatio') -ne 'none') { throw "The $theme curve should stretch freely (preserveAspectRatio none)" }
+        $box = @($nested[0].GetAttribute('viewBox') -split '\s+' | ForEach-Object { [double]::Parse($_, [Globalization.CultureInfo]::InvariantCulture) })
+        if ($box.Count -ne 4) { throw "The $theme curve should have a viewBox" }
+        if ([double]::Parse($nested[0].GetAttribute('height'), [Globalization.CultureInfo]::InvariantCulture) -ne $box[3]) {
+            throw "The $theme curve viewBox height should equal its height in pixels"
+        }
+        if (@($nested[0].SelectNodes('.//*[local-name()="text" or local-name()="circle"]')).Count -gt 0) {
+            throw "The $theme chart should keep its text and marker outside the scaled part"
+        }
+        $outsideText = @($xml.SelectNodes('//*[local-name()="text"]'))
+        if ($outsideText.Count -lt 3) { throw "The $theme chart should hold the two date labels and the peak label" }
+        foreach ($text in $outsideText) {
+            if ($text.GetAttribute('x') -notmatch '%$') { throw "The $theme labels should be placed with percentages" }
+        }
+        if (@($nested[0].SelectNodes('.//*[local-name()="path" and @fill="none"]'))[0].GetAttribute('vector-effect') -ne 'non-scaling-stroke') {
+            throw "The $theme line should keep its thickness (non-scaling-stroke)"
         }
         if (@($xml.SelectNodes('//*[local-name()="rect"]')).Count -gt 0) { throw "The $theme chart should hold no bar" }
         if (@($xml.SelectNodes('//*[local-name()="script" or local-name()="style" or local-name()="image" or local-name()="foreignObject"]')).Count -gt 0) {

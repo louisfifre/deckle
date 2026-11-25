@@ -243,6 +243,7 @@ _Generated from `git ls-files` — do not edit by hand._
 │   │   └── validate-resources.ps1  — Validate WinUI resources Read-only audit of the WinUI resource inventories. Reports missing resource key…
 │   ├── release/
 │   │   ├── build-anytype-backend.ps1  — Build the Anytype backend Rebuilds one anytype-cli release tag from source for Windows with the tantivy-g…
+│   │   ├── draft-release-notes.ps1  — Draft the public release notes Writes a draft of the public release notes of a version to artifacts/release-no…
 │   │   ├── publish-app.ps1  — Prepare or publish the app release Builds the two artifacts a Deckle GitHub Release carries: the installer stub an…
 │   │   └── README.md  — Release Prepare and publish the app.
 │   ├── settings/
@@ -269,6 +270,7 @@ _Generated from `git ls-files` — do not edit by hand._
 │   │   │   ├── build-server-watchdog.tests.ps1
 │   │   │   ├── BuildServerWatchdogBugNotes.md
 │   │   │   ├── deploy-prod.tests.ps1
+│   │   │   ├── draft-release-notes.tests.ps1
 │   │   │   ├── fetch-autocorrect-data.tests.ps1
 │   │   │   ├── inspect-context.tests.ps1
 │   │   │   ├── InspectContextBugNotes.md
@@ -852,11 +854,6 @@ _Generated from `git ls-files` — do not edit by hand._
 │   │   ├── Deckle.Catalog.Themes.csproj
 │   │   ├── Icons.xaml
 │   │   └── SettingsPageHeaderBrushes.xaml
-│   ├── Deckle.Chrono/
-│   │   ├── ChronoFormatter.cs
-│   │   ├── ChronoTimer.cs
-│   │   ├── Deckle.Chrono.csproj
-│   │   └── DeckleChronoSource.cs
 │   ├── Deckle.Composition/
 │   │   ├── Core/
 │   │   │   ├── HudComposition.Animations.cs
@@ -1292,6 +1289,7 @@ _Generated from `git ls-files` — do not edit by hand._
 │   │   └── WindowTheme.cs
 │   ├── Deckle.Hud/
 │   │   ├── Chrono/
+│   │   │   ├── ChronoDigits.cs
 │   │   │   ├── GLOSSARY.md  — glossary-deckle-hud-chrono Chrono HUD element vocabulary. It names the face's eight elements and the accen…
 │   │   │   ├── HudChrono.Clock.cs
 │   │   │   ├── HudChrono.Reveal.cs
@@ -2784,12 +2782,6 @@ _Generated from `git ls-files` — do not edit by hand._
 │   │   ├── SettingFactoryTests.cs
 │   │   ├── SettingsExpanderItemsBugNotes.md
 │   │   └── SettingValueTextTests.cs
-│   ├── Deckle.Chrono.Tests/
-│   │   ├── ChronoFormatterTests.cs
-│   │   ├── ChronoTimerTests.cs
-│   │   ├── Deckle.Chrono.Tests.csproj
-│   │   ├── DeckleChronoSourceTests.cs
-│   │   └── MessageTemplateDoctrineTests.cs
 │   ├── Deckle.Contributions.Tests/
 │   │   ├── Fakes/
 │   │   │   ├── FakeContribution.cs
@@ -2992,6 +2984,7 @@ _Generated from `git ls-files` — do not edit by hand._
 │   │   ├── AnimationOfferTests.cs
 │   │   ├── AnimationPreferenceBugNotes.md
 │   │   ├── AnimationPreferenceTests.cs
+│   │   ├── ChronoDigitsTests.cs
 │   │   ├── ConicPaletteTests.cs
 │   │   ├── Deckle.Hud.Tests.csproj
 │   │   ├── DeckleHudSourceTests.cs
@@ -3517,7 +3510,7 @@ _Generated from `git ls-files` — do not edit by hand._
 │   │   ├── VadBugNotes.md
 │   │   ├── VadObservabilityCollection.cs
 │   │   ├── VadPathRedactionTests.cs
-│   │   └── VadServiceDownloadRetryTests.cs
+│   │   └── VadServiceSingleDownloadTests.cs
 │   ├── Deckle.Vision.Tests/
 │   │   ├── CaptureIncidentsBugNotes.md
 │   │   ├── CaptureIncidentsTests.cs

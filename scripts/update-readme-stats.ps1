@@ -8,7 +8,7 @@
     target. It also draws one small chart, the 7-day rolling mean of commits per
     day over the last 26 weeks as a smooth curve, as two SVG files under
     docs/media (a light and a dark one, which the section shows through a
-    picture element and which stretch to the README column). The publication script runs
+    picture element; they fill the README column in width, keep a fixed height and a fixed text size, and have a transparent background). The publication script runs
     this one after a release; it never pushes.
 .NOTES
     section: Project
@@ -180,9 +180,9 @@ Write-WorkflowMessage -Output $WorkflowOutput -Message ("{0} tracked text files 
 # today), drawn as the 7-day rolling mean of commits per day: a smooth line
 # with a soft area under it. The accent is the logo's rest-gradient violet
 # (logo/palettes.md): #6366FF on a light page, #8B5CFF on a dark one. The
-# drawing is an SVG because a README can only show images; it has a viewBox and
-# no width or height so that it fills the README column. No script, no style
-# block, no font file: system fonts only.
+# drawing is an SVG because a README can only show images; it is 100% wide and
+# a fixed height, with only the curve stretching. No script, no style block,
+# no font file: system fonts only.
 #
 # The height is a square-root scale: one very busy stretch would otherwise
 # flatten every other week to a line near the floor. Nothing is capped or
@@ -242,27 +242,31 @@ function New-PulseChartSvg {
 
     $accent = if ($Theme -eq 'dark') { '#8B5CFF' } else { '#6366FF' }
     $muted  = if ($Theme -eq 'dark') { '#9198A1' } else { '#59636E' }
-    $halo   = if ($Theme -eq 'dark') { '#0D1117' } else { '#FFFFFF' }
 
     $means = $Daily.Means
     $days = $means.Count
     $peak = [double]($means | Measure-Object -Maximum).Maximum
     $peakIndex = [array]::IndexOf($means, $peak)
 
-    # About 8:1. The labels are large for the box so that they stay readable
-    # when the README scales it down to a phone-sized column.
-    $width = 800; $height = 100
-    $left = 14.0; $right = 786.0
-    $top = 32.0; $baseline = 72.0
-    $fontSize = 19
+    # The picture has a fixed height in pixels and no viewBox of its own, so
+    # it fills the README column in width only: the text, the marker and the
+    # stroke keep their size at any column width. Only the curve and its area
+    # sit in a nested svg that stretches (preserveAspectRatio="none"); its
+    # viewBox height equals its height in pixels, so y is one to one. The
+    # background is left transparent.
+    $height = 88
+    $curveTop = 24; $curveHeight = 40; $curveWidth = 800
+    $inset = 1.5   # percent of the width kept free on each side
+    $span = 100 - 2 * $inset
+    $fontSize = 13
     $xs = [double[]]::new($days); $ys = [double[]]::new($days)
     foreach ($i in 0..($days - 1)) {
-        $xs[$i] = $left + ($right - $left) * $i / ($days - 1)
+        $xs[$i] = $curveWidth * $i / ($days - 1)
         $level = if ($peak -gt 0) { [math]::Sqrt($means[$i] / $peak) } else { 0.0 }
-        $ys[$i] = $baseline - ($baseline - $top) * $level
+        $ys[$i] = $curveHeight - $curveHeight * $level
     }
-    $line = ConvertTo-SmoothPath -X $xs -Y $ys -Top $top -Bottom $baseline
-    $area = '{0} L{1} {3} L{2} {3} Z' -f $line, (Format-Coordinate $xs[$days - 1]), (Format-Coordinate $xs[0]), (Format-Coordinate $baseline)
+    $line = ConvertTo-SmoothPath -X $xs -Y $ys -Top 0 -Bottom $curveHeight
+    $area = '{0} L{1} {3} L{2} {3} Z' -f $line, (Format-Coordinate $xs[$days - 1]), (Format-Coordinate $xs[0]), $curveHeight
 
     $firstLabel = $Daily.First.ToString('d MMM yyyy', $Culture)
     $lastLabel  = $Daily.First.AddDays($days - 1).ToString('d MMM yyyy', $Culture)
@@ -271,17 +275,18 @@ function New-PulseChartSvg {
 
     $marker = @()
     if ($peak -gt 0) {
-        $anchor = 'middle'; $labelX = $xs[$peakIndex]
-        if ($labelX -lt 80) { $anchor = 'start'; $labelX = $left }
-        elseif ($labelX -gt $width - 80) { $anchor = 'end'; $labelX = $right }
+        $peakPercent = $inset + $span * $peakIndex / ($days - 1)
+        $anchor = 'middle'; $labelPercent = $peakPercent
+        if ($peakPercent -lt 12) { $anchor = 'start'; $labelPercent = $inset }
+        elseif ($peakPercent -gt 88) { $anchor = 'end'; $labelPercent = 100 - $inset }
         $marker = @(
-            ('  <circle cx="{0}" cy="{1}" r="4" fill="{2}" stroke="{3}" stroke-width="2"/>' -f (Format-Coordinate $xs[$peakIndex]), (Format-Coordinate $ys[$peakIndex]), $accent, $halo),
-            ('  <text x="{0}" y="{1}" text-anchor="{2}" font-size="{3}" font-weight="600" fill="{4}">{5}</text>' -f (Format-Coordinate $labelX), (Format-Coordinate ($ys[$peakIndex] - 11)), $anchor, $fontSize, $accent, $peakDay)
+            ('  <circle cx="{0}%" cy="{1}" r="4" fill="{2}"/>' -f (Format-Coordinate $peakPercent), (Format-Coordinate ($curveTop + $ys[$peakIndex])), $accent),
+            ('  <text x="{0}%" y="{1}" text-anchor="{2}" font-size="{3}" font-weight="600" fill="{4}">{5}</text>' -f (Format-Coordinate $labelPercent), (Format-Coordinate ($curveTop + $ys[$peakIndex] - 9)), $anchor, $fontSize, $accent, $peakDay)
         )
     }
 
     $lines = @(
-        ('<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 {0} {1}" role="img" aria-labelledby="t d">' -f $width, $height),
+        ('<svg xmlns="http://www.w3.org/2000/svg" width="100%" height="{0}" role="img" aria-labelledby="t d">' -f $height),
         '  <title id="t">Commits per day, last 26 weeks, smoothed over 7 days</title>',
         ('  <desc id="d">{0} commits between {1} and {2}; the busiest 7 days averaged {3} a day, around {4}.</desc>' -f $Daily.Total, $firstLabel, $lastLabel, $peakPerDay, $peakDay),
         '  <defs>',
@@ -291,11 +296,13 @@ function New-PulseChartSvg {
         '    </linearGradient>',
         '  </defs>',
         '  <g font-family="-apple-system, BlinkMacSystemFont, ''Segoe UI'', Helvetica, Arial, sans-serif">',
-        ('  <path d="{0}" fill="url(#fade)" stroke="none"/>' -f $area),
-        ('  <path d="{0}" fill="none" stroke="{1}" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"/>' -f $line, $accent)
+        ('  <svg x="{0}%" y="{1}" width="{2}%" height="{3}" viewBox="0 0 {4} {3}" preserveAspectRatio="none" overflow="visible">' -f (Format-Coordinate $inset), $curveTop, (Format-Coordinate $span), $curveHeight, $curveWidth),
+        ('    <path d="{0}" fill="url(#fade)" stroke="none"/>' -f $area),
+        ('    <path d="{0}" fill="none" stroke="{1}" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" vector-effect="non-scaling-stroke"/>' -f $line, $accent),
+        '  </svg>'
     ) + $marker + @(
-        ('  <text x="{0}" y="95" text-anchor="start" font-size="{1}" fill="{2}">{3}</text>' -f (Format-Coordinate $left), $fontSize, $muted, $firstLabel),
-        ('  <text x="{0}" y="95" text-anchor="end" font-size="{1}" fill="{2}">{3}</text>' -f (Format-Coordinate $right), $fontSize, $muted, $lastLabel),
+        ('  <text x="{0}%" y="{1}" text-anchor="start" font-size="{2}" fill="{3}">{4}</text>' -f (Format-Coordinate $inset), ($height - 5), $fontSize, $muted, $firstLabel),
+        ('  <text x="{0}%" y="{1}" text-anchor="end" font-size="{2}" fill="{3}">{4}</text>' -f (Format-Coordinate (100 - $inset)), ($height - 5), $fontSize, $muted, $lastLabel),
         '  </g>',
         '</svg>'
     )
@@ -345,7 +352,7 @@ $StartMarker
 <picture>
   <source media="(prefers-color-scheme: dark)" srcset="$($ChartFiles['dark'])">
   <source media="(prefers-color-scheme: light)" srcset="$($ChartFiles['light'])">
-  <img alt="Commits per day, smoothed over 7 days, over the last 26 weeks: $(Format-Count $chartTotal) in total, the busiest stretch averaged $chartPeak a day." src="$($ChartFiles['light'])" width="100%">
+  <img alt="Commits per day, smoothed over 7 days, over the last 26 weeks: $(Format-Count $chartTotal) in total, the busiest stretch averaged $chartPeak a day." src="$($ChartFiles['light'])" width="100%" height="88">
 </picture>
 
 <sub>Generated from Git history on $generatedDate. Counts include tracked text files only for the current line total.</sub>
