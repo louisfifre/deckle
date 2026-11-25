@@ -74,13 +74,7 @@ _Generated from `git ls-files` — do not edit by hand._
 │   │   ├── board-hero.png
 │   │   ├── board-rewrite.png
 │   │   ├── pulse-commits-dark.svg
-│   │   ├── pulse-commits-light.svg
-│   │   ├── pulse-label-end-dark.svg
-│   │   ├── pulse-label-end-light.svg
-│   │   ├── pulse-label-peak-dark.svg
-│   │   ├── pulse-label-peak-light.svg
-│   │   ├── pulse-label-start-dark.svg
-│   │   └── pulse-label-start-light.svg
+│   │   └── pulse-commits-light.svg
 │   ├── research/
 │   │   ├── taskbar-briefs-2026-10-18/
 │   │   │   ├── brief-csharp-socle.md
@@ -228,6 +222,7 @@ _Generated from `git ls-files` — do not edit by hand._
 │   │   ├── deckle-process.ps1
 │   │   ├── download-integrity.psm1
 │   │   ├── manifest.ps1
+│   │   ├── merge-gate.psm1
 │   │   ├── native-console.ps1
 │   │   ├── release-validation.psm1
 │   │   ├── repository-inventory.psm1
@@ -281,6 +276,7 @@ _Generated from `git ls-files` — do not edit by hand._
 │   │   │   ├── inspect-context.tests.ps1
 │   │   │   ├── InspectContextBugNotes.md
 │   │   │   ├── launch-app.tests.ps1
+│   │   │   ├── merge-branch.tests.ps1
 │   │   │   ├── perf-compare.tests.ps1
 │   │   │   ├── read-log.tests.ps1
 │   │   │   ├── self-check.tests.ps1
@@ -308,6 +304,7 @@ _Generated from `git ls-files` — do not edit by hand._
 │   ├── INVENTORY.md
 │   ├── launch-app.ps1  — Launch the freshest built app Replace the running Deckle instance with the freshest already-built executable…
 │   ├── menu.ps1
+│   ├── merge-branch.ps1  — Merge a branch into main behind the merge gate The one way a branch enters main. Runs the merge gate on the branch's last comm…
 │   ├── read-log.ps1  — Read Deckle's log Prints the latest entries of Deckle's diagnostics log, one line each: time, lev…
 │   ├── README.md  — readme-scripts Dev workflows entry point for Deckle: the menu.ps1 launcher installed from Deck…
 │   ├── resource-validation.allowlist.json
