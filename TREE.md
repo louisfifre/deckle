@@ -241,6 +241,7 @@ _Generated from `git ls-files` — do not edit by hand._
 │   │   └── validate-resources.ps1  — Validate WinUI resources Read-only audit of the WinUI resource inventories. Reports missing resource key…
 │   ├── release/
 │   │   ├── build-anytype-backend.ps1  — Build the Anytype backend Rebuilds one anytype-cli release tag from source for Windows with the tantivy-g…
+│   │   ├── draft-release-notes.ps1  — Draft the public release notes Writes a draft of the public release notes of a version to artifacts/release-no…
 │   │   ├── publish-app.ps1  — Prepare or publish the app release Builds the two artifacts a Deckle GitHub Release carries: the installer stub an…
 │   │   └── README.md  — Release Prepare and publish the app.
 │   ├── settings/
@@ -267,6 +268,7 @@ _Generated from `git ls-files` — do not edit by hand._
 │   │   │   ├── build-server-watchdog.tests.ps1
 │   │   │   ├── BuildServerWatchdogBugNotes.md
 │   │   │   ├── deploy-prod.tests.ps1
+│   │   │   ├── draft-release-notes.tests.ps1
 │   │   │   ├── fetch-autocorrect-data.tests.ps1
 │   │   │   ├── inspect-context.tests.ps1
 │   │   │   ├── InspectContextBugNotes.md
