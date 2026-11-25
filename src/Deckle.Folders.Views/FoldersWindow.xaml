@@ -204,9 +204,9 @@
             </NavigationView.MenuItems>
 
             <NavigationView.FooterMenuItems>
-                <NavigationViewItem x:Name="AddFolderItem" SelectsOnInvoked="False">
+                <NavigationViewItem x:Name="AddItem" SelectsOnInvoked="False">
                     <NavigationViewItem.Icon>
-                        <FontIcon Glyph="&#xE8F4;" />
+                        <FontIcon Glyph="&#xE710;" />
                     </NavigationViewItem.Icon>
                 </NavigationViewItem>
             </NavigationView.FooterMenuItems>

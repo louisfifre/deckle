@@ -77,7 +77,7 @@ internal static partial class FoldersSelfCheck
                 window.SetPaneOpenForReview(paneOpen);
                 await Task.Delay(300);
                 IReadOnlyList<string> labels = window.ShowFolderMenuForReview(documents);
-                Check(labels.Count == 3, $"The folder's menu holds {labels.Count} items, not 3.");
+                Check(labels.Count == 4, $"The folder's menu holds {labels.Count} items, not 4.");
                 await Task.Delay(300);
             }, keepPopups: true);
             window.HideFolderMenuForReview();

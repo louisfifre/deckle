@@ -105,7 +105,7 @@ public sealed partial class FoldersWindow
         CentreHost.Visibility = Visibility.Visible;
         // Built again from the store each time, so a folder added, removed or
         // given a new icon shows.
-        Home.Show(_folders.Folders);
+        Home.Show(Grouping);
         CentreHost.Content = Home;
         BackButton.IsEnabled = _history.CanGoBack;
         ForwardButton.IsEnabled = _history.CanGoForward;

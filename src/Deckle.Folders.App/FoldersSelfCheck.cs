@@ -158,5 +158,6 @@ internal static partial class FoldersSelfCheck
         if (loaded) await WalkFoldersFolderIconsAsync(report, run, outputFolder, step, window, sample, gate);
         if (loaded) await WalkFoldersSearchAsync(report, run, outputFolder, step, window, gate);
         if (loaded) await WalkFoldersAddedFoldersAsync(report, run, outputFolder, step, window, sample, gate);
+        if (loaded) await WalkFoldersGroupsAsync(report, run, outputFolder, step, window, sample, gate);
     }
 }

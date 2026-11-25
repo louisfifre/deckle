@@ -22,8 +22,8 @@ public sealed partial class FoldersWindow
     private const string RemoveGlyph = "";         // Remove, the minus
 
     // The pane's items before the added folders: "Home", then its separator
-    // (FoldersWindow.xaml). Every index into Nav.MenuItems for the folder at
-    // position i of _folderItems is PaneLeadingItems + i.
+    // (FoldersWindow.xaml). The folders in no group follow them, then one item
+    // per group, each holding its folders.
     private const int PaneLeadingItems = 2;
 
     // The "..." button's slot at the end of an item, the same on every item,
@@ -32,13 +32,20 @@ public sealed partial class FoldersWindow
 
 
     private readonly AddedFolderStore _folders;
-    private readonly List<FolderItem> _folderItems = [];
 
-    // The items of removed folders, kept for the next folder added. An item
-    // is never let go: NavigationView still tells an item taken out of
+    // Every folder item and group item that is in the pane, in no order: where
+    // each one sits is PaneItem.Host and its place in that list.
+    private readonly List<FolderItem> _folderItems = [];
+    private readonly List<GroupItem> _groupItems = [];
+
+    // The items of removed folders and groups, kept for the next ones added.
+    // An item is never let go: NavigationView still tells an item taken out of
     // MenuItems that the pane opens, and once the garbage collector has
     // taken that item, setting IsPaneOpen throws E_FAIL (FolderPaneBugNotes.md).
+    // That holds for a group item as for a folder item, and for an item that
+    // moves between lists: _folderItems and _groupItems hold it, not the list.
     private readonly Stack<FolderItem> _spareItems = new();
+    private readonly Stack<GroupItem> _spareGroupItems = new();
 
     // What the last check said of each added folder, by path: the pane marks
     // a folder that vanished or cannot be read (spec, Open 33).
@@ -51,67 +58,130 @@ public sealed partial class FoldersWindow
     // or null.
     private string? _unreachableShown;
 
-    // One item per added folder, in the order they were added, after Home and
-    // its separator. Reduced to the icon, an item says its name and path on
-    // hover and to a screen reader; opened, it shows the icon and the name on
-    // one line (boards 24/11, A2; the path stays in the tooltip), and the
-    // "..." button at its end while the pointer is over it or the keyboard
-    // is on it. The icon is the folder's own, in its colour, drawn by the
-    // item's content (FoldersWindow.FolderIcon.cs).
+    // What the store holds, in the order the pane and Home show it.
+    private FolderGrouping Grouping => FolderGrouping.Of(_folders.Folders, _folders.Groups);
+
+    // One item per added folder, after Home and its separator: the folders in
+    // no group first, then each group as an item with its folders under it.
+    // Reduced to the icon, an item says its name and path on hover and to a
+    // screen reader; opened, it shows the icon and the name on one line
+    // (boards 24/11, A2; the path stays in the tooltip), and the "..." button
+    // at its end while the pointer is over it or the keyboard is on it. The
+    // icon is the folder's own, in its colour, drawn by the item's content
+    // (FoldersWindow.FolderIcon.cs).
     //
     // The pane is brought to what the store holds without building it
-    // again: an item whose folder is still there is updated where it is, a
-    // folder that has none takes a spare item or a new one, and an item
-    // whose folder went becomes a spare (_spareItems).
+    // again: an item whose folder is still there is updated where it is, or
+    // moved to where the store puts it (taken out of the list that holds it,
+    // put in the right one at the right index), a folder that has none takes a
+    // spare item or a new one, and an item whose folder went becomes a spare
+    // (_spareItems). Groups go the same way (_spareGroupItems). The pane is
+    // never cleared.
     private void SyncFolderItems()
     {
         HookPaneInputOnce();
+        FolderGrouping grouping = Grouping;
         IReadOnlyList<AddedFolder> folders = _folders.Folders;
 
         for (int i = _folderItems.Count - 1; i >= 0; i--)
         {
             FolderItem parts = _folderItems[i];
             if (folders.Any(f => FolderPaths.Comparer.Equals(f.Path, parts.Folder.Path))) continue;
-            if (ReferenceEquals(Nav.SelectedItem, parts.Item)) Nav.SelectedItem = null;
-            Nav.MenuItems.RemoveAt(PaneLeadingItems + i);
+            Detach(parts);
             _folderItems.RemoveAt(i);
             parts.Rest();
             _spareItems.Push(parts);
         }
 
-        for (int i = 0; i < folders.Count; i++)
+        // A group that went lets its folders go first, so none is left under
+        // an item that is no longer in the pane; they are put back below.
+        for (int i = _groupItems.Count - 1; i >= 0; i--)
         {
-            AddedFolder folder = folders[i];
-            int at = _folderItems.FindIndex(p => FolderPaths.Comparer.Equals(p.Folder.Path, folder.Path));
-            FolderItem parts;
-            if (at == i)
-            {
-                parts = _folderItems[i];
-            }
-            else
-            {
-                if (at >= 0)
-                {
-                    parts = _folderItems[at];
-                    _folderItems.RemoveAt(at);
-                    Nav.MenuItems.RemoveAt(PaneLeadingItems + at);
-                }
-                else
-                {
-                    parts = _spareItems.Count > 0 ? _spareItems.Pop() : NewFolderItem();
-                }
-                _folderItems.Insert(i, parts);
-                Nav.MenuItems.Insert(PaneLeadingItems + i, parts.Item);
-            }
-            parts.Show(folder);
-            parts.SetPaneOpen(Nav.IsPaneOpen);
-            MarkReach(parts, _reach.GetValueOrDefault(folder.Path, AddedFolderReachability.Reachable));
+            GroupItem group = _groupItems[i];
+            if (grouping.Groups.Any(g => g.Group.Id == group.Group.Id)) continue;
+            foreach (FolderItem parts in _folderItems.Where(p => ReferenceEquals(p.Host, group)).ToList()) Detach(parts);
+            Detach(group);
+            _groupItems.RemoveAt(i);
+            group.Rest();
+            _spareGroupItems.Push(group);
         }
+
+        int at = PaneLeadingItems;
+        foreach (AddedFolder folder in grouping.Ungrouped) Put(FolderItemFor(folder), null, at++);
+
+        foreach (GroupedFolders grouped in grouping.Groups)
+        {
+            GroupItem group = GroupItemFor(grouped.Group);
+            Put(group, null, at++);
+            int inside = 0;
+            foreach (AddedFolder folder in grouped.Folders) Put(FolderItemFor(folder), group, inside++);
+            group.Show(grouped);
+        }
+
         if (Place is { } place) SelectFolderItem(place.Root);
         // The tiles of Home follow the store as the pane does.
         else if (AtHome) ShowHome();
         _reachChecked = CheckFolderReachAsync();
     }
+
+    // The item that shows this folder: the one it has, else a spare or a new
+    // one. Shown again each time, which updates it where it is.
+    private FolderItem FolderItemFor(AddedFolder folder)
+    {
+        FolderItem? parts = _folderItems.FirstOrDefault(p => FolderPaths.Comparer.Equals(p.Folder.Path, folder.Path));
+        if (parts is null)
+        {
+            parts = _spareItems.Count > 0 ? _spareItems.Pop() : NewFolderItem();
+            _folderItems.Add(parts);
+        }
+        parts.Show(folder);
+        parts.SetPaneOpen(Nav.IsPaneOpen);
+        MarkReach(parts, _reach.GetValueOrDefault(folder.Path, AddedFolderReachability.Reachable));
+        return parts;
+    }
+
+    // The item that shows this group; one that is new or comes back from the
+    // spares starts expanded unless the person collapsed this group.
+    private GroupItem GroupItemFor(FolderGroup group)
+    {
+        GroupItem? item = _groupItems.FirstOrDefault(g => g.Group.Id == group.Id);
+        if (item is null)
+        {
+            item = _spareGroupItems.Count > 0 ? _spareGroupItems.Pop() : NewGroupItem();
+            _groupItems.Add(item);
+            item.Group = group;
+            item.Item.IsExpanded = !_collapsedGroups.Contains(group.Id);
+        }
+        item.Group = group;
+        item.SetPaneOpen(Nav.IsPaneOpen);
+        return item;
+    }
+
+    // Puts an item at this index of the list that holds its place: the pane's
+    // own, or the group's. An item already there stays; one elsewhere is
+    // taken out of the list that held it first. Everything before the index
+    // is already right, so the index is still the one after the removal.
+    private void Put(PaneItem item, GroupItem? host, int index)
+    {
+        IList<object> list = ListOf(host);
+        if (item.Placed && ReferenceEquals(item.Host, host) && index < list.Count
+            && ReferenceEquals(list[index], item.Item)) return;
+        Detach(item);
+        list.Insert(index, item.Item);
+        item.Host = host;
+        item.Placed = true;
+    }
+
+    private void Detach(PaneItem item)
+    {
+        if (!item.Placed) return;
+        if (ReferenceEquals(Nav.SelectedItem, item.Item)) Nav.SelectedItem = null;
+        ListOf(item.Host).Remove(item.Item);
+        item.Host = null;
+        item.Placed = false;
+    }
+
+    private IList<object> ListOf(GroupItem? host) => host is null ? Nav.MenuItems : host.Item.MenuItems;
 
     // One item and what it shows, empty until Show gives it a folder. The
     // pointer and the focus are heard by the pane for all its items
@@ -181,6 +251,7 @@ public sealed partial class FoldersWindow
     //
     //   Open in File Explorer
     //   Change icon…
+    //   Group                         ▸ No group / each group / New group…
     //   ─────────
     //   Remove from Deckle Folders    tooltip "The folder stays on the disk"
     //
@@ -195,6 +266,7 @@ public sealed partial class FoldersWindow
             () => _ = OpenFolderInExplorerAsync(folderPath)));
         menu.Items.Add(MenuItem(FoldersText.Get("Folders_ChangeIcon"), ChangeIconGlyph,
             () => OpenFolderIconPicker(parts)));
+        menu.Items.Add(BuildGroupSubMenu(folderPath));
         menu.Items.Add(new MenuFlyoutSeparator());
         MenuFlyoutItem remove = MenuItem(FoldersText.Get("Folders_Remove"), RemoveGlyph,
             () => _ = RemoveFolderAsync(folderPath));
@@ -260,25 +332,44 @@ public sealed partial class FoldersWindow
         // Handled too: an item handles the pointer it is pressed with.
         Nav.AddHandler(UIElement.PointerMovedEvent, new PointerEventHandler(OnPanePointerMoved), true);
         Nav.AddHandler(UIElement.PointerExitedEvent, new PointerEventHandler(OnPanePointerLeft), true);
-        Nav.PaneOpening += (_, _) => DispatcherQueue.TryEnqueue(() => SetItemsPaneOpen(Nav.IsPaneOpen));
-        Nav.PaneClosing += (_, _) => DispatcherQueue.TryEnqueue(() => SetItemsPaneOpen(Nav.IsPaneOpen));
+        Nav.PaneOpening += (_, _) => OnPaneTransition();
+        Nav.PaneClosing += (_, _) => OnPaneTransition();
+        Nav.Expanding += (_, args) => OnGroupExpansionChanged(args.ExpandingItemContainer, true);
+        Nav.Collapsed += (_, args) => OnGroupExpansionChanged(args.CollapsedItemContainer, false);
+    }
+
+    // NavigationView's own change is done once the dispatcher gets to this.
+    private void OnPaneTransition()
+    {
+        _paneTransition = true;
+        DispatcherQueue.TryEnqueue(() =>
+        {
+            SetItemsPaneOpen(Nav.IsPaneOpen);
+            _paneTransition = false;
+        });
     }
 
     private void SetItemsPaneOpen(bool open)
     {
-        foreach (FolderItem parts in _folderItems) parts.SetPaneOpen(open);
+        foreach (PaneItem item in PaneItems) item.SetPaneOpen(open);
+        // NavigationView folds the groups as the rail takes the pane; the
+        // opened pane shows each as the person left it.
+        if (open)
+            foreach (GroupItem group in _groupItems) group.Item.IsExpanded = !_collapsedGroups.Contains(group.Group.Id);
     }
+
+    private IEnumerable<PaneItem> PaneItems => _groupItems.Cast<PaneItem>().Concat(_folderItems);
 
     private void OnPanePointerMoved(object sender, PointerRoutedEventArgs e)
     {
         Windows.Foundation.Point at = e.GetCurrentPoint(null).Position;
-        foreach (FolderItem parts in _folderItems)
-            parts.SetPointerOver(Nav.IsPaneOpen && Covers(parts.Item, at));
+        foreach (PaneItem item in PaneItems)
+            item.SetPointerOver(Nav.IsPaneOpen && Covers(item.Region, at));
     }
 
     private void OnPanePointerLeft(object sender, PointerRoutedEventArgs e)
     {
-        foreach (FolderItem parts in _folderItems) parts.SetPointerOver(false);
+        foreach (PaneItem item in PaneItems) item.SetPointerOver(false);
     }
 
     private static bool Covers(FrameworkElement element, Windows.Foundation.Point at)
@@ -293,31 +384,26 @@ public sealed partial class FoldersWindow
     {
         if (args.NewFocusedElement is not UIElement focused || !ReferenceEquals(focused.XamlRoot, Content?.XamlRoot)) return;
         bool keyboard = focused.FocusState == FocusState.Keyboard;
-        foreach (FolderItem parts in _folderItems)
-            parts.SetKeyboardFocus(keyboard && IsInside(focused, parts.Item));
+        foreach (PaneItem item in PaneItems)
+            item.SetKeyboardFocus(keyboard && IsInside(focused, item.Region));
     }
 
 
     private void SelectHomeItem() => Nav.SelectedItem = HomeItem;
 
+    // The item of the folder, wherever it sits: at the top of the pane or
+    // under a group. Under a collapsed group NavigationView marks the group.
     private void SelectFolderItem(AddedFolder root)
     {
-        foreach (object item in Nav.MenuItems)
-        {
-            if (item is NavigationViewItem { Tag: AddedFolder folder } nvi
-                && FolderPaths.Comparer.Equals(folder.Path, root.Path))
-            {
-                Nav.SelectedItem = nvi;
-                return;
-            }
-        }
+        FolderItem? parts = _folderItems.FirstOrDefault(p => FolderPaths.Comparer.Equals(p.Folder.Path, root.Path));
+        if (parts is not null) Nav.SelectedItem = parts.Item;
     }
 
     private void OnNavItemInvoked(NavigationView sender, NavigationViewItemInvokedEventArgs args)
     {
-        if (ReferenceEquals(args.InvokedItemContainer, AddFolderItem))
+        if (ReferenceEquals(args.InvokedItemContainer, AddItem))
         {
-            _ = PickAndAddFolderAsync();
+            ShowAddMenu();
             return;
         }
         if (ReferenceEquals(args.InvokedItemContainer, HomeItem))
@@ -358,19 +444,20 @@ public sealed partial class FoldersWindow
 
     // Forgets the added folder, never touches the disk. Back and Forward lose
     // every place inside it. Standing in it, the window moves to the folder
-    // that takes its place in the pane, or the one above when it was last;
+    // that takes its place in the pane, or the one before when it was last;
     // with none left, it goes Home, which shows the empty window (12.11).
     // Home is never forgotten.
     private Task RemoveFolderAsync(string path)
     {
-        int index = _folders.Folders.ToList().FindIndex(f => FolderPaths.Comparer.Equals(f.Path, path));
+        int index = Grouping.InPaneOrder.ToList().FindIndex(f => FolderPaths.Comparer.Equals(f.Path, path));
         if (index < 0 || !_folders.Remove(path)) return Task.CompletedTask;
         _reach.Remove(path);
         bool standingInIt = _history.Forget(d =>
             d is FolderDestination folder && FolderPaths.Comparer.Equals(folder.Place.Root.Path, path));
         SyncFolderItems();
 
-        if (_folders.Folders.Count == 0)
+        List<AddedFolder> inPaneOrder = [.. Grouping.InPaneOrder];
+        if (inPaneOrder.Count == 0)
         {
             // Standing in the folder, the history has no current place now and
             // Home takes it; standing at Home, Home shows again, empty.
@@ -381,12 +468,12 @@ public sealed partial class FoldersWindow
         }
         if (standingInIt)
         {
-            AddedFolder neighbour = _folders.Folders[Math.Min(index, _folders.Folders.Count - 1)];
+            AddedFolder neighbour = inPaneOrder[Math.Min(index, inPaneOrder.Count - 1)];
             FocusFolderItem(neighbour);
             return NavigateTo(FolderPlace.AtRoot(neighbour));
         }
 
-        FocusFolderItem(_folders.Folders[Math.Min(index, _folders.Folders.Count - 1)]);
+        FocusFolderItem(inPaneOrder[Math.Min(index, inPaneOrder.Count - 1)]);
         if (Place is { } place) SelectFolderItem(place.Root);
         BackButton.IsEnabled = _history.CanGoBack;
         ForwardButton.IsEnabled = _history.CanGoForward;
@@ -554,7 +641,7 @@ public sealed partial class FoldersWindow
 
     public void HideMoreButtonsForReview()
     {
-        foreach (FolderItem parts in _folderItems) parts.SetPointerOver(false);
+        foreach (PaneItem item in PaneItems) item.SetPointerOver(false);
     }
 
     // Opens this folder's menu under its "...", as a click does, kept inside
@@ -568,14 +655,32 @@ public sealed partial class FoldersWindow
         if (FindFolderItem(path) is not { } parts) return [];
         _reviewMenu?.Hide();
         MenuFlyout menu = BuildFolderMenu(parts);
+        ShowReviewMenu(menu, parts.Item, null);
+        return MenuLabels(menu);
+    }
+
+    // The labels of a menu, separators left out, a submenu by its own label.
+    private static IReadOnlyList<string> MenuLabels(MenuFlyout menu) =>
+    [
+        .. menu.Items.Select(i => i switch
+        {
+            MenuFlyoutItem item => item.Text,
+            MenuFlyoutSubItem sub => sub.Text,
+            _ => null,
+        }).OfType<string>(),
+    ];
+
+    private void ShowReviewMenu(MenuFlyout menu, FrameworkElement anchor, FlyoutPlacementMode? placement)
+    {
         menu.ShouldConstrainToRootBounds = true;
         menu.MenuFlyoutPresenterStyle = (Style)Microsoft.UI.Xaml.Markup.XamlReader.Load(
             "<Style xmlns=\"http://schemas.microsoft.com/winfx/2006/xaml/presentation\" TargetType=\"MenuFlyoutPresenter\" "
             + "BasedOn=\"{StaticResource DefaultMenuFlyoutPresenterStyle}\">"
             + "<Setter Property=\"Background\" Value=\"{ThemeResource SolidBackgroundFillColorQuarternaryBrush}\" /></Style>");
-        menu.ShowAt(parts.Item);
+        // The placement is set on the flyout: options given to ShowAt let the menu out of the window.
+        if (placement is { } mode) menu.Placement = mode;
+        menu.ShowAt(anchor);
         _reviewMenu = menu;
-        return [.. menu.Items.OfType<MenuFlyoutItem>().Select(i => i.Text)];
     }
 
     public void HideFolderMenuForReview()
@@ -602,30 +707,30 @@ public sealed partial class FoldersWindow
     public bool ShowsUnreachableForReview(string path) =>
         _unreachableShown is { } shown && FolderPaths.Comparer.Equals(shown, FolderPaths.Normalize(path));
 
-    // One item of the pane, the folder it shows and its "..." button. The
-    // button shows while the pointer is over the item or the keyboard is on
-    // it, and only in the opened pane; hidden, it keeps its slot transparent.
-    private sealed class FolderItem(
-        NavigationViewItem item, TextBlock name, IconChoiceView icon, Button more)
+    // One item of the pane and its "..." button. The button shows while the
+    // pointer is over the item or the keyboard is on it, and only in the
+    // opened pane; hidden, it keeps its slot transparent. A folder and a group
+    // are two kinds of it.
+    private abstract class PaneItem(NavigationViewItem item, Button more)
     {
         private bool _pointerOver;
         private bool _keyboardFocus;
         private bool _paneOpen;
+        private FrameworkElement? _presenter;
 
         public NavigationViewItem Item { get; } = item;
 
-        // The folder shown; a spare item keeps its last one until Show.
-        public AddedFolder Folder { get; private set; } = null!;
+        // Where it sits: the group whose list holds it, null at the top of the
+        // pane; Placed says whether a list holds it at all.
+        public GroupItem? Host { get; set; }
+        public bool Placed { get; set; }
+
+        // What the pointer and the keyboard are tested against: the item's own
+        // row. A group item's bounds take in its folders, which are items of
+        // their own, so the row is the template's presenter.
+        public FrameworkElement Region => (_presenter ??= FindPresenter(Item)) ?? Item;
 
         public bool MoreShown => _paneOpen && more.Opacity > 0;
-
-        public void Show(AddedFolder folder)
-        {
-            Folder = folder;
-            Item.Tag = folder;
-            name.Text = folder.Name;
-            icon.Choice = folder.Icon;
-        }
 
         // Out of the pane: nothing of the pointer or the keyboard stays on it.
         public void Rest()
@@ -638,7 +743,7 @@ public sealed partial class FoldersWindow
         public void SetPointerOver(bool over) { _pointerOver = over; ShowMore(); }
         public void SetKeyboardFocus(bool focus) { _keyboardFocus = focus; ShowMore(); }
 
-        public void SetPaneOpen(bool open)
+        public virtual void SetPaneOpen(bool open)
         {
             _paneOpen = open;
             more.Visibility = open ? Visibility.Visible : Visibility.Collapsed;
@@ -646,5 +751,33 @@ public sealed partial class FoldersWindow
         }
 
         private void ShowMore() => more.Opacity = _pointerOver || _keyboardFocus ? 1 : 0;
+
+        private static FrameworkElement? FindPresenter(DependencyObject parent)
+        {
+            for (int i = 0; i < VisualTreeHelper.GetChildrenCount(parent); i++)
+            {
+                DependencyObject child = VisualTreeHelper.GetChild(parent, i);
+                if (child is NavigationViewItemPresenter presenter) return presenter;
+                if (child is NavigationViewItem) continue;
+                if (FindPresenter(child) is { } found) return found;
+            }
+            return null;
+        }
+    }
+
+    // One item of the pane for an added folder.
+    private sealed class FolderItem(
+        NavigationViewItem item, TextBlock name, IconChoiceView icon, Button more) : PaneItem(item, more)
+    {
+        // The folder shown; a spare item keeps its last one until Show.
+        public AddedFolder Folder { get; private set; } = null!;
+
+        public void Show(AddedFolder folder)
+        {
+            Folder = folder;
+            Item.Tag = folder;
+            name.Text = folder.Name;
+            icon.Choice = folder.Icon;
+        }
     }
 }

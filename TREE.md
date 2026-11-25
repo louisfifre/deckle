@@ -1135,6 +1135,7 @@ _Generated from `git ls-files` — do not edit by hand._
 │   │   ├── FoldersSelfCheck.cs
 │   │   ├── FoldersSelfCheck.FileSelection.cs
 │   │   ├── FoldersSelfCheck.FolderIcons.cs
+│   │   ├── FoldersSelfCheck.Groups.cs
 │   │   ├── FoldersSelfCheck.Map.cs
 │   │   ├── FoldersSelfCheck.Photos.cs
 │   │   ├── FoldersSelfCheck.Previews.cs
@@ -1224,11 +1225,13 @@ _Generated from `git ls-files` — do not edit by hand._
 │   │   │   ├── IFoldersTool.cs
 │   │   │   └── ToolPlaceholderView.cs
 │   │   ├── Deckle.Folders.Views.csproj
+│   │   ├── FolderGroupDialog.cs
 │   │   ├── FoldersGlyphs.cs
 │   │   ├── FoldersText.cs
 │   │   ├── FoldersWindow.External.cs
 │   │   ├── FoldersWindow.FolderIcon.cs
 │   │   ├── FoldersWindow.Folders.cs
+│   │   ├── FoldersWindow.Groups.cs
 │   │   ├── FoldersWindow.Home.cs
 │   │   ├── FoldersWindow.Navigation.cs
 │   │   ├── FoldersWindow.Review.cs

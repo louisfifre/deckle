@@ -56,6 +56,23 @@
   <data name="Folders_ChangeIcon" xml:space="preserve"><value>Change icon…</value></data>
   <data name="Folders_Remove" xml:space="preserve"><value>Remove from Deckle Folders</value></data>
   <data name="Folders_RemoveHint" xml:space="preserve"><value>The folder stays on the disk</value></data>
+  <data name="Folders_AddMenu" xml:space="preserve"><value>Add…</value></data>
+  <data name="Folders_AddGroup" xml:space="preserve"><value>Add a folder group…</value></data>
+  <data name="Folders_GroupMenu" xml:space="preserve"><value>Group</value></data>
+  <data name="Folders_NoGroup" xml:space="preserve"><value>No group</value></data>
+  <data name="Folders_NewGroup" xml:space="preserve"><value>New group…</value></data>
+  <data name="Folders_RenameGroup" xml:space="preserve"><value>Rename group…</value></data>
+  <data name="Folders_RemoveGroup" xml:space="preserve"><value>Remove group</value></data>
+  <data name="Folders_RemoveGroupHint" xml:space="preserve"><value>Its folders stay in Deckle Folders</value></data>
+  <data name="Folders_Group_Format" xml:space="preserve"><value>{0} group: {1}</value></data>
+  <data name="Folders_Group_Empty_Format" xml:space="preserve"><value>{0} group, no folders</value></data>
+  <data name="GroupDialog_NewTitle" xml:space="preserve"><value>New folder group</value></data>
+  <data name="GroupDialog_RenameTitle" xml:space="preserve"><value>Rename folder group</value></data>
+  <data name="GroupDialog_Name" xml:space="preserve"><value>Name</value></data>
+  <data name="GroupDialog_Taken" xml:space="preserve"><value>A group with this name already exists</value></data>
+  <data name="GroupDialog_Create" xml:space="preserve"><value>Create</value></data>
+  <data name="GroupDialog_Save" xml:space="preserve"><value>Save</value></data>
+  <data name="GroupDialog_Cancel" xml:space="preserve"><value>Cancel</value></data>
   <data name="Folders_NotFound_Title" xml:space="preserve"><value>This folder can't be found</value></data>
   <data name="Folders_NotFound_Body_Format" xml:space="preserve"><value>Deckle Folders can no longer find {0}. The folder may have been moved, renamed or deleted, or its drive isn't connected. Once it's back, refresh.</value></data>
   <data name="Folders_Unreadable_Title" xml:space="preserve"><value>This folder can't be read</value></data>

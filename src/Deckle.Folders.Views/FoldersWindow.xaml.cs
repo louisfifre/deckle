@@ -107,7 +107,7 @@ public sealed partial class FoldersWindow : Window
         AutomationProperties.SetName(DetailsPanel, FoldersText.Get("Details_Panel"));
         AutomationProperties.SetName(Nav, FoldersText.Get("Folders_Pane"));
         HomeItem.Content = FoldersText.Get("Nav_Home");
-        AddFolderItem.Content = FoldersText.Get("Folders_Add");
+        AddItem.Content = FoldersText.Get("Folders_AddMenu");
         EmptyAddLabel.Text = FoldersText.Get("Folders_Add");
     }
 
