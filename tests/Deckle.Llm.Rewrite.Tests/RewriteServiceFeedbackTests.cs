@@ -10,6 +10,7 @@ namespace Deckle.Llm.Rewrite.Tests;
 
 // The overlay card is whatever UserFeedbackEmitted carries on Deckle-Llm, so
 // the test reads it there, the same place HudFeedbackSink does.
+[Collection(LlmRewriteObservabilityCollection.Name)]
 [Trait("Category", "observability")]
 public sealed class RewriteServiceFeedbackTests
 {

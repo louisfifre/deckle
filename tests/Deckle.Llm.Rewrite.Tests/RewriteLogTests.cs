@@ -11,6 +11,7 @@ namespace Deckle.Llm.Rewrite.Tests;
 // end under one work_id, so a reader of the file alone can tell a rewrite that
 // finished from one that never did. The paragraph and sentence rewrites run on
 // every pause in typing and stay detail.
+[Collection(LlmRewriteObservabilityCollection.Name)]
 [Trait("Category", "observability")]
 public sealed class RewriteLogTests
 {
