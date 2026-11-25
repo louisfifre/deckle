@@ -94,8 +94,8 @@ public sealed partial class DeckleAmbientSource : DeckleEventSource
 
     // ── AmbientViewModel setters ─────────────────────────────────────────
     public const int EvtTuningChanged                   = 65;
-    public const int EvtPipelineModeChanged             = 66;
-    public const int EvtPipelineModeChangedDetail       = 67;
+    // 66 retired.
+    // 67 retired.
 
     // ── Per-light placement ──────────────────────────────────────────────
     // 68 retired.
@@ -116,7 +116,7 @@ public sealed partial class DeckleAmbientSource : DeckleEventSource
     // 81: retired ID, never reused. Its pushed / dropped totals moved onto PipelineStopped.
     public const int EvtPushLoopCrashed                 = 82;
     public const int EvtStateChangedSubscriberThrew     = 83;
-    public const int EvtMultiLightFallback              = 84;
+    // 84 retired.
     public const int EvtHeartbeat                       = 85;
     public const int EvtBridgeAutoRestoreFailed         = 86;
     public const int EvtAmbientPagePairFailed           = 87;

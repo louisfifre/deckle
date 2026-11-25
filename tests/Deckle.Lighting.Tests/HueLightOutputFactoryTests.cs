@@ -16,9 +16,10 @@ public sealed class HueLightOutputFactoryTests
         var entertainment = new FakeOutput();
         var bridge = FakeBridge.WithEntertainment(entertainment);
 
-        var output = await HueLightOutputFactory.CreateAsync(bridge, "7", CancellationToken.None);
+        var (output, area) = await HueLightOutputFactory.CreateAsync(bridge, "7", CancellationToken.None);
 
         Assert.Same(entertainment, output);
+        Assert.Equal("Living Room", area.Name);
         Assert.False(entertainment.IsConnected);
     }
 

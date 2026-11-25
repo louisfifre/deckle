@@ -24,7 +24,8 @@ public sealed partial class DeckleAmbientSource
     }
 
     // What the run chose: output = the output class that was built, shape =
-    // group | multi, lights = the controlled lights (0 in group mode),
+    // multi (a colour per screen edge, the only shape since 2026-11-25; the
+    // retired group shape logged group), lights = the lights of the area,
     // push_hz = the push cadence, hdr = on | off. startup_ms = from the start
     // request to Running, the bridge handshake included; first_frame_ms =
     // from the start request to the first frame the sampler processed, -1

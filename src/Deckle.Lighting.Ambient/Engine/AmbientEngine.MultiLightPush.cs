@@ -35,18 +35,16 @@ public sealed partial class AmbientEngine
         var rightLinear  = AmbientZoneSampler.SampleZone(sample, LightZone.Right,  bandCols);
 
         // Per-light fan-out + per-light change gate (AmbientPushGate).
-        // Lights mapped to LightZone.None (or unmapped entirely) are
-        // skipped without counting as dropped — they're explicit
-        // opt-outs, not throttled pushes.
+        // Lights that follow no zone (the person picked No zone, or the
+        // placement suggests none) are skipped without counting as
+        // dropped — they're opt-outs, not throttled pushes.
         var toPush = new Dictionary<string, LightColor>(_multiLights.Count);
         int droppedThisTick = 0;
         int unmappedThisTick = 0;
 
         foreach (var light in _multiLights)
         {
-            LightZone zone = (zoneAssignments is not null && zoneAssignments.TryGetValue(light.Id, out var z))
-                ? z
-                : LightZone.None;
+            LightZone zone = LightZoneAssignment.Resolve(light.Id, zoneAssignments, _suggestedZones);
 
             if (zone == LightZone.None)
             {
@@ -83,8 +81,7 @@ public sealed partial class AmbientEngine
             // black while the rest is lit, and the user can pin a single
             // lamp to "off" by sliding its brightness to 0. The explicit
             // off skips the floor ; screen-derived black goes through it.
-            // Tuning runs before the gate, as in GroupTick, so a slider
-            // move always pushes.
+            // Tuning runs before the gate so a slider move always pushes.
             bool zoneIsBlack = AmbientColorPipeline.IsBlackSource(zoneLinear);
             SrgbColor target = lightExplicitlyOff
                 ? SrgbColor.Black

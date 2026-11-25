@@ -90,18 +90,9 @@ public sealed partial class AmbientEngine
                     : 1.0 / _pushRateHz;
                 _lastTickTimestamp = tickTimestamp;
 
-                if (_multiLightActive)
-                {
-                    await MultiLightTickAsync(
-                        sample, ct, pushDetailEnabled, heartbeatDetailEnabled)
-                        .ConfigureAwait(false);
-                }
-                else
-                {
-                    await GroupTickAsync(
-                        sample, ct, pushDetailEnabled, heartbeatDetailEnabled)
-                        .ConfigureAwait(false);
-                }
+                await MultiLightTickAsync(
+                    sample, ct, pushDetailEnabled, heartbeatDetailEnabled)
+                    .ConfigureAwait(false);
 
                 if (heartbeatDetailEnabled)
                 {
@@ -186,17 +177,6 @@ public sealed partial class AmbientEngine
     // EMA over the measured tick interval, per key. See AmbientColorSmoother.
     private SrgbColor SmoothColor(string key, SrgbColor tuned)
         => _smoother.Smooth(key, tuned, _smoothingAlpha, _tickDtSeconds);
-
-    // Publish + notify in one shot for group mode. Always invokes the
-    // event — group ticks are atomic, no batching to wait for.
-    private void PublishGroupEmitted(LightColor color)
-    {
-        lock (_emittedLock)
-        {
-            _emittedColors[GroupKey] = color;
-        }
-        EmittedColorsChanged?.Invoke();
-    }
 
     // Stash the per-light intent without firing the event — the
     // multi tick fires once at the end of its fan-out so subscribers

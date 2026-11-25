@@ -1316,9 +1316,6 @@
   <!-- AmbientPreviewCard and LightZonesCard code-behind (Loc.Get) —
        duplicated from src/Deckle.Lighting.Ambient.Views/Strings/en-US/
        Resources.resw, which stays the source of truth for wording. -->
-  <data name="AmbientPreview_GroupSwatch" xml:space="preserve">
-    <value>All lights</value>
-  </data>
   <data name="AmbientPreview_Capture_Format" xml:space="preserve">
     <value>{0} × {1}, {2}</value>
   </data>

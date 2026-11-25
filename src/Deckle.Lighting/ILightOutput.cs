@@ -5,8 +5,8 @@ namespace Deckle.Lighting;
 // colour at the cadence the consumer chooses, disconnect cleanly. Every
 // driver supports the single-colour push. Drivers that can address
 // individual lights within their connected scope also implement
-// <see cref="IMultiLightOutput"/> ; consumers query for the capability
-// with a runtime cast and fall back to the single-colour push.
+// <see cref="IMultiLightOutput"/>, which Ambient requires: it drives each
+// light on its screen edge and has no single-colour mode (2026-11-25).
 //
 // Lifecycle. Construction is cheap and never touches the network;
 // ConnectAsync must succeed before any push; DisposeAsync is idempotent.
@@ -47,10 +47,7 @@ public interface ILightOutput : IAsyncDisposable
 
 // Capability sub-interface : exposed by drivers that can address
 // individual lights independently within the connected scope. AmbientEngine
-// queries with `output is IMultiLightOutput` at start ; if yes, the
-// multi-light pipeline runs, otherwise it falls back to the
-// <see cref="ILightOutput.SetColorAsync"/> path with a single average
-// colour.
+// requires it at start and refuses an output without it.
 //
 // A separate interface rather than an optional method: a driver that
 // cannot address individual fixtures (one DMX universe driving one

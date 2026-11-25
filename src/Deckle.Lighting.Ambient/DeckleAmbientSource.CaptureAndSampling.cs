@@ -134,13 +134,4 @@ public sealed partial class DeckleAmbientSource
         if (IsEnabled()) WriteEvent(EvtStateChangedSubscriberThrew, ex_type, ex_message);
     }
 
-    // reason = no_lights | driver_incompatible; output = the driver type name.
-    [Event(EvtMultiLightFallback,
-           Level = EventLevel.Warning,
-           Keywords = (EventKeywords)Keywords.Lifecycle,
-           Message = "Multi-light requested but unavailable, falling back to group push\nreason={0} | output={1}")]
-    public void MultiLightFallback(string reason, string output)
-    {
-        if (IsEnabled()) WriteEvent(EvtMultiLightFallback, reason, output);
-    }
 }

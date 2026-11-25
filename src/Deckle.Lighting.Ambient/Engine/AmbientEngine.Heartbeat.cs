@@ -34,7 +34,7 @@ public sealed partial class AmbientEngine
         // Counters reset whether or not the producer admits the line, so
         // the next window starts from zero.
         DeckleAmbientSource.Log.Heartbeat(
-            _multiLightActive ? "multi" : "group",
+            "multi",
             elapsedMs / 1000.0,
             _pushRateHz,
             _hbTicks * 1000.0 / elapsedMs,
@@ -42,7 +42,7 @@ public sealed partial class AmbientEngine
             _hbPushed,
             _hbDropped,
             _hbSkippedSlots,
-            _multiLightActive ? _hbUnmappedLights : 0,
+            _hbUnmappedLights,
             _hbPushFailures,
             avg,
             p95,

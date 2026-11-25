@@ -100,7 +100,6 @@ public sealed partial class AmbientEngine
             throw;
         }
 
-        _useMultiLightRequested = ambient.UseMultiLight;
         lock (_lifecycleLock)
         {
             _startAbortReason = null;
@@ -127,9 +126,10 @@ public sealed partial class AmbientEngine
             // before Deckle sends the first screen-derived frame. A bridge
             // that cannot stream to the group fails the start here, with
             // its reason (AmbientStartFailure), before any capture.
-            _output = await HueLightOutputFactory
+            var (output, area) = await HueLightOutputFactory
                 .CreateAsync(_bridgeClient, ambient.HueLastGroupId, ct)
                 .ConfigureAwait(false);
+            _output = output;
 
             _capture = new ScreenCaptureService(ChooseCaptureRateHz(runId));
 
@@ -168,33 +168,18 @@ public sealed partial class AmbientEngine
             _requiresContinuousColorUpdates = _output.RequiresContinuousColorUpdates;
             ThrowIfStartAbortRequested();
 
-            // Resolve pipeline shape after Connect (ListLightsAsync
-            // needs IsConnected). Multi-light requires : caller said
-            // yes, driver exposes the capability, and the driver
-            // reports at least one addressable light.
-            if (_useMultiLightRequested && _output is IMultiLightOutput multi)
-            {
-                _multiLights = await multi.ListLightsAsync(ct).ConfigureAwait(false);
-                ThrowIfStartAbortRequested();
-                _multiLightActive = _multiLights.Count > 0;
-
-                if (_multiLightActive)
-                {
-                    _multiLastPushed = new Dictionary<string, (int, int, int)>(_multiLights.Count);
-                }
-                else
-                {
-                    DeckleAmbientSource.Log.MultiLightFallback("no_lights", multi.GetType().Name);
-                }
-            }
-            else
-            {
-                if (_useMultiLightRequested)
-                {
-                    DeckleAmbientSource.Log.MultiLightFallback("driver_incompatible", _output!.GetType().Name);
-                }
-                _multiLightActive = false;
-            }
+            // The lights the stream drives, read after Connect
+            // (ListLightsAsync needs IsConnected). Each follows the screen
+            // edge the person picked or, without a pick, the one its place
+            // in the Entertainment area suggests (LightZoneAssignment).
+            var multi = _output as IMultiLightOutput
+                ?? throw new InvalidOperationException(
+                    $"{_output.GetType().Name} cannot address single lights.");
+            _multiLights = await multi.ListLightsAsync(ct).ConfigureAwait(false);
+            ThrowIfStartAbortRequested();
+            _multiLastPushed = new Dictionary<string, (int, int, int)>(_multiLights.Count);
+            _suggestedZones = LightPlacementResolver.SuggestZones(
+                area, _multiLights.Select(l => l.Id).ToArray());
 
             _pushRateHz = AmbientPushCadence.ResolveRateHz(_output.PreferredColorUpdateRateHz);
             _pushIntervalMs = 1000 / _pushRateHz;
@@ -205,7 +190,6 @@ public sealed partial class AmbientEngine
             // drive that lamp" when configuration opted it out. The dump is
             // governed detail ; computing zone and brightness solely for the
             // log must disappear when it is off.
-            if (_multiLightActive && _multiLights is not null)
             {
                 bool lightConfigDetailEnabled = OperationalLogAdmission.IsDetailEnabled(
                     OperationalLogActivity.Ambient,
@@ -218,8 +202,7 @@ public sealed partial class AmbientEngine
                     var lightBrightness = _host.Ambient.LightBrightness;
                     foreach (var light in _multiLights)
                     {
-                        LightZone zone = (zoneAssignments is not null && zoneAssignments.TryGetValue(light.Id, out var z))
-                            ? z : LightZone.None;
+                        LightZone zone = LightZoneAssignment.Resolve(light.Id, zoneAssignments, _suggestedZones);
                         double bri = 1.0;
                         if (lightBrightness is not null && lightBrightness.TryGetValue(light.Id, out var b))
                             bri = Math.Clamp(b, 0.0, 1.0);
@@ -237,7 +220,6 @@ public sealed partial class AmbientEngine
             ResetPushFailureEpisode();
             _heartbeatWindow.Stop();
             ResetHeartbeatCounters();
-            _lastR = _lastG = _lastB = -1;
             _smoother.Clear();
             _blackLatch.Clear();
             _lastTickTimestamp = 0;
@@ -262,8 +244,8 @@ public sealed partial class AmbientEngine
             DeckleAmbientSource.Log.PipelineStarted(
                 runId,
                 _output!.GetType().Name,
-                _multiLightActive ? "multi" : "group",
-                _multiLights?.Count ?? 0,
+                "multi",
+                _multiLights.Count,
                 _pushRateHz,
                 _sampler.IsHdr ? "on" : "off",
                 ElapsedMs(startRequestedAt, Stopwatch.GetTimestamp()),
@@ -340,6 +322,7 @@ public sealed partial class AmbientEngine
         _bridgeClient = null;
         _multiLights = null;
         _multiLastPushed = null;
+        _suggestedZones = null;
         _requiresContinuousColorUpdates = false;
 
         return firstFailure;

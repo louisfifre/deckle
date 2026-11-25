@@ -14,28 +14,16 @@ namespace Deckle.Lighting.Ambient;
 // SampledFrame and pushes colour(s) to the output, through a change
 // gate (AmbientPushGate) so a static screen doesn't spam the bridge.
 //
-// Two pipeline shapes, selected at Start time.
-//
-//   - Group mode (default). One sRGB average over the whole frame, one
-//     push to the connected group via <see cref="ILightOutput.SetColorAsync"/>.
-//     Every driver supports this path, at the rate the driver advertises
-//     (Hue Entertainment: 50 Hz).
-//
-//   - Multi-light mode. One sRGB sample per screen-border zone (top /
-//     bottom / left / right), broadcast to every light assigned to
-//     that zone via <see cref="LightZone"/>, pushed in a single batch
-//     via <see cref="IMultiLightOutput.SetLightColorsAsync"/>. Only
-//     enabled when UseMultiLight is set, the driver implements
-//     <see cref="IMultiLightOutput"/> AND it reports at least one light.
-//     The four zones are sampled once per tick from a border
-//     band (AmbientSettings.BorderMode / BorderDepth / BorderCells),
-//     HyperHDR's <c>horizontalDepth</c> / <c>verticalDepth</c> collapsed
-//     to one user value.
-//
-// If multi-light is requested but the driver doesn't expose the
-// capability, the engine logs a warning and falls back to group mode
-// transparently — the user still gets ambient lighting, just not the
-// zoned variant.
+// One pipeline shape: a colour per screen edge (Louis, 2026-11-25, grill
+// answer r10q4 B; the single-colour group mode left). One sRGB sample per
+// screen-border zone (top / bottom / left / right), broadcast to every light
+// that follows that zone (LightZoneAssignment: the person's pick, else the
+// edge its place in the Entertainment area suggests), pushed in a single
+// batch via <see cref="IMultiLightOutput.SetLightColorsAsync"/> at the rate
+// the driver advertises (Hue Entertainment: 50 Hz). The four zones are
+// sampled once per tick from a border band (AmbientSettings.BorderMode /
+// BorderDepth / BorderCells), HyperHDR's <c>horizontalDepth</c> /
+// <c>verticalDepth</c> collapsed to one user value.
 //
 // Ownership.
 //   - The ScreenCaptureService is owned. The engine constructs it in
@@ -84,11 +72,6 @@ public sealed partial class AmbientEngine : IAsyncDisposable
     private bool _frameProcessingIncidentEnded;
     private int _frameProcessingStopRequested;
 
-    // Snapshotted at StartAsync : the loop shape and the per-light state
-    // are built there, so a live change waits for the next start. The app
-    // restarts the engine when the value changes (AmbientStartSettings).
-    private bool _useMultiLightRequested;
-
     private CancellationTokenSource? _cts;
     private Task? _pushLoopTask;
     private long _startTimestamp;
@@ -128,15 +111,13 @@ public sealed partial class AmbientEngine : IAsyncDisposable
     // Null when no cleanup is in flight (cold-start state).
     private Task? _stopCleanupTask;
 
-    // Last colour pushed in group mode ; (-1, -1, -1) means none yet, so
-    // the first tick always pushes.
-    private int _lastR = -1, _lastG = -1, _lastB = -1;
-
     private Dictionary<string, (int R, int G, int B)>? _multiLastPushed;
 
     private IReadOnlyList<LightDescriptor>? _multiLights;
 
-    private bool _multiLightActive;
+    // The edge each light's place in the Entertainment area suggests, read
+    // at start; a light the person never assigned follows it.
+    private IReadOnlyDictionary<string, LightZone>? _suggestedZones;
     private int _pushRateHz = 15;
     private int _pushIntervalMs = 1000 / 15;
     private bool _requiresContinuousColorUpdates;
@@ -186,10 +167,8 @@ public sealed partial class AmbientEngine : IAsyncDisposable
     // wall-clock time.
     private double _smoothingAlpha       = 1.0;
 
-    // EMA state, keyed "group" in group mode and by fixture id in multi
-    // mode. Cleared on every StartAsync so a re-pair doesn't carry over
-    // the previous setup's smoothing trail.
-    private const string GroupKey = "group";
+    // EMA state, keyed by fixture id. Cleared on every StartAsync so a
+    // re-pair doesn't carry over the previous setup's smoothing trail.
     private readonly AmbientColorSmoother _smoother = new();
 
     // The single quantisation per key, with its near-black latch. Same
@@ -208,9 +187,8 @@ public sealed partial class AmbientEngine : IAsyncDisposable
 
     /// <summary>Returns a snapshot of the colours the engine intended
     /// to push on the latest tick, regardless of whether the delta
-    /// gate let them through. Keyed by "group" in group mode and by
-    /// fixture id in multi mode. Empty before the first tick. Safe to
-    /// call from any thread.</summary>
+    /// gate let them through. Keyed by fixture id. Empty before the first
+    /// tick. Safe to call from any thread.</summary>
     public IReadOnlyDictionary<string, LightColor> SnapshotEmittedColors()
     {
         lock (_emittedLock)
@@ -239,14 +217,21 @@ public sealed partial class AmbientEngine : IAsyncDisposable
     /// and the matching <see cref="Stop"/>.</summary>
     public bool IsRunning { get; private set; }
 
-    /// <summary>True when the engine resolved to multi-light mode at
-    /// Start.</summary>
-    public bool IsMultiLightActive => _multiLightActive;
-
-    /// <summary>Lights resolved from the driver when multi-light mode is
-    /// active. Null when the engine isn't running or when group mode is
-    /// active.</summary>
+    /// <summary>Lights resolved from the driver at Start. Null when the
+    /// engine isn't running.</summary>
     public IReadOnlyList<LightDescriptor>? MultiLights => _multiLights;
+
+    /// <summary>The screen edge each light of the run follows right now:
+    /// the person's pick, else the edge its place in the Entertainment area
+    /// suggests. Empty when the engine isn't running.</summary>
+    public IReadOnlyDictionary<string, LightZone> EffectiveZones()
+    {
+        var lights = _multiLights;
+        return lights is null
+            ? new Dictionary<string, LightZone>()
+            : LightZoneAssignment.ResolveAll(
+                lights.Select(l => l.Id), _host.Ambient.LightZones, _suggestedZones);
+    }
 
     // Preview accessors, forwarded from the owned FrameSampler. Null /
     // zero / 1.0 when the engine is idle ; consumers treat a missing

@@ -573,36 +573,34 @@ public sealed partial class AmbientPreviewCard : UserControl
             _swatches[id].Fill.Color = ToColor(color);
     }
 
-    // The bands show in Colour per zone mode while the Zones command is on;
-    // group mode has none, one colour goes to the whole group. During a run,
-    // the mode is the one the run resolved (a group with no addressable
-    // light falls back to group mode), and each band that drives a light is
-    // tinted with that light's colour, the others hidden. With Ambient off,
-    // the mode is the setting and all four bands are drawn neutral, so the
-    // layout and the band depth read without a light (Louis, 2026-11-07).
+    // The bands show while the Zones command is on; colour per zone is
+    // Ambient's only mode. During a run, each band that drives a light is
+    // tinted with that light's colour, the others hidden; the edge of each
+    // light is the one the run drives it on (the person's pick, else its
+    // placement). With Ambient off, the bands of the stored picks are drawn
+    // neutral, so the layout and the band depth read without a light
+    // (Louis, 2026-11-07).
     private void UpdateZoneOverlay(IReadOnlyDictionary<string, LightColor> emitted)
     {
         var engine = _engine;
         var settings = AmbientSettingsService.Instance.Current;
         bool running = engine is { IsRunning: true };
-        bool zoned = running ? engine!.IsMultiLightActive : settings.UseMultiLight;
 
-        ZonesToggle.IsEnabled = zoned;
-        bool show = zoned && ZonesToggle.IsChecked == true;
+        bool show = ZonesToggle.IsChecked == true;
 
         // Only the bands some light follows: the settings page lets a light
         // take no zone at all, and a setup rarely uses all four edges
         // (Louis, 2026-11-07: the preview drew bands he has no light for).
-        IReadOnlyCollection<string>? runLightIds = null;
-        if (running && engine!.MultiLights is { } runLights)
-            runLightIds = runLights.Select(l => l.Id).ToArray();
-        var used = AmbientPreviewZones.Used(settings.LightZones, runLightIds);
+        IReadOnlyDictionary<string, LightZone> assignments = running
+            ? engine!.EffectiveZones()
+            : settings.LightZones;
+        var used = AmbientPreviewZones.Used(assignments);
 
         LayoutZoneRects(settings);
-        ApplyZone(LightZone.Top,    ZoneTopRect,    show && used.Contains(LightZone.Top),    running, settings, emitted);
-        ApplyZone(LightZone.Bottom, ZoneBottomRect, show && used.Contains(LightZone.Bottom), running, settings, emitted);
-        ApplyZone(LightZone.Left,   ZoneLeftRect,   show && used.Contains(LightZone.Left),   running, settings, emitted);
-        ApplyZone(LightZone.Right,  ZoneRightRect,  show && used.Contains(LightZone.Right),  running, settings, emitted);
+        ApplyZone(LightZone.Top,    ZoneTopRect,    show && used.Contains(LightZone.Top),    running, assignments, emitted);
+        ApplyZone(LightZone.Bottom, ZoneBottomRect, show && used.Contains(LightZone.Bottom), running, assignments, emitted);
+        ApplyZone(LightZone.Left,   ZoneLeftRect,   show && used.Contains(LightZone.Left),   running, assignments, emitted);
+        ApplyZone(LightZone.Right,  ZoneRightRect,  show && used.Contains(LightZone.Right),  running, assignments, emitted);
     }
 
     private void ApplyZone(
@@ -610,7 +608,7 @@ public sealed partial class AmbientPreviewCard : UserControl
         Rectangle rect,
         bool show,
         bool running,
-        AmbientSettings settings,
+        IReadOnlyDictionary<string, LightZone> assignments,
         IReadOnlyDictionary<string, LightColor> emitted)
     {
         if (!show)
@@ -627,7 +625,7 @@ public sealed partial class AmbientPreviewCard : UserControl
         }
 
         LightColor? color = null;
-        foreach (var (id, assigned) in settings.LightZones)
+        foreach (var (id, assigned) in assignments)
         {
             if (assigned == zone && emitted.TryGetValue(id, out var c)) { color = c; break; }
         }
@@ -678,8 +676,6 @@ public sealed partial class AmbientPreviewCard : UserControl
 
     private static string DisplayNameOf(AmbientEngine engine, string key)
     {
-        if (key == "group") return Loc.Get("AmbientPreview_GroupSwatch");
-
         if (engine.MultiLights is { } lights)
         {
             foreach (var light in lights)
