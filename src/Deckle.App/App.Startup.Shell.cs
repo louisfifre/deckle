@@ -92,12 +92,12 @@ public partial class App
             };
             _engine.TranscriptionFinished += outcome =>
             {
-                switch (outcome)
+                switch (HudCompletion.For(outcome))
                 {
-                    case TranscriptionOutcome.ClipboardOnly:
+                    case HudCompletionMessage.Copied:
                         _hudWindow.ShowCopied();
                         break;
-                    case TranscriptionOutcome.SavedToFile:
+                    case HudCompletionMessage.FileSaved:
                         // Nothing opens: the HUD message is the only completion signal.
                         _hudWindow.ShowFileSaved();
                         break;
