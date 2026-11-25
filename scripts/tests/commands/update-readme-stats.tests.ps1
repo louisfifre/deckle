@@ -57,6 +57,40 @@ Stable content.
         throw 'README commit should leave the repository clean'
     }
 
+    # The chart: two well-formed SVG files, 26 bars each, no script, no drive
+    # path, no personal data, and the README shows them in a picture element.
+    $readmeText = Get-Content -LiteralPath (Join-Path $root 'README.md') -Raw
+    foreach ($theme in 'light', 'dark') {
+        $relative = "docs/media/pulse-commits-$theme.svg"
+        if ($readmeText -notlike "*$relative*") { throw "The pulse section should reference $relative" }
+        $svgText = Get-Content -LiteralPath (Join-Path $root $relative) -Raw
+        $xml = [xml]$svgText
+        $bars = @($xml.SelectNodes('//*[local-name()="rect"]'))
+        if ($bars.Count -ne 26) { throw "The $theme chart should hold 26 bars, found $($bars.Count)" }
+        if (@($xml.SelectNodes('//*[local-name()="script" or local-name()="style" or local-name()="image" or local-name()="foreignObject"]')).Count -gt 0) {
+            throw "The $theme chart should hold no script, style, image or foreignObject"
+        }
+        $scanned = $svgText.Replace('http://www.w3.org/2000/svg', '')
+        if ($scanned -match '(?i)\b[a-z]:[\\/]|@|https?:|\bon\w+=') {
+            throw "The $theme chart should hold no drive path, address, link or event handler"
+        }
+        foreach ($name in $env:USERNAME, $env:COMPUTERNAME) {
+            if ($name -and $svgText -match [regex]::Escape($name)) { throw "The $theme chart should hold no personal data" }
+        }
+    }
+    if ($readmeText -notmatch '(?s)<picture>.*prefers-color-scheme: dark.*prefers-color-scheme: light.*</picture>') {
+        throw 'The pulse section should show the chart through a picture element with a dark and a light source'
+    }
+    # All the seeded commits are from today: the last bar is the only one that rises.
+    $lightBars = @(([xml](Get-Content -LiteralPath (Join-Path $root 'docs/media/pulse-commits-light.svg') -Raw)).SelectNodes('//*[local-name()="rect"]'))
+    $tall = @($lightBars | Where-Object { [double]$_.height -gt 3 })
+    if ($tall.Count -ne 1 -or $lightBars[25].height -ne $tall[0].height) {
+        throw 'Today''s commits should raise the last bar only'
+    }
+    if (@(Invoke-TestGit ls-files 'docs/media/pulse-commits-light.svg' 'docs/media/pulse-commits-dark.svg').Count -ne 2) {
+        throw 'The pulse commit should carry both chart files'
+    }
+
     $readmePath = Join-Path $root 'README.md'
     $manualEdit = (Get-Content -LiteralPath $readmePath -Raw) -replace '# Deckle test', '# Manual edit'
     [IO.File]::WriteAllText($readmePath, $manualEdit, [Text.UTF8Encoding]::new($false))

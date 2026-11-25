@@ -5,7 +5,10 @@
     Regenerate the small "Development pulse" section in README.md from the
     local Git history. The section is bounded by invisible HTML comments so
     the visible README stays clean while automation has a stable replacement
-    target.
+    target. It also draws one small chart, commits per week over the last 26
+    weeks, as two SVG files under docs/media (a light and a dark one, which
+    the section shows through a picture element). The publication script runs
+    this one after a release; it never pushes.
 .NOTES
     section: Project
     order: 210
@@ -20,7 +23,8 @@ param(
     # Override the README path. Mostly useful for tests.
     [string]$ReadmePath,
 
-    # Commit the generated root README locally when it changes. Never pushes.
+    # Commit the generated root README and its chart files locally when they
+    # change. Never pushes.
     [switch]$Commit
 )
 
@@ -35,6 +39,12 @@ $Workflow = 'Update README pulse'
 $RepoRoot = $null
 $CommitCreated = $false
 $CommitSubject = 'docs(readme): refresh development pulse'
+$ChartWeeks = 26
+$ChartFiles = [ordered]@{
+    light = 'docs/media/pulse-commits-light.svg'
+    dark  = 'docs/media/pulse-commits-dark.svg'
+}
+$ChartPaths = @($ChartFiles.Values)
 
 trap {
     Write-ActionSummary `
@@ -106,9 +116,9 @@ if ($Commit) {
         throw 'README commit stopped because staged changes already exist. Commit or unstage them, then run again.'
     }
 
-    $otherTrackedPaths = @(Invoke-Git diff --name-only | Where-Object { $_ -cne 'README.md' })
+    $otherTrackedPaths = @(Invoke-Git diff --name-only | Where-Object { $_ -cne 'README.md' -and $_ -cnotin $ChartFiles.Values })
     if ($otherTrackedPaths.Count -gt 0) {
-        throw "README commit stopped because tracked changes exist outside README.md: $($otherTrackedPaths -join ', '). Commit or revert them, then run again."
+        throw "README commit stopped because tracked changes exist outside README.md and its chart:$($otherTrackedPaths -join ', '). Commit or revert them, then run again."
     }
 
     $readmeDirty = @(Invoke-Git diff --name-only -- README.md).Count -gt 0
@@ -165,6 +175,106 @@ foreach ($path in (Invoke-Git ls-files)) {
 }
 Write-WorkflowMessage -Output $WorkflowOutput -Message ("{0} tracked text files / {1} current lines" -f (Format-Count $trackedTextFiles), (Format-Count $trackedTextLines))
 
+# One bar per week, Monday to Sunday, the last bar being the week that holds
+# today. The accent is the logo's rest-gradient violet (logo/palettes.md):
+# #6366FF on a light page, #8B5CFF on a dark one. The other marks are that
+# accent thinned and GitHub's own muted greys. No script, no style block, no
+# font file: system fonts only.
+function Get-WeeklyCommits {
+    param([string[]]$CommitDates, [int]$Weeks)
+
+    $today = (Get-Date).Date
+    $lastMonday = $today.AddDays(-(([int]$today.DayOfWeek + 6) % 7))
+    $firstMonday = $lastMonday.AddDays(-7 * ($Weeks - 1))
+    $counts = [int[]]::new($Weeks)
+    foreach ($text in $CommitDates) {
+        $day = [datetime]::ParseExact($text, 'yyyy-MM-dd', $Culture)
+        $index = [int][math]::Floor(($day - $firstMonday).TotalDays / 7)
+        if ($index -ge 0 -and $index -lt $Weeks) { $counts[$index]++ }
+    }
+    return [pscustomobject]@{ First = $firstMonday; Counts = $counts }
+}
+
+function Format-Coordinate {
+    param([double]$Value)
+    return $Value.ToString('0.##', $Culture)
+}
+
+function New-PulseChartSvg {
+    param(
+        [Parameter(Mandatory)][pscustomobject]$Weekly,
+        [Parameter(Mandatory)][ValidateSet('light', 'dark')][string]$Theme
+    )
+
+    $accent = if ($Theme -eq 'dark') { '#8B5CFF' } else { '#6366FF' }
+    $muted  = if ($Theme -eq 'dark') { '#9198A1' } else { '#59636E' }
+    $rule   = if ($Theme -eq 'dark') { '#3D444D' } else { '#D1D9E0' }
+
+    $counts = $Weekly.Counts
+    $weeks = $counts.Count
+    $peak = [int]($counts | Measure-Object -Maximum).Maximum
+    $peakIndex = [array]::IndexOf($counts, $peak)
+    $total = [int]($counts | Measure-Object -Sum).Sum
+
+    $width = 720; $height = 120
+    $left = 8.0; $right = 712.0
+    $baseline = 86.0; $tallest = 56.0
+    $slot = ($right - $left) / $weeks
+    $barWidth = 8.0
+    $firstLabel = $Weekly.First.ToString('d MMM yyyy', $Culture)
+    $lastLabel  = $Weekly.First.AddDays(7 * ($weeks - 1)).ToString('d MMM yyyy', $Culture)
+    $peakWeek   = $Weekly.First.AddDays(7 * $peakIndex).ToString('d MMM', $Culture)
+
+    $bars = foreach ($i in 0..($weeks - 1)) {
+        $count = $counts[$i]
+        $barHeight = if ($count -gt 0 -and $peak -gt 0) { [math]::Max(3.0, $tallest * $count / $peak) } else { 2.0 }
+        $x = $left + $slot * $i + ($slot - $barWidth) / 2
+        $isPeak = ($peak -gt 0 -and $i -eq $peakIndex)
+        $opacity = if ($isPeak) { '1' } elseif ($count -gt 0) { '0.45' } else { '0.18' }
+        '  <rect x="{0}" y="{1}" width="{2}" height="{3}" rx="2" fill="{4}" fill-opacity="{5}"/>' -f `
+            (Format-Coordinate $x), (Format-Coordinate ($baseline - $barHeight)), (Format-Coordinate $barWidth), (Format-Coordinate $barHeight), $accent, $opacity
+    }
+
+    $peakText = $null
+    if ($peak -gt 0) {
+        $peakX = $left + $slot * $peakIndex + $slot / 2
+        $anchor = 'middle'
+        if ($peakX -lt 130) { $anchor = 'start'; $peakX = $peakX - $barWidth / 2 }
+        elseif ($peakX -gt $width - 130) { $anchor = 'end'; $peakX = $peakX + $barWidth / 2 }
+        $peakText = '  <text x="{0}" y="{1}" text-anchor="{2}" font-size="11" font-weight="600" fill="{3}">{4} commits, week of {5}</text>' -f `
+            (Format-Coordinate $peakX), (Format-Coordinate ($baseline - $tallest - 8)), $anchor, $accent, $peak, $peakWeek
+    }
+
+    $lines = @(
+        ('<svg xmlns="http://www.w3.org/2000/svg" width="{0}" height="{1}" viewBox="0 0 {0} {1}" role="img" aria-labelledby="t d">' -f $width, $height),
+        ('  <title id="t">Commits per week, last {0} weeks</title>' -f $weeks),
+        ('  <desc id="d">{0} commits between {1} and {2}; the busiest week had {3}.</desc>' -f $total, $firstLabel, $lastLabel, $peak),
+        '  <g font-family="-apple-system, BlinkMacSystemFont, ''Segoe UI'', Helvetica, Arial, sans-serif">',
+        ('  <line x1="{0}" y1="{1}" x2="{2}" y2="{1}" stroke="{3}" stroke-width="1"/>' -f (Format-Coordinate $left), (Format-Coordinate ($baseline + 3)), (Format-Coordinate $right), $rule)
+    ) + @($bars) + @($peakText) + @(
+        ('  <text x="{0}" y="106" text-anchor="start" font-size="11" fill="{1}">{2}</text>' -f (Format-Coordinate $left), $muted, $firstLabel),
+        ('  <text x="{0}" y="106" text-anchor="end" font-size="11" fill="{1}">{2}</text>' -f (Format-Coordinate $right), $muted, $lastLabel),
+        '  </g>',
+        '</svg>'
+    )
+    return ((@($lines | Where-Object { $_ }) -join "`n") + "`n")
+}
+
+Write-WorkflowStep -Output $WorkflowOutput -Message 'Draw the weekly commit chart'
+$weekly = Get-WeeklyCommits -CommitDates $dates -Weeks $ChartWeeks
+$chartTotal = [int]($weekly.Counts | Measure-Object -Sum).Sum
+$chartPeak = [int]($weekly.Counts | Measure-Object -Maximum).Maximum
+$utf8NoBomChart = [System.Text.UTF8Encoding]::new($false)
+foreach ($theme in $ChartFiles.Keys) {
+    $chartPath = Join-Path $RepoRoot $ChartFiles[$theme]
+    $null = New-Item -ItemType Directory -Force -Path (Split-Path -Parent $chartPath)
+    $svg = New-PulseChartSvg -Weekly $weekly -Theme $theme
+    if (-not (Test-Path -LiteralPath $chartPath) -or [System.IO.File]::ReadAllText($chartPath) -cne $svg) {
+        [System.IO.File]::WriteAllText($chartPath, $svg, $utf8NoBomChart)
+    }
+}
+Write-WorkflowMessage -Output $WorkflowOutput -Message ('{0} commits over {1} weeks, busiest week {2}' -f (Format-Count $chartTotal), $ChartWeeks, $chartPeak)
+
 $generatedDate = (Get-Date).ToString('yyyy-MM-dd', $Culture)
 
 function Write-StatsSummary {
@@ -189,6 +299,12 @@ $StartMarker
 | First commit | Commits | Active days | Lines added | Lines touched | Current tracked lines |
 |---:|---:|---:|---:|---:|---:|
 | $firstDate | $(Format-Count $commitCount) | $(Format-Count $activeDays) | $(Format-Count $additions) | $(Format-Count $touched) | $(Format-Count $trackedTextLines) |
+
+<picture>
+  <source media="(prefers-color-scheme: dark)" srcset="$($ChartFiles['dark'])">
+  <source media="(prefers-color-scheme: light)" srcset="$($ChartFiles['light'])">
+  <img alt="Commits per week over the last $ChartWeeks weeks: $(Format-Count $chartTotal) in total, the busiest week had $(Format-Count $chartPeak)." src="$($ChartFiles['light'])" width="720">
+</picture>
 
 <sub>Generated from Git history on $generatedDate. Counts include tracked text files only for the current line total.</sub>
 $EndMarker
@@ -226,10 +342,10 @@ if ($normalizedUpdated -ne $normalizedReadme) {
 }
 
 if ($Commit) {
-    $readmePending = @(Invoke-Git diff --name-only -- README.md).Count -gt 0
+    $readmePending = @(Invoke-Git status --porcelain -- README.md @ChartPaths).Count -gt 0
     if ($readmePending) {
         Write-WorkflowStep -Output $WorkflowOutput -Message 'Commit README development pulse'
-        Invoke-Git add -- README.md | Out-Null
+        Invoke-Git add -- README.md @ChartPaths | Out-Null
         Invoke-Git commit -m $CommitSubject | Out-Null
         $CommitCreated = $true
         Write-WorkflowMessage -Output $WorkflowOutput -Message $CommitSubject
