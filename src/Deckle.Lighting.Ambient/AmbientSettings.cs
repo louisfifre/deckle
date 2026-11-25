@@ -173,16 +173,6 @@ public sealed class AmbientSettings
 
     public double BrightnessCurveY2 { get; set; } = 0.67;
 
-    /// <summary>Sum-of-absolute-channel-deltas threshold that gates
-    /// pushes — if the new tuned-and-smoothed colour differs from the
-    /// last pushed one by less than this on the 0-765 scale, the
-    /// previous colour stays : a persistent output (Hue REST) gets no
-    /// push, a continuous one (Hue Entertainment) gets the previous
-    /// colour again. A change to exact black always goes out
-    /// (AmbientPushGate). 0 disables the gate. On a slow fade a
-    /// threshold shows as small steps.</summary>
-    public int ChangeThreshold { get; set; } = 8;
-
     /// <summary>Exponential moving average factor applied to the colour
     /// pushed to each light, in [0, 1]. 1.0 disables the filter.
     /// Lower values trade reactivity for stability. The value is defined
