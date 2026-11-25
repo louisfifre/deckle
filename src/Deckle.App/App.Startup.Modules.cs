@@ -69,7 +69,7 @@ public partial class App
         {
             context.Skip(ModuleIds.Transcription, engineSkip);
             // A present module that cannot run is the person's to fix. The
-            // incident opens the Transcription page, whose setup bar starts the
+            // incident opens the Dictation page, whose setup bar starts the
             // download, so startup opens no window of its own at each launch.
             // Nothing closes it in this process: the engine is composed only at
             // start, so what fixes it is the restart that follows provisioning.

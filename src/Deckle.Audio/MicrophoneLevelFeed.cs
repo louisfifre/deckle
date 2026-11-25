@@ -4,7 +4,7 @@ namespace Deckle.Audio;
 //
 // A live microphone that hands over the RMS of each 50 ms frame and keeps
 // nothing: the base of every "show me my microphone" surface, today the
-// Recording page's voice meter. The caller's host says
+// Microphone page's voice meter. The caller's host says
 // what is opened and how the capture's own log lines read (its purpose); the
 // feed subscribes AudioLevel, the RMS a Frame would carry, and no Frame, so the
 // capture allocates no per-frame copy.

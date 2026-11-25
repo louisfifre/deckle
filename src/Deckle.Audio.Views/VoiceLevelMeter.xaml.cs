@@ -11,7 +11,7 @@ namespace Deckle.Audio.Views;
 
 // ── VoiceLevelMeter ───────────────────────────────────────────────────────────
 //
-// The instrument inside the Voice level card on the Recording page: a live
+// The instrument inside the Voice level card on the Microphone page: a live
 // meter of the microphone on a fixed dB track, with the voice level (the voice
 // detector's exit) marked, and the entry level above it when the detector's
 // entry margin is positive (with the default 0 they coincide), so the user sets the

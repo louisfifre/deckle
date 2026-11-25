@@ -1,6 +1,6 @@
 namespace Deckle.Audio;
 
-// What the Recording page's voice meter takes from the microphone, through a
+// What the Microphone page's voice meter takes from the microphone, through a
 // MicrophoneLevelFeed: the configured device, no audio kept, no cap, no
 // telemetry. The voice level is read at start; the low-audio warning that
 // reads it stays off for a take that keeps no audio. The purpose tags the

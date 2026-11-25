@@ -21,7 +21,7 @@ public sealed class CaptureSettings
     public bool ExclusiveMode { get; set; } = false;
 
     // Maximum length of a single recording, in seconds. 0 = no limit, the
-    // default; a limit is the user's opt-in on the Recording page. When the
+    // default; a limit is the user's opt-in on Dictation > General. When the
     // capture loop reaches it, the capture stops as if the hotkey had been
     // pressed, and the audio still runs through the full transcription
     // pipeline. Memory of an unlimited take is not bounded: about 230 MB per
