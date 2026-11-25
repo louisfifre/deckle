@@ -3233,6 +3233,7 @@ _Generated from `git ls-files` — do not edit by hand._
 │   │   ├── OrchestrationIncidentTests.cs
 │   │   ├── OrchestrationObservabilityCollection.cs
 │   │   ├── ProfileTransactionTests.cs
+│   │   ├── RuntimeRulesTests.cs
 │   │   ├── ScanOnDiskTests.cs
 │   │   ├── SteamLibraryScanEdgeCaseTests.cs
 │   │   └── SteamLibraryTests.cs
