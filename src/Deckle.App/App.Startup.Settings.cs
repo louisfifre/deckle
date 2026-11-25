@@ -108,7 +108,7 @@ public partial class App
             .ToList();
 
         // Developer mode's "Capture the interface" (App.InterfaceCapture.cs).
-        Settings.SettingsHost.CaptureInterface = CaptureInterfaceAsync;
+        Settings.SettingsHost.CaptureInterface = InterfaceCapture.FromSettingsAsync;
 
         // Each module page declares its own nav identity in its own assembly; the
         // composition root supplies only the Order, which leaves gaps so a later
