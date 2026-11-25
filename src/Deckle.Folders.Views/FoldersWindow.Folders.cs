@@ -288,6 +288,11 @@ public sealed partial class FoldersWindow
     {
         if (_folders.Find(parts.Folder.Path) is null) return;
         MenuFlyout menu = BuildFolderMenu(parts);
+        if (_reviewMenusInWindow)
+        {
+            ShowReviewMenu(menu, anchor, FlyoutPlacementMode.BottomEdgeAlignedRight);
+            return;
+        }
         if (at is { } position) menu.ShowAt(anchor, new FlyoutShowOptions { Position = position });
         else
         {
@@ -731,6 +736,9 @@ public sealed partial class FoldersWindow
         public FrameworkElement Region => (_presenter ??= FindPresenter(Item)) ?? Item;
 
         public bool MoreShown => _paneOpen && more.Opacity > 0;
+
+        // The "..." button itself, for the self-check to press it as a click does.
+        public Button More => more;
 
         // Out of the pane: nothing of the pointer or the keyboard stays on it.
         public void Rest()
