@@ -21,4 +21,11 @@ public sealed record ScriptMenuEntry(
     public bool Gives(ActionRef action) =>
         string.Equals(Id, action.Id, StringComparison.Ordinal)
         && (action.Variant is null || Variants.Contains(action.Variant, StringComparer.Ordinal));
+
+    // True when this entry gives the pin: the action (Gives) AND the script the
+    // pin was made on. A run starts by the action's id, which follows the entry's
+    // position in the menu: an id that now names another script is not the pin's
+    // action any more, and the pin counts as vanished.
+    public bool GivesPin(PinnedAction pin) =>
+        Gives(pin.Action) && string.Equals(Script, pin.Script, StringComparison.Ordinal);
 }
