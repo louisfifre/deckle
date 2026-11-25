@@ -3309,7 +3309,7 @@ _Generated from `git ls-files` — do not edit by hand._
 │   │   ├── MessageTemplateDoctrineTests.cs
 │   │   ├── MilestoneClosersTests.cs
 │   │   ├── PageOpenedEventTests.cs
-│   │   ├── PerformanceSettingsTests.cs
+│   │   ├── RetiredPerformanceModeTests.cs
 │   │   ├── SettingsBackupBugNotes.md
 │   │   └── SettingsBackupRoundTripTests.cs
 │   ├── Deckle.Setup.Tests/

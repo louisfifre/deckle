@@ -423,12 +423,6 @@
   <data name="GeneralPageUpdatesSection.Title" xml:space="preserve">
     <value>Updates</value>
   </data>
-  <data name="GeneralPerformanceModeCard.Header" xml:space="preserve">
-    <value>Performance mode</value>
-  </data>
-  <data name="GeneralPerformanceModeCard.Description" xml:space="preserve">
-    <value>Ambient lighting follows the screen less closely.</value>
-  </data>
   <data name="GeneralUpdateAutoCheckCard.Header" xml:space="preserve">
     <value>Check for updates automatically</value>
   </data>
