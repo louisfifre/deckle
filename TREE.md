@@ -182,6 +182,7 @@ _Generated from `git ls-files` — do not edit by hand._
 │   │   │   ├── execution.ps1
 │   │   │   ├── flows.ps1
 │   │   │   ├── launcher.ps1
+│   │   │   ├── logo.ps1
 │   │   │   └── logs.ps1
 │   │   ├── script-discovery/
 │   │   │   ├── catalog.ps1

@@ -1,12 +1,12 @@
 {
   "source": "https://github.com/louisfifre/deckle-scripts",
-  "version": "0.5.1",
+  "version": "0.7.0",
   "packs": [
     "git",
     "maintenance",
     "setup"
   ],
-  "installedAt": "2026-11-12T19:20:55Z",
+  "installedAt": "2026-11-25T09:39:55Z",
   "files": {
     "scripts/git/README.md": "e18dc6df0cf026ca64e64834e30efbf163db98bbcebf9ad01b319b6bd38c7ff8",
     "scripts/git/changelog.ps1": "f68c6e9d743e81145211d4ee93c1fd9bcb3ce11208baa215318a888b35a33bd7",
@@ -26,7 +26,8 @@
     "scripts/lib/launcher/discovered-catalog.ps1": "aedb0385f32b3010341646b591bac09a19c1182d8f2030361294866b96d53281",
     "scripts/lib/launcher/execution.ps1": "f225870b70bcff661133bf16a84e59367191f908cd4751b60b9f12d4c4419581",
     "scripts/lib/launcher/flows.ps1": "d832cae3ff8e0406e79038c9bcedbf4dbbba263c1468cd56230de6e68d79a2dc",
-    "scripts/lib/launcher/launcher.ps1": "7ee0a412c8fb2c5a0b0dccf2002a977370b0edf05f2d128c7c8854b724bb5dc8",
+    "scripts/lib/launcher/launcher.ps1": "3323fbbb15b0a5f65a35895e83bfcff403fb262ec08758ac9fb2a91b5f823789",
+    "scripts/lib/launcher/logo.ps1": "2c53e23ba1da2980e8ccc8780d73db35c89a6daf43785ffed3a9e69f31b60b1a",
     "scripts/lib/launcher/logs.ps1": "79f89fa5b16817c9e7f8162cfc90a8f8e0b87f24f2ed1c274c8b278d112cb1e9",
     "scripts/lib/manifest.ps1": "2e0d2cb49dc0992d25f9e6952ce4196d7f5b98fffd76674d16da7328bd171c66",
     "scripts/lib/native-console.ps1": "b5d16976f4f34bd8a8878d86239f046934693b73d604cf0f63f8093d03bfdbee",
