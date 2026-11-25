@@ -19,10 +19,12 @@ public sealed partial class HudWindow : Window
 
     private bool _fileTranscriptionClockActive;
 
-    public void ShowPreparing() => EnqueueUI(() =>
+    // pressTimestamp: the Stopwatch.GetTimestamp of the shortcut press that
+    // asked for this change; 0 when no press did. It times HudFirstFramePresented.
+    public void ShowPreparing(long pressTimestamp = 0) => EnqueueUI(() =>
     {
         _fileTranscriptionClockActive = false;
-        SetState(HudState.Charging, reason: "show_preparing");
+        SetState(HudState.Charging, reason: "show_preparing", pressTimestamp: pressTimestamp);
     });
     public void ShowFilePreparing() => EnqueueUI(() =>
     {
@@ -30,7 +32,8 @@ public sealed partial class HudWindow : Window
         SetState(HudState.Charging, reason: "show_file_preparing");
     });
     public void ShowRecording()        => EnqueueUI(() => SetState(HudState.Recording,   reason: "show_recording"));
-    public void SwitchToTranscribing() => EnqueueUI(() => SetState(HudState.Transcribing, reason: "switch_transcribing"));
+    public void SwitchToTranscribing(long pressTimestamp = 0) =>
+        EnqueueUI(() => SetState(HudState.Transcribing, reason: "switch_transcribing", pressTimestamp: pressTimestamp));
     public void SwitchToRewriting()    => EnqueueUI(() => SetState(HudState.Rewriting,    reason: "switch_rewriting"));
 
     public void ShowError(string title, string body) =>
@@ -124,7 +127,7 @@ public sealed partial class HudWindow : Window
 
     // `reason` labels the trigger in the StateChanged event, so the trace says
     // why the HUD changed state.
-    private void SetState(HudState next, MessagePayload? msg = null, string reason = "unspecified")
+    private void SetState(HudState next, MessagePayload? msg = null, string reason = "unspecified", long pressTimestamp = 0)
     {
         // Overlay disabled in Settings → no-op for any *visible* state, except a
         // warning or an error: switching the HUD off for a cleaner screen must not
@@ -142,6 +145,7 @@ public sealed partial class HudWindow : Window
         }
 
         HudState from = _state;
+        ArmFirstFrame(next, from, pressTimestamp);
         bool wasShown = _state != HudState.Hidden;
         _state = next;
         bool isShown = _state != HudState.Hidden;
@@ -234,6 +238,28 @@ public sealed partial class HudWindow : Window
                 return;
         }
     }
+
+    // One HudFirstFramePresented per state change a press caused: armed here,
+    // written at the next frame. Any other change disarms a pending one.
+    private void ArmFirstFrame(HudState next, HudState from, long pressTimestamp)
+    {
+        _firstFrame.Cancel();
+        if (pressTimestamp == 0 || next == from) return;
+        _firstFrame.Arm(next.ToString(), pressTimestamp);
+        if (_firstFrameHooked) return;
+        Microsoft.UI.Xaml.Media.CompositionTarget.Rendering += OnFirstFrameRendering;
+        _firstFrameHooked = true;
+    }
+
+    private void OnFirstFrameRendering(object? sender, object e)
+    {
+        _firstFrame.OnFrame(DeckleHudSource.Log, System.Diagnostics.Stopwatch.GetTimestamp());
+        Microsoft.UI.Xaml.Media.CompositionTarget.Rendering -= OnFirstFrameRendering;
+        _firstFrameHooked = false;
+    }
+
+    private readonly HudFirstFrameProbe _firstFrame = new();
+    private bool _firstFrameHooked;
 
     private static bool ShouldFadeIn(bool wasShown) =>
         !wasShown && AnimationPreference.Instance.AnimationsEnabled;

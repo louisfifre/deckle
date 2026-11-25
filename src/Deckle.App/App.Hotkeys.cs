@@ -23,8 +23,12 @@ public partial class App
     // The tray panel's Record button lands here too.
     private void OnHotkey(int hotkeyId)
     {
+        // Taken first: the HUD times its first frame from this instant.
+        _hotkeyPressTimestamp = System.Diagnostics.Stopwatch.GetTimestamp();
         AllHotkeyActions().FirstOrDefault(action => action.Id == hotkeyId)?.Invoke();
     }
+
+    private long _hotkeyPressTimestamp;
 
     private void ToggleRecordingFromHotkey() => ToggleRecordingFromHotkey(rewriteProfileId: null);
 
@@ -58,7 +62,7 @@ public partial class App
                     // is the bound chord, not proof it was pressed.
                     DeckleAppSource.Log.HotkeyStartDetail(HotkeyChordLabel(RecordHotkeyId));
                 }
-                _hudWindow?.ShowPreparing();
+                _hudWindow?.ShowPreparing(_hotkeyPressTimestamp);
                 break;
 
             case ToggleResult.Stopped:
@@ -67,7 +71,7 @@ public partial class App
                 // after the streaming drain decodes the queued tail, so the chrono
                 // would keep ticking and the stop would feel laggy. The later
                 // status-driven SwitchToTranscribing is an idempotent no-op.
-                _hudWindow?.SwitchToTranscribing();
+                _hudWindow?.SwitchToTranscribing(_hotkeyPressTimestamp);
                 break;
 
             case ToggleResult.IgnoredBusy:
