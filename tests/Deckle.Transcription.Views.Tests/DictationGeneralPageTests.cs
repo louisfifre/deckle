@@ -92,11 +92,11 @@ public class DictationGeneralPageTests
 
         Assert.Equal("Dictation", resw["SettingsModuleNavLabel"]);
         Assert.Equal("Dictation", resw["TranscriptionPageHeader.Title"]);
-        Assert.Equal("How you dictate, and how your text comes out.", resw["TranscriptionPageHeader.Description"]);
+        Assert.Equal("How you dictate, and how Deckle transcribes it.", resw["TranscriptionPageHeader.Description"]);
         Assert.Equal("While you speak", resw["TranscriptionPageWhileYouSpeakSection.Title"]);
         Assert.Equal("Segmentation", resw["TranscriptionPageSegmentationSection.Title"]);
         Assert.Equal(
-            "Developer mode only. Deckle will set these itself once segmentation is redesigned.",
+            "Shown in developer mode only.",
             resw["TranscriptionPageSegmentationSection.Caption"]);
     }
 

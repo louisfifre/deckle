@@ -368,7 +368,7 @@
   <!-- Transcription not-provisioned call-to-action. Shown when the speech model
        is missing or incomplete; the button reopens the first-run setup wizard. -->
   <data name="TranscriptionSetupInfoBar.Title" xml:space="preserve">
-    <value>Transcription isn't set up</value>
+    <value>Dictation isn't set up</value>
   </data>
   <data name="TranscriptionSetupButton.Content" xml:space="preserve">
     <value>Set up</value>
@@ -492,7 +492,7 @@
     <value>Dictation</value>
   </data>
   <data name="TranscriptionPageHeader.Description" xml:space="preserve">
-    <value>How you dictate, and how your text comes out.</value>
+    <value>How you dictate, and how Deckle transcribes it.</value>
   </data>
   <!-- The developer-only section at the foot of Dictation > General: the cut
        curve and the silence and noise filtering, once the Streaming page. -->
@@ -500,7 +500,7 @@
     <value>Segmentation</value>
   </data>
   <data name="TranscriptionPageSegmentationSection.Caption" xml:space="preserve">
-    <value>Developer mode only. Deckle will set these itself once segmentation is redesigned.</value>
+    <value>Shown in developer mode only.</value>
   </data>
   <!-- The maximum recording length, hosted in "While you speak" (composed
        group: switch + length field), stored in the capture settings. -->
