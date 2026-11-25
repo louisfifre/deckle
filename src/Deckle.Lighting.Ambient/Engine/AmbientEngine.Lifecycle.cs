@@ -94,6 +94,7 @@ public sealed partial class AmbientEngine
         catch (Exception ex)
         {
             DeckleAmbientSource.Log.PipelineStartFailed(runId, validationReason, ex.GetType().Name, ex.Message);
+            LastStartFailure = AmbientStartFailure.Other;
             SetState(AmbientEngineState.Error);
             SetState(AmbientEngineState.Off);
             throw;
@@ -119,14 +120,15 @@ public sealed partial class AmbientEngine
                 .GetAvailableBridgeAsync(ct)
                 .ConfigureAwait(false);
 
-            // Build the preferred Hue output now, but do not connect yet.
-            // For Entertainment v2, ConnectAsync sends CLIP v2
-            // `action=start` and hands the area to the bridge. Doing that
-            // before capture is ready leaves a visible gap where Hue can
-            // show its own activation state before Deckle sends the first
-            // screen-derived frame.
+            // Build the Entertainment output now, but do not connect yet.
+            // ConnectAsync sends CLIP v2 `action=start` and hands the area
+            // to the bridge. Doing that before capture is ready leaves a
+            // visible gap where Hue can show its own activation state
+            // before Deckle sends the first screen-derived frame. A bridge
+            // that cannot stream to the group fails the start here, with
+            // its reason (AmbientStartFailure), before any capture.
             _output = await HueLightOutputFactory
-                .CreatePreferredAsync(_bridgeClient, ambient.HueLastGroupId, ct)
+                .CreateAsync(_bridgeClient, ambient.HueLastGroupId, ct)
                 .ConfigureAwait(false);
             _managedGroupId = ambient.HueLastGroupId;
 
@@ -163,9 +165,7 @@ public sealed partial class AmbientEngine
             EnsureSampler(_capture);
             ThrowIfStartAbortRequested();
 
-            _output = await HueLightOutputFactory
-                .ConnectPreparedPreferredAsync(_bridgeClient, _output, ambient.HueLastGroupId, ct)
-                .ConfigureAwait(false);
+            await HueLightOutputFactory.ConnectAsync(_output, ct).ConfigureAwait(false);
             _requiresContinuousColorUpdates = _output.RequiresContinuousColorUpdates;
             ThrowIfStartAbortRequested();
 
@@ -322,8 +322,9 @@ public sealed partial class AmbientEngine
             else
             {
                 DeckleAmbientSource.Log.PipelineStartFailed(
-                    runId, _startAbortReason ?? "exception", ex.GetType().Name, ex.Message);
+                    runId, _startAbortReason ?? AmbientStartFailures.LogReason(ex), ex.GetType().Name, ex.Message);
             }
+            LastStartFailure = AmbientStartFailures.From(ex);
 
             CancelRunBestEffort();
             AmbientCaptureGate.SetActive(false);

@@ -286,11 +286,14 @@ public sealed partial class AmbientEngine : IAsyncDisposable
     public long CapturedFrames
         => _capture is { IsRunning: true } capture ? capture.FrameCount : 0;
 
-    /// <summary>True when the connected output is a live stream (Hue
-    /// Entertainment), false when it is a persistent-state transport
-    /// (REST), null while no output is connected. The preview names the
-    /// transport so a REST fallback is seen, not guessed.</summary>
-    public bool? OutputIsLiveStream => _output?.RequiresContinuousColorUpdates;
+    /// <summary>True while the engine holds its light output, the Hue
+    /// Entertainment stream. The preview names it as the transport.</summary>
+    public bool HasOutput => _output is not null;
+
+    /// <summary>Why the last start failed, set before the Error state is
+    /// raised so a subscriber reads it on Error. Meaningless before the
+    /// first failure.</summary>
+    public AmbientStartFailure LastStartFailure { get; private set; }
 
     // Error is a transient blip : the engine raises Off right after it,
     // so a subscriber gets two consecutive callbacks (Error then Off).

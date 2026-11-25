@@ -406,9 +406,6 @@
   <data name="AmbientPreview_Output_Stream" xml:space="preserve">
     <value>Streaming</value>
   </data>
-  <data name="AmbientPreview_Output_Rest" xml:space="preserve">
-    <value>REST</value>
-  </data>
   <!-- The Capture readout before any capture: the display's size, read from Windows. -->
   <data name="AmbientPreview_Display_Format" xml:space="preserve">
     <value>{0} × {1}</value>

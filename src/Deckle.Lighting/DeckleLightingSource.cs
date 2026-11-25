@@ -115,7 +115,7 @@ public sealed partial class DeckleLightingSource : DeckleEventSource
     public const int EvtSetColorFailed = 79;
     public const int EvtClipV2RequestFailed = 80;
     public const int EvtIdentifyFailed = 81;
-    public const int EvtEntertainmentRestFallback = 82;
+    // 82 retired.
     public const int EvtEntertainmentPrePrimeFailed = 83;
     public const int EvtEventStreamIncident = 84;
     public const int EvtEventStreamStopped = 85;
