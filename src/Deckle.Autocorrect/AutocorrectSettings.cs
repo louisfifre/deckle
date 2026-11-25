@@ -7,6 +7,13 @@ public sealed class AutocorrectSettings : IJsonOnDeserialized
 {
     public bool Enabled { get; set; } = true;
 
+    // "Offer to correct a paragraph": Shift+Enter after a paragraph offers its
+    // corrected form (the Rewrite module's local model). It is this module that
+    // decides when paragraph correction acts, so the switch lives here; it acts
+    // only where autocorrect itself does (ParagraphCorrectionGate). On by
+    // default: until Ollama and its model are there, nothing is offered.
+    public bool ParagraphCorrection { get; set; } = true;
+
     // Process name (no extension, matched case-insensitively) → corrections on.
     //   absent = never met: never corrected, a candidate for the enrollment prompt.
     //   true   = enabled here.   false = declined (never prompt, never correct).
@@ -36,6 +43,13 @@ public sealed class AutocorrectSettings : IJsonOnDeserialized
     {
         return new AutocorrectSettings { Enabled = systemLanguages.Contains("fr") };
     }
+
+    // The decision the engine takes for the focused app: corrections act only in
+    // an app the person enrolled (the "Apps enrolled" page). Absent (never met)
+    // and declined both mean no. Paragraph correction reads the same answer.
+    public bool IsEnabledFor(string processName)
+        => processName.Length > 0
+        && Apps.TryGetValue(processName, out bool on) && on;
 
     // System.Text.Json rebuilds Apps with the default ordinal comparer, so
     // restore the case-insensitive one.

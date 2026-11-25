@@ -747,6 +747,7 @@ _Generated from `git ls-files` — do not edit by hand._
 │   │   ├── Surfaces/
 │   │   │   ├── FocusedSurface.cs
 │   │   │   ├── ISurfaceProber.cs
+│   │   │   ├── ParagraphCorrectionGate.cs
 │   │   │   └── SurfaceProber.cs
 │   │   ├── Tracking/
 │   │   │   ├── KeyDecoder.cs
@@ -2764,6 +2765,7 @@ _Generated from `git ls-files` — do not edit by hand._
 │   │   ├── MistouchMiningMaintenanceTests.cs
 │   │   ├── MorphalouReaderTests.cs
 │   │   ├── PairModelTrainerTests.cs
+│   │   ├── ParagraphCorrectionGateTests.cs
 │   │   ├── ParagraphReplacementPlanTests.cs
 │   │   ├── PersonalDictionaryTests.cs
 │   │   ├── PersonalLexiconWithTermsTests.cs
