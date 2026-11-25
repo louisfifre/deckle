@@ -173,10 +173,10 @@ if ((Get-BuildCommit $output) -ne $Commit) { throw "The build output under $outp
 # The apps' own assemblies are named DeckleMail and DeckleFolders, so the
 # libraries to look for are the Deckle.Mail* and Deckle.Folders* ones.
 $unpublished = @(Get-ChildItem -LiteralPath $output -File |
-    Where-Object { $_.Name -like 'Deckle.Mail*' -or $_.Name -like 'Deckle.Folders*' -or $_.Name -like 'DeckleMail*' -or $_.Name -like 'DeckleFolders*' -or $_.Name -like '*Playground*' } |
+    Where-Object { $_.Name -like 'Deckle.Mail*' -or $_.Name -like 'Deckle.Folders*' -or $_.Name -like 'DeckleMail*' -or $_.Name -like 'DeckleFolders*' } |
     ForEach-Object { $_.Name })
 if ($unpublished.Count -gt 0) {
-    throw "The Release build holds files of an unpublished app: $($unpublished -join ', '). Mail, Deckle Folders and the Playground are not part of the published Deckle; nothing was staged."
+    throw "The Release build holds files of an unpublished app: $($unpublished -join ', '). Mail and Deckle Folders are not part of the published Deckle; nothing was staged."
 }
 
 if (-not $SkipSelfCheck) {

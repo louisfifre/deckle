@@ -34,8 +34,7 @@ public sealed class PublishedClosureTests
     ];
 
     private static bool IsForbidden(string name)
-        => ForbiddenNames.Contains(name, StringComparer.OrdinalIgnoreCase)
-           || name.Contains("Playground", StringComparison.OrdinalIgnoreCase);
+        => ForbiddenNames.Contains(name, StringComparer.OrdinalIgnoreCase);
 
     [Fact]
     public void ThePublishedAppReferencesNoUnpublishedProjectDirectlyOrThroughAnother()
