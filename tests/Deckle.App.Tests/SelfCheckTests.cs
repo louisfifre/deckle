@@ -45,12 +45,12 @@ public class SelfCheckTests
             SelfCheckMicrophoneOutcome.From(true, null, MicErrorKind.Unavailable, "", "").Outcome);
     }
 
-    // The published run walks the host's own windows, then the contributed
-    // ones. Projects is not among them: Deckle Projects walks itself
+    // The published run walks the host's own windows, in order. Projects is not
+    // among them: Deckle Projects walks itself
     // (DeckleProjects.exe --self-check).
     [Fact]
     [Trait("Category", "unit")]
-    public void Catalog_WalksTheHostWindowsThenTheContributedOnesAndNotProjects()
+    public void Catalog_WalksTheHostWindowsInOrderAndNotProjects()
     {
         SelfCheckWindows catalog = SelfCheckWindowCatalog.Published;
 
