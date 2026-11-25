@@ -442,7 +442,9 @@ public sealed class LiveTranscriptionPipelineTests
     }
 
     // Starts a take, waits until the recovery file holds the expected text,
-    // stops it, and returns once the worker has settled back to idle.
+    // stops it, and returns once the take has announced its end and the worker
+    // has settled back to idle. Ready is raised before the end of the take is
+    // announced, so both signals are awaited.
     private static async Task RunTakeToIdleAsync(
         TranscriptionEngine engine,
         DictationRecoveryStore store,
@@ -451,6 +453,8 @@ public sealed class LiveTranscriptionPipelineTests
     {
         int stopped = 0;
         var ready = new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously);
+        var finished = new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously);
+        engine.TranscriptionFinished += _ => finished.TrySetResult();
         engine.StatusChanged += status =>
         {
             // Only the Ready the worker raises once it has settled counts.
@@ -472,6 +476,7 @@ public sealed class LiveTranscriptionPipelineTests
 
         Volatile.Write(ref stopped, 1);
         Assert.Equal(ToggleResult.Stopped, engine.RequestToggle());
+        await finished.Task.WaitAsync(TimeSpan.FromSeconds(5), testCancellation);
         await ready.Task.WaitAsync(TimeSpan.FromSeconds(5), testCancellation);
     }
     // Each utterance is longer than the minimum threshold and ends on a full
