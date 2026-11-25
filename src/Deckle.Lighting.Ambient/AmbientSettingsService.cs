@@ -1,13 +1,9 @@
 using System.Text.Json;
 using Deckle.Core;
-using Deckle.Presets;
 
 namespace Deckle.Lighting.Ambient;
 
 // Module-local persistence for AmbientSettings.
-//
-// The preset family lives here, one per process, so every surface that
-// edits the tuning reports to the same selection.
 public sealed class AmbientSettingsService
 {
     private static readonly Lazy<AmbientSettingsService> _instance = new(() => new AmbientSettingsService());
@@ -28,11 +24,6 @@ public sealed class AmbientSettingsService
 
     public string Path => _store.Path;
 
-    /// <summary>The Ambient presets over <see cref="Current"/>. Built after
-    /// the file is read, so a file without a stored selection gets it
-    /// derived once from its values (saved with the next edit).</summary>
-    public PresetFamily<AmbientTuning> Presets { get; }
-
     public event Action? Changed
     {
         add    => _store.Changed += value;
@@ -51,19 +42,6 @@ public sealed class AmbientSettingsService
             jsonOptions: _jsonOptions,
             logWarning:  msg => DeckleAmbientSource.Log.SettingsLoadWarning(msg),
             logError:    msg => DeckleAmbientSource.Log.SettingsLoadError(msg));
-
-        // A file that stored a preset of the former set follows its
-        // replacement (saved with the next edit); the family below then finds
-        // a known id.
-        if (AmbientPresets.MigrateRetiredSelection(Current) is { } retired)
-            DeckleAmbientSource.Log.PresetSelectionReplaced(retired, Current.Preset ?? "");
-
-        Presets = new PresetFamily<AmbientTuning>(
-            AmbientPresets.All,
-            AmbientPresets.Default,
-            new AmbientPresetStore(() => Current),
-            onSelectionReplaced: (asked, obtained) =>
-                DeckleAmbientSource.Log.PresetSelectionReplaced(asked, obtained));
     }
 
     public void Save()                       => _store.Save();

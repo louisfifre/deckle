@@ -49,27 +49,6 @@ public sealed class AmbientSettings
     // the deserializer ignores members this class no longer declares, and the
     // next save drops the key.
 
-    // ── Preset selection (Deckle.Presets) ──────────────────────────
-    //
-    // The presets fix the eight tuning values below (AmbientTuning); the
-    // family on AmbientSettingsService.Presets selects, applies and keeps
-    // the Custom values. Realistic Slow is the default — the faithful,
-    // smooth restitution of the scene's light. The ids of the former set
-    // (game, vivid, movie, ambient) are migrated on load
-    // (AmbientPresets.MigrateRetiredSelection).
-    //
-    // While no selection is stored, it is derived once from the values (the
-    // preset they equal, else Custom with those values kept).
-
-    /// <summary>The stored selection: a preset id from
-    /// <see cref="AmbientPresets"/>, or <c>"custom"</c>. Null until the
-    /// family derives it from the values, on the first load.</summary>
-    public string? Preset { get; set; }
-
-    /// <summary>The user's own tuning, kept while a preset is selected so
-    /// picking Custom brings it back. Null until the first hand edit.</summary>
-    public AmbientTuning? CustomTuning { get; set; }
-
     // ── Multi-light zones ──────────────────────────────────────────
     //
     // When the connected output is an IMultiLightOutput and the engine
@@ -133,10 +112,8 @@ public sealed class AmbientSettings
     // changes apply live without restarting the pipeline. They apply to
     // SDR and HDR alike: HDR is tone-mapped to 8 bits before this stage.
     //
-    // The initializers of the eight preset-covered values (everything
-    // but the floor) ARE the Realistic Slow preset, which AmbientPresets reads
-    // from a fresh instance: one source for a fresh install, the per-card
-    // reset and the page reset.
+    // The initializers are the shipping defaults: one source for a fresh
+    // install, the per-card reset and the page reset.
     //
     // Why these four :
     //   - Exposure compensates for scRGB content peaking well below
@@ -158,12 +135,12 @@ public sealed class AmbientSettings
 
     /// <summary>Exposure compensation in EV (stops of light) applied
     /// in linear-light before the tone-map. 0 = no change, +1 doubles
-    /// brightness, -1 halves it. The presets hold 0.</summary>
+    /// brightness, -1 halves it.</summary>
     public double ExposureEv { get; set; } = 0.0;
 
     /// <summary>Chroma multiplier applied to each sampled colour
     /// before push. 1.0 = no change, 2.0 = double saturation, 0.0 =
-    /// greyscale. The Realistic presets hold 1.0, the Vivid ones 1.10.</summary>
+    /// greyscale.</summary>
     public double SaturationBoost { get; set; } = 1.0;
 
     /// <summary>Whether <see cref="MinBrightness"/> is applied to the
@@ -185,8 +162,7 @@ public sealed class AmbientSettings
     /// <summary>First cubic-Bézier control point X coordinate in [0, 1].
     /// The anchors are fixed at (0,0) and (1,1), so the four stored
     /// values are directly equivalent to CSS <c>cubic-bezier()</c>.
-    /// The default curve is the one all four presets share, near-linear
-    /// (provisional).</summary>
+    /// The default curve is near-linear (provisional).</summary>
     public double BrightnessCurveX1 { get; set; } = 0.33;
 
     /// <summary>First cubic-Bézier control point Y coordinate in [0, 1].
@@ -196,16 +172,6 @@ public sealed class AmbientSettings
     public double BrightnessCurveX2 { get; set; } = 0.67;
 
     public double BrightnessCurveY2 { get; set; } = 0.67;
-
-    /// <summary>Sum-of-absolute-channel-deltas threshold that gates
-    /// pushes — if the new tuned-and-smoothed colour differs from the
-    /// last pushed one by less than this on the 0-765 scale, the
-    /// previous colour stays : a persistent output (Hue REST) gets no
-    /// push, a continuous one (Hue Entertainment) gets the previous
-    /// colour again. A change to exact black always goes out
-    /// (AmbientPushGate). 0 disables the gate. On a slow fade a
-    /// threshold shows as small steps.</summary>
-    public int ChangeThreshold { get; set; } = 8;
 
     /// <summary>Exponential moving average factor applied to the colour
     /// pushed to each light, in [0, 1]. 1.0 disables the filter.

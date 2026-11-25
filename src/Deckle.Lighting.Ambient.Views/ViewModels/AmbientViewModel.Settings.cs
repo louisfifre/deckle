@@ -13,9 +13,7 @@ namespace Deckle.Lighting.Ambient.Views;
 // any card: the rail carries the module's icon (2026-10-14).
 //
 // The setters are the view model's own properties, so the composed cards keep the
-// contracts of AmbientViewModel exactly: a tuning edit reports itself to the preset
-// family and turns the selection to Custom, a preset pick goes through
-// AmbientSettingsService.Presets.Select.
+// contracts of AmbientViewModel exactly.
 public partial class AmbientViewModel
 {
     // State: the master switch.
@@ -71,13 +69,9 @@ public partial class AmbientViewModel
     // value the section is about, so it opens it: Louis, 2026-10-14, reversing
     // the "instrument last" order for this page), then the
     // brightness floor (its switch and its level, drawn on the curve as a guide
-    // while it is on), reaction speed, exposure, saturation. The preset fold
-    // that held them (Game / Vivid / Movie / Ambient / Custom in its header) is
-    // set aside with every preset: the family still runs underneath
-    // (AmbientSettingsService.Presets), so a hand edit still records Custom, but
-    // nothing on the page selects a preset any more. The change threshold, an
-    // engine optimisation nobody tunes, keeps its AmbientSettings default and is
-    // no longer exposed (triage of 2026-10-14).
+    // while it is on), reaction speed, exposure, saturation. The change
+    // threshold, an engine optimisation nobody tunes, is no longer exposed
+    // (triage of 2026-10-14).
     public IReadOnlyList<SettingDescriptor> TuningSettings =>
     [
         Setting.Curve(

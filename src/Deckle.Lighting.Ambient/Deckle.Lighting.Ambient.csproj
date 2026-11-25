@@ -5,7 +5,7 @@
 
   <!-- The ambient-lighting logic: the capture-to-lamp engine and its color
        pipeline, the zone sampler, the light placement, the Hue pairing
-       service, the ambient settings, presets and their file, and the
+       service, the ambient settings and their file, and the
        DeckleAmbient event source, the page's events included. No XAML, no
        UseWinUI and no project that holds XAML, so the engine and its tests
        never run the XAML compiler on its account, and every rule here is
@@ -33,8 +33,6 @@
          sets while its capture loop runs, for log admission. -->
     <ProjectReference Include="..\Deckle.Diagnostics.Logging\Deckle.Diagnostics.Logging.csproj" />
     <ProjectReference Include="..\Deckle.Lighting\Deckle.Lighting.csproj" />
-    <!-- The ambient presets ride the shared preset family model. -->
-    <ProjectReference Include="..\Deckle.Presets\Deckle.Presets.csproj" />
     <!-- The screen capture and the frame analysis the engine samples. -->
     <ProjectReference Include="..\Deckle.Vision\Deckle.Vision.csproj" />
   </ItemGroup>
