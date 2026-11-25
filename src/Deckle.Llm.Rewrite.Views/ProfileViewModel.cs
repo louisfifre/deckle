@@ -138,7 +138,7 @@ public partial class ProfileViewModel : ObservableObject
         foreach (ProfileUser user in ProfileUsers.Of(profile, settings))
         {
             if (user.Kind == ProfileUserKind.Dictation)
-                yield return Loc.Get("LlmProfile_UsedByDictation");
+                yield return Loc.GetFrom("Deckle.Llm.Rewrite.Views", "LlmProfile_UsedByDictation");
             else if (HotkeyChordText.Format(user.Chord) is { } chord)
                 yield return chord;
         }

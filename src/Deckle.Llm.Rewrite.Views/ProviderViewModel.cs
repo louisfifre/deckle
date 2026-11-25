@@ -80,7 +80,7 @@ public partial class ProviderViewModel : ObservableObject
             // card says so while it is on.
             if (UsedByParagraphCorrection())
             {
-                string also = Loc.Get("LlmProvider_AlsoUsedByParagraphCorrection");
+                string also = Loc.GetFrom("Deckle.Llm.Rewrite.Views", "LlmProvider_AlsoUsedByParagraphCorrection");
                 summary = summary.Length == 0 ? also : $"{summary}  ·  {also}";
             }
             return summary;
