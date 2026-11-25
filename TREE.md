@@ -3057,7 +3057,8 @@ _Generated from `git ls-files` — do not edit by hand._
 │   │   ├── TrackpadEnginePressDelayTests.cs
 │   │   ├── TrackpadObservabilityBugNotes.md
 │   │   ├── TrackpadObservabilityCollection.cs
-│   │   └── TrackpadSettingsTests.cs
+│   │   ├── TrackpadSettingsTests.cs
+│   │   └── WindowsGestureNeutralizerTests.cs
 │   ├── Deckle.Install.Tests/
 │   │   ├── Deckle.Install.Tests.csproj
 │   │   ├── FolderSafetyTests.cs
