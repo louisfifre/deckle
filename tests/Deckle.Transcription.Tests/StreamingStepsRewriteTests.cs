@@ -273,7 +273,5 @@ public sealed class StreamingStepsRewriteTests
         }
 
         public GenerationResult RewriteParagraph(string paragraph, CancellationToken cancellationToken) => default;
-
-        public GenerationResult RewriteSentence(string sentence, CancellationToken cancellationToken) => default;
     }
 }

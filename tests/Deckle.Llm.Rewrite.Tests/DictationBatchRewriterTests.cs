@@ -520,9 +520,6 @@ public sealed class DictationBatchRewriterTests
 
         public GenerationResult RewriteParagraph(string paragraph, CancellationToken cancellationToken)
             => default;
-
-        public GenerationResult RewriteSentence(string sentence, CancellationToken cancellationToken)
-            => default;
     }
 
     // Tells the two ways a batch can be sent apart, and can hold or fail the
@@ -554,9 +551,6 @@ public sealed class DictationBatchRewriterTests
 
         public GenerationResult RewriteParagraph(string paragraph, CancellationToken cancellationToken)
             => default;
-
-        public GenerationResult RewriteSentence(string sentence, CancellationToken cancellationToken)
-            => default;
     }
 
     private sealed class FakeRewriteService(Func<string, string?> rewrite, int delayMs = 0) : IRewriteService
@@ -573,9 +567,6 @@ public sealed class DictationBatchRewriterTests
         }
 
         public GenerationResult RewriteParagraph(string paragraph, CancellationToken cancellationToken)
-            => default;
-
-        public GenerationResult RewriteSentence(string sentence, CancellationToken cancellationToken)
             => default;
     }
 }

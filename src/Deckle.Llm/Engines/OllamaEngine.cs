@@ -44,8 +44,6 @@ public sealed partial class OllamaEngine : IGenerationEngine
     // CancellationToken is the only deadline.
     static readonly HttpClient _http = new() { Timeout = Timeout.InfiniteTimeSpan };
 
-    static readonly TimeSpan POLL_INTERVAL = TimeSpan.FromSeconds(60);
-
     static readonly JsonSerializerOptions _jsonOpts = new()
     {
         PropertyNamingPolicy = JsonNamingPolicy.SnakeCaseLower,
@@ -81,38 +79,7 @@ public sealed partial class OllamaEngine : IGenerationEngine
         string json = JsonSerializer.Serialize(body, _jsonOpts);
         using var content = new StringContent(json, Encoding.UTF8, "application/json");
 
-        // /api/ps exists only to enrich the admitted Transcription detail.
-        // Refuse the task itself when that detail is disabled: otherwise a
-        // logging toggle would still buy a worker, HTTP traffic and JSON
-        // parsing every minute while a rewrite is in flight.
-        CancellationTokenSource? pollDone = null;
-        Task? pollingTask = null;
-        if (IsProbeDetailEnabled())
-        {
-            var probeCts = new CancellationTokenSource();
-            pollDone = probeCts;
-            pollingTask = Task.Run(
-                () => PollOllamaWhileBusy(_endpoint, sw, probeCts.Token));
-        }
-
-        HttpResponseMessage response;
-        try
-        {
-            response = _http.PostAsync(generateUrl, content, cancellationToken).GetAwaiter().GetResult();
-        }
-        finally
-        {
-            if (pollDone is not null)
-            {
-                pollDone.Cancel();
-                // Per-tick failures are already in the admitted detail; what
-                // lands here escaped the probe's own catches (the timer, the
-                // URL), and the rewrite must not fail for its sake.
-                try { pollingTask!.GetAwaiter().GetResult(); }
-                catch (Exception ex) { DeckleLlmSource.Log.PsProbeFaulted(ex.GetType().Name, ex.Message); }
-                pollDone.Dispose();
-            }
-        }
+        HttpResponseMessage response = _http.PostAsync(generateUrl, content, cancellationToken).GetAwaiter().GetResult();
 
         using (response)
         {
@@ -146,103 +113,6 @@ public sealed partial class OllamaEngine : IGenerationEngine
                 PromptTokens: m.PromptTokens,
                 EvalTokens:   m.EvalTokens);
         }
-    }
-
-    /// <summary>
-    /// Admitted technical detail, not a visible incident: the terminal
-    /// RewriteTimeout / RewriteUnavailable events carry the human outcome.
-    /// </summary>
-    static async Task PollOllamaWhileBusy(string endpoint, System.Diagnostics.Stopwatch requestElapsed, CancellationToken ct)
-    {
-        string psUrl = NormalizePsUrl(endpoint);
-        using var timer = new PeriodicTimer(POLL_INTERVAL);
-        try
-        {
-            while (await timer.WaitForNextTickAsync(ct))
-            {
-                // Admission is live: if the user disables details during a
-                // long rewrite, stop before the next HTTP request.
-                if (!IsProbeDetailEnabled()) return;
-
-                try
-                {
-                    using var resp = await _http.GetAsync(psUrl, ct);
-                    if (!resp.IsSuccessStatusCode)
-                    {
-                        DeckleLlmSource.Log.PsProbeRejectedDetail((int)resp.StatusCode);
-                        continue;
-                    }
-
-                    string body = await resp.Content.ReadAsStringAsync(ct);
-                    using var doc = JsonDocument.Parse(body);
-                    if (!doc.RootElement.TryGetProperty("models", out var modelsArr) ||
-                        modelsArr.ValueKind != JsonValueKind.Array ||
-                        modelsArr.GetArrayLength() == 0)
-                    {
-                        DeckleLlmSource.Log.PsProbeEmpty(requestElapsed.ElapsedMilliseconds);
-                        continue;
-                    }
-
-                    var first = modelsArr[0];
-                    string name = first.TryGetProperty("name", out var nameProp)
-                        ? nameProp.GetString() ?? "?"
-                        : "?";
-                    long sizeVram = first.TryGetProperty("size_vram", out var vramProp) && vramProp.ValueKind == JsonValueKind.Number
-                        ? vramProp.GetInt64()
-                        : 0;
-                    double vramGb = sizeVram / 1e9;
-
-                    // `expires_at` is Ollama's keep_alive countdown for the
-                    // resident model, logged as unloads_in_s to keep it
-                    // distinct from the caller's own deadline (cap_s). 0 when
-                    // Ollama reports none or it has run out.
-                    double unloadsInS = 0;
-                    if (first.TryGetProperty("expires_at", out var exp) &&
-                        exp.ValueKind == JsonValueKind.String &&
-                        DateTime.TryParse(exp.GetString(), CultureInfo.InvariantCulture, DateTimeStyles.RoundtripKind, out var expAt))
-                    {
-                        var rem = expAt.ToUniversalTime() - DateTime.UtcNow;
-                        if (rem.TotalSeconds > 0)
-                            unloadsInS = rem.TotalSeconds;
-                    }
-
-                    DeckleLlmSource.Log.PsProbeBusyDetail(
-                        name, vramGb, unloadsInS,
-                        requestElapsed.ElapsedMilliseconds,
-                        GenerationDeadline.HardCap.TotalSeconds);
-                }
-                catch (OperationCanceledException) { throw; }
-                catch (Exception ex)
-                {
-                    DeckleLlmSource.Log.PsProbeErrorDetail(ex.GetType().Name, ex.Message);
-                }
-            }
-        }
-        catch (OperationCanceledException)
-        {
-            // Expected on every rewrite that outlives no tick or ends between
-            // two: Generate cancels pollDone as soon as the main request
-            // settles. Nothing was cancelled from the user's point of view, so
-            // nothing is logged; the rewrite milestones close the operation.
-        }
-    }
-
-    private static bool IsProbeDetailEnabled()
-        => OperationalLogAdmission.IsDetailEnabled(
-            OperationalLogActivity.Transcription,
-            DeckleLlmSource.Log,
-            EventLevel.Verbose,
-            (EventKeywords)Keywords.Heartbeat);
-
-    static string NormalizePsUrl(string endpoint)
-    {
-        if (string.IsNullOrWhiteSpace(endpoint)) return endpoint;
-        string trimmed = endpoint.TrimEnd('/');
-        if (trimmed.EndsWith("/api/generate", StringComparison.OrdinalIgnoreCase))
-            return trimmed[..^"/api/generate".Length] + "/api/ps";
-        if (trimmed.EndsWith("/api/chat", StringComparison.OrdinalIgnoreCase))
-            return trimmed[..^"/api/chat".Length] + "/api/ps";
-        return trimmed + "/api/ps";
     }
 
     /// <summary>

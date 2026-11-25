@@ -31,7 +31,6 @@ public interface IRewriteService
     GenerationResult RewriteBatch(string text, RewriteProfile profile) => Rewrite(text, profile);
 
     GenerationResult RewriteParagraph(string paragraph, CancellationToken cancellationToken);
-    GenerationResult RewriteSentence(string sentence, CancellationToken cancellationToken);
 }
 
 public class RewriteService : IRewriteService
@@ -76,7 +75,6 @@ public class RewriteService : IRewriteService
     // The caller word every rewrite milestone carries.
     const string TranscriptCaller = "transcript";
     const string ParagraphCaller  = "paragraph";
-    const string SentenceCaller   = "sentence";
 
     // The protocol behind a provider: a provider added in Settings carries a
     // generated id that says nothing on its own.
@@ -101,7 +99,7 @@ public class RewriteService : IRewriteService
 
     // ── Interactive incident ────────────────────────────────────────────
     //
-    // Paragraph and sentence rewrites run on every pause in typing. When the
+    // The paragraph rewrite runs on every pause in typing. When the
     // server is down each one would fail, and one Warning per paragraph would
     // bury the log under a single cause. So the first failure (or
     // unresolved provider) opens one incident with a Warning, the repeats
@@ -241,20 +239,6 @@ public class RewriteService : IRewriteService
             ParagraphRewrite.Label,
             ParagraphRewrite.Model,
             () => ParagraphRewrite.BuildRequest(paragraph, ParagraphRewrite.Model),
-            cancellationToken);
-
-    /// <summary>Generates one minimal whole-sentence correction proposal. The
-    /// result is untrusted model output: callers must gate and verify it before
-    /// treating any edit as a Correction.</summary>
-    public GenerationResult RewriteSentence(
-        string sentence,
-        CancellationToken cancellationToken)
-        => RewriteInteractive(
-            SentenceCaller,
-            SentenceRewrite.ProviderId,
-            SentenceRewrite.Label,
-            SentenceRewrite.Model,
-            () => SentenceRewrite.BuildRequest(sentence),
             cancellationToken);
 
     // The shared body of the interactive rewrites. Failures stay silent at
