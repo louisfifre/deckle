@@ -2549,6 +2549,7 @@ _Generated from `git ls-files` — do not edit by hand._
 │   │   ├── AnytypeUtilityToolCatalogTests.cs
 │   │   ├── AssemblyInfo.cs
 │   │   ├── Deckle.Anytype.Mcp.Tests.csproj
+│   │   ├── FakeAnytypeSpace.cs
 │   │   ├── FakeSecretVault.cs
 │   │   ├── ManagementToolCatalogTests.cs
 │   │   ├── McpClientTokensBugNotes.md
@@ -2565,7 +2566,8 @@ _Generated from `git ls-files` — do not edit by hand._
 │   │   ├── ProviderKeywordsTests.cs
 │   │   ├── SchemaAdminToolCatalogTests.cs
 │   │   ├── SpacePlanToolCatalogTests.cs
-│   │   └── ToolCatalogTests.cs
+│   │   ├── ToolCatalogTests.cs
+│   │   └── ToolCatalogWiringTests.cs
 │   ├── Deckle.Anytype.Tests/
 │   │   ├── Fixtures/
 │   │   │   └── Experiences/
