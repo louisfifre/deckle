@@ -82,6 +82,29 @@
     <value>Autocorrect</value>
   </data>
 
+  <!-- Paragraph correction: the switch lives with Autocorrect, which decides
+       where a paragraph is offered a correction; the Rewrite module does the
+       work on the local model. The bar names what is missing and leads to the
+       Rewriting page, where the Ollama provider is set up. -->
+  <data name="AutocorrectPageParagraphSection.Title" xml:space="preserve">
+    <value>Paragraph correction</value>
+  </data>
+  <data name="AutocorrectPage_ParagraphCard.Header" xml:space="preserve">
+    <value>Offer to correct a paragraph</value>
+  </data>
+  <data name="AutocorrectPage_ParagraphCard.Description" xml:space="preserve">
+    <value>Press Shift+Enter after a paragraph. Runs on Ollama, on this PC.</value>
+  </data>
+  <data name="AutocorrectPage_ParagraphBar.Title" xml:space="preserve">
+    <value>Paragraph correction is off</value>
+  </data>
+  <data name="AutocorrectPage_ParagraphBar_Message_Format" xml:space="preserve">
+    <value>It needs Ollama on this PC with {0}.</value>
+  </data>
+  <data name="AutocorrectPage_ParagraphBarSetup.Content" xml:space="preserve">
+    <value>Set up Ollama in Rewriting</value>
+  </data>
+
   <!-- Excluded words — the settings mirror of the exclusion register. It sits on
        this page rather than on a child because an exclusion holds against every
        domain and every app at once. The caption states both halves of what an
@@ -104,8 +127,11 @@
   <data name="AutocorrectPage_ExcludeButton.Content" xml:space="preserve">
     <value>Exclude</value>
   </data>
-  <data name="AutocorrectPage_DeclaredWordsNote.Text" xml:space="preserve">
-    <value>Words to keep as you write them: Transcription &gt; Lexicon.</value>
+  <data name="AutocorrectPage_DeclaredWordsCard.Header" xml:space="preserve">
+    <value>Your words</value>
+  </data>
+  <data name="AutocorrectPage_DeclaredWordsCard.Description" xml:space="preserve">
+    <value>Words to keep as you write them, in Dictation &#8250; Lexicon.</value>
   </data>
   <data name="AutocorrectPage_IncludeButton_NameFormat" xml:space="preserve">
     <value>Put back {0}</value>

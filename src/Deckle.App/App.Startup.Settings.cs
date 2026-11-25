@@ -179,6 +179,22 @@ public partial class App
             // resolves page coordinates per registration, so a child folded into
             // its parent's call would send every hit to the parent's page.
             Autocorrect.Views.AutocorrectSettingsModule.TranscriptionLexiconPresent = context.TranscriptionPresent;
+            // Paragraph correction runs in the Rewrite module, which the page does
+            // not reference: it is told whether that module is there, what the
+            // bar needs to say, and where "Set up Ollama" leads. The monitor is
+            // the one answer the host acts on.
+            Autocorrect.Views.AutocorrectSettingsModule.ParagraphCorrectionPresent = context.RewritePresent;
+            if (context.RewritePresent)
+            {
+                Autocorrect.Views.AutocorrectSettingsModule.ParagraphCorrectionNeedsSetup = () =>
+                    Llm.Rewrite.ParagraphRewriteNotices.NeedsSetup(
+                        Llm.Rewrite.ParagraphRewriteAvailabilityMonitor.Instance.Current);
+                Autocorrect.Views.AutocorrectSettingsModule.ParagraphCorrectionModel = Llm.Rewrite.ParagraphRewrite.Model;
+                Autocorrect.Views.AutocorrectSettingsModule.ParagraphCorrectionSetupPageTag =
+                    Llm.Rewrite.Views.LlmSettingsModule.PageTag;
+                Llm.Rewrite.ParagraphRewriteAvailabilityMonitor.Instance.Changed +=
+                    Autocorrect.Views.AutocorrectSettingsModule.RaiseParagraphCorrectionSetupChanged;
+            }
             RegisterSettingsModule(
                 Autocorrect.Views.AutocorrectSettingsModule.Describe(order: 300),
                 Autocorrect.Views.SettingsSearch.Entries);

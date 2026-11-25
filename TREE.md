@@ -812,6 +812,7 @@ _Generated from `git ls-files` — do not edit by hand._
 │   │   ├── Deckle.Autocorrect.Views.csproj
 │   │   ├── LexicalDomainsPage.xaml
 │   │   ├── LexicalDomainsPage.xaml.cs
+│   │   ├── ParagraphCorrectionSection.cs
 │   │   └── SettingsSearch.cs
 │   ├── Deckle.Catalog/
 │   │   ├── Composer/
@@ -2778,6 +2779,9 @@ _Generated from `git ls-files` — do not edit by hand._
 │   │   ├── SurfaceProfileStoreTests.cs
 │   │   ├── TypedWordTrackerTests.cs
 │   │   └── WordBoundariesTests.cs
+│   ├── Deckle.Autocorrect.Views.Tests/
+│   │   ├── Deckle.Autocorrect.Views.Tests.csproj
+│   │   └── ParagraphCorrectionPageTests.cs
 │   ├── Deckle.Catalog.Tests/
 │   │   ├── CubicBezierTests.cs
 │   │   ├── CurveEndpointLimitsTests.cs

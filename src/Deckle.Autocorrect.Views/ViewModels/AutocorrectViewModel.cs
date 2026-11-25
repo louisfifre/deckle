@@ -17,6 +17,11 @@ public sealed partial class AutocorrectViewModel : ObservableObject
     [ObservableProperty]
     public partial bool Enabled { get; set; }
 
+    // "Offer to correct a paragraph": the correction runs in the Rewrite module,
+    // and this switch, kept with the Autocorrect settings, says whether it acts.
+    [ObservableProperty]
+    public partial bool ParagraphCorrection { get; set; }
+
     // Words the user pulled out of correction's reach, whatever lexicon carried
     // them.
     public ObservableCollection<AutocorrectExcludedWordRow> ExcludedWords { get; } = new();
@@ -39,6 +44,7 @@ public sealed partial class AutocorrectViewModel : ObservableObject
         {
             var settings = AutocorrectSettingsService.Instance.Current;
             Enabled = settings.Enabled;
+            ParagraphCorrection = settings.ParagraphCorrection;
 
             ExcludedWords.Clear();
             foreach (string word in settings.ExcludedWords)
@@ -54,6 +60,12 @@ public sealed partial class AutocorrectViewModel : ObservableObject
     {
         if (_isSyncing) return;
         AutocorrectSettingsService.Instance.SetEnabled(value);
+    }
+
+    partial void OnParagraphCorrectionChanged(bool value)
+    {
+        if (_isSyncing) return;
+        AutocorrectSettingsService.Instance.SetParagraphCorrection(value);
     }
 
     // The service owns the normalization and answers with the form it

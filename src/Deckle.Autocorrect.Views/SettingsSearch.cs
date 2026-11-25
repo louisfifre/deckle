@@ -17,7 +17,41 @@ namespace Deckle.Autocorrect.Views;
 public static class SettingsSearch
 {
     // ── AutocorrectPage ──────────────────────────────────────────────────────
-    public static IReadOnlyList<SettingSearchEntry> Entries { get; } =
+    //
+    // A getter, not a list built once: two cards exist only when the App has
+    // said the module they lead to is present (the flags of
+    // AutocorrectSettingsModule), and the App sets them before it registers.
+    public static IReadOnlyList<SettingSearchEntry> Entries
+    {
+        get
+        {
+            var entries = new List<SettingSearchEntry>(PageEntries);
+            if (AutocorrectSettingsModule.ParagraphCorrectionPresent)
+                entries.Insert(1, ParagraphEntry);
+            if (AutocorrectSettingsModule.TranscriptionLexiconPresent)
+                entries.Add(YourWordsEntry);
+            return entries;
+        }
+    }
+
+    // The two bespoke labels are supplied inline, like the exclusion register's:
+    // the card is a hand-placed one whose hit must read the same without the
+    // page ever being composed.
+    private static readonly SettingSearchEntry ParagraphEntry = new()
+    {
+        LabelKey = "AutocorrectPage_ParagraphCard",
+        LiteralLabel = "Offer to correct a paragraph",
+        Keywords = ["paragraph", "shift+enter", "ollama", "correct", "rewrite", "local"],
+    };
+
+    private static readonly SettingSearchEntry YourWordsEntry = new()
+    {
+        LabelKey = "AutocorrectPage_DeclaredWordsCard",
+        LiteralLabel = "Your words",
+        Keywords = ["lexicon", "dictation", "keep", "vocabulary", "declared"],
+    };
+
+    private static readonly SettingSearchEntry[] PageEntries =
     [
         new SettingSearchEntry
         {

@@ -1,4 +1,5 @@
-﻿using Deckle.Catalog;
+﻿using System;
+using Deckle.Catalog;
 using Deckle.Localization;
 
 namespace Deckle.Autocorrect.Views;
@@ -27,11 +28,43 @@ public static class AutocorrectSettingsModule
 
     private const string ModuleId = "autocorrect";
 
+    // The Lexicon page of the transcription module (the Dictation node), where
+    // the person's words are kept. A literal, as the page tag is the same
+    // Type.GetType string its rail entry carries: this module does not
+    // reference that one.
+    public const string TranscriptionLexiconPageTag =
+        "Deckle.Transcription.Views.LexiconPage, Deckle.Transcription.Views";
+
     // Whether the transcription module, which holds the person's lexicon, is
-    // present, so the Excluded words section can point to it. That module is
-    // one this one does not reference; the App, which knows both, sets it.
-    // Unset, the page says nothing about the lexicon.
+    // present, so the page can lead to it from the "Your words" card. That
+    // module is one this one does not reference; the App, which knows both,
+    // sets it. Unset, the page says nothing about the lexicon.
     public static bool TranscriptionLexiconPresent { get; set; }
+
+    // ── Paragraph correction ─────────────────────────────────────────────────
+    //
+    // The correction itself runs in the Rewrite module, which this one does not
+    // reference; the App, which knows both, sets what the page needs. Unset (no
+    // Rewrite module), the page has no Paragraph correction section.
+    public static bool ParagraphCorrectionPresent { get; set; }
+
+    // Whether the local model that paragraph correction needs is missing, so
+    // the section says what to set up. Read when the page shows and again
+    // after each ParagraphCorrectionSetupChanged.
+    public static Func<bool>? ParagraphCorrectionNeedsSetup { get; set; }
+
+    // The model the bar names, taken from the Rewrite module's pinned model.
+    public static string ParagraphCorrectionModel { get; set; } = "";
+
+    // Where "Set up Ollama in Rewriting" leads: the Rewriting page's tag.
+    public static string? ParagraphCorrectionSetupPageTag { get; set; }
+
+    // Raised by the App when the answer of ParagraphCorrectionNeedsSetup may
+    // have changed. On any thread: the page marshals it.
+    public static event Action? ParagraphCorrectionSetupChanged;
+
+    public static void RaiseParagraphCorrectionSetupChanged() =>
+        ParagraphCorrectionSetupChanged?.Invoke();
 
     public static SettingsModuleDescriptor Describe(int order) => new()
     {

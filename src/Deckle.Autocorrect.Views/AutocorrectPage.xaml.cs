@@ -1,6 +1,7 @@
 using System.Collections.Specialized;
 using System.ComponentModel;
 using Deckle.Catalog;
+using Deckle.Localization;
 using Microsoft.UI.Xaml;
 using Microsoft.UI.Xaml.Controls;
 using Microsoft.UI.Xaml.Input;
@@ -19,6 +20,7 @@ public sealed partial class AutocorrectPage : Page
     public AutocorrectViewModel ViewModel { get; } = new();
 
     private SettingsComposer? _settingsComposer;
+    private SettingsComposer? _paragraphComposer;
 
     public AutocorrectPage()
     {
@@ -38,6 +40,9 @@ public sealed partial class AutocorrectPage : Page
     {
         _settingsComposer = new SettingsComposer(MasterHost, ViewModel);
         _settingsComposer.Compose(ViewModel.AutocorrectSettingsManifest);
+
+        _paragraphComposer = new SettingsComposer(ParagraphHost, ViewModel);
+        _paragraphComposer.Compose(ViewModel.ParagraphCorrectionManifest);
     }
 
     protected override void OnNavigatedTo(NavigationEventArgs e)
@@ -47,24 +52,69 @@ public sealed partial class AutocorrectPage : Page
         // page that sat cached reflects the live model.
         ViewModel.Load();
         RefreshExclusionsVisibility();
-        DeclaredWordsNote.Visibility = AutocorrectSettingsModule.TranscriptionLexiconPresent
+        DeclaredWordsCard.Visibility = AutocorrectSettingsModule.TranscriptionLexiconPresent
             ? Visibility.Visible
             : Visibility.Collapsed;
+
+        AutocorrectSettingsModule.ParagraphCorrectionSetupChanged -= OnParagraphSetupChanged;
+        AutocorrectSettingsModule.ParagraphCorrectionSetupChanged += OnParagraphSetupChanged;
+        RefreshParagraphSection();
+    }
+
+    protected override void OnNavigatedFrom(NavigationEventArgs e)
+    {
+        base.OnNavigatedFrom(e);
+        AutocorrectSettingsModule.ParagraphCorrectionSetupChanged -= OnParagraphSetupChanged;
+    }
+
+    private void DeclaredWords_Click(object sender, RoutedEventArgs e) =>
+        SettingsNavigation.GoToPage?.Invoke(AutocorrectSettingsModule.TranscriptionLexiconPageTag);
+
+    private void ParagraphSetup_Click(object sender, RoutedEventArgs e)
+    {
+        if (AutocorrectSettingsModule.ParagraphCorrectionSetupPageTag is { } tag)
+            SettingsNavigation.GoToPage?.Invoke(tag);
+    }
+
+    // Raised on the probing thread.
+    private void OnParagraphSetupChanged()
+    {
+        if (DispatcherQueue.HasThreadAccess) RefreshParagraphSection();
+        else DispatcherQueue.TryEnqueue(RefreshParagraphSection);
+    }
+
+    private void RefreshParagraphSection()
+    {
+        ParagraphSection.Visibility = ParagraphCorrectionSection.IsShown(
+            AutocorrectSettingsModule.ParagraphCorrectionPresent, ViewModel.Enabled)
+            ? Visibility.Visible
+            : Visibility.Collapsed;
+
+        bool needsSetup = AutocorrectSettingsModule.ParagraphCorrectionNeedsSetup?.Invoke() ?? false;
+        ParagraphBar.Message = string.Format(
+            Loc.GetFrom(AutocorrectSettingsModule.ResourceLibrary, "AutocorrectPage_ParagraphBar_Message_Format"),
+            AutocorrectSettingsModule.ParagraphCorrectionModel);
+        ParagraphBar.IsOpen = ParagraphCorrectionSection.BarIsShown(ViewModel.ParagraphCorrection, needsSetup);
     }
 
     // ── No whole-page "Reset all" ─────────────────────────────────────────────
     //
-    // The only composed setting is the master switch, and a reset never turns a
-    // feature on or off (2026-11-07); the excluded-words register is a list the
-    // user authors, not a setting with a default. Nothing is left to reset, so
-    // the header carries no Reset all button.
+    // The composed settings are the master switch and the paragraph switch, each
+    // with its own reset, and a reset never turns a feature on or off
+    // (2026-11-07); the excluded-words register is a list the user authors, not a
+    // setting with a default. The header carries no Reset all button.
     private void OnExclusionsChanged(object? sender, NotifyCollectionChangedEventArgs e)
         => RefreshExclusionsVisibility();
 
     private void OnViewModelChanged(object? sender, PropertyChangedEventArgs e)
     {
         if (e.PropertyName is nameof(AutocorrectViewModel.Enabled))
+        {
             RefreshExclusionsVisibility();
+            RefreshParagraphSection();
+        }
+        else if (e.PropertyName is nameof(AutocorrectViewModel.ParagraphCorrection))
+            RefreshParagraphSection();
     }
 
     // Enter excludes what is in the box — the gesture the keyboard expects from

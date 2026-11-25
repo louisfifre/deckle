@@ -24,6 +24,32 @@
                 <StackPanel x:Name="MasterHost"
                             Spacing="{StaticResource SettingsCardSpacing}" />
 
+                <!-- ── Paragraph correction ─────────────────────────────────── -->
+                <!-- Autocorrect decides when a paragraph is offered a correction;
+                     the Rewrite module does the work. Present only with that
+                     module and, like the exclusions, only while the master is on.
+                     The bar leads the section: it is what the card below needs. -->
+                <catalog:SettingsSection x:Name="ParagraphSection"
+                                         x:Uid="AutocorrectPageParagraphSection"
+                                         Visibility="Collapsed">
+                    <StackPanel Spacing="{StaticResource SettingsCardSpacing}">
+                        <InfoBar x:Name="ParagraphBar"
+                                 x:Uid="AutocorrectPage_ParagraphBar"
+                                 Severity="Informational"
+                                 IsOpen="False"
+                                 IsClosable="False"
+                                 catalog:InfoBarLayout.CollapseWhenClosed="True">
+                            <InfoBar.ActionButton>
+                                <Button x:Uid="AutocorrectPage_ParagraphBarSetup"
+                                        Click="ParagraphSetup_Click" />
+                            </InfoBar.ActionButton>
+                        </InfoBar>
+
+                        <StackPanel x:Name="ParagraphHost"
+                                    Spacing="{StaticResource SettingsCardSpacing}" />
+                    </StackPanel>
+                </catalog:SettingsSection>
+
                 <!-- The two child pages (Lexical domains, Apps enrolled) are
                      reached from the rail, which expands this module's node;
                      the drill-in cards that doubled them are gone (triage of
@@ -41,16 +67,16 @@
                                          Tag="AutocorrectPage_Section_Exclusions">
                     <StackPanel Spacing="{StaticResource SettingsCardSpacing}">
 
-                        <!-- Where the words to keep live: Transcription > Lexicon,
-                             shown only when that module is present
-                             (AutocorrectSettingsModule.TranscriptionLexiconPresent). -->
-                        <TextBlock x:Name="DeclaredWordsNote"
-                                   x:Uid="AutocorrectPage_DeclaredWordsNote"
-                                   Style="{StaticResource CaptionTextBlockStyle}"
-                                   Margin="1,0,0,0"
-                                   Foreground="{ThemeResource TextFillColorSecondaryBrush}"
-                                   TextWrapping="Wrap"
-                                   Visibility="Collapsed" />
+                        <!-- Where the words to keep live: Dictation > Lexicon, a
+                             clickable card shown only when that module is present
+                             (AutocorrectSettingsModule.TranscriptionLexiconPresent).
+                             Tag is the search index's scroll-to handle. -->
+                        <controls:SettingsCard x:Name="DeclaredWordsCard"
+                                               x:Uid="AutocorrectPage_DeclaredWordsCard"
+                                               Tag="AutocorrectPage_DeclaredWordsCard"
+                                               IsClickEnabled="True"
+                                               Visibility="Collapsed"
+                                               Click="DeclaredWords_Click" />
 
                         <controls:SettingsCard x:Uid="AutocorrectPage_ExcludeCard">
                             <StackPanel Orientation="Horizontal"
