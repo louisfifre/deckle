@@ -271,9 +271,7 @@ public sealed partial class TranscriptionEngine : IDisposable
     //                           CaptureResult.DrainDuration.
     //   _stopToPipelineSw     — RequestToggle's Stop branch → the backend
     //                           handoff (monolithic) or the end of the
-    //                           consumer drain (streaming). It includes the
-    //                           capture tail kept after the press
-    //                           (CAPTURE_TAIL_AFTER_STOP_MS).
+    //                           consumer drain (streaming).
     private System.Diagnostics.Stopwatch? _hotkeySw;
     private System.TimeSpan _recordDrainDuration;
     private System.Diagnostics.Stopwatch? _stopToPipelineSw;
@@ -322,9 +320,6 @@ public sealed partial class TranscriptionEngine : IDisposable
     // session.
     private readonly VadService _vadService;
 
-    // CAPTURE_TAIL_AFTER_STOP_MS in production; tests shorten it.
-    private readonly TimeSpan _captureTail;
-
     public TranscriptionEngine(
         ITranscriptionEngineHost host,
         IAsrBackend backend,
@@ -349,8 +344,7 @@ public sealed partial class TranscriptionEngine : IDisposable
         IClipboardWriter clipboard,
         IRewriteService? rewrite = null,
         DictationRecoveryStore? recovery = null,
-        TakeAudioRecoveryStore? takeAudio = null,
-        TimeSpan? captureTail = null)
+        TakeAudioRecoveryStore? takeAudio = null)
     {
         ArgumentNullException.ThrowIfNull(host);
         ArgumentNullException.ThrowIfNull(backend);
@@ -363,7 +357,6 @@ public sealed partial class TranscriptionEngine : IDisposable
         _clipboard = clipboard;
         _recovery = recovery;
         _takeAudio = takeAudio;
-        _captureTail = captureTail ?? TimeSpan.FromMilliseconds(CAPTURE_TAIL_AFTER_STOP_MS);
         _vadService = new VadService(_host.ResolveModelsDirectory);
 
         _rewrite = rewrite ?? new RewriteService();

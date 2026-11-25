@@ -63,8 +63,8 @@ public partial class App
 
     // How long a quit waits for the work in flight before it gives up on it.
     //
-    // The wait covers what a dictation does after the stop: the 0.4 s capture
-    // tail, the transcription of the utterances still queued, then the optional
+    // The wait covers what a dictation does after the stop: the transcription
+    // of the utterances still queued, then the optional
     // LLM rewrite, which on a cold start also loads the model. That is a few
     // seconds on a short take and tens of seconds on a long one with a rewrite.
     // 60 s leaves room for the long case. Beyond it, the person is more likely

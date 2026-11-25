@@ -3488,7 +3488,6 @@ _Generated from `git ls-files` — do not edit by hand._
 │   │   ├── DeckleLlmSourceTests.cs
 │   │   ├── DeckleWhispSourceEventIdTests.cs
 │   │   ├── DeckleWhispSourceTests.cs
-│   │   ├── DictationEndCaptureBugNotes.md
 │   │   ├── DictationRecoveryBugNotes.md
 │   │   ├── DictationRecoveryStoreTests.cs
 │   │   ├── DictationTableTemplateTests.cs
