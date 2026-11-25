@@ -20,10 +20,11 @@ public static class ParagraphRewrite
 {
     public const string Label = "paragraph";
 
-    /// <summary>Typed text in any enrolled app stays on the local provider,
-    /// whatever the dictation profiles point at: it is private by nature and
-    /// the offer deadline leaves no room for a network round trip. The id is
-    /// the one the default settings give the Ollama provider.</summary>
+    /// <summary>Typed text in any enrolled app goes to the Ollama provider,
+    /// whatever the dictation profiles point at, at the endpoint set for it
+    /// on the Rewriting page: this machine by default, another one if the
+    /// person pointed it there. The id is the one the default settings give
+    /// the Ollama provider.</summary>
     public const string ProviderId = "ollama";
 
     /// <summary>The capacity floor for the interactive retaille. The 3B
@@ -31,19 +32,10 @@ public static class ParagraphRewrite
     /// offers for this surface.</summary>
     public const string Model = "ministral-3:14b";
 
-    /// <summary>The interactive offer budget. A late proposal is no longer
-    /// useful once typing has resumed, so it is cancelled rather than surfaced.</summary>
-    public static readonly TimeSpan Deadline = TimeSpan.FromSeconds(3);
-
     // A paragraph is a few hundred tokens at most; 4 K of context covers the
     // prompt without inflating the KV cache the way the transcription
     // profiles must.
     const int NumCtx = 4096;
-
-    // Residency hint: long enough to cover a typing flow where paragraphs
-    // close every minute or two, short enough that the model never squats
-    // the VRAM.
-    const string KeepAlive = "2m";
 
     // The contract is carried by the six entrée/sortie pairs, each pinning a
     // failure mode: meta-capture (a paragraph that TALKS about rules treated
@@ -77,7 +69,7 @@ public static class ParagraphRewrite
         Sortie : Chaque edit doit être expliqué par une règle, sinon on rejette tout le prompt.
         """;
 
-    /// <summary>The caller owns the deadline and must pass the result through
+    /// <summary>The caller owns the cancellation and must pass the result through
     /// <see cref="RewriteDiffGate"/> before any offer.</summary>
     public static GenerationRequest BuildRequest(string paragraph, string model) => new(
         Model:        model,
@@ -85,6 +77,5 @@ public static class ParagraphRewrite
         UserText:     paragraph,
         Label:        Label,
         Temperature:  0,
-        NumCtx:       NumCtx,
-        KeepAlive:    KeepAlive);
+        NumCtx:       NumCtx);
 }
