@@ -5,9 +5,10 @@
     Regenerate the small "Development pulse" section in README.md from the
     local Git history. The section is bounded by invisible HTML comments so
     the visible README stays clean while automation has a stable replacement
-    target. It also draws one small chart, commits per week over the last 26
-    weeks, as two SVG files under docs/media (a light and a dark one, which
-    the section shows through a picture element). The publication script runs
+    target. It also draws one small chart, the 7-day rolling mean of commits per
+    day over the last 26 weeks as a smooth curve, as two SVG files under
+    docs/media (a light and a dark one, which the section shows through a
+    picture element and which stretch to the README column). The publication script runs
     this one after a release; it never pushes.
 .NOTES
     section: Project
@@ -39,7 +40,7 @@ $Workflow = 'Update README pulse'
 $RepoRoot = $null
 $CommitCreated = $false
 $CommitSubject = 'docs(readme): refresh development pulse'
-$ChartWeeks = 26
+$ChartDays = 182
 $ChartFiles = [ordered]@{
     light = 'docs/media/pulse-commits-light.svg'
     dark  = 'docs/media/pulse-commits-dark.svg'
@@ -175,24 +176,38 @@ foreach ($path in (Invoke-Git ls-files)) {
 }
 Write-WorkflowMessage -Output $WorkflowOutput -Message ("{0} tracked text files / {1} current lines" -f (Format-Count $trackedTextFiles), (Format-Count $trackedTextLines))
 
-# One bar per week, Monday to Sunday, the last bar being the week that holds
-# today. The accent is the logo's rest-gradient violet (logo/palettes.md):
-# #6366FF on a light page, #8B5CFF on a dark one. The other marks are that
-# accent thinned and GitHub's own muted greys. No script, no style block, no
-# font file: system fonts only.
-function Get-WeeklyCommits {
-    param([string[]]$CommitDates, [int]$Weeks)
+# One point per day over the last 26 weeks (182 days, the last one being
+# today), drawn as the 7-day rolling mean of commits per day: a smooth line
+# with a soft area under it. The accent is the logo's rest-gradient violet
+# (logo/palettes.md): #6366FF on a light page, #8B5CFF on a dark one. The
+# drawing is an SVG because a README can only show images; it has a viewBox and
+# no width or height so that it fills the README column. No script, no style
+# block, no font file: system fonts only.
+#
+# The height is a square-root scale: one very busy stretch would otherwise
+# flatten every other week to a line near the floor. Nothing is capped or
+# hidden; the curve keeps its order and the peak keeps the full height.
+function Get-DailyMeans {
+    param([string[]]$CommitDates, [int]$Days, [int]$Window)
 
     $today = (Get-Date).Date
-    $lastMonday = $today.AddDays(-(([int]$today.DayOfWeek + 6) % 7))
-    $firstMonday = $lastMonday.AddDays(-7 * ($Weeks - 1))
-    $counts = [int[]]::new($Weeks)
+    $first = $today.AddDays(-($Days - 1))
+    $pad = $Window - 1
+    $daily = [int[]]::new($Days + $pad)
     foreach ($text in $CommitDates) {
         $day = [datetime]::ParseExact($text, 'yyyy-MM-dd', $Culture)
-        $index = [int][math]::Floor(($day - $firstMonday).TotalDays / 7)
-        if ($index -ge 0 -and $index -lt $Weeks) { $counts[$index]++ }
+        $index = [int][math]::Floor(($day - $first).TotalDays) + $pad
+        if ($index -ge 0 -and $index -lt $daily.Count) { $daily[$index]++ }
     }
-    return [pscustomobject]@{ First = $firstMonday; Counts = $counts }
+    $means = [double[]]::new($Days)
+    $total = 0
+    foreach ($i in 0..($Days - 1)) {
+        $sum = 0
+        foreach ($k in 0..($Window - 1)) { $sum += $daily[$i + $k] }
+        $means[$i] = $sum / $Window
+        $total += $daily[$i + $pad]
+    }
+    return [pscustomobject]@{ First = $first; Means = $means; Total = $total }
 }
 
 function Format-Coordinate {
@@ -200,80 +215,107 @@ function Format-Coordinate {
     return $Value.ToString('0.##', $Culture)
 }
 
+# Catmull-Rom through the points, written as cubic Beziers. Control points
+# stay between the top and the baseline so the curve never leaves the chart.
+function ConvertTo-SmoothPath {
+    param([double[]]$X, [double[]]$Y, [double]$Top, [double]$Bottom)
+
+    $n = $X.Count
+    $parts = [System.Collections.Generic.List[string]]::new()
+    $parts.Add(('M{0} {1}' -f (Format-Coordinate $X[0]), (Format-Coordinate $Y[0])))
+    foreach ($i in 0..($n - 2)) {
+        $p0 = [math]::Max(0, $i - 1); $p3 = [math]::Min($n - 1, $i + 2)
+        $c1x = $X[$i] + ($X[$i + 1] - $X[$p0]) / 6
+        $c1y = [math]::Min($Bottom, [math]::Max($Top, $Y[$i] + ($Y[$i + 1] - $Y[$p0]) / 6))
+        $c2x = $X[$i + 1] - ($X[$p3] - $X[$i]) / 6
+        $c2y = [math]::Min($Bottom, [math]::Max($Top, $Y[$i + 1] - ($Y[$p3] - $Y[$i]) / 6))
+        $parts.Add(('C{0} {1} {2} {3} {4} {5}' -f (Format-Coordinate $c1x), (Format-Coordinate $c1y), (Format-Coordinate $c2x), (Format-Coordinate $c2y), (Format-Coordinate $X[$i + 1]), (Format-Coordinate $Y[$i + 1])))
+    }
+    return ($parts -join ' ')
+}
+
 function New-PulseChartSvg {
     param(
-        [Parameter(Mandatory)][pscustomobject]$Weekly,
+        [Parameter(Mandatory)][pscustomobject]$Daily,
         [Parameter(Mandatory)][ValidateSet('light', 'dark')][string]$Theme
     )
 
     $accent = if ($Theme -eq 'dark') { '#8B5CFF' } else { '#6366FF' }
     $muted  = if ($Theme -eq 'dark') { '#9198A1' } else { '#59636E' }
-    $rule   = if ($Theme -eq 'dark') { '#3D444D' } else { '#D1D9E0' }
+    $halo   = if ($Theme -eq 'dark') { '#0D1117' } else { '#FFFFFF' }
 
-    $counts = $Weekly.Counts
-    $weeks = $counts.Count
-    $peak = [int]($counts | Measure-Object -Maximum).Maximum
-    $peakIndex = [array]::IndexOf($counts, $peak)
-    $total = [int]($counts | Measure-Object -Sum).Sum
+    $means = $Daily.Means
+    $days = $means.Count
+    $peak = [double]($means | Measure-Object -Maximum).Maximum
+    $peakIndex = [array]::IndexOf($means, $peak)
 
-    $width = 720; $height = 120
-    $left = 8.0; $right = 712.0
-    $baseline = 86.0; $tallest = 56.0
-    $slot = ($right - $left) / $weeks
-    $barWidth = 8.0
-    $firstLabel = $Weekly.First.ToString('d MMM yyyy', $Culture)
-    $lastLabel  = $Weekly.First.AddDays(7 * ($weeks - 1)).ToString('d MMM yyyy', $Culture)
-    $peakWeek   = $Weekly.First.AddDays(7 * $peakIndex).ToString('d MMM', $Culture)
-
-    $bars = foreach ($i in 0..($weeks - 1)) {
-        $count = $counts[$i]
-        $barHeight = if ($count -gt 0 -and $peak -gt 0) { [math]::Max(3.0, $tallest * $count / $peak) } else { 2.0 }
-        $x = $left + $slot * $i + ($slot - $barWidth) / 2
-        $isPeak = ($peak -gt 0 -and $i -eq $peakIndex)
-        $opacity = if ($isPeak) { '1' } elseif ($count -gt 0) { '0.45' } else { '0.18' }
-        '  <rect x="{0}" y="{1}" width="{2}" height="{3}" rx="2" fill="{4}" fill-opacity="{5}"/>' -f `
-            (Format-Coordinate $x), (Format-Coordinate ($baseline - $barHeight)), (Format-Coordinate $barWidth), (Format-Coordinate $barHeight), $accent, $opacity
+    # About 8:1. The labels are large for the box so that they stay readable
+    # when the README scales it down to a phone-sized column.
+    $width = 800; $height = 100
+    $left = 14.0; $right = 786.0
+    $top = 32.0; $baseline = 72.0
+    $fontSize = 19
+    $xs = [double[]]::new($days); $ys = [double[]]::new($days)
+    foreach ($i in 0..($days - 1)) {
+        $xs[$i] = $left + ($right - $left) * $i / ($days - 1)
+        $level = if ($peak -gt 0) { [math]::Sqrt($means[$i] / $peak) } else { 0.0 }
+        $ys[$i] = $baseline - ($baseline - $top) * $level
     }
+    $line = ConvertTo-SmoothPath -X $xs -Y $ys -Top $top -Bottom $baseline
+    $area = '{0} L{1} {3} L{2} {3} Z' -f $line, (Format-Coordinate $xs[$days - 1]), (Format-Coordinate $xs[0]), (Format-Coordinate $baseline)
 
-    $peakText = $null
+    $firstLabel = $Daily.First.ToString('d MMM yyyy', $Culture)
+    $lastLabel  = $Daily.First.AddDays($days - 1).ToString('d MMM yyyy', $Culture)
+    $peakDay    = $Daily.First.AddDays($peakIndex).ToString('d MMM', $Culture)
+    $peakPerDay = $peak.ToString('0.#', $Culture)
+
+    $marker = @()
     if ($peak -gt 0) {
-        $peakX = $left + $slot * $peakIndex + $slot / 2
-        $anchor = 'middle'
-        if ($peakX -lt 130) { $anchor = 'start'; $peakX = $peakX - $barWidth / 2 }
-        elseif ($peakX -gt $width - 130) { $anchor = 'end'; $peakX = $peakX + $barWidth / 2 }
-        $peakText = '  <text x="{0}" y="{1}" text-anchor="{2}" font-size="11" font-weight="600" fill="{3}">{4} commits, week of {5}</text>' -f `
-            (Format-Coordinate $peakX), (Format-Coordinate ($baseline - $tallest - 8)), $anchor, $accent, $peak, $peakWeek
+        $anchor = 'middle'; $labelX = $xs[$peakIndex]
+        if ($labelX -lt 80) { $anchor = 'start'; $labelX = $left }
+        elseif ($labelX -gt $width - 80) { $anchor = 'end'; $labelX = $right }
+        $marker = @(
+            ('  <circle cx="{0}" cy="{1}" r="4" fill="{2}" stroke="{3}" stroke-width="2"/>' -f (Format-Coordinate $xs[$peakIndex]), (Format-Coordinate $ys[$peakIndex]), $accent, $halo),
+            ('  <text x="{0}" y="{1}" text-anchor="{2}" font-size="{3}" font-weight="600" fill="{4}">{5}</text>' -f (Format-Coordinate $labelX), (Format-Coordinate ($ys[$peakIndex] - 11)), $anchor, $fontSize, $accent, $peakDay)
+        )
     }
 
     $lines = @(
-        ('<svg xmlns="http://www.w3.org/2000/svg" width="{0}" height="{1}" viewBox="0 0 {0} {1}" role="img" aria-labelledby="t d">' -f $width, $height),
-        ('  <title id="t">Commits per week, last {0} weeks</title>' -f $weeks),
-        ('  <desc id="d">{0} commits between {1} and {2}; the busiest week had {3}.</desc>' -f $total, $firstLabel, $lastLabel, $peak),
+        ('<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 {0} {1}" role="img" aria-labelledby="t d">' -f $width, $height),
+        '  <title id="t">Commits per day, last 26 weeks, smoothed over 7 days</title>',
+        ('  <desc id="d">{0} commits between {1} and {2}; the busiest 7 days averaged {3} a day, around {4}.</desc>' -f $Daily.Total, $firstLabel, $lastLabel, $peakPerDay, $peakDay),
+        '  <defs>',
+        '    <linearGradient id="fade" x1="0" y1="0" x2="0" y2="1">',
+        ('      <stop offset="0" stop-color="{0}" stop-opacity="0.38"/>' -f $accent),
+        ('      <stop offset="1" stop-color="{0}" stop-opacity="0"/>' -f $accent),
+        '    </linearGradient>',
+        '  </defs>',
         '  <g font-family="-apple-system, BlinkMacSystemFont, ''Segoe UI'', Helvetica, Arial, sans-serif">',
-        ('  <line x1="{0}" y1="{1}" x2="{2}" y2="{1}" stroke="{3}" stroke-width="1"/>' -f (Format-Coordinate $left), (Format-Coordinate ($baseline + 3)), (Format-Coordinate $right), $rule)
-    ) + @($bars) + @($peakText) + @(
-        ('  <text x="{0}" y="106" text-anchor="start" font-size="11" fill="{1}">{2}</text>' -f (Format-Coordinate $left), $muted, $firstLabel),
-        ('  <text x="{0}" y="106" text-anchor="end" font-size="11" fill="{1}">{2}</text>' -f (Format-Coordinate $right), $muted, $lastLabel),
+        ('  <path d="{0}" fill="url(#fade)" stroke="none"/>' -f $area),
+        ('  <path d="{0}" fill="none" stroke="{1}" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"/>' -f $line, $accent)
+    ) + $marker + @(
+        ('  <text x="{0}" y="95" text-anchor="start" font-size="{1}" fill="{2}">{3}</text>' -f (Format-Coordinate $left), $fontSize, $muted, $firstLabel),
+        ('  <text x="{0}" y="95" text-anchor="end" font-size="{1}" fill="{2}">{3}</text>' -f (Format-Coordinate $right), $fontSize, $muted, $lastLabel),
         '  </g>',
         '</svg>'
     )
-    return ((@($lines | Where-Object { $_ }) -join "`n") + "`n")
+    return (($lines -join "`n") + "`n")
 }
 
-Write-WorkflowStep -Output $WorkflowOutput -Message 'Draw the weekly commit chart'
-$weekly = Get-WeeklyCommits -CommitDates $dates -Weeks $ChartWeeks
-$chartTotal = [int]($weekly.Counts | Measure-Object -Sum).Sum
-$chartPeak = [int]($weekly.Counts | Measure-Object -Maximum).Maximum
+Write-WorkflowStep -Output $WorkflowOutput -Message 'Draw the daily commit curve'
+$daily = Get-DailyMeans -CommitDates $dates -Days $ChartDays -Window 7
+$chartTotal = [int]$daily.Total
+$chartPeak = ([double]($daily.Means | Measure-Object -Maximum).Maximum).ToString('0.#', $Culture)
 $utf8NoBomChart = [System.Text.UTF8Encoding]::new($false)
 foreach ($theme in $ChartFiles.Keys) {
     $chartPath = Join-Path $RepoRoot $ChartFiles[$theme]
     $null = New-Item -ItemType Directory -Force -Path (Split-Path -Parent $chartPath)
-    $svg = New-PulseChartSvg -Weekly $weekly -Theme $theme
+    $svg = New-PulseChartSvg -Daily $daily -Theme $theme
     if (-not (Test-Path -LiteralPath $chartPath) -or [System.IO.File]::ReadAllText($chartPath) -cne $svg) {
         [System.IO.File]::WriteAllText($chartPath, $svg, $utf8NoBomChart)
     }
 }
-Write-WorkflowMessage -Output $WorkflowOutput -Message ('{0} commits over {1} weeks, busiest week {2}' -f (Format-Count $chartTotal), $ChartWeeks, $chartPeak)
+Write-WorkflowMessage -Output $WorkflowOutput -Message ('{0} commits over {1} days, busiest 7 days averaged {2} a day' -f (Format-Count $chartTotal), $ChartDays, $chartPeak)
 
 $generatedDate = (Get-Date).ToString('yyyy-MM-dd', $Culture)
 
@@ -303,7 +345,7 @@ $StartMarker
 <picture>
   <source media="(prefers-color-scheme: dark)" srcset="$($ChartFiles['dark'])">
   <source media="(prefers-color-scheme: light)" srcset="$($ChartFiles['light'])">
-  <img alt="Commits per week over the last $ChartWeeks weeks: $(Format-Count $chartTotal) in total, the busiest week had $(Format-Count $chartPeak)." src="$($ChartFiles['light'])" width="720">
+  <img alt="Commits per day, smoothed over 7 days, over the last 26 weeks: $(Format-Count $chartTotal) in total, the busiest stretch averaged $chartPeak a day." src="$($ChartFiles['light'])" width="100%">
 </picture>
 
 <sub>Generated from Git history on $generatedDate. Counts include tracked text files only for the current line total.</sub>
