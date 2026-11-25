@@ -1,14 +1,13 @@
 using static Deckle.Hosting.SelfCheck.SelfCheckCapture;
 using System.Diagnostics;
-using Deckle.App.SelfCheck;
+using Deckle.Contributions;
 using Deckle.Hosting.SelfCheck;
 using Deckle.Core;
-using Deckle.Modules;
 using Deckle.Projects;
 using Deckle.Projects.Views;
 using Deckle.Vision;
 
-namespace Deckle.App;
+namespace Deckle.Projects.App;
 
 // The self-check's walk of the Deckle Projects window, one state for each board
 // the maintainer drew, named after the board's code: h0 (no project yet), h1
@@ -33,8 +32,22 @@ namespace Deckle.App;
 //
 // A state that fails to show fails its image, and so the run. The files beside
 // this one hold the states by page: Home, the category page, the project page.
-public partial class App
+//
+// Run by the harness through ProjectsContribution, in this app
+// (`DeckleProjects.exe --self-check <folder> [--only projects/<state>]`), with
+// the state names and images the published Deckle's walk gave it before the
+// window left it. With a state for target, the walk is played up to it and
+// ends there (SelfCheckWalkGate): that end is not a failure.
+internal static partial class ProjectsSelfCheck
 {
+    internal static async Task RunProjectsWalkAsync(ProjectsWalkContext context)
+    {
+        var gate = new SelfCheckWalkGate(context.TargetView);
+        try { await WalkProjectsAsync(context.Host, context.Report, context.Run, context.OutputFolder, context.Step, gate); }
+        catch (OperationCanceledException) when (gate.Done) { }
+        if (context.TargetView is not null && !gate.Reached) context.Report.Views = gate.Offered;
+    }
+
     // The moment the walk's clock stands at. Any date does; the lines are
     // computed from it ("4 min ago" is this minus the end of the run).
     private static readonly DateTimeOffset ProjectsReviewNow = new(2026, 11, 15, 12, 0, 0, TimeSpan.Zero);
@@ -54,23 +67,25 @@ public partial class App
         if (!holds) throw new InvalidOperationException(what);
     }
 
-    private async Task WalkProjectsAsync(
-        SelfCheckReport report, InterfaceCaptureRun run, string outputFolder, Action<string> step,
+    private static async Task WalkProjectsAsync(
+        ContributionHost host, SelfCheckReport report, InterfaceCaptureRun run, string outputFolder, Action<string> step,
         SelfCheckWalkGate gate)
     {
         var clock = Stopwatch.StartNew();
-        using var workspace = new ProjectsWorkspace(
-            AppPaths.GetModuleDirectory(ModuleIds.Projects),
+
+        // The window is the one the app opens, built by the host's lazy path
+        // (ProjectsContribution), on a workspace of the walk's own, planted
+        // before the window is asked for. The page has no hook, as in the app:
+        // no "Open in Deckle Folders" button.
+        Composition.Projects.CreateWorkspace = () => new ProjectsWorkspace(
+            AppPaths.GetModuleDirectory(ProjectsContribution.ModuleId),
             new ReviewClock(ProjectsReviewNow),
             new NoTerminalLauncher(),
             new NoProjectOpener(),
             watchRuns: false);
+        ProjectsWorkspace workspace = Composition.Projects.Workspace;
 
-        // The page as the published Deckle draws it: no hook, so no "Open in
-        // Deckle Folders" button (BuildProjectsHooks).
-        var hooks = new ProjectsHooks();
-
-        ProjectsWindow window = CompleteProjectsWindow(() => new ProjectsWindow(workspace, hooks));
+        var window = (ProjectsWindow)host.Ensure("projects");
         OffscreenWindow.ShowInactive(window);
         bool loaded = await WaitUntilLoadedAsync(window);
         if (loaded) ResizeProjects(window, ProjectsDrawnWidth, ProjectsDrawnHeight);

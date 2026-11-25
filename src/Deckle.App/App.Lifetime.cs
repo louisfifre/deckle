@@ -200,7 +200,6 @@ public partial class App
         TryShutdown("paragraph_rewrite_shutdown", ShutdownParagraphRewrite);
         TryShutdown("autocorrect_shutdown", ShutdownAutocorrect);
         TryShutdown("anytype_mcp_shutdown", ShutdownAnytypeMcp);
-        TryShutdown("projects_workspace_dispose", () => _projectsWorkspace?.Dispose());
         TryShutdown("ambient_engine_dispose", () =>
         {
             if (_ambientEngine is not null

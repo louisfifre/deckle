@@ -1,12 +1,12 @@
 using Deckle.Projects;
 using Deckle.Projects.Views;
 
-namespace Deckle.App;
+namespace Deckle.Projects.App;
 
 // The Projects walk's category page (board C1): the title, the projects of the
 // category in the order the person keeps them, and the button that deletes the
 // category.
-public partial class App
+internal static partial class ProjectsSelfCheck
 {
     private static async Task WalkProjectsCategoryAsync(ProjectsWindow window, ProjectsCapture capture)
     {

@@ -534,16 +534,11 @@ _Generated from `git ls-files` — do not edit by hand._
 │   │   ├── App.ParagraphRewrite.cs
 │   │   ├── App.Paste.cs
 │   │   ├── App.PrecisionScroll.cs
-│   │   ├── App.Projects.cs
 │   │   ├── App.Relocate.cs
 │   │   ├── App.SelfCheck.cs
 │   │   ├── App.SelfCheck.Diagnostics.cs
 │   │   ├── App.SelfCheck.Icons.cs
 │   │   ├── App.SelfCheck.Perf.cs
-│   │   ├── App.SelfCheck.Projects.Category.cs
-│   │   ├── App.SelfCheck.Projects.cs
-│   │   ├── App.SelfCheck.Projects.Home.cs
-│   │   ├── App.SelfCheck.Projects.Project.cs
 │   │   ├── App.SelfCheck.Rewriting.cs
 │   │   ├── App.Startup.CommandLine.cs
 │   │   ├── App.Startup.CrashDumps.cs
@@ -2019,6 +2014,7 @@ _Generated from `git ls-files` — do not edit by hand._
 │   │   └── DeckleProjectsSource.cs
 │   ├── Deckle.Projects.App/
 │   │   ├── app.manifest
+│   │   ├── App.SelfCheck.cs
 │   │   ├── App.xaml
 │   │   ├── App.xaml.cs
 │   │   ├── Composition.cs
@@ -2026,7 +2022,12 @@ _Generated from `git ls-files` — do not edit by hand._
 │   │   ├── DeckleProjectsAppSource.cs
 │   │   ├── Program.cs
 │   │   ├── ProjectsContribution.cs
-│   │   └── ProjectsDataCopy.cs
+│   │   ├── ProjectsDataCopy.cs
+│   │   ├── ProjectsSelfCheck.Category.cs
+│   │   ├── ProjectsSelfCheck.cs
+│   │   ├── ProjectsSelfCheck.Home.cs
+│   │   ├── ProjectsSelfCheck.Project.cs
+│   │   └── ProjectsWalkContext.cs
 │   ├── Deckle.Projects.Views/
 │   │   ├── Controls/
 │   │   │   ├── Breadcrumb.cs

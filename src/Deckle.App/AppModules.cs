@@ -75,13 +75,6 @@ internal static class AppModules
             Order = 600,
         });
 
-        ModuleRegistry.Register(new ModuleDescriptor
-        {
-            Id = ModuleIds.Projects,
-            Glyph = Glyphs.Folder,
-            Order = 710,
-        });
-
         // The descriptors of the contributed modules travel with them
         // (PublishedComposition); a contribution that is not a module has none.
         foreach (IContribution contribution in PublishedComposition.All)

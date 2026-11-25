@@ -83,6 +83,16 @@ public partial class App : Application
 
     protected override void OnLaunched(LaunchActivatedEventArgs args)
     {
+        string[] cli = Environment.GetCommandLineArgs();
+
+        // The self-check is a separate mode, before the ownership below: it
+        // runs beside a resident Deckle Projects, on a data root of its own.
+        if (IsSelfCheckMode(cli))
+        {
+            _ = RunSelfCheckModeAsync(cli);
+            return;
+        }
+
         // One copy at a time. The copy turned away has no sink (the resident
         // one holds the log open), so it leaves a note beside it.
         _resident = ResidentInstance.TryAcquire(AppIdentity.Current, out string? residentFailure);

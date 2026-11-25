@@ -5,8 +5,9 @@ namespace Deckle.Folders.Views;
 
 // The one way another window of Deckle asks this one to show a folder. It sits
 // in its own file so the window's other partials stay as they are: Deckle Folders
-// does not know who asks (the host wires Deckle Projects' "Open in Deckle
-// Folders" button to it, App.Projects.cs).
+// does not know who asks. Deckle Projects' "Open in Deckle Folders" button was
+// wired to it while both windows lived in one process; they are two apps now,
+// so that button is absent until the apps can reach each other.
 public sealed partial class FoldersWindow
 {
     // Shows a folder in the file tool. A folder this window does not hold yet is

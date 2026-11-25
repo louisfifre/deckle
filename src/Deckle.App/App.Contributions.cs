@@ -19,7 +19,7 @@ public partial class App
     // The names the application's own windows use, which a contribution may
     // not take (they are image names and placement keys too).
     private static readonly string[] HostWindowNames =
-        ["settings", "log", "hud", "projects", "transcribe-rewrite", "paste-to-folder"];
+        ["settings", "log", "hud", "transcribe-rewrite", "paste-to-folder"];
 
     // The host of the composition, built on first use: a wrong composition
     // refuses the start there, before any window exists.

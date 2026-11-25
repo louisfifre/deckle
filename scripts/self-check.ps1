@@ -7,11 +7,12 @@
     builds), runs it with --self-check on a fresh data root of its own, waits
     for it, and reads the report.json it writes. By default the app is the
     published Deckle: it opens its Settings window, walks every page, opens the
-    Log window, the small Transcribe and rewrite and Paste to folder windows
-    and Deckle Projects, probes the microphone once and exits (see
+    Log window and the small Transcribe and rewrite and Paste to folder
+    windows, probes the microphone once and exits (see
     src/Deckle.App/App.SelfCheck.cs for what it composes and why). With -App
-    mail or folders the run is the separate app's own walk (DeckleMail.exe,
-    DeckleFolders.exe), which the published Deckle no longer holds.
+    mail, folders or projects the run is the separate app's own walk
+    (DeckleMail.exe, DeckleFolders.exe, DeckleProjects.exe), which the
+    published Deckle no longer holds.
 
     It runs beside the maintainer's resident Deckle: it takes no mutex of the
     resident app, composes no hook, no hotkey, no tray icon and no engine, and it
@@ -26,12 +27,13 @@
     script: 0 passed, 1 failed.
 .PARAMETER App
     Which app of the suite: deckle (the published Deckle, the default), mail
-    (DeckleMail.exe) or folders (DeckleFolders.exe). Each has its own data
-    root, so the fresh root of the run isolates all three alike.
+    (DeckleMail.exe), folders (DeckleFolders.exe) or projects
+    (DeckleProjects.exe). Each has its own data root, so the fresh root of the
+    run isolates all four alike.
 .PARAMETER Only
     Check one thing instead of everything: a window (for the published Deckle
-    settings, log, transcribe-rewrite, paste-to-folder, projects; for -App
-    folders, folders; for -App mail, mail) or one view
+    settings, log, transcribe-rewrite, paste-to-folder; for -App folders,
+    folders; for -App mail, mail; for -App projects, projects) or one view
     of Settings, Deckle Folders, Projects or a small window's states, named
     as its image is in a full run: settings/general,
     folders/photos-gallery, projects/p3, paste-to-folder/full (its states:
@@ -46,9 +48,10 @@
     The checkout whose build is run. The checkout this script lives in by default.
 .PARAMETER TimeoutSeconds
     How long the app may take. The walk is a few seconds per dozen pages; the
-    default leaves room for a cold start. The whole walk took 160 to 180 s once
-    Deckle Projects joined it (2026-11-15, 161 pages, its sample projects
-    reading git and their script menus), so 180 s no longer left that room.
+    default leaves room for a cold start. The whole walk of the published
+    Deckle took 160 to 180 s while it still held Deckle Projects (2026-11-15,
+    161 pages, its sample projects reading git and their script menus), so
+    180 s no longer left that room.
 .PARAMETER OutputFolder
     Where report.json and the captures go. A new folder under the temp folder by
     default; it is kept, the report and the images are the output.
@@ -66,11 +69,12 @@
     action: Self-check |
     action: Self-check Mail | -App mail
     action: Self-check Folders | -App folders
+    action: Self-check Projects | -App projects
 #>
 
 [CmdletBinding()]
 param(
-    # deckle, mail or folders; checked below, not a [ValidateSet]: the script's one
+    # deckle, mail, folders or projects; checked below, not a [ValidateSet]: the script's one
     # enumerated parameter is Configuration, which the launcher reads as its variant.
     [string]$App = 'deckle',
     [string]$Only,
@@ -85,14 +89,15 @@ param(
 )
 
 $ErrorActionPreference = 'Stop'
-if ($App -notin 'deckle', 'mail', 'folders') { [Console]::Error.WriteLine("-App is deckle, mail or folders, not '$App'."); exit 1 }
+if ($App -notin 'deckle', 'mail', 'folders', 'projects') { [Console]::Error.WriteLine("-App is deckle, mail, folders or projects, not '$App'."); exit 1 }
 
 $RepoRoot = if ($Target) { (Resolve-Path -LiteralPath $Target).Path } else { Split-Path -Parent $PSScriptRoot }
-# The three executables of the suite: project folder, executable name.
+# The four executables of the suite: project folder, executable name.
 $apps = @{
-    deckle  = @{ Project = 'Deckle.App'; Exe = 'Deckle.exe' }
-    mail    = @{ Project = 'Deckle.Mail.App'; Exe = 'DeckleMail.exe' }
-    folders = @{ Project = 'Deckle.Folders.App'; Exe = 'DeckleFolders.exe' }
+    deckle   = @{ Project = 'Deckle.App'; Exe = 'Deckle.exe' }
+    mail     = @{ Project = 'Deckle.Mail.App'; Exe = 'DeckleMail.exe' }
+    folders  = @{ Project = 'Deckle.Folders.App'; Exe = 'DeckleFolders.exe' }
+    projects = @{ Project = 'Deckle.Projects.App'; Exe = 'DeckleProjects.exe' }
 }
 $AppProject = $apps[$App].Project
 $ProcessName = [System.IO.Path]::GetFileNameWithoutExtension($apps[$App].Exe)

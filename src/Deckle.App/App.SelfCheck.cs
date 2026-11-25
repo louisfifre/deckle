@@ -48,8 +48,7 @@ public partial class App
         "module registry and presence flags (a fresh root has no choice, so every module is present)",
         "settings surface: host hooks and every module's pages and search entries, as the resident app registers them",
         "theme from the settings of the run's own root",
-        "windows: Settings, Log, Transcribe and rewrite, Paste to folder, Projects, created by the same lazy paths the tray uses",
-        "projects: sample projects (folders, git repositories, stub script menus) generated under the run's own root, with a terminal that opens nothing and a fixed clock",
+        "windows: Settings, Log, Transcribe and rewrite, Paste to folder, created by the same lazy paths the tray uses",
         "microphone: one shared open and close through MicrophoneCapture.Probe",
         "interface capture: the walk and the WindowSnapshot of the interface capture",
     ];
@@ -429,14 +428,6 @@ public partial class App
             Step(walk.WindowName);
             await walk.Run(new SelfCheckWalkContext(
                 this, report, run, outputFolder, target?.View, Step));
-        }
-        if (Wants("projects"))
-        {
-            Step("projects");
-            var gate = new SelfCheckWalkGate(target?.View);
-            try { await WalkProjectsAsync(report, run, outputFolder, Step, gate); }
-            catch (OperationCanceledException) when (gate.Done) { }
-            if (target?.View is not null && !gate.Reached) report.Views = gate.Offered;
         }
 
         // What the taskbar is handed, once every window has been opened

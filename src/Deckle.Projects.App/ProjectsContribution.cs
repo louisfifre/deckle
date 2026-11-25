@@ -48,7 +48,18 @@ internal sealed class ProjectsContribution : IContribution
 
     public IReadOnlyList<ContributedWindow> Windows { get; }
 
-    public IReadOnlyList<ContributedWalk> SelfCheckWalks { get; } = [];
+    // The walk of the window, moved here from the published Deckle with the
+    // window: its states (h0 to p4) are offered when a target names one it
+    // does not have.
+    public IReadOnlyList<ContributedWalk> SelfCheckWalks { get; } =
+    [
+        new ContributedWalk
+        {
+            WindowName = "projects",
+            ShowsViewsAtRun = true,
+            Run = context => ProjectsSelfCheck.RunProjectsWalkAsync(ProjectsWalkContext.From(context)),
+        },
+    ];
 
     // How the workspace is made on first use. The self-check replaces it before
     // the window is asked for, with one on its run's root, a fixed clock and a

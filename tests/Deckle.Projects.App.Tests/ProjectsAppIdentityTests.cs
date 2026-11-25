@@ -44,6 +44,18 @@ public sealed class ProjectsAppIdentityTests
         Assert.Empty(host.Descriptors);
     }
 
+    // The window's self-check walk left the published Deckle with the window:
+    // this app's self-check names it "projects", with several states, so
+    // `--only projects/p1` reaches it as it did in Deckle.exe.
+    [Fact]
+    public void TheSelfCheckWalksTheProjectsWindowWithItsStates()
+    {
+        ContributedWalk walk = Assert.Single(Composition.Walks);
+
+        Assert.Equal("projects", walk.WindowName);
+        Assert.True(walk.HasViews);
+    }
+
     [Fact]
     public void NoActionRunsBeforeTheWindowWasBuilt()
     {
