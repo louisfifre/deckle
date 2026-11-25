@@ -29,19 +29,13 @@ $ErrorActionPreference = 'Stop'
 $LibDir = Split-Path -Parent $PSScriptRoot
 if (-not $ScriptsRoot) { $ScriptsRoot = Split-Path -Parent $LibDir }
 $ScriptsRoot = (Resolve-Path -LiteralPath $ScriptsRoot).ProviderPath
-# The logo opens every frame when the terminal has room for it; the Banner
-# beneath it then names the repository the menu serves.
-$Logo = @(
-    '█▀▄ █▀▀ █▀▀ █▄▀ █   █▀▀'
-    '█▄▀ █▄▄ █▄▄ █ █ █▄▄ █▄▄  SCRIPTS'
-)
-
 Import-Module (Join-Path $LibDir 'terminal-interaction.psm1') -Force
 Import-Module (Join-Path $LibDir 'script-discovery.psm1') -Force
 . (Join-Path $LibDir 'launcher\discovered-catalog.ps1')
 . (Join-Path $LibDir 'launcher\execution.ps1')
 . (Join-Path $LibDir 'launcher\logs.ps1')
 . (Join-Path $LibDir 'launcher\flows.ps1')
+. (Join-Path $LibDir 'launcher\logo.ps1')
 
 function Get-LauncherRepositoryRoot {
     param([Parameter(Mandatory)][string]$Path)
@@ -76,6 +70,9 @@ function Get-LauncherRepositoryName {
 
 $RepositoryRoot = Get-LauncherRepositoryRoot -Path $ScriptsRoot
 $Banner = Get-LauncherRepositoryName -Root $RepositoryRoot
+# The logo opens every frame when the terminal has room for it: the name of
+# the repository the menu serves, in block letters, above the Banner line.
+$Logo = ConvertTo-LauncherLogo -Text $Banner
 # The library and the tests never enter the menu; a manifest folder starts
 # with a dot and is skipped by discovery itself.
 $Catalog = Get-ScriptCatalog -Path $ScriptsRoot -ExcludeFolder @('lib', 'tests')
