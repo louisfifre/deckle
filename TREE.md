@@ -1632,6 +1632,7 @@ _Generated from `git ls-files` — do not edit by hand._
 │   │   │   ├── ParagraphRewriteCoordinator.cs
 │   │   │   └── ParagraphRewriteOffer.cs
 │   │   ├── Settings/
+│   │   │   ├── ProfileUsers.cs
 │   │   │   ├── RewriteAvailability.cs
 │   │   │   └── StepTimelineLayout.cs
 │   │   ├── Deckle.Llm.Rewrite.csproj
@@ -3153,6 +3154,7 @@ _Generated from `git ls-files` — do not edit by hand._
 │   │   ├── ParagraphRewriteCoordinatorTests.cs
 │   │   ├── ProfileReasoningTests.cs
 │   │   ├── ProfilesSectionBugNotes.md
+│   │   ├── ProfileUsersTests.cs
 │   │   ├── RewriteDiffGateTests.cs
 │   │   ├── RewriteFailureMessageTests.cs
 │   │   ├── RewriteLogTests.cs

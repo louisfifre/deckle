@@ -171,6 +171,13 @@ public partial class App
             Llm.Rewrite.Views.LlmSettingsModule.TranscriptionStreams = () =>
                 transcriptionPresent
                 && TranscriptionSettingsService.Instance.Current.Streaming.Strategy == PipelineStrategyKind.Streaming;
+            // The Ollama provider's card says paragraph correction also uses it
+            // while that is on: both switches belong to the Autocorrect module,
+            // so without it the line never shows.
+            bool autocorrectPresent = context.AutocorrectPresent;
+            Llm.Rewrite.Views.LlmSettingsModule.ParagraphCorrectionOn = () =>
+                autocorrectPresent
+                && Autocorrect.AutocorrectSettingsService.Instance.Current is { Enabled: true, ParagraphCorrection: true };
             RegisterSettingsModule(Llm.Rewrite.Views.LlmSettingsModule.Describe(order: 200), Llm.Rewrite.Views.SettingsSearch.Entries);
         }
         if (context.AutocorrectPresent)

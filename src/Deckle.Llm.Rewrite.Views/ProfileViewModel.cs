@@ -1,4 +1,5 @@
 using System;
+using System.Collections.Generic;
 using CommunityToolkit.Mvvm.ComponentModel;
 using Deckle.Catalog;
 using Deckle.Core;
@@ -19,6 +20,10 @@ public partial class ProfileViewModel : ObservableObject
     private bool _isSyncing;
 
     public int ProfileIndex { get; set; }
+
+    // Stable across renames; who uses the profile is read by it
+    // (ProfileUsers).
+    public string ProfileId { get; private set; } = "";
 
     // ── Editable properties ──────────────────────────────────────────────────
 
@@ -115,12 +120,33 @@ public partial class ProfileViewModel : ObservableObject
                 // the abbreviations "ctx" and "temp".
                 summary += "  ·  " + Loc.Format("LlmProfile_Hints_Format", CtxKSteps[idx], Temperature.ToString("F2"));
             }
-            // The shortcut that starts it, readable with the fold closed.
-            if (HotkeyEnabled && HotkeyChordText.Format(Hotkey) is { } chord)
-                summary += $"  ·  {chord}";
+            // Who uses it, readable with the fold closed.
+            foreach (string user in UserTexts())
+                summary += $"  ·  {user}";
             return summary;
         }
     }
+
+    // What the settings say about who uses the profile, in words: the
+    // dictation, then the shortcut that starts it.
+    private IEnumerable<string> UserTexts()
+    {
+        LlmSettings settings = LlmSettingsService.Instance.Current;
+        RewriteProfile? profile = settings.Profiles.Find(p => p.Id == ProfileId);
+        if (profile is null) yield break;
+
+        foreach (ProfileUser user in ProfileUsers.Of(profile, settings))
+        {
+            if (user.Kind == ProfileUserKind.Dictation)
+                yield return Loc.Get("LlmProfile_UsedByDictation");
+            else if (HotkeyChordText.Format(user.Chord) is { } chord)
+                yield return chord;
+        }
+    }
+
+    // The settings that say who uses it changed elsewhere (a dictation step, a
+    // shortcut): the card words it again.
+    internal void RefreshSummary() => OnPropertyChanged(nameof(Summary));
 
     public string TempDisplay => Temperature.ToString("F2");
 
@@ -175,6 +201,7 @@ public partial class ProfileViewModel : ObservableObject
     {
         _isSyncing = true;
         ProfileIndex = index;
+        ProfileId = profile.Id;
         IsNew = isNew;
 
         Name = profile.Name;

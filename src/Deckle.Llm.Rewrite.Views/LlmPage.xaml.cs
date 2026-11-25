@@ -61,6 +61,17 @@ public sealed partial class LlmPage : Page, ISettingsSubpageSample
         ModelsSection.RefreshRequested += OnRefreshRequested;
     }
 
+    protected override void OnNavigatedFrom(NavigationEventArgs e)
+    {
+        base.OnNavigatedFrom(e);
+        LlmSettingsService.Instance.Changed -= OnSettingsChanged;
+    }
+
+    // Raised on a timer thread once a write lands: a dictation step or a
+    // shortcut changed on this page, and the profile cards say who uses them.
+    private void OnSettingsChanged() =>
+        DispatcherQueue.TryEnqueue(ProfilesSection.RefreshUsers);
+
     protected override async void OnNavigatedTo(NavigationEventArgs e)
     {
         // async void is imposed by the override signature, so the try/catch is
@@ -69,6 +80,8 @@ public sealed partial class LlmPage : Page, ISettingsSubpageSample
         base.OnNavigatedTo(e);
         try
         {
+            LlmSettingsService.Instance.Changed -= OnSettingsChanged;
+            LlmSettingsService.Instance.Changed += OnSettingsChanged;
             Hydrate();
             await RefreshProvidersAsync();
         }

@@ -472,6 +472,12 @@
     <value>Add provider</value>
   </data>
 
+  <data name="LlmProfile_UsedByDictation" xml:space="preserve">
+    <value>Dictation</value>
+  </data>
+  <data name="LlmProvider_AlsoUsedByParagraphCorrection" xml:space="preserve">
+    <value>Also used by paragraph correction</value>
+  </data>
   <data name="LlmProfile_NoModel" xml:space="preserve">
     <value>(no model)</value>
   </data>
@@ -490,7 +496,7 @@
     <value>Rewriting</value>
   </data>
   <data name="LlmPageHeader.Description" xml:space="preserve">
-    <value>Clean up your transcriptions with a language model, local or hosted.</value>
+    <value>The profiles that rewrite your text, and the models they run on.</value>
   </data>
   <!-- No longer an x:Uid: ResetAll_Click reads it with Loc.Get for the
        confirmation dialog's primary button. -->
