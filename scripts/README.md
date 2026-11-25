@@ -50,6 +50,7 @@ What the menu offers today, level by level. A row reads as its action followed b
 |  |  | log, trace | [`read-log.ps1`](read-log.ps1) | |
 |  | Update prod | | [`deploy-prod.ps1`](deploy-prod.ps1) | |
 |  | Roll back prod | | [`deploy-prod.ps1`](deploy-prod.ps1) `-Rollback` | |
+|  | README pulse | update | [`update-readme-stats.ps1`](update-readme-stats.ps1) `-Commit` | |
 |  | Statistics | repository | [`stats.ps1`](stats.ps1) | |
 |  |  | context | [`inspect-context.ps1`](inspect-context.ps1) | |
 | **Setup** | Scaffold | preview, apply | [`setup/scaffold.ps1`](setup/scaffold.ps1) | yes |
@@ -109,6 +110,7 @@ Each script is callable directly from a terminal; the menu is purely additive. C
 | [`inspect-processes.ps1`](inspect-processes.ps1) | Read-only: the running Deckle instances with the folder each runs from (prod copy, worktree, self-check), the dotnet builds and tests in progress with project and age, the `build-locked.ps1` runs waiting for a slot, test hosts, and the .NET build servers left behind. | none |
 | [`read-log.ps1`](read-log.ps1) | Read-only: the latest entries of `<UserDataRoot>\diagnostics\log.jsonl` (or `trace.jsonl` with `-Trace`), one line each, filtered by level, age and text. Shares the file with the running app. | `-Trace`, `-Last <n>`, `-Level Warning`, `-SinceMinutes <n>`, `-Match <regex>`, `-Payload`, `-DataRoot <path>` |
 | [`deploy-prod.ps1`](deploy-prod.ps1) | Build `main` (or `-Ref`) in Release in the reserved `prod-build` worktree, self-check it, and stage it in the prod copy without stopping the running Deckle; see *Prod copy*. Its summary's `Anytype` line compares the Anytype backend the deployed commit pins with the one `active.json` activates on this machine, and names the switch when they differ; it downloads nothing. Agents may run it. | `-Ref <ref>`, `-Root <path>`, `-Rollback`, `-Force`, `-SkipSelfCheck` |
+| [`update-readme-stats.ps1`](update-readme-stats.ps1) | Regenerate the README `Development pulse` section from local Git history. `-Commit` creates a local README-only commit and refuses unrelated tracked changes; it never pushes. | `-Target <worktree>`, `-ReadmePath <path>`, `-Commit` |
 | [`maintenance/switch-anytype-backend.ps1`](maintenance/switch-anytype-backend.ps1) | Point the Anytype backend at the version `BackendInstallation.CurrentBundle` pins, once it is staged under `versions\<version>` in the provider folder. The supervisor spawns what `active.json` names and never reads the pin, and only the setup wizard provisions it, so a new pin reaches a machine that already runs a backend through this gesture. Refuses while Deckle, the bot (which outlives Deckle) or Anytype Desktop runs; then copies `%APPDATA%\anytype\data` and `%USERPROFILE%\.anytype` to dated backups beside them, backs up `active.json` and rewrites it atomically. Without `-Apply` it only shows the plan. Downloads nothing, stops and starts nothing. | `-Apply`, `-Version X.Y.Z`, `-ProviderDirectory <path>` |
 | [`stats.ps1`](stats.ps1) | Walk every `.csproj` under `src/`, build a per-file inventory, highlight C# files over 400 / 600 effective LOC and other text files over 500 / 1000 raw lines, summarize modules by source LOC, list tracked repository file types dynamically, and print the per-file module table. Git defines the repository boundary, so ignored workspace data is excluded and tracked links are counted without traversal. Generated module files are also excluded. | `-Target <worktree>`, `-Json <path>`; `-PassThru` for structured output |
 | [`inspect-context.ps1`](inspect-context.ps1) | Inventory tracked Markdown documents by loading mode, Git modification date, additions over 1/7/30 days, heading count, exact size and line count, plus a model-independent token estimate. Separates automatically scoped instructions from references that must be opened explicitly. | `-Target <worktree>`, `-RelativePath <path>`, `-LoadingMode <name[]>`, `-DocumentType <name[]>`, `-SkipActivity`, `-Json <path>`; `-PassThru` includes documents |
@@ -215,6 +217,17 @@ pwsh scripts/git/changelog.ps1 -Apply   # write CHANGELOG.md
 ```
 
 The bump rules, the categories and the release-notes path are the `deckle-versioning` skill's.
+
+## Generated docs automation
+
+The root README carries a small generated `Development pulse` section bounded by invisible HTML comments. Regenerate it from a terminal or through the menu (*README pulse › update*, which commits the README alone):
+
+```powershell
+pwsh scripts/update-readme-stats.ps1          # write the section, no commit
+pwsh scripts/update-readme-stats.ps1 -Commit  # write it and commit README.md locally
+```
+
+Nothing runs it on its own: no GitHub Action refreshes it, so it changes only when the maintainer asks.
 
 ## Runtime assets
 
