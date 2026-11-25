@@ -66,11 +66,11 @@ public sealed partial class DeckleLightingSource : DeckleEventSource
     public const int EvtLightsListed              = 34;
     public const int EvtLightListed               = 35;
 
-    // ── EventIds — v2 id maps + EventStream ─────────────────────────────
-    public const int EvtFetchingV2IdMaps          = 36;
-    public const int EvtV2IdMapsFetched           = 37;
-    public const int EvtEventStreamStarting       = 38;
-    public const int EvtEventStreamReconnecting   = 39;
+    // ── EventIds — v2 id maps + EventStream (retired with the REST path) ──
+    // 36 retired.
+    // 37 retired.
+    // 38 retired.
+    // 39 retired.
     // 40 retired.
 
     // ── EventIds — appended ─────────────────────────────────────────────
@@ -104,8 +104,8 @@ public sealed partial class DeckleLightingSource : DeckleEventSource
     // 68 retired.
     // 69 retired.
     // 70 retired.
-    public const int EvtEventStreamRecovered = 71;
-    public const int EvtEventStreamRecoveryDetail = 72;
+    // 71 retired.
+    // 72 retired.
     public const int EvtDiscoveryFailed = 73;
     public const int EvtLocalDiscoveryFailed = 74;
     public const int EvtPairingRejected = 75;
@@ -117,8 +117,8 @@ public sealed partial class DeckleLightingSource : DeckleEventSource
     public const int EvtIdentifyFailed = 81;
     // 82 retired.
     public const int EvtEntertainmentPrePrimeFailed = 83;
-    public const int EvtEventStreamIncident = 84;
-    public const int EvtEventStreamStopped = 85;
+    // 84 retired.
+    // 85 retired.
     public const int EvtEntertainmentTransportConnected = 86;
     public const int EvtEntertainmentConnectFailed = 87;
     public const int EvtEntertainmentConnectCancelled = 88;
@@ -126,7 +126,7 @@ public sealed partial class DeckleLightingSource : DeckleEventSource
     public const int EvtEntertainmentStreamingStopFailed = 90;
     public const int EvtLightOutputSelected = 91;
     public const int EvtHueStepFailedDetail = 92;
-    public const int EvtEventStreamIncidentAbandoned = 93;
+    // 93 retired.
     public const int EvtEntertainmentLightStatesCapturedDetail = 94;
     public const int EvtEntertainmentLightStatesCaptureFailed = 95;
     public const int EvtEntertainmentLightStatesRestored = 96;

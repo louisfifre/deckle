@@ -20,10 +20,9 @@ namespace Deckle.Lighting;
 // trusted certificate can only ever come from an RFC1918 / APIPA host,
 // never a public address.
 //
-// Pairing, groups, lights, colour pushes and identify use CLIP v1 (the
-// username in the URL path). The Entertainment catalog and streaming
-// switch, the EventStream and the v1 ↔ v2 id maps use CLIP v2 (the
-// `hue-application-key` header).
+// Pairing, groups, lights, the pre-prime write, light states and identify use
+// CLIP v1 (the username in the URL path). The Entertainment catalog and
+// streaming switch use CLIP v2 (the `hue-application-key` header).
 public sealed partial class HueBridgeClient : IDisposable, IHueEntertainmentBridgeClient
 {
     // Hue caps the `devicetype` string at 40 chars total. "deckle#" is
@@ -339,7 +338,7 @@ public sealed partial class HueBridgeClient : IDisposable, IHueEntertainmentBrid
          || (b[0] == 169 && b[1] == 254);                       // 169.254.0.0/16 APIPA link-local
     }
 
-    internal static HttpClient CreateBridgeHttpClient(string ip, int port, TimeSpan? timeout = null)
+    internal static HttpClient CreateBridgeHttpClient(string ip, int port)
     {
         var handler = new SocketsHttpHandler
         {
@@ -356,7 +355,7 @@ public sealed partial class HueBridgeClient : IDisposable, IHueEntertainmentBrid
         return new HttpClient(handler)
         {
             BaseAddress = new Uri($"https://{ip}:{port}/"),
-            Timeout = timeout ?? TimeSpan.FromSeconds(10),
+            Timeout = TimeSpan.FromSeconds(10),
         };
     }
 

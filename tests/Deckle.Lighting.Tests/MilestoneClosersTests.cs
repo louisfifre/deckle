@@ -14,7 +14,7 @@ public sealed class MilestoneClosersTests
     public void DeckleLightingSourceRecoveryClosersTravelInTheLog()
     {
         IReadOnlyList<string> outside = ProviderManifest.ClosersOutsideTheLog(
-            typeof(DeckleLightingSource), nameof(DeckleLightingSource.EventStreamIncidentAbandoned));
+            typeof(DeckleLightingSource));
 
         Assert.Empty(outside);
     }

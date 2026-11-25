@@ -1468,7 +1468,6 @@ _Generated from `git ls-files` — do not edit by hand._
 │   │   │   ├── HueBridge.cs
 │   │   │   ├── HueBridgeClient.cs
 │   │   │   ├── HueBridgeClient.Dtos.cs
-│   │   │   ├── HueBridgeClient.EventStream.cs
 │   │   │   ├── HueBridgeClient.Identity.cs
 │   │   │   ├── HueBridgeClient.LightState.cs
 │   │   │   ├── HueBridgeClient.Pairing.cs
@@ -1481,8 +1480,6 @@ _Generated from `git ls-files` — do not edit by hand._
 │   │   │   ├── HueEntertainmentFrameBuilder.cs
 │   │   │   ├── HueEntertainmentLightOutput.cs
 │   │   │   ├── HueEntertainmentTransport.cs
-│   │   │   ├── HueEventStreamEpisode.cs
-│   │   │   ├── HueEventStreamModels.cs
 │   │   │   ├── HueGroup.cs
 │   │   │   ├── HueLight.cs
 │   │   │   ├── HueLightOutputFactory.cs
@@ -1495,7 +1492,7 @@ _Generated from `git ls-files` — do not edit by hand._
 │   │   ├── DeckleLightingSource.Discovery.cs
 │   │   ├── DeckleLightingSource.Entertainment.cs
 │   │   ├── DeckleLightingSource.GroupsAndColor.cs
-│   │   ├── DeckleLightingSource.InventoryAndEventStream.cs
+│   │   ├── DeckleLightingSource.Inventory.cs
 │   │   ├── DeckleLightingSource.Pairing.cs
 │   │   ├── ILightOutput.cs
 │   │   ├── LightColor.cs
@@ -3108,7 +3105,6 @@ _Generated from `git ls-files` — do not edit by hand._
 │   │   │   └── dns-sd-pending-status-lifetime.json
 │   │   ├── CredentialPayloadTests.cs
 │   │   ├── Deckle.Lighting.Tests.csproj
-│   │   ├── DeckleLightingSourceTests.cs
 │   │   ├── HueBridgeClientIdentityTests.cs
 │   │   ├── HueBridgeClientNoAnswerRegressionTests.cs
 │   │   ├── HueCredentialPayloadBugNotes.md
@@ -3117,9 +3113,6 @@ _Generated from `git ls-files` — do not edit by hand._
 │   │   ├── HueEntertainmentFrameBuilderTests.cs
 │   │   ├── HueEntertainmentLightOutputTests.cs
 │   │   ├── HueEntertainmentRestoreRegressionTests.cs
-│   │   ├── HueEventStreamBugNotes.md
-│   │   ├── HueEventStreamEpisodeTests.cs
-│   │   ├── HueEventStreamUserIncidentTests.cs
 │   │   ├── HueLightOutputFactoryTests.cs
 │   │   ├── HueLocalDiscoveryRegressionTests.cs
 │   │   ├── HueLocalDiscoveryTests.cs

@@ -4,54 +4,6 @@ namespace Deckle.Lighting;
 
 public sealed partial class HueBridgeClient
 {
-    /// <summary>
-    /// Fetches the v2 ↔ v1 identifier maps for lights and grouped_lights.
-    /// The CLIP v2 EventStream emits resource UUIDs (v2) whereas the
-    /// REST CLIP v1 push path the engine uses takes integer ids (v1).
-    /// </summary>
-    public async Task<HueV2IdMaps> FetchV2IdMapsAsync(CancellationToken ct = default)
-    {
-        ObjectDisposedException.ThrowIf(_disposed, this);
-        EnsurePaired();
-
-        DeckleLightingSource.Log.FetchingV2IdMaps();
-
-        var lights = await FetchV2ResourceMapAsync("light", ct).ConfigureAwait(false);
-        var groups = await FetchV2ResourceMapAsync("grouped_light", ct).ConfigureAwait(false);
-
-        DeckleLightingSource.Log.V2IdMapsFetched(lights.Count, groups.Count);
-        return new HueV2IdMaps(lights, groups);
-    }
-
-    private async Task<Dictionary<string, string>> FetchV2ResourceMapAsync(
-        string resourceType, CancellationToken ct)
-    {
-        using var request = new HttpRequestMessage(HttpMethod.Get, $"clip/v2/resource/{resourceType}");
-        request.Headers.Add("hue-application-key", _credentials!.Username);
-
-        using var response = await _http.SendAsync(request, ct).ConfigureAwait(false);
-        if (!response.IsSuccessStatusCode)
-        {
-            DeckleLightingSource.Log.ClipV2RequestFailed(
-                "GET", $"resource/{resourceType}", (int)response.StatusCode,
-                response.ReasonPhrase ?? "none");
-            response.EnsureSuccessStatusCode();
-        }
-
-        var payload = await response.Content.ReadFromJsonAsync<HueV2ListResponse>(_jsonOptions, ct).ConfigureAwait(false);
-        var map = new Dictionary<string, string>(payload?.Data?.Length ?? 0, StringComparer.Ordinal);
-        if (payload?.Data is null) return map;
-
-        foreach (var entry in payload.Data)
-        {
-            if (string.IsNullOrEmpty(entry.Id) || string.IsNullOrEmpty(entry.IdV1)) continue;
-            int slash = entry.IdV1.LastIndexOf('/');
-            var v1 = slash >= 0 ? entry.IdV1[(slash + 1)..] : entry.IdV1;
-            if (v1.Length > 0) map[entry.Id] = v1;
-        }
-        return map;
-    }
-
     public async Task<IReadOnlyList<HueEntertainmentArea>> ListEntertainmentConfigurationsAsync(CancellationToken ct = default)
     {
         ObjectDisposedException.ThrowIf(_disposed, this);
