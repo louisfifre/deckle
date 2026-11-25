@@ -162,9 +162,6 @@ public partial class App
                 "Deckle.Transcription.Views",
                 Transcription.Views.SettingsSearch.TelemetryEntries);
         }
-        // The contributions plant their start hooks, before the pages that
-        // read them are registered.
-        PublishedHost.Compose();
 
         if (context.RewritePresent)
         {

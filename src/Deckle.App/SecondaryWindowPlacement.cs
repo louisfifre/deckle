@@ -1,8 +1,7 @@
 namespace Deckle.App;
 
 // The keys under which the host's own windows keep their place
-// (WindowPlacement stores it by key in window-placement.json). A window a
-// contribution brings keeps its place under its own name.
+// (WindowPlacement stores it by key in window-placement.json).
 internal static class SecondaryWindowPlacement
 {
     public const string Settings = "settings";

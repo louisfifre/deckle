@@ -475,9 +475,6 @@ _Generated from `git ls-files` — do not edit by hand._
 │   │   │   │   └── deckle--state--rewriting.ico
 │   │   │   └── Sounds/
 │   │   │       └── speech.wav
-│   │   ├── Composition/
-│   │   │   ├── PublishedComposition.cs
-│   │   │   └── SelfCheckWalkContext.cs
 │   │   ├── Diagnostics/
 │   │   │   ├── AppDiagnosticsBootstrap.cs
 │   │   │   ├── AppHudFeedbackSink.cs
@@ -525,7 +522,6 @@ _Generated from `git ls-files` — do not edit by hand._
 │   │   ├── App.Anytype.cs
 │   │   ├── App.Autocorrect.cs
 │   │   ├── App.Autocorrect.Lifecycle.cs
-│   │   ├── App.Contributions.cs
 │   │   ├── App.DeveloperAccess.cs
 │   │   ├── App.Hotkeys.Actions.cs
 │   │   ├── App.Hotkeys.cs

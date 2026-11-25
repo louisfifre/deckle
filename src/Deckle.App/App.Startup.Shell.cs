@@ -153,7 +153,6 @@ public partial class App
             Entries = ComposeDeveloperTray(),
         };
         _tray.RightClickRequested += ShowRightClickTray;
-        WireDeveloperAccess(Microsoft.UI.Dispatching.DispatcherQueue.GetForCurrentThread());
 
         // Left click, the menu of every day, three groups behind separators,
         // read from the top: the switches (the background ones, set once and
