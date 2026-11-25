@@ -699,6 +699,7 @@ _Generated from `git ls-files` — do not edit by hand._
 │   │   ├── Injection/
 │   │   │   ├── InjectionPlan.cs
 │   │   │   ├── ITextInjector.cs
+│   │   │   ├── ParagraphReplacementPlan.cs
 │   │   │   └── TextInjector.cs
 │   │   ├── Interop/
 │   │   │   └── KeyboardStateInterop.cs
