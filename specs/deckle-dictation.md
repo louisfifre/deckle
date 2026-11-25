@@ -70,6 +70,7 @@ The examples of rewriting use these settings: a first step Affinage from 1,000 c
 2. Starting a dictation takes nothing from the application in front: its window keeps the focus, and the user goes on with what they were doing.
 3. The first words said after the gesture are in the text: the user does not wait for a signal to speak.
 4. A dictation has no length limit. "Maximum recording length", on the Recording page, sets one only when the user chooses it.
+5. The stop is instant: the recording ends at the gesture that stops it, and nothing said after the gesture is kept.
 
 ### While the user speaks
 
@@ -129,6 +130,7 @@ The examples of rewriting use these settings: a first step Affinage from 1,000 c
 
 - The text says what the user said, with their words. A rewrite keeps every notion they said: a notion said twice may be brought together in one place, never dropped.
 - Nothing of what the user said is lost between the gesture that starts the dictation and the text delivered.
+- What the HUD and the tray show is the real state of the recording: they say "listening" only while the microphone is open, and leave it at the gesture that stops it.
 - A step's length is counted in characters of the text as said.
 - A rewrite always starts from the text as said, never from an earlier rewrite.
 - A dictation is always rewritten from its beginning, never from the length of the step. Example: 1,500 characters, first step at 1,000: all 1,500 characters are rewritten by Affinage.
