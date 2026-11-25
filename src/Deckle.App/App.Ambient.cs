@@ -15,9 +15,8 @@ public partial class App
         => _ = ApplyAmbientSettingsAsync();
 
     // Starts or stops the engine on Enabled, and restarts a running engine
-    // when the monitor, the pipeline shape or the performance mode changed:
-    // the engine reads those three only at start. The performance mode is a
-    // shell setting, so the shell's Changed also lands here.
+    // when the monitor or the pipeline shape changed: the engine reads those
+    // two only at start.
     private async Task ApplyAmbientSettingsAsync()
     {
         if (_ambientEngine is null) return;
@@ -26,8 +25,7 @@ public partial class App
         try
         {
             var settings = AmbientSettingsService.Instance.Current;
-            var startSettings = AmbientStartSettings.From(
-                settings, Settings.SettingsService.Instance.Current.Performance.PerformanceMode);
+            var startSettings = AmbientStartSettings.From(settings);
 
             if (settings.Enabled && _ambientEngine.IsRunning
                 && _ambientStartedWith is { } startedWith)

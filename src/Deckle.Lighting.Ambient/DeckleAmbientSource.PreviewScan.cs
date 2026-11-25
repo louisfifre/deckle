@@ -11,7 +11,7 @@ namespace Deckle.Lighting.Ambient;
 public sealed partial class DeckleAmbientSource
 {
     // capture_hz = the rate the capture was asked for (CaptureRateChosen
-    // says how it was decided).
+    // logs it).
     [Event(EvtPreviewScanStarting,
            Level = EventLevel.Informational,
            Keywords = (EventKeywords)Keywords.Lifecycle,

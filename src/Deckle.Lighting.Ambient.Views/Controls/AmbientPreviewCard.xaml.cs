@@ -178,8 +178,7 @@ public sealed partial class AmbientPreviewCard : UserControl
             rejectSource: "AMBIENT", rejectWhat: "preview settings");
 
     // A new display restarts the scan; any other change (zone mode, band
-    // depth) only redraws. The performance mode is not watched: it lives in
-    // the shell's settings, and the next scan reads it.
+    // depth) only redraws.
     private void OnSettingsChangedOnUi()
     {
         var settings = AmbientSettingsService.Instance.Current;

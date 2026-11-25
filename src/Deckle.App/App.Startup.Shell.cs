@@ -134,11 +134,6 @@ public partial class App
             }
 
             AmbientSettingsService.Instance.Changed += OnAmbientSettingsChanged;
-
-            // The performance mode lives in the shell's settings and lowers
-            // the capture rate's ceiling; a change there restarts a running
-            // engine, which the start settings' comparison decides.
-            Settings.SettingsService.Instance.Changed += OnAmbientSettingsChanged;
         }
 
         // Tray menus — two native MenuFlyouts, each on an invisible anchor

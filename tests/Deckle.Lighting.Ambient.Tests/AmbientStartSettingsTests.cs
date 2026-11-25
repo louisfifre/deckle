@@ -10,35 +10,23 @@ public sealed class AmbientStartSettingsTests
     {
         var settings = new AmbientSettings();
 
-        var started = AmbientStartSettings.From(settings, performanceMode: false);
+        var started = AmbientStartSettings.From(settings);
         settings.SmoothingAlpha = 0.5;
 
-        Assert.Equal("", started.ChangedSettings(AmbientStartSettings.From(settings, performanceMode: false)));
+        Assert.Equal("", started.ChangedSettings(AmbientStartSettings.From(settings)));
     }
 
     [Fact]
     public void EachStartSettingIsNamedWhenItChanges()
     {
         var settings = new AmbientSettings();
-        var started = AmbientStartSettings.From(settings, performanceMode: false);
+        var started = AmbientStartSettings.From(settings);
 
         settings.SelectedMonitorDeviceName = @"\\.\DISPLAY2";
         settings.UseMultiLight = !settings.UseMultiLight;
 
         Assert.Equal(
-            "SelectedMonitorDeviceName,UseMultiLight,PerformanceMode",
-            started.ChangedSettings(AmbientStartSettings.From(settings, performanceMode: true)));
-    }
-
-    [Fact]
-    public void TurningThePerformanceModeOnOrOffIsAStartChange()
-    {
-        var settings = new AmbientSettings();
-
-        var normal = AmbientStartSettings.From(settings, performanceMode: false);
-        var lowPower = AmbientStartSettings.From(settings, performanceMode: true);
-
-        Assert.Equal("PerformanceMode", normal.ChangedSettings(lowPower));
-        Assert.Equal("PerformanceMode", lowPower.ChangedSettings(normal));
+            "SelectedMonitorDeviceName,UseMultiLight",
+            started.ChangedSettings(AmbientStartSettings.From(settings)));
     }
 }
