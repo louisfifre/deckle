@@ -6,9 +6,9 @@ namespace Deckle.App.Tests;
 
 // Why this test exists. Deckle.App is the published Deckle: the copy the
 // maintainer's prod runs and the one a release would hand to other people.
-// Mail and Deckle Folders are unpublished, so they ship as their own apps
-// (Deckle.Mail.App, Deckle.Folders.App) and the published build must not
-// carry them. WinUI cannot load compiled XAML from an assembly the host did
+// Mail, Deckle Folders and Deckle Projects ship as their own apps
+// (Deckle.Mail.App, Deckle.Folders.App, Deckle.Projects.App) and the published
+// build must not carry them. WinUI cannot load compiled XAML from an assembly the host did
 // not reference at build time (microsoft/microsoft-ui-xaml#6299), so the only
 // way one of them could reach the published app is a project reference, direct
 // or through a library the app keeps. That second path is the one that went
@@ -19,9 +19,10 @@ namespace Deckle.App.Tests;
 //      the XML, no build) holds none of the unpublished projects;
 //   2. the Deckle.deps.json the build produced lists none of them either, so
 //      a package or a path the XML walk cannot see is caught too;
-//   3. anchors: the closure does hold Deckle.Projects and Deckle.FolderMap
-//      (proof that the walk reads something), and no src project but the two
-//      app executables references Deckle.Mail.Hub or Deckle.Folders.Views.
+//   3. anchors: the closure does hold Deckle.Settings and Deckle.Core
+//      (proof that the walk reads something), and no src project but the
+//      app executables references Deckle.Mail.Hub, Deckle.Folders.Views or
+//      Deckle.Projects.Views.
 [Trait("Category", "integration")]
 public sealed class PublishedClosureTests
 {
@@ -29,6 +30,7 @@ public sealed class PublishedClosureTests
     [
         "Deckle.Mail", "Deckle.Mail.Hub", "Deckle.Mail.App",
         "Deckle.Folders", "Deckle.Folders.Views", "Deckle.Folders.App",
+        "Deckle.Projects", "Deckle.Projects.Views", "Deckle.Projects.App",
     ];
 
     private static bool IsForbidden(string name)
@@ -58,7 +60,7 @@ public sealed class PublishedClosureTests
             .ToList();
 
         // Anchor: the list is not empty and holds a published project.
-        Assert.Contains("Deckle.Projects", libraries);
+        Assert.Contains("Deckle.Settings", libraries);
 
         var offenders = libraries.Where(IsForbidden).ToList();
         Assert.True(offenders.Count == 0,
@@ -69,11 +71,11 @@ public sealed class PublishedClosureTests
     public void TheWalkReadsTheClosureAndOnlyTheAppExecutablesReferenceTheViewLibraries()
     {
         var closure = Closure();
-        Assert.Contains("Deckle.Projects", closure.Keys);
-        Assert.Contains("Deckle.FolderMap", closure.Keys);
+        Assert.Contains("Deckle.Settings", closure.Keys);
+        Assert.Contains("Deckle.Core", closure.Keys);
 
-        var viewLibraries = new[] { "Deckle.Mail.Hub", "Deckle.Folders.Views" };
-        var allowed = new[] { "Deckle.Mail.App", "Deckle.Folders.App" };
+        var viewLibraries = new[] { "Deckle.Mail.Hub", "Deckle.Folders.Views", "Deckle.Projects.Views" };
+        var allowed = new[] { "Deckle.Mail.App", "Deckle.Folders.App", "Deckle.Projects.App" };
         var offenders = new List<string>();
         foreach (string csproj in Directory.EnumerateFiles(Path.Combine(RepoRoot(), "src"), "*.csproj", SearchOption.AllDirectories))
         {

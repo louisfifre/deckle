@@ -7,7 +7,6 @@ internal static class SecondaryWindowPlacement
 {
     public const string Settings = "settings";
     public const string Log = "log";
-    public const string Projects = "projects";
     public const string TranscribeRewrite = "transcribe-rewrite";
     public const string PasteToFolder = "paste-to-folder";
 }

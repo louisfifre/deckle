@@ -1,7 +1,7 @@
 using Deckle.Projects;
 using Deckle.Projects.Views;
 
-namespace Deckle.App;
+namespace Deckle.Projects.App;
 
 // The Projects walk's project page: settled with a main action and pinned
 // actions (P1), three versions and no script menu with the list of versions open
@@ -11,7 +11,7 @@ namespace Deckle.App;
 // P3 runs nothing. The board is given the two runs the way the runner would
 // have written them, then the page is opened and draws what it reads: that is
 // the page's whole job, and no terminal is asked for.
-public partial class App
+internal static partial class ProjectsSelfCheck
 {
     private static async Task WalkProjectsProjectAsync(
         ProjectsWindow window, ProjectsWorkspace workspace, ProjectsSample sample, ProjectsCapture capture)

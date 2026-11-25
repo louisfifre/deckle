@@ -5,10 +5,10 @@ using Xunit;
 namespace Deckle.App.Tests;
 
 // The developer tray menu: the alpha surfaces (the contributed windows in
-// composition order, then Deckle Projects), then the developer tools, then
-// Logs and Restart at the bottom, each group behind a separator. A contributed
-// line is absent when its module is (the host drops it, ContributionHost); the
-// Projects line shows only while its module is present.
+// composition order), then the developer tools, then Logs and Restart at the
+// bottom, each group behind a separator. A contributed line is absent when its
+// module is (the host drops it, ContributionHost). Deckle Projects is no longer
+// one of its lines: it is an app of its own.
 [Trait("Category", "unit")]
 public sealed class TrayDeveloperMenuTests
 {
@@ -23,10 +23,10 @@ public sealed class TrayDeveloperMenuTests
         return entries;
     }
 
-    private static IReadOnlyList<TrayMenuEntry> Compose(bool showContributed, bool showProjects = true)
+    private static IReadOnlyList<TrayMenuEntry> Compose(bool showContributed)
         => TrayDeveloperMenu.Compose(
-            Contributed(showContributed), showProjects, key => key,
-            () => { }, () => { }, () => { }, () => { });
+            Contributed(showContributed), key => key,
+            () => { }, () => { }, () => { });
 
     private static IEnumerable<string> CommandIds(IReadOnlyList<TrayMenuEntry> entries)
         => entries.OfType<TrayMenuCommand>().Select(c => c.Id);
@@ -35,7 +35,7 @@ public sealed class TrayDeveloperMenuTests
     public void TheMenuHoldsTheAlphaSurfacesThenTheCaptureThenLogsAndRestart()
     {
         Assert.Equal(
-            ["preview", "contributed", "projects", "capture-interface", "logs", "restart"],
+            ["preview", "contributed", "capture-interface", "logs", "restart"],
             CommandIds(Compose(showContributed: true)));
     }
 
@@ -43,16 +43,14 @@ public sealed class TrayDeveloperMenuTests
     public void AContributedEntryIsAbsentWhenTheHostDroppedIt()
     {
         Assert.Equal(
-            ["preview", "projects", "capture-interface", "logs", "restart"],
+            ["preview", "capture-interface", "logs", "restart"],
             CommandIds(Compose(showContributed: false)));
     }
 
     [Fact]
-    public void TheProjectsEntryIsAbsentWhenItsModuleIs()
+    public void TheMenuHasNoProjectsEntry()
     {
-        Assert.Equal(
-            ["preview", "contributed", "capture-interface", "logs", "restart"],
-            CommandIds(Compose(showContributed: true, showProjects: false)));
+        Assert.DoesNotContain("projects", CommandIds(Compose(showContributed: true)));
     }
 
     [Fact]
@@ -93,13 +91,12 @@ public sealed class TrayDeveloperMenuTests
                 new("preview", "TrayMenu_Preview", () => ran.Add("preview")),
                 new("contributed", "TrayMenu_Contributed", () => ran.Add("contributed")),
             ],
-            true, key => key,
-            () => ran.Add("projects"),
+            key => key,
             () => ran.Add("capture-interface"), () => ran.Add("logs"), () => ran.Add("restart"));
 
         foreach (TrayMenuCommand command in entries.OfType<TrayMenuCommand>())
             command.Invoke();
 
-        Assert.Equal(["preview", "contributed", "projects", "capture-interface", "logs", "restart"], ran);
+        Assert.Equal(["preview", "contributed", "capture-interface", "logs", "restart"], ran);
     }
 }

@@ -31,7 +31,7 @@ Run one with `pwsh -NoProfile -File scripts/<path> [arguments]`. An action names
   - Actions: Inspect / log · Inspect / trace `-Trace`
   - Parameters: -Trace, -Last <int>, -Level <string>, -SinceMinutes <int>, -Match <string>, -Payload, -DataRoot <string>
 - `self-check.ps1` — **Self-check the built app.** Runs a built app of the suite once in its self-check mode and judges its report.
-  - Actions: Self-check · Self-check Mail `-App mail` · Self-check Folders `-App folders`
+  - Actions: Self-check · Self-check Mail `-App mail` · Self-check Folders `-App folders` · Self-check Projects `-App projects`
   - Parameters: -App <string>, -Only <string>, -Configuration Debug|Release, -Target <string>, -TimeoutSeconds <int>, -OutputFolder <string>, -LinkModels, -KeepData
 - `stats.ps1` — **Repository statistics.** Walk every project under src\ and build one file inventory per Deckle module, with line counts.
   - Actions: Statistics / repository

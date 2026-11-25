@@ -24,9 +24,7 @@ public partial class App
     private IReadOnlyList<TrayMenuEntry> ComposeDeveloperTray()
         => TrayDeveloperMenu.Compose(
             PublishedHost.TrayEntries(forDeveloperMenu: true),
-            ProjectsPresent,
             key => Loc.Get(key),
-            () => ShowProjectsWindowLazy(),
             () => CaptureInterfaceFromTray(),
             () => ShowLogWindowLazy(),
             () => RestartAppFromTray());

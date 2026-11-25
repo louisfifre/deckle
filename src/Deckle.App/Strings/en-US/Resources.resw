@@ -679,9 +679,6 @@
   <data name="TrayMenu_Settings" xml:space="preserve">
     <value>Settings</value>
   </data>
-  <data name="TrayMenu_Projects" xml:space="preserve">
-    <value>Deckle Projects</value>
-  </data>
   <data name="TrayMenu_CaptureInterface" xml:space="preserve">
     <value>Capture the interface</value>
   </data>
@@ -1634,12 +1631,6 @@
   </data>
   <data name="Setup_Module_anytype_Description" xml:space="preserve">
     <value>Hosts the local Anytype backend that AI assistants read and write</value>
-  </data>
-  <data name="Setup_Module_projects_Label" xml:space="preserve">
-    <value>Deckle Projects</value>
-  </data>
-  <data name="Setup_Module_projects_Description" xml:space="preserve">
-    <value>One window for your project folders, grouped in categories, with each project's version, its scripts and what an agent reads there</value>
   </data>
   <data name="Setup_Module_Requires_Format" xml:space="preserve">
     <value>{0}. Requires {1}</value>

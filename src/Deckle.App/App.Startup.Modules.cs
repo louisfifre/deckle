@@ -155,12 +155,5 @@ public partial class App
             else
                 context.Skip(module.Id, SkipNotPresent);
         }
-
-        // Same: nothing runs at start, the tray builds the window
-        // (App.Projects.cs).
-        if (ModulePresence.IsPresent(ModuleIds.Projects))
-            context.Compose(ModuleIds.Projects, () => { });
-        else
-            context.Skip(ModuleIds.Projects, SkipNotPresent);
     }
 }

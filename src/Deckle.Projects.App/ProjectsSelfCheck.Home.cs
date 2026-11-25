@@ -1,12 +1,12 @@
 using Deckle.Projects;
 using Deckle.Projects.Views;
 
-namespace Deckle.App;
+namespace Deckle.Projects.App;
 
 // The Projects walk's Home states: the empty screen (H0), Home with the pane
 // closed (H1), a wide window with the pane open (H2) and the fold of projects
 // with no category opened beside a card's "..." menu (H3).
-public partial class App
+internal static partial class ProjectsSelfCheck
 {
     // Board H0: no project yet. No hamburger, no "New category": there is
     // nothing to list or to group.
