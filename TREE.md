@@ -2235,8 +2235,6 @@ _Generated from `git ls-files` — do not edit by hand._
 │   │   ├── HotkeyManager.cs
 │   │   ├── IconAssets.cs
 │   │   ├── MessageOnlyHost.cs
-│   │   ├── ResizeCoalescer.cs
-│   │   ├── ResizeGesture.cs
 │   │   ├── ScreenSaverHotkeyRelay.cs
 │   │   ├── SessionEndSignal.cs
 │   │   ├── SessionEndWatcher.cs
@@ -3425,7 +3423,6 @@ _Generated from `git ls-files` — do not edit by hand._
 │   │   ├── HotkeyDesktopPolicyTests.cs
 │   │   ├── MessageTemplateDoctrineTests.cs
 │   │   ├── MilestoneClosersTests.cs
-│   │   ├── ResizeGestureTests.cs
 │   │   ├── SessionEndSignalTests.cs
 │   │   ├── ShellObservabilityCollection.cs
 │   │   ├── TrayIconBugNotes.md
