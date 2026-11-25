@@ -72,7 +72,9 @@ _Generated from `git ls-files` — do not edit by hand._
 │   │   ├── board-autocorrect.png
 │   │   ├── board-dictation.png
 │   │   ├── board-hero.png
-│   │   └── board-rewrite.png
+│   │   ├── board-rewrite.png
+│   │   ├── pulse-commits-dark.svg
+│   │   └── pulse-commits-light.svg
 │   ├── research/
 │   │   ├── taskbar-briefs-2026-10-18/
 │   │   │   ├── brief-csharp-socle.md
@@ -3278,6 +3280,7 @@ _Generated from `git ls-files` — do not edit by hand._
 │   │   │   ├── ProjectsSampleWorldTests.cs
 │   │   │   └── SampleGitIsolationTests.cs
 │   │   ├── ScriptMenu/
+│   │   │   ├── ScriptMenuEntryTests.cs
 │   │   │   ├── ScriptMenuParserTests.cs
 │   │   │   └── ScriptMenuReaderTests.cs
 │   │   ├── Store/
