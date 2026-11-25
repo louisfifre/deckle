@@ -1,3 +1,4 @@
+using System.Xml.Linq;
 using Deckle.Settings;
 using Xunit;
 
@@ -112,5 +113,33 @@ public sealed class ParagraphCorrectionPageTests : IDisposable
 
         Assert.DoesNotContain(paragraph, h => h.CardTag == "AutocorrectPage_ParagraphCard");
         Assert.DoesNotContain(words, h => h.CardTag == "AutocorrectPage_DeclaredWordsCard");
+    }
+
+    [Fact]
+    public void TheCardsAndTheHeaderSayWhatTheyDo()
+    {
+        Dictionary<string, string> resw = ReadResw();
+
+        Assert.Equal("Autocorrect", resw["AutocorrectPageHeader.Title"]);
+        Assert.Equal(
+            "Fixes typos and missing accents as you type, in enrolled apps.",
+            resw["AutocorrectPageHeader.Description"]);
+        Assert.Equal(
+            "In enrolled apps, shows a corrected version of the paragraph. You apply it or keep the original.",
+            resw["AutocorrectPage_ParagraphCard.Description"]);
+        Assert.Equal(
+            "Words in your Dictation lexicon are never corrected either.",
+            resw["AutocorrectPage_DeclaredWordsCard.Description"]);
+    }
+
+    private static Dictionary<string, string> ReadResw()
+    {
+        var dir = new DirectoryInfo(AppContext.BaseDirectory);
+        while (dir is not null && !File.Exists(Path.Combine(dir.FullName, "Directory.Packages.props")))
+            dir = dir.Parent;
+        string root = dir?.FullName ?? throw new InvalidOperationException("repository root not found");
+        string path = Path.Combine(root, "src", "Deckle.Autocorrect.Views", "Strings", "en-US", "Resources.resw");
+        return XDocument.Load(path).Root!.Elements("data")
+            .ToDictionary(d => (string)d.Attribute("name")!, d => (string?)d.Element("value") ?? "", StringComparer.Ordinal);
     }
 }

@@ -76,6 +76,11 @@
   <data name="AutocorrectPageHeader.Title" xml:space="preserve">
     <value>Autocorrect</value>
   </data>
+  <!-- One line, true of what the module does: on each word you finish typing,
+       in an enrolled app, it restores a missing accent or fixes a typo. -->
+  <data name="AutocorrectPageHeader.Description" xml:space="preserve">
+    <value>Fixes typos and missing accents as you type, in enrolled apps.</value>
+  </data>
 
   <!-- Master switch -->
   <data name="AutocorrectPage_MasterCard.Header" xml:space="preserve">
@@ -90,7 +95,7 @@
     <value>Correct a paragraph with Shift+Enter</value>
   </data>
   <data name="AutocorrectPage_ParagraphCard.Description" xml:space="preserve">
-    <value>Shows a corrected version that you apply or keep yours.</value>
+    <value>In enrolled apps, shows a corrected version of the paragraph. You apply it or keep the original.</value>
   </data>
   <data name="AutocorrectPage_ParagraphBar_OllamaNotRunning_Title" xml:space="preserve">
     <value>Ollama isn't running on this PC</value>
@@ -140,7 +145,7 @@
     <value>Lexicon</value>
   </data>
   <data name="AutocorrectPage_DeclaredWordsCard.Description" xml:space="preserve">
-    <value>Its words are also kept as you write them.</value>
+    <value>Words in your Dictation lexicon are never corrected either.</value>
   </data>
   <data name="AutocorrectPage_IncludeButton_NameFormat" xml:space="preserve">
     <value>Put back {0}</value>
