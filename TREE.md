@@ -1490,8 +1490,7 @@ _Generated from `git ls-files` — do not edit by hand._
 │   │   │   ├── HueLightStateRestorer.cs
 │   │   │   ├── HueLocalDiscovery.cs
 │   │   │   ├── HueLocalDiscovery.Interop.cs
-│   │   │   ├── HueProjectedState.cs
-│   │   │   └── HueRestLightOutput.cs
+│   │   │   └── HueProjectedState.cs
 │   │   ├── Deckle.Lighting.csproj
 │   │   ├── DeckleLightingSource.cs
 │   │   ├── DeckleLightingSource.Discovery.cs

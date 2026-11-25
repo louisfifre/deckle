@@ -315,14 +315,14 @@ public sealed partial class LightZonesCard : UserControl
 
     private async Task IdentifyAsync(Button button, string lightId)
     {
-        if (_placement?.Output is not { } output) return;
+        if (_placement?.Bridge is not { } bridge) return;
 
         var originalContent = button.Content;
         button.IsEnabled = false;
         button.Content   = Loc.Get("AmbientLights_Identifying");
         try
         {
-            await output.IdentifyLightAsync(lightId).ConfigureAwait(true);
+            await bridge.IdentifyLightAsync(lightId).ConfigureAwait(true);
             await Task.Delay(IdentifyFlashDuration).ConfigureAwait(true);
         }
         catch (Exception ex)
@@ -331,7 +331,7 @@ public sealed partial class LightZonesCard : UserControl
         }
         finally
         {
-            try { await output.StopIdentifyAsync(lightId).ConfigureAwait(true); }
+            try { await bridge.StopIdentifyAsync(lightId).ConfigureAwait(true); }
             catch { /* best effort: the bridge ends the flash on its own */ }
 
             button.Content   = originalContent;

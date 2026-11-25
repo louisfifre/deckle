@@ -64,8 +64,8 @@ public sealed class HuePairingService : IDisposable
     }
 
     /// <summary>Active bridge client when paired, null otherwise.
-    /// Use this for control-path calls (SetGroupColorAsync,
-    /// SetLightColorAsync, IdentifyLightAsync …) — they are intentionally
+    /// Use this for control-path calls (IdentifyLightAsync,
+    /// ListLightsInGroupAsync …) — they are intentionally
     /// not wrapped here to avoid mirroring the entire HueBridgeClient
     /// surface for no added value.</summary>
     public HueBridgeClient? Bridge

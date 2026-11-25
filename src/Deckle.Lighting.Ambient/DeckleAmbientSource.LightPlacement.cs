@@ -27,26 +27,6 @@ public sealed partial class DeckleAmbientSource
         WriteEvent(EvtLightsResolved, group_id, group_name, from_group);
     }
 
-    [Event(EvtEntertainmentAreaUsed,
-           Level = EventLevel.Informational,
-           Keywords = (EventKeywords)Keywords.Pipeline,
-           Message = "Using an entertainment area as the lights source")]
-    public void EntertainmentAreaUsed()
-    {
-        if (IsEnabled(EventLevel.Informational, (EventKeywords)Keywords.Pipeline))
-            WriteEvent(EvtEntertainmentAreaUsed);
-    }
-
-    [Event(EvtEntertainmentAreaUsedDetail,
-           Level = EventLevel.Verbose,
-           Keywords = (EventKeywords)Keywords.Pipeline,
-           Message = "name={0} | lights={1}")]
-    public void EntertainmentAreaUsedDetail(string name, int lights)
-    {
-        if (!IsAmbientDetailEnabled(EventLevel.Verbose, (EventKeywords)Keywords.Pipeline)) return;
-        WriteEvent(EvtEntertainmentAreaUsedDetail, name, lights);
-    }
-
     [Event(EvtEntertainmentAreaMatched,
            Level = EventLevel.Verbose,
            Keywords = (EventKeywords)Keywords.Pipeline,

@@ -101,8 +101,8 @@ public sealed partial class DeckleAmbientSource : DeckleEventSource
     // 68 retired.
     // 69 retired.
     public const int EvtLightsResolved                  = 70;
-    public const int EvtEntertainmentAreaUsed           = 71;
-    public const int EvtEntertainmentAreaUsedDetail     = 72;
+    // 71 retired.
+    // 72 retired.
     public const int EvtEntertainmentAreaMatched        = 73;
     public const int EvtZoneSuggested                   = 74;
     public const int EvtLightZoneUpdated                = 75;

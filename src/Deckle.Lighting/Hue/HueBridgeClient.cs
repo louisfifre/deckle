@@ -24,7 +24,7 @@ namespace Deckle.Lighting;
 // username in the URL path). The Entertainment catalog and streaming
 // switch, the EventStream and the v1 ↔ v2 id maps use CLIP v2 (the
 // `hue-application-key` header).
-public sealed partial class HueBridgeClient : IDisposable, IHueRestBridgeClient
+public sealed partial class HueBridgeClient : IDisposable, IHueEntertainmentBridgeClient
 {
     // Hue caps the `devicetype` string at 40 chars total. "deckle#" is
     // 7 chars, so we have 33 left for the machine name suffix.
@@ -134,24 +134,16 @@ public sealed partial class HueBridgeClient : IDisposable, IHueRestBridgeClient
     }
 
     // Hue's `transitiontime` is the bridge-side fade toward the new state,
-    // in deciseconds. The factory default makes the lamp lag the screen.
-    // Smoothing happens client-side, so the shortest non-zero fade keeps
-    // the lamp responsive while successive push ticks still blend instead
-    // of reading as strobing.
+    // in deciseconds. The factory default makes the lamp lag; the shortest
+    // non-zero fade lands the write at once without a visible jump.
     private const int AmbientTransitionDeciseconds = 1;
 
     /// <summary>
-    /// Pairing must have completed. Pure black is sent as <c>on:false</c>
-    /// so the lamp goes off instead of jumping to the nearest in-gamut
-    /// colour.
+    /// One REST write to one light: the Entertainment output's pre-prime
+    /// before streaming starts. Pairing must have completed. Pure black is
+    /// sent as <c>on:false</c> so the lamp goes off instead of jumping to the
+    /// nearest in-gamut colour.
     /// </summary>
-    public Task SetGroupColorAsync(string groupId, LightColor color, CancellationToken ct = default)
-        => PutStateAsync(
-            $"api/{_credentials!.Username}/groups/{groupId}/action",
-            color,
-            target: $"group_id={groupId}",
-            ct);
-
     public Task SetLightColorAsync(string lightId, LightColor color, CancellationToken ct = default)
         => PutStateAsync(
             $"api/{_credentials!.Username}/lights/{lightId}/state",

@@ -109,39 +109,6 @@ public sealed class HueEntertainmentLightOutputTests
     }
 
     [Fact]
-    public void RestOutputUsesStateEventAttribution()
-    {
-        var client = new HueBridgeClient(
-            new HueBridge("bridge", "192.168.1.2", 443),
-            new HueCredentials("user", ""));
-        var output = new HueRestLightOutput(client, "7");
-
-        Assert.True(output.UsesStateEventAttribution);
-    }
-
-    [Fact]
-    public void RestOutputDoesNotRequireContinuousColorUpdates()
-    {
-        var client = new HueBridgeClient(
-            new HueBridge("bridge", "192.168.1.2", 443),
-            new HueCredentials("user", ""));
-        var output = new HueRestLightOutput(client, "7");
-
-        Assert.False(((ILightOutput)output).RequiresContinuousColorUpdates);
-    }
-
-    [Fact]
-    public void RestOutputLeavesUpdateRateToItsConsumer()
-    {
-        var client = new HueBridgeClient(
-            new HueBridge("bridge", "192.168.1.2", 443),
-            new HueCredentials("user", ""));
-        var output = new HueRestLightOutput(client, "7");
-
-        Assert.Null(((ILightOutput)output).PreferredColorUpdateRateHz);
-    }
-
-    [Fact]
     public async Task ConnectAsyncPrePrimesThenStartsStreamingBeforeConnectingTransportAndPrimingBlack()
     {
         var events = new List<string>();

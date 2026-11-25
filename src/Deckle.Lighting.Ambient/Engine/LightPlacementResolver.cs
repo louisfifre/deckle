@@ -2,59 +2,42 @@ using Deckle.Lighting;
 
 namespace Deckle.Lighting.Ambient;
 
-// Resolves the addressable lights of the selected Hue group and suggests a
+// Resolves the lights of the selected Entertainment area and suggests a
 // border zone for each one. Feeds the per-light rows of the Settings page
 // (LightZonesCard); the engine itself only reads the stored assignments.
 //
-// Split in two on purpose:
-//   - MatchEntertainmentArea and SuggestZones are pure: they take the bridge's
-//     answers as data, log nothing, and are unit-tested.
-//   - ResolveAsync does the I/O against a paired HueBridgeClient (group list,
-//     light list, entertainment configurations) and never throws for a
-//     bridge failure: a failed call is logged and degrades to "no lights" or
-//     "no suggestion", which the card renders as its empty state.
+// Ambient drives an Entertainment area only (decided 2026-11-25), so the
+// area is the light list: the lights the person placed in the Hue app's
+// Entertainment setup, with the position that suggests their screen edge
+// (LightZoneSuggester). The area is found the way the output factory finds
+// it (HueLightOutputFactory.ResolveEntertainmentAreaAsync), so the card
+// lists the lights the stream drives.
 //
-// Why an entertainment area at all: when the user already placed the lights
-// in the Hue app's entertainment setup, their positions give a zone per light
-// for free (LightZoneSuggester). A pure Entertainment group also reports no
-// lights over CLIP v1; the matched area's placements then stand in for the
-// light list.
+// Split in two on purpose:
+//   - Build and SuggestZones are pure: they take the bridge's answers as
+//     data, log nothing, and are unit-tested.
+//   - ResolveAsync does the I/O against a paired HueBridgeClient and never
+//     throws for a bridge failure: a failed call is logged and degrades to
+//     "no lights", which the card renders as its empty state.
 internal static class LightPlacementResolver
 {
-    /// <summary>Finds the entertainment area that describes the group: the
-    /// one whose name equals the group's (case-insensitive) wins; otherwise
-    /// the one sharing the most light ids with <paramref name="lightIds"/>;
-    /// otherwise null.</summary>
-    public static EntertainmentAreaMatch? MatchEntertainmentArea(
-        string? groupName,
-        IReadOnlyCollection<string> lightIds,
-        IReadOnlyList<HueEntertainmentArea> areas)
+    /// <summary>One row per light the area places, in the area's order, its
+    /// reachability read from <paramref name="reachable"/> (true when the
+    /// bridge did not report the light), and the zone each placement
+    /// suggests.</summary>
+    public static (IReadOnlyList<LightDescriptor> Lights, Dictionary<string, LightZone> Suggestions) Build(
+        HueEntertainmentArea area,
+        IReadOnlyDictionary<string, bool> reachable)
     {
-        if (!string.IsNullOrEmpty(groupName))
+        var lights = new List<LightDescriptor>(area.LightPlacements.Count);
+        var seen = new HashSet<string>(StringComparer.Ordinal);
+        foreach (var placement in area.LightPlacements)
         {
-            foreach (var area in areas)
-            {
-                if (string.Equals(area.Name, groupName, StringComparison.OrdinalIgnoreCase))
-                    return new EntertainmentAreaMatch(area, EntertainmentAreaMatchKind.Name, 0);
-            }
+            if (!seen.Add(placement.LightId)) continue;
+            bool isReachable = !reachable.TryGetValue(placement.LightId, out var r) || r;
+            lights.Add(new LightDescriptor(placement.LightId, placement.Name, isReachable));
         }
-
-        if (lightIds.Count == 0) return null;
-
-        var idSet = new HashSet<string>(lightIds, StringComparer.Ordinal);
-        HueEntertainmentArea? best = null;
-        int bestOverlap = 0;
-        foreach (var area in areas)
-        {
-            int overlap = 0;
-            foreach (var placement in area.LightPlacements)
-                if (idSet.Contains(placement.LightId)) overlap++;
-            if (overlap > bestOverlap) { best = area; bestOverlap = overlap; }
-        }
-
-        return best is null
-            ? null
-            : new EntertainmentAreaMatch(best, EntertainmentAreaMatchKind.Overlap, bestOverlap);
+        return (lights, SuggestZones(area, seen));
     }
 
     /// <summary>One suggested zone per light of <paramref name="lightIds"/>
@@ -74,99 +57,61 @@ internal static class LightPlacementResolver
         return suggestions;
     }
 
-    /// <summary>Lists the group's lights through a REST output bound to it,
-    /// then matches an entertainment area for suggestions. The returned
-    /// <see cref="LightPlacement.Output"/> stays usable for Identify.</summary>
+    /// <summary>Finds the group's Entertainment area and lists its lights.
+    /// The returned <see cref="LightPlacement.Bridge"/> serves Identify.</summary>
     public static async Task<LightPlacement> ResolveAsync(
         HueBridgeClient bridge,
         string groupId,
         CancellationToken ct = default)
     {
-        var output = new HueRestLightOutput(bridge, groupId);
-        var lights = new List<LightDescriptor>();
+        HueEntertainmentArea? area = null;
         try
         {
-            await output.ConnectAsync(ct).ConfigureAwait(false);
-            lights.AddRange(await output.ListLightsAsync(ct).ConfigureAwait(false));
+            area = await HueLightOutputFactory
+                .ResolveEntertainmentAreaAsync(bridge, groupId, ct)
+                .ConfigureAwait(false);
+        }
+        catch (Exception ex) when (ex is not OperationCanceledException)
+        {
+            LogCallFailed("resolve entertainment area", ex);
+        }
+
+        if (area is null)
+        {
+            DeckleAmbientSource.Log.EntertainmentAreaMatched("no_match", "", "", 0);
+            DeckleAmbientSource.Log.LightsResolved(groupId, "", 0);
+            return new LightPlacement(bridge, [], new Dictionary<string, LightZone>());
+        }
+        DeckleAmbientSource.Log.EntertainmentAreaMatched("found", area.Id, area.Name, area.LightPlacements.Count);
+
+        var (lights, suggestions) = Build(area, await ReadReachabilityAsync(bridge, groupId, ct).ConfigureAwait(false));
+        DeckleAmbientSource.Log.LightsResolved(groupId, area.Name, lights.Count);
+        foreach (var placement in area.LightPlacements)
+        {
+            if (!suggestions.TryGetValue(placement.LightId, out var zone)) continue;
+            DeckleAmbientSource.Log.ZoneSuggested(
+                placement.LightId, zone.ToString(), area.Name, placement.X, placement.Y, placement.Z);
+        }
+
+        return new LightPlacement(bridge, lights, suggestions);
+    }
+
+    // The area carries positions, not reachability; the group's CLIP v1 light
+    // list does. A failure leaves every light shown as reachable.
+    private static async Task<IReadOnlyDictionary<string, bool>> ReadReachabilityAsync(
+        HueBridgeClient bridge, string groupId, CancellationToken ct)
+    {
+        var reachable = new Dictionary<string, bool>(StringComparer.Ordinal);
+        try
+        {
+            foreach (var light in await bridge.ListLightsInGroupAsync(groupId, ct).ConfigureAwait(false))
+                reachable[light.Id] = light.Reachable;
         }
         catch (Exception ex) when (ex is not OperationCanceledException)
         {
             LogCallFailed("list lights", ex);
         }
-
-        string? groupName = await FindGroupNameAsync(bridge, groupId, ct).ConfigureAwait(false);
-        DeckleAmbientSource.Log.LightsResolved(groupId, groupName ?? "", lights.Count);
-
-        var areas = await ListAreasAsync(bridge, ct).ConfigureAwait(false);
-        var lightIds = lights.ConvertAll(l => l.Id);
-        var match = MatchEntertainmentArea(groupName, lightIds, areas);
-        LogMatch(areas.Count, match);
-
-        if (lights.Count == 0 && match is { Area.LightPlacements.Count: > 0 })
-        {
-            DeckleAmbientSource.Log.EntertainmentAreaUsed();
-            DeckleAmbientSource.Log.EntertainmentAreaUsedDetail(match.Area.Name, match.Area.LightPlacements.Count);
-            foreach (var placement in match.Area.LightPlacements)
-                lights.Add(new LightDescriptor(placement.LightId, placement.Name, IsReachable: true));
-            lightIds = lights.ConvertAll(l => l.Id);
-        }
-
-        var suggestions = match is null
-            ? new Dictionary<string, LightZone>()
-            : SuggestZones(match.Area, lightIds);
-        if (match is not null)
-        {
-            foreach (var placement in match.Area.LightPlacements)
-            {
-                if (!suggestions.TryGetValue(placement.LightId, out var zone)) continue;
-                DeckleAmbientSource.Log.ZoneSuggested(
-                    placement.LightId, zone.ToString(), match.Area.Name, placement.X, placement.Y, placement.Z);
-            }
-        }
-
-        return new LightPlacement(output, lights, suggestions);
-    }
-
-    private static async Task<string?> FindGroupNameAsync(
-        HueBridgeClient bridge, string groupId, CancellationToken ct)
-    {
-        try
-        {
-            var groups = await bridge.ListGroupsAsync(ct).ConfigureAwait(false);
-            foreach (var group in groups)
-                if (group.Id == groupId) return group.Name;
-        }
-        catch (Exception ex) when (ex is not OperationCanceledException)
-        {
-            LogCallFailed("list groups", ex);
-        }
-        return null;
-    }
-
-    private static async Task<IReadOnlyList<HueEntertainmentArea>> ListAreasAsync(
-        HueBridgeClient bridge, CancellationToken ct)
-    {
-        try
-        {
-            return await bridge.ListEntertainmentConfigurationsAsync(ct).ConfigureAwait(false);
-        }
-        catch (Exception ex) when (ex is not OperationCanceledException)
-        {
-            LogCallFailed("list ent configs", ex);
-            return [];
-        }
-    }
-
-    private static void LogMatch(int areaCount, EntertainmentAreaMatch? match)
-    {
-        if (areaCount == 0)
-            DeckleAmbientSource.Log.EntertainmentAreaMatched("no_areas", "", "", 0);
-        else if (match is null)
-            DeckleAmbientSource.Log.EntertainmentAreaMatched("no_match", "", "", 0);
-        else
-            DeckleAmbientSource.Log.EntertainmentAreaMatched(
-                match.Kind == EntertainmentAreaMatchKind.Name ? "name" : "overlap",
-                match.Area.Id, match.Area.Name, match.Overlap);
+        return reachable;
     }
 
     internal static void LogCallFailed(string op, Exception ex)
@@ -175,21 +120,10 @@ internal static class LightPlacementResolver
     }
 }
 
-internal enum EntertainmentAreaMatchKind
-{
-    Name,
-    Overlap,
-}
-
-internal sealed record EntertainmentAreaMatch(
-    HueEntertainmentArea Area,
-    EntertainmentAreaMatchKind Kind,
-    int Overlap);
-
-/// <summary>The lights of one group, the zone suggested for each (absent
-/// when no entertainment area places it), and the output bound to the group
-/// for Identify.</summary>
+/// <summary>The lights of one Entertainment area, the zone suggested for each
+/// (absent when its placement suggests none), and the bridge that flashes
+/// them for Identify.</summary>
 internal sealed record LightPlacement(
-    IMultiLightOutput Output,
+    HueBridgeClient Bridge,
     IReadOnlyList<LightDescriptor> Lights,
     IReadOnlyDictionary<string, LightZone> SuggestedZones);
