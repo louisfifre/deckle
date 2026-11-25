@@ -38,14 +38,13 @@ public class DiacriticsRestorerTests
         IPairDisambiguator? context = null,
         IPersonalLexicon? personal = null,
         Func<string, IReadOnlyList<AccentVariant>>? personalVariants = null,
-        RestorerOptions? options = null,
         bool includeEnglish = true)
     {
         var french = French();
         var index = AccentIndex.Build(french);
         return new DiacriticsRestorer(
             french, includeEnglish ? English() : null, index,
-            options, context, personal, personalVariants);
+            context: context, personal: personal, personalVariants: personalVariants);
     }
 
     // ── Single-candidate lexical gate ──────────────────────────────────────

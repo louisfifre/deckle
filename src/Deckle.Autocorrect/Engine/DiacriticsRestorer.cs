@@ -18,16 +18,30 @@ public sealed class DiacriticsRestorer : ICorrectionPolicy
     private readonly IFrequencyLexicon _french;
     private readonly IFrequencyLexicon? _english;
     private readonly AccentIndex _index;
-    private readonly RestorerOptions _options;
     private readonly IPairDisambiguator? _context;
     private readonly IPersonalLexicon? _personal;
     private readonly Func<string, IReadOnlyList<AccentVariant>>? _personalVariants;
+
+    // The thresholds that govern when the restorer dares to act on an ambiguous
+    // folded form. Every value leans conservative: a wrongly corrected valid
+    // word is the worst outcome, so the bars sit high. They are an engineer's
+    // starting point, not measured optima.
+
+    // Words shorter than this are never corrected: too little signal.
+    private const int MinWordLength = 2;
+
+    // Frequency dominance gate: the top candidate must out-frequency the runner
+    // up by at least this ratio to win without context. Steep on purpose.
+    private const double DominanceRatio = 20.0;
+
+    // And the dominant candidate must itself be common enough — a rare word
+    // winning a ratio over an even rarer one is not evidence.
+    private const double MinDominantFrequencyPerMillion = 1.0;
 
     public DiacriticsRestorer(
         IFrequencyLexicon french,
         IFrequencyLexicon? english,
         AccentIndex index,
-        RestorerOptions? options = null,
         IPairDisambiguator? context = null,
         IPersonalLexicon? personal = null,
         Func<string, IReadOnlyList<AccentVariant>>? personalVariants = null)
@@ -35,7 +49,6 @@ public sealed class DiacriticsRestorer : ICorrectionPolicy
         _french = french;
         _english = english;
         _index = index;
-        _options = options ?? new RestorerOptions();
         _context = context;
         _personal = personal;
         _personalVariants = personalVariants;
@@ -46,7 +59,7 @@ public sealed class DiacriticsRestorer : ICorrectionPolicy
         StageTrace? st = trace?.Open(CorrectionTrace.StageNames.Diacritics);
 
         // 1. Too short to carry signal.
-        if (word.Length < _options.MinWordLength)
+        if (word.Length < MinWordLength)
             return Abstain(st, CorrectionTrace.Reasons.TooShort);
 
         foreach (char c in word)
@@ -75,24 +88,15 @@ public sealed class DiacriticsRestorer : ICorrectionPolicy
         if (AccentFolding.HasDiacritics(word))
             return Abstain(st, CorrectionTrace.Reasons.AlreadyAccented);
 
-        // 6b. Proper-noun guard (opt-in): a title-cased word mid-utterance is a
-        //     name (Git, Azure), not a dictated French word. Sentence-initial
-        //     capitals are exempt — there a capital is the ordinary case.
-        if (_options.GuardCapitalizedMidSentence && leftContext.Count > 0 && WordShape.IsTitleCase(word))
-            return Abstain(st, CorrectionTrace.Reasons.ProperNounGuard);
-
         string lower = word.ToLowerInvariant();
 
         // 7. A valid French form is never touched — the literal always wins.
-        //    In the eval-only context mode the literal instead joins the
-        //    candidates as first-rank, and only the pair model may overturn it.
         bool literalValid = _french.Contains(lower);
         // Calibrated valid-form exception: "voila" is a rare passé simple verb,
         // but in fast prose it overwhelmingly means the discourse particle
         // "voilà". Let the ordinary dominance gate arbitrate this one fold.
         bool allowDominantValidLiteral = lower == "voila";
-        if (literalValid && !allowDominantValidLiteral
-            && !(_options.CorrectValidFormsWithContext && _context is not null))
+        if (literalValid && !allowDominantValidLiteral)
             return Abstain(st, CorrectionTrace.Reasons.ValidFrench);
 
 
@@ -107,9 +111,8 @@ public sealed class DiacriticsRestorer : ICorrectionPolicy
             return Abstain(st, CorrectionTrace.Reasons.UserAdopted);
 
         // 10. Gather candidates from the index, merge the personal dictionary's
-        //     own variants (personal wins ties), filter by frequency floor and
-        //     drop any pair the user has suppressed. A valid literal competes
-        //     as a candidate of its own.
+        //     own variants (personal wins ties) and drop any pair the user has
+        //     suppressed. A valid literal competes as a candidate of its own.
         var candidates = BuildCandidates(lower, literalValid, out var fromPersonal);
         st?.WithCandidates(candidates, v =>
             fromPersonal.Contains(v.Form) ? CorrectionTrace.Sources.Personal
@@ -165,13 +168,13 @@ public sealed class DiacriticsRestorer : ICorrectionPolicy
             ? top.FrequencyPerMillion / second.FrequencyPerMillion
             : double.PositiveInfinity;
         st?.Gauge("dominance", ratio)
-          .Gauge("dominance_min", _options.DominanceRatio)
+          .Gauge("dominance_min", DominanceRatio)
           .Gauge("top_freq", top.FrequencyPerMillion)
-          .Gauge("top_freq_min", _options.MinDominantFrequencyPerMillion);
+          .Gauge("top_freq_min", MinDominantFrequencyPerMillion);
         bool dominant =
             second.FrequencyPerMillion > 0.0
-            && ratio >= _options.DominanceRatio
-            && top.FrequencyPerMillion >= _options.MinDominantFrequencyPerMillion;
+            && ratio >= DominanceRatio
+            && top.FrequencyPerMillion >= MinDominantFrequencyPerMillion;
         if (dominant)
         {
             st?.Fire(CorrectionTrace.Reasons.FrequencyDominance);
@@ -217,13 +220,11 @@ public sealed class DiacriticsRestorer : ICorrectionPolicy
             }
         }
 
-        // Filter: frequency floor, then drop user-suppressed pairs
+        // Filter: drop user-suppressed pairs
         // (suppression is case-insensitive on both the original and the candidate form).
         var kept = new List<AccentVariant>(merged.Count);
         foreach (var v in merged)
         {
-            if (v.FrequencyPerMillion < _options.MinCandidateFrequencyPerMillion)
-                continue;
             if (_personal?.IsSuppressed(lower, v.Form.ToLowerInvariant()) == true)
             {
                 fromPersonal.Remove(v.Form);
