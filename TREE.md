@@ -1935,11 +1935,6 @@ _Generated from `git ls-files` — do not edit by hand._
 │   │   ├── PasteWindow.Thumbnail.cs
 │   │   ├── PasteWindow.xaml
 │   │   └── PasteWindow.xaml.cs
-│   ├── Deckle.Presets/
-│   │   ├── Deckle.Presets.csproj
-│   │   ├── IPresetStore.cs
-│   │   ├── Preset.cs
-│   │   └── PresetFamily.cs
 │   ├── Deckle.Projects/
 │   │   ├── Formatting/
 │   │   │   ├── ElapsedFormat.cs
@@ -3262,9 +3257,6 @@ _Generated from `git ls-files` — do not edit by hand._
 │   │   ├── PasteWindowDragBugNotes.md
 │   │   ├── ScratchFolder.cs
 │   │   └── WindowDragGestureTests.cs
-│   ├── Deckle.Presets.Tests/
-│   │   ├── Deckle.Presets.Tests.csproj
-│   │   └── PresetFamilyTests.cs
 │   ├── Deckle.Projects.App.Tests/
 │   │   ├── Deckle.Projects.App.Tests.csproj
 │   │   ├── DeckleProjectsAppSourceTests.cs
