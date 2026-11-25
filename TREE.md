@@ -850,11 +850,6 @@ _Generated from `git ls-files` — do not edit by hand._
 │   │   ├── Deckle.Catalog.Themes.csproj
 │   │   ├── Icons.xaml
 │   │   └── SettingsPageHeaderBrushes.xaml
-│   ├── Deckle.Chrono/
-│   │   ├── ChronoFormatter.cs
-│   │   ├── ChronoTimer.cs
-│   │   ├── Deckle.Chrono.csproj
-│   │   └── DeckleChronoSource.cs
 │   ├── Deckle.Composition/
 │   │   ├── Core/
 │   │   │   ├── HudComposition.Animations.cs
@@ -2783,12 +2778,6 @@ _Generated from `git ls-files` — do not edit by hand._
 │   │   ├── SettingFactoryTests.cs
 │   │   ├── SettingsExpanderItemsBugNotes.md
 │   │   └── SettingValueTextTests.cs
-│   ├── Deckle.Chrono.Tests/
-│   │   ├── ChronoFormatterTests.cs
-│   │   ├── ChronoTimerTests.cs
-│   │   ├── Deckle.Chrono.Tests.csproj
-│   │   ├── DeckleChronoSourceTests.cs
-│   │   └── MessageTemplateDoctrineTests.cs
 │   ├── Deckle.Contributions.Tests/
 │   │   ├── Fakes/
 │   │   │   ├── FakeContribution.cs
