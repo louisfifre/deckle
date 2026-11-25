@@ -288,4 +288,208 @@ public sealed class AddedFolderStoreTests
         Assert.Equal("Outer", store.Owning(outer)!.Name);
         Assert.Null(store.Owning(scratch.Folder("Elsewhere")));
     }
+
+    [Fact]
+    public void AGroupMadeAndRenamedAndItsFoldersAreThereWhenTheStoreIsReadAgain()
+    {
+        using var scratch = new ScratchFolder();
+        string data = scratch.Folder("data");
+        string a = scratch.Folder("A");
+        var store = new AddedFolderStore(data);
+        store.Add(a);
+        FolderGroup made = store.AddGroup("  Travail ");
+        store.MoveToGroup(a, made.Id);
+        int changes = 0;
+        store.Changed += () => changes++;
+
+        FolderGroup? renamed = store.RenameGroup(made.Id, "Work");
+
+        Assert.Equal(made.Id, renamed?.Id);
+        Assert.Equal(1, changes);
+        var reread = new AddedFolderStore(data);
+        FolderGroup group = Assert.Single(reread.Groups);
+        Assert.Equal(new FolderGroup(made.Id, "Work"), group);
+        Assert.Equal(made.Id, reread.Find(a)?.GroupId);
+    }
+
+    [Fact]
+    public void GroupsKeepTheOrderTheyWereMade()
+    {
+        using var scratch = new ScratchFolder();
+        var store = new AddedFolderStore(scratch.Folder("data"));
+
+        store.AddGroup("B");
+        store.AddGroup("A");
+
+        Assert.Equal(["B", "A"], store.Groups.Select(g => g.Name));
+    }
+
+    [Fact]
+    public void RemovingAGroupKeepsItsFoldersInNoGroupWhereTheyWere()
+    {
+        using var scratch = new ScratchFolder();
+        string data = scratch.Folder("data");
+        var store = new AddedFolderStore(data);
+        store.Add(scratch.Folder("A"));
+        store.Add(scratch.Folder("B"));
+        store.Add(scratch.Folder("C"));
+        FolderGroup group = store.AddGroup("Work");
+        store.MoveToGroup(scratch.Folder("A"), group.Id);
+        store.MoveToGroup(scratch.Folder("C"), group.Id);
+        int changes = 0;
+        store.Changed += () => changes++;
+
+        bool removed = store.RemoveGroup(group.Id);
+
+        Assert.True(removed);
+        Assert.Equal(1, changes);
+        var reread = new AddedFolderStore(data);
+        Assert.Empty(reread.Groups);
+        Assert.Equal(["B", "A", "C"], reread.Folders.Select(f => f.Name));
+        Assert.All(reread.Folders, f => Assert.Null(f.GroupId));
+        Assert.False(store.RemoveGroup(group.Id));
+        Assert.Equal(1, changes);
+    }
+
+    [Fact]
+    public void AFolderMovedComesLastOfThePlaceItJoins()
+    {
+        using var scratch = new ScratchFolder();
+        string data = scratch.Folder("data");
+        var store = new AddedFolderStore(data);
+        foreach (string name in new[] { "A", "B", "C", "D" }) store.Add(scratch.Folder(name));
+        FolderGroup group = store.AddGroup("Work");
+        store.MoveToGroup(scratch.Folder("B"), group.Id);
+
+        store.MoveToGroup(scratch.Folder("A"), group.Id);
+        FolderGrouping into = FolderGrouping.Of(store.Folders, store.Groups);
+        store.MoveToGroup(scratch.Folder("B"), null);
+        FolderGrouping outOf = FolderGrouping.Of(new AddedFolderStore(data).Folders, store.Groups);
+
+        Assert.Equal(["B", "A"], into.Groups.Single().Folders.Select(f => f.Name));
+        Assert.Equal(["C", "D", "B"], outOf.Ungrouped.Select(f => f.Name));
+        Assert.Equal(["A"], outOf.Groups.Single().Folders.Select(f => f.Name));
+    }
+
+    [Fact]
+    public void MovingToThePlaceAFolderIsInAlreadyChangesNothing()
+    {
+        using var scratch = new ScratchFolder();
+        var store = new AddedFolderStore(scratch.Folder("data"));
+        store.Add(scratch.Folder("A"));
+        store.Add(scratch.Folder("B"));
+        int changes = 0;
+        store.Changed += () => changes++;
+
+        AddedFolder? same = store.MoveToGroup(scratch.Folder("A"), null);
+
+        Assert.Equal("A", same?.Name);
+        Assert.Equal(0, changes);
+        Assert.Equal(["A", "B"], store.Folders.Select(f => f.Name));
+    }
+
+    [Fact]
+    public void ANameAlreadyTakenIsRefusedWhateverItsCaseAndAnEmptyOneToo()
+    {
+        using var scratch = new ScratchFolder();
+        var store = new AddedFolderStore(scratch.Folder("data"));
+        FolderGroup work = store.AddGroup("Work");
+        FolderGroup family = store.AddGroup("Family");
+
+        Assert.True(store.IsGroupNameTaken(" WORK "));
+        Assert.False(store.IsGroupNameTaken("WORK", work.Id));
+        Assert.Throws<ArgumentException>(() => store.AddGroup("work"));
+        Assert.Throws<ArgumentException>(() => store.RenameGroup(family.Id, "WORK"));
+        Assert.Throws<ArgumentException>(() => store.AddGroup("   "));
+        Assert.Equal(["Work", "Family"], store.Groups.Select(g => g.Name));
+        // Another case of its own name is a rename, not a clash.
+        Assert.Equal("WORK", store.RenameGroup(work.Id, "WORK")?.Name);
+        Assert.Null(store.RenameGroup("nope", "Anything"));
+    }
+
+    [Fact]
+    public void MovingToAGroupThatDoesNotExistReturnsNullAndChangesNothing()
+    {
+        using var scratch = new ScratchFolder();
+        string data = scratch.Folder("data");
+        var store = new AddedFolderStore(data);
+        store.Add(scratch.Folder("A"));
+        int changes = 0;
+        store.Changed += () => changes++;
+
+        Assert.Null(store.MoveToGroup(scratch.Folder("A"), "nope"));
+        Assert.Null(store.MoveToGroup(scratch.Folder("Elsewhere"), null));
+
+        Assert.Equal(0, changes);
+        Assert.Null(store.Folders.Single().GroupId);
+        Assert.Null(new AddedFolderStore(data).Folders.Single().GroupId);
+    }
+
+    [Fact]
+    public void AFolderThatNamesAnUnknownGroupIsReadAsInNoGroup()
+    {
+        using var scratch = new ScratchFolder();
+        string data = scratch.Folder("data");
+        string a = scratch.Folder("A");
+        string b = scratch.Folder("B");
+        string json = $$"""
+            {
+              "Version": 3,
+              "Groups": [ { "Id": "w", "Name": "Work" } ],
+              "Folders": [
+                { "Path": {{System.Text.Json.JsonSerializer.Serialize(a)}}, "AddedAt": "2026-11-10T09:00:00+00:00", "Group": "gone" },
+                { "Path": {{System.Text.Json.JsonSerializer.Serialize(b)}}, "AddedAt": "2026-11-10T09:00:00+00:00", "Group": "w" } ]
+            }
+            """;
+        File.WriteAllText(Path.Combine(data, AddedFolderStore.FileName), json);
+
+        var store = new AddedFolderStore(data);
+
+        Assert.Null(store.Find(a)?.GroupId);
+        Assert.Equal("w", store.Find(b)?.GroupId);
+    }
+
+    [Fact]
+    public void AGroupWithNoIdOrNameOrOneRepeatedIsSkippedWhenTheFileIsRead()
+    {
+        using var scratch = new ScratchFolder();
+        string data = scratch.Folder("data");
+        string json = """
+            {
+              "Version": 3,
+              "Groups": [
+                { "Id": "a", "Name": "Work" },
+                { "Id": "", "Name": "No id" },
+                { "Id": "b", "Name": " " },
+                { "Id": "a", "Name": "Same id" },
+                { "Id": "c", "Name": "WORK" },
+                { "Id": "d", "Name": "Family" } ],
+              "Folders": []
+            }
+            """;
+        File.WriteAllText(Path.Combine(data, AddedFolderStore.FileName), json);
+
+        var store = new AddedFolderStore(data);
+
+        Assert.Equal(["Work", "Family"], store.Groups.Select(g => g.Name));
+    }
+
+    [Fact]
+    public void AVersion2FileHasNoGroups()
+    {
+        using var scratch = new ScratchFolder();
+        string data = scratch.Folder("data");
+        string json = $$"""
+            {
+              "Version": 2,
+              "Folders": [ { "Path": {{System.Text.Json.JsonSerializer.Serialize(scratch.Folder("Old"))}}, "AddedAt": "2026-11-10T09:00:00+00:00" } ]
+            }
+            """;
+        File.WriteAllText(Path.Combine(data, AddedFolderStore.FileName), json);
+
+        var store = new AddedFolderStore(data);
+
+        Assert.Empty(store.Groups);
+        Assert.Null(store.Folders.Single().GroupId);
+    }
 }

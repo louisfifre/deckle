@@ -1033,6 +1033,8 @@ _Generated from `git ls-files` — do not edit by hand._
 │   │   │   ├── AddedFolderReach.cs
 │   │   │   ├── AddedFolderStore.cs
 │   │   │   ├── DeckleFoldersSource.AddedFolders.cs
+│   │   │   ├── FolderGroup.cs
+│   │   │   ├── FolderGrouping.cs
 │   │   │   └── FolderIconRule.cs
 │   │   ├── Browsing/
 │   │   │   ├── AddressResolver.cs
@@ -2920,6 +2922,7 @@ _Generated from `git ls-files` — do not edit by hand._
 │   │   ├── DenyListing.cs
 │   │   ├── DestinationHistoryTests.cs
 │   │   ├── EntryFormatTests.cs
+│   │   ├── FolderGroupingTests.cs
 │   │   ├── FolderIconRuleTests.cs
 │   │   ├── FolderListingBugNotes.md
 │   │   ├── FolderListingTests.cs
