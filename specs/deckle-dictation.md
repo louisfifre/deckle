@@ -13,7 +13,7 @@
 3. They are never cut off: a hesitation or a pause in the middle of a sentence closes nothing.
 4. Only their voice counts: a rub or a noise around them does not pass for speech.
 5. An hour holds up as well as two minutes, and nothing of what they said is lost.
-6. They change subject, stop, resume: the change of subject is noticed by itself or on one gesture of theirs, and the text keeps these separations.
+6. They change subject, pause, resume: the change of subject is noticed by itself or on one gesture of theirs, and the text keeps these separations.
 7. To find their thread again, their last words read at a glance, without hiding what they are looking at.
 8. The final text says what they said, with their words.
 9. The experience is the same on the computer and on the phone.
@@ -31,7 +31,7 @@
 
 ## Workflow
 
-Each moment says what the user meets when it goes well, then what else can happen.
+Each moment says what the user meets when it goes well, then what else can happen. Speaking, finding the thread and changing subject happen together, while the dictation runs.
 
 ### Starting
 
@@ -45,7 +45,7 @@ When it goes well:
 Otherwise:
 
 - Nothing on the machine can transcribe speech: no dictation starts, and the product tells them what is missing and where to get it.
-- No microphone answers: no dictation starts, and the product tells them so.
+- No microphone can be used: no dictation starts, and the product tells them so.
 
 ### Speaking
 
@@ -59,7 +59,7 @@ When it goes well:
 
 Otherwise:
 
-- The product hears no voice in the first seconds: it tells them once, and the dictation goes on.
+- The product hears no voice from them in the first seconds of the dictation: it tells them once, and the dictation goes on.
 
 ### Finding the thread
 
@@ -67,8 +67,7 @@ When it goes well:
 
 1. Their last words read at a glance, and the older text gives way to them.
 2. What shows their words never hides what they are looking at: as they move toward it, what lies under it can be read and used.
-3. What they read is the text they will get.
-4. When the text is rewritten while they speak, what they are reading does not move.
+3. When their text is rewritten while they speak, what they are reading does not move.
 
 Otherwise:
 
@@ -93,7 +92,7 @@ Otherwise:
 
 - Nothing was said: nothing is made ready, and what they had copied before stays ready to paste.
 - Part of what they said was recorded but could not be transcribed: the rest is ready, and the product tells them a part is missing.
-- A rewrite fails: they get their whole text, as said where the rewrite failed, and the product tells them.
+- A rewrite fails: they still get their whole text, without that rewrite, and the product tells them.
 - The text cannot be made ready to paste: the product tells them, and the text is not lost.
 
 ### Choosing the rewriting
@@ -102,7 +101,7 @@ Otherwise:
 
 ## Rules
 
-1. Whatever stops a dictation, what was said in it is found again, and the product says so when it gives it back.
+1. Whatever stops a dictation, what was said in it is found again, and the product says so when it gives it back, and when only part of it came back.
 2. The text says what the user said, with their words: a rewrite may bring a notion said twice into one place, and never drops one.
 3. What the product shows of the dictation is its real state: it says it listens only while it listens.
 4. Everything the product tells the user reaches them with animations off as well.
