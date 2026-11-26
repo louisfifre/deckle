@@ -66,10 +66,8 @@ internal static class TaskbarDocumentBuilder
 
         if (customization.Background != TaskbarBackground.Native)
         {
-            // Black is a solid fill; transparent shows the wallpaper. The edge
-            // line goes in both: against black it would be a grey hairline.
-            string fill = customization.Background == TaskbarBackground.Black ? "Black" : "Transparent";
-            rules.Add(new("background.fill", BackgroundFillTarget, "Fill", fill));
+            // Transparent shows the wallpaper; the edge line goes with the fill.
+            rules.Add(new("background.fill", BackgroundFillTarget, "Fill", "Transparent"));
             rules.Add(new("background.stroke", BackgroundStrokeTarget, "Fill", "Transparent"));
         }
 

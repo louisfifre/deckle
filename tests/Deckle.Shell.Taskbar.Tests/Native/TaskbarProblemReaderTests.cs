@@ -11,7 +11,7 @@ public sealed class TaskbarProblemReaderTests
 
     private static readonly TaskbarCustomization _everything = new()
     {
-        Background = TaskbarBackground.Black,
+        Background = TaskbarBackground.Transparent,
         TrayIconPitch = 24,
         TightenQuickSettings = true,
         Clock = ClockCustomization.DateAboveTime,
@@ -95,7 +95,7 @@ public sealed class TaskbarProblemReaderTests
     [Fact]
     public void APartThatIsNotAskedForIsNeverReported()
     {
-        var onlyBackground = new TaskbarCustomization { Background = TaskbarBackground.Black };
+        var onlyBackground = new TaskbarCustomization { Background = TaskbarBackground.Transparent };
 
         var problems = TaskbarProblemReader.Read(onlyBackground,
             Status(Rule("clock.spacing", "error")), false, null, false);

@@ -72,9 +72,6 @@
   <data name="TaskbarPage_BackgroundTransparent.Content" xml:space="preserve">
     <value>Transparent</value>
   </data>
-  <data name="TaskbarPage_BackgroundBlack.Content" xml:space="preserve">
-    <value>Black</value>
-  </data>
   <data name="TaskbarPage_BarThicknessCard.Header" xml:space="preserve">
     <value>Custom taskbar thickness</value>
   </data>

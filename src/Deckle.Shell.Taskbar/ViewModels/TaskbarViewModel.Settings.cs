@@ -40,7 +40,6 @@ public partial class TaskbarViewModel
             [
                 (TaskbarBackground.Native, "TaskbarPage_BackgroundDefault"),
                 (TaskbarBackground.Transparent, "TaskbarPage_BackgroundTransparent"),
-                (TaskbarBackground.Black, "TaskbarPage_BackgroundBlack"),
             ],
             enabledWhen: () => IsSupported,
             defaultValue: () => new TaskbarSettings().Background,

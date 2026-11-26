@@ -46,15 +46,6 @@ public sealed class TaskbarDocumentBuilderTests : IDisposable
     }
 
     [Fact]
-    public void ABlackBackgroundFillsBlackAndStillEmptiesTheEdgeLine()
-    {
-        var customization = new TaskbarCustomization { Background = TaskbarBackground.Black };
-
-        Assert.Equal("Black", Rule(customization, "background.fill").Value);
-        Assert.Equal("Transparent", Rule(customization, "background.stroke").Value);
-    }
-
-    [Fact]
     public void ATrayPitchSetsTheHeightOfEachIconAndFreesItsWidth()
     {
         var customization = new TaskbarCustomization { TrayIconPitch = 24 };

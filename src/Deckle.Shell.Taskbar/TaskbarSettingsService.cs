@@ -16,8 +16,9 @@ public sealed class TaskbarSettingsService
     {
         WriteIndented = true,
         PropertyNamingPolicy = JsonNamingPolicy.CamelCase,
-        // The background reads as its name ("transparent"), not as a number.
-        Converters = { new JsonStringEnumConverter(JsonNamingPolicy.CamelCase) },
+        // The background reads as its name ("transparent"), not as a number,
+        // and its own converter reads the removed "black".
+        Converters = { new TaskbarBackgroundJsonConverter(), new JsonStringEnumConverter(JsonNamingPolicy.CamelCase) },
     };
 
     private readonly JsonSettingsStore<TaskbarSettings> _store;
