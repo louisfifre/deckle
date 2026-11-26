@@ -1472,7 +1472,6 @@ _Generated from `git ls-files` — do not edit by hand._
 │   │   │   ├── HueBridge.cs
 │   │   │   ├── HueBridgeClient.cs
 │   │   │   ├── HueBridgeClient.Dtos.cs
-│   │   │   ├── HueBridgeClient.EventStream.cs
 │   │   │   ├── HueBridgeClient.Identity.cs
 │   │   │   ├── HueBridgeClient.LightState.cs
 │   │   │   ├── HueBridgeClient.Pairing.cs
@@ -1485,23 +1484,19 @@ _Generated from `git ls-files` — do not edit by hand._
 │   │   │   ├── HueEntertainmentFrameBuilder.cs
 │   │   │   ├── HueEntertainmentLightOutput.cs
 │   │   │   ├── HueEntertainmentTransport.cs
-│   │   │   ├── HueEventStreamEpisode.cs
-│   │   │   ├── HueEventStreamModels.cs
 │   │   │   ├── HueGroup.cs
 │   │   │   ├── HueLight.cs
 │   │   │   ├── HueLightOutputFactory.cs
 │   │   │   ├── HueLightState.cs
 │   │   │   ├── HueLightStateRestorer.cs
 │   │   │   ├── HueLocalDiscovery.cs
-│   │   │   ├── HueLocalDiscovery.Interop.cs
-│   │   │   ├── HueProjectedState.cs
-│   │   │   └── HueRestLightOutput.cs
+│   │   │   └── HueLocalDiscovery.Interop.cs
 │   │   ├── Deckle.Lighting.csproj
 │   │   ├── DeckleLightingSource.cs
 │   │   ├── DeckleLightingSource.Discovery.cs
 │   │   ├── DeckleLightingSource.Entertainment.cs
 │   │   ├── DeckleLightingSource.GroupsAndColor.cs
-│   │   ├── DeckleLightingSource.InventoryAndEventStream.cs
+│   │   ├── DeckleLightingSource.Inventory.cs
 │   │   ├── DeckleLightingSource.Pairing.cs
 │   │   ├── ILightOutput.cs
 │   │   ├── LightColor.cs
@@ -1516,9 +1511,7 @@ _Generated from `git ls-files` — do not edit by hand._
 │   │   │   ├── AmbientEngine.CaptureRate.cs
 │   │   │   ├── AmbientEngine.cs
 │   │   │   ├── AmbientEngine.FirstFrame.cs
-│   │   │   ├── AmbientEngine.GroupPush.cs
 │   │   │   ├── AmbientEngine.Heartbeat.cs
-│   │   │   ├── AmbientEngine.HueEvents.cs
 │   │   │   ├── AmbientEngine.Lifecycle.cs
 │   │   │   ├── AmbientEngine.MultiLightPush.cs
 │   │   │   ├── AmbientEngine.PreviewScan.cs
@@ -1526,16 +1519,17 @@ _Generated from `git ls-files` — do not edit by hand._
 │   │   │   ├── AmbientEngine.PushLoop.cs
 │   │   │   ├── AmbientEngineState.cs
 │   │   │   ├── AmbientHeartbeatWindow.cs
-│   │   │   ├── AmbientHueChangeAttributor.cs
 │   │   │   ├── AmbientPreviewHealth.cs
 │   │   │   ├── AmbientPushCadence.cs
 │   │   │   ├── AmbientPushGate.cs
+│   │   │   ├── AmbientStartFailure.cs
 │   │   │   ├── AmbientZoneSampler.cs
 │   │   │   ├── HueEndpointResolver.cs
 │   │   │   ├── HueGroupSelection.cs
 │   │   │   ├── HuePairingService.cs
 │   │   │   ├── LightPlacementResolver.cs
 │   │   │   ├── LightZone.cs
+│   │   │   ├── LightZoneAssignment.cs
 │   │   │   ├── LightZoneSuggester.cs
 │   │   │   └── SrgbColor.cs
 │   │   ├── AmbientCaptureCap.cs
@@ -2336,7 +2330,6 @@ _Generated from `git ls-files` — do not edit by hand._
 │   │   ├── ApproachDistance.cs
 │   │   ├── CoverBand.cs
 │   │   ├── CoverGeometry.cs
-│   │   ├── CoverStacking.cs
 │   │   ├── CoverSuppression.cs
 │   │   ├── Deckle.Shell.TaskbarCover.csproj
 │   │   ├── DeckleShellTaskbarCoverSource.cs
@@ -2350,6 +2343,7 @@ _Generated from `git ls-files` — do not edit by hand._
 │   │   ├── TaskbarCoverSettings.cs
 │   │   ├── TaskbarCoverSettingsModule.cs
 │   │   ├── TaskbarCoverSettingsService.cs
+│   │   ├── TaskbarFade.cs
 │   │   ├── TaskbarLocator.cs
 │   │   └── TaskbarPlacement.cs
 │   ├── Deckle.Shell.TrayMenu/
@@ -3090,7 +3084,6 @@ _Generated from `git ls-files` — do not edit by hand._
 │   │   ├── AmbientCaptureStartBugNotes.md
 │   │   ├── AmbientColorSmootherTests.cs
 │   │   ├── AmbientHeartbeatWindowTests.cs
-│   │   ├── AmbientHueChangeAttributorTests.cs
 │   │   ├── AmbientNearBlackTests.cs
 │   │   ├── AmbientObservabilityCollection.cs
 │   │   ├── AmbientPreviewBugNotes.md
@@ -3101,6 +3094,7 @@ _Generated from `git ls-files` — do not edit by hand._
 │   │   ├── AmbientPushGateTests.cs
 │   │   ├── AmbientRunBugNotes.md
 │   │   ├── AmbientRunLogTests.cs
+│   │   ├── AmbientStartFailureTests.cs
 │   │   ├── AmbientStartSettingsTests.cs
 │   │   ├── AmbientTableTemplateTests.cs
 │   │   ├── AmbientUserIncidentTests.cs
@@ -3111,7 +3105,9 @@ _Generated from `git ls-files` — do not edit by hand._
 │   │   ├── FrameProcessingCauseTests.cs
 │   │   ├── HueCredentialPayloadBugNotes.md
 │   │   ├── HueEndpointResolverTests.cs
+│   │   ├── HueGroupSelectionTests.cs
 │   │   ├── LightPlacementResolverTests.cs
+│   │   ├── LightZoneAssignmentTests.cs
 │   │   ├── MessageTemplateDoctrineTests.cs
 │   │   ├── MilestoneClosersTests.cs
 │   │   └── SummaryTagTests.cs
@@ -3120,7 +3116,6 @@ _Generated from `git ls-files` — do not edit by hand._
 │   │   │   └── dns-sd-pending-status-lifetime.json
 │   │   ├── CredentialPayloadTests.cs
 │   │   ├── Deckle.Lighting.Tests.csproj
-│   │   ├── DeckleLightingSourceTests.cs
 │   │   ├── HueBridgeClientIdentityTests.cs
 │   │   ├── HueBridgeClientNoAnswerRegressionTests.cs
 │   │   ├── HueCredentialPayloadBugNotes.md
@@ -3129,13 +3124,9 @@ _Generated from `git ls-files` — do not edit by hand._
 │   │   ├── HueEntertainmentFrameBuilderTests.cs
 │   │   ├── HueEntertainmentLightOutputTests.cs
 │   │   ├── HueEntertainmentRestoreRegressionTests.cs
-│   │   ├── HueEventStreamBugNotes.md
-│   │   ├── HueEventStreamEpisodeTests.cs
-│   │   ├── HueEventStreamUserIncidentTests.cs
 │   │   ├── HueLightOutputFactoryTests.cs
 │   │   ├── HueLocalDiscoveryRegressionTests.cs
 │   │   ├── HueLocalDiscoveryTests.cs
-│   │   ├── HueRestRestoreRegressionTests.cs
 │   │   ├── LightingCancellationLogTests.cs
 │   │   ├── LightingObservabilityCollection.cs
 │   │   ├── MessageTemplateDoctrineTests.cs
@@ -3146,6 +3137,7 @@ _Generated from `git ls-files` — do not edit by hand._
 │   │   ├── DictationBatchRewriterTests.cs
 │   │   ├── DictationStepsNormalizerTests.cs
 │   │   ├── LlmResetDefaultsTests.cs
+│   │   ├── LlmRewriteObservabilityCollection.cs
 │   │   ├── LlmSettingsBugNotes.md
 │   │   ├── LlmSettingsFileTests.cs
 │   │   ├── LlmSettingsFixtures.cs
@@ -3404,7 +3396,6 @@ _Generated from `git ls-files` — do not edit by hand._
 │   │   └── TraySnapshotStoreTests.cs
 │   ├── Deckle.Shell.TaskbarCover.Tests/
 │   │   ├── CoverGeometryTests.cs
-│   │   ├── CoverStackingTests.cs
 │   │   ├── CoverSuppressionTests.cs
 │   │   ├── Deckle.Shell.TaskbarCover.Tests.csproj
 │   │   ├── MessageTemplateDoctrineTests.cs
@@ -3412,6 +3403,7 @@ _Generated from `git ls-files` — do not edit by hand._
 │   │   ├── TaskbarCoverBugNotes.md
 │   │   ├── TaskbarCoverSettingsModuleTests.cs
 │   │   ├── TaskbarCoverSettingsTests.cs
+│   │   ├── TaskbarFadeTests.cs
 │   │   └── TaskbarPlacementTests.cs
 │   ├── Deckle.Shell.Tests/
 │   │   ├── Deckle.Shell.Tests.csproj

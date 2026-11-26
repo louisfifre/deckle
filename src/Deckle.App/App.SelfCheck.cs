@@ -69,7 +69,7 @@ public partial class App
         new("paragraph rewrite",
             "Foreground and UI Automation probes of other applications."),
         new("foreground watcher, taskbar cover",
-            "A WinEvent hook on every foreground change, and a window drawn over the taskbar."),
+            "A WinEvent hook on every foreground change, and the real taskbar's opacity."),
         new("taskbar tray icons, taskbar engines",
             "The tray icons write the user's notify icon settings and keep a registry watcher on that key; the engines inject a DLL into the real explorer and Start menu host. The Taskbar page still opens, and its switches are never touched."),
         new("orchestration",

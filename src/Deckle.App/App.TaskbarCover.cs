@@ -12,6 +12,12 @@ public partial class App
         // only subscribes to it.
         _taskbarCover = new TaskbarCoverHost(_foregroundWatcher!);
 
+        // The cover fades Explorer's own taskbar window, and a Deckle killed
+        // from outside left it faded. Started off, nothing else would give
+        // it back; started on, the first layout sets it from the cursor.
+        if (!TaskbarCoverSettingsService.Instance.Current.Enabled)
+            TaskbarCoverHost.RestoreLeftovers();
+
         TaskbarCoverSettingsService.Instance.Changed += ReconcileTaskbarCover;
         ReconcileTaskbarCover();
     }

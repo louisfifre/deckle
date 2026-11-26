@@ -9,7 +9,7 @@ public static class SettingsSearch
         new SettingSearchEntry
         {
             LabelKey = "TaskbarCoverPage_Group",
-            Keywords = ["taskbar", "cover", "hide", "black band", "mouse"],
+            Keywords = ["taskbar", "cover", "hide", "fade", "transparent", "mouse"],
         },
         new SettingSearchEntry
         {
