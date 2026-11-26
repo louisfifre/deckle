@@ -17,23 +17,24 @@ namespace Deckle.Shell.TaskbarCover;
 // reads the owner at creation only, so a new app gets a new window. Windows
 // destroys an owned window with its owner; IsWindow catches it.
 //
-// Motion, while animations are on. The strip slides out of the app's edge to
-// the screen's edge when it shows, and back into the app when it hides: it
-// carries on the move of the window that reached or left the edge. A new
-// look (colour, or blur on or off) comes in under the old one, which fades
-// out over it. The whole window fades, its blur too (WS_EX_LAYERED alpha,
-// seen in the trial to fade the acrylic with it), so a blur rises and falls
-// with its opacity. The new look goes under the old one because an acrylic
-// window blurs what lies under it: a blur fading in over the plain strip
-// would blur the strip, not the app's backdrop. Without animations every
-// change is instant. The curves and durations are UnderlayMotion's.
+// Motion, while animations are on: every change dissolves. The strip fades
+// in when it shows and out when it hides. A new look (colour, blur on or
+// off, or another app's edge) comes in under the old one, which fades out
+// over it. The whole window fades, its blur too (WS_EX_LAYERED alpha, seen in
+// the trial to fade the acrylic with it), so a blur rises and falls with its
+// opacity. The new look goes under the old one because an acrylic window
+// blurs what lies under it: a blur fading in over the plain strip would blur
+// the strip, not the app's backdrop. A slide out of the app's edge was tried
+// first and dropped: it set off once the window had arrived and read as a
+// stiff move of its own (Louis, trial of 2026-11-26). Without animations
+// every change is instant. The curve and duration are UnderlayMotion's.
 // Worker thread only, like the band that owns it.
 internal sealed class TaskbarUnderlay : IDisposable
 {
     private readonly string _className;
     private readonly IntPtr _hInstance;
 
-    // The maximized app the underlay continues; zero while hidden, sliding
+    // The maximized app the underlay continues; zero while hidden, fading
     // out included.
     public IntPtr App { get; private set; }
     public bool Visible => App != IntPtr.Zero;
@@ -47,23 +48,14 @@ internal sealed class TaskbarUnderlay : IDisposable
     public uint Color => _current?.Color ?? uint.MaxValue;
     // The last read edge showed more than one colour (EdgeColor.PlainShare).
     public bool EdgeVaried { get; set; }
-    // A slide or a fade is under way: the host ticks it.
-    public bool Animating => _slideStart != 0 || _leaving is not null;
+    // A fade is under way: the host ticks it.
+    public bool Animating => _current?.Fading == true || _leaving is not null;
 
-    // The strip showing the look asked for, and the one fading out over it.
+    // The strip showing the look asked for (null while hidden), and the one
+    // fading out over it.
     private Strip? _current;
     private Strip? _leaving;
-    private long _fadeStart;
-
-    // The full place under the taskbar, and the edge it sits on.
     private NativeMethods.RECT _rect;
-    private TaskbarEdge _edge;
-    // How much of the place the strip covers, 0 to 1, and the slide that
-    // moves it: from where, which way, since when (zero: no slide).
-    private double _extent;
-    private double _slideFrom;
-    private bool _slideIn;
-    private long _slideStart;
 
     public TaskbarUnderlay(string className, IntPtr hInstance)
     {
@@ -72,142 +64,106 @@ internal sealed class TaskbarUnderlay : IDisposable
     }
 
     // Shows the strip over rect beside app, in color (a COLORREF), plain or
-    // as a blur tinted with it, moving there when animate. Each part is
+    // as a blur tinted with it, dissolving there when animate. Each part is
     // written only when it changed: this runs on every refresh. Returns 0, or
     // the Win32 error of a window Windows refused, the strip then staying
     // hidden.
-    public int Show(IntPtr app, NativeMethods.RECT rect, TaskbarEdge edge, uint color, bool blur, bool animate)
+    public int Show(IntPtr app, NativeMethods.RECT rect, uint color, bool blur, bool animate)
     {
         bool moved = rect.left != _rect.left || rect.top != _rect.top
-                  || rect.right != _rect.right || rect.bottom != _rect.bottom || edge != _edge;
+                  || rect.right != _rect.right || rect.bottom != _rect.bottom;
         _rect = rect;
-        _edge = edge;
+        App = app;
 
-        // Another maximized app takes the edge while the strip shows: the new
-        // app's strip comes in under the old one, which fades out over it, as
-        // a new look does. Destroying the old strip first showed the
-        // wallpaper until the new one slid out (seen in the trial).
-        if (animate && _extent > 0 && _current is not null && _current.Owner != app && IsWindow(_current.Hwnd))
+        if (_current is not null && !IsWindow(_current.Hwnd)) _current = null;
+        if (_leaving is not null && !IsWindow(_leaving.Hwnd)) _leaving = null;
+
+        if (!animate)
         {
-            var next = Strip.Create(_className, _hInstance, app, color, blur, out int error);
-            if (next is null) return error;
             _leaving?.Destroy();
-            _leaving = _current;
-            _current = next;
-            _fadeStart = Environment.TickCount64;
-            // Caught mid-slide, out or in: it carries on to the screen's edge.
-            if (_extent < 1) StartSlide(slideIn: true, animate: true);
-            App = app;
-            Place();
-            return 0;
-        }
-
-        if (_current is null || _current.Owner != app || !IsWindow(_current.Hwnd))
-        {
-            DestroyStrips();
-            _current = Strip.Create(_className, _hInstance, app, color, blur, out int error);
-            if (_current is null) return error;
-            App = app;
-            StartSlide(slideIn: true, animate);
-            Place();
-            return 0;
-        }
-
-        // The same app back during its slide out: the slide turns round.
-        if (App != app)
-        {
-            App = app;
-            StartSlide(slideIn: true, animate);
-            moved = true;
-        }
-
-        if (color != _current.Color || blur != _current.Blur)
-        {
-            if (animate)
+            _leaving = null;
+            // Another app's strip is shown before the old one goes: destroyed
+            // first, the screen showed no strip for a frame or two (measured,
+            // 28 ms).
+            if (_current is null || _current.Owner != app)
             {
-                var next = Strip.Create(_className, _hInstance, app, color, blur, out int error);
+                var next = Strip.Create(_className, _hInstance, app, color, blur, 255, out int error);
                 if (next is null) return error;
+                next.Place(_rect, _current?.Hwnd ?? IntPtr.Zero);
+                _current?.Destroy();
+                _current = next;
+            }
+            _current.SetLook(color, blur);
+            _current.SetAlpha(255);
+            if (moved) Place();
+            return 0;
+        }
+
+        // The same app back while its strip fades out: it fades back in.
+        if (_current is null && _leaving is { } back && back.Owner == app && back.Color == color && back.Blur == blur)
+        {
+            _current = back;
+            _leaving = null;
+            _current.FadeTo(255);
+            Place();
+            return 0;
+        }
+
+        if (_current is null || _current.Owner != app || _current.Color != color || _current.Blur != blur)
+        {
+            // The new look starts where the strip it replaces stood, from
+            // nothing when none shows, and rises under the old one fading out.
+            byte from = _current?.Alpha ?? 0;
+            var next = Strip.Create(_className, _hInstance, app, color, blur, from, out int error);
+            if (next is null) return error;
+            next.FadeTo(255);
+            if (_current is not null)
+            {
                 _leaving?.Destroy();
                 _leaving = _current;
-                _current = next;
-                _fadeStart = Environment.TickCount64;
-                moved = true;
+                _leaving.FadeTo(0);
             }
-            else
-            {
-                _current.SetLook(color, blur);
-            }
+            _current = next;
+            moved = true;
         }
 
         if (moved) Place();
         return 0;
     }
 
-    // Hides the strip, sliding it back into the app when animate.
+    // Hides the strip, fading it out when animate.
     public void Hide(bool animate)
     {
         if (!Visible) return;
         App = IntPtr.Zero;
-        if (!animate || _extent <= 0)
+        if (!animate || _current is null)
         {
             DestroyStrips();
             return;
         }
-        StartSlide(slideIn: false, animate: true);
+        _leaving?.Destroy();
+        _leaving = _current;
+        _leaving.FadeTo(0);
+        _current = null;
     }
 
-    // One frame of the slide and the fade, at now (TickCount64).
+    // One frame of the fades, at now (TickCount64).
     public void Tick(long now)
     {
-        if (_leaving is not null)
+        _current?.Tick(now);
+        if (_leaving is not null && _leaving.Tick(now) && _leaving.Alpha == 0)
         {
-            if (UnderlayMotion.FadeDone(now - _fadeStart))
-            {
-                _leaving.Destroy();
-                _leaving = null;
-            }
-            else
-            {
-                _leaving.SetAlpha(UnderlayMotion.FadeAlpha(now - _fadeStart));
-            }
-        }
-
-        if (_slideStart != 0)
-        {
-            _extent = UnderlayMotion.SlideExtent(_slideFrom, _slideIn, now - _slideStart);
-            if (UnderlayMotion.SlideDone(now - _slideStart))
-            {
-                _slideStart = 0;
-                if (!_slideIn)
-                {
-                    DestroyStrips();
-                    return;
-                }
-            }
-            Place();
+            _leaving.Destroy();
+            _leaving = null;
         }
     }
 
-    private void StartSlide(bool slideIn, bool animate)
-    {
-        _slideIn = slideIn;
-        if (!animate)
-        {
-            _extent = slideIn ? 1 : 0;
-            _slideStart = 0;
-            return;
-        }
-        _slideFrom = _extent;
-        _slideStart = Environment.TickCount64;
-    }
-
-    // Puts the strips over the part of the place the slide has reached.
+    // Puts the strips under the taskbar, the fading one over the new one,
+    // both above the app.
     private void Place()
     {
-        var r = UnderlayMotion.Part(_rect, _edge, _extent);
-        // The fading strip stays over the new one, both above the app.
-        _leaving?.Place(r, IntPtr.Zero);
-        _current?.Place(r, _leaving?.Hwnd ?? IntPtr.Zero);
+        _leaving?.Place(_rect, IntPtr.Zero);
+        _current?.Place(_rect, _leaving?.Hwnd ?? IntPtr.Zero);
     }
 
     private void DestroyStrips()
@@ -217,8 +173,6 @@ internal sealed class TaskbarUnderlay : IDisposable
         _current?.Destroy();
         _current = null;
         App = IntPtr.Zero;
-        _extent = 0;
-        _slideStart = 0;
     }
 
     // WM_ERASEBKGND for one of the strips; false when hwnd is neither.
@@ -232,8 +186,8 @@ internal sealed class TaskbarUnderlay : IDisposable
 
     public void Dispose() => DestroyStrips();
 
-    // One window of the underlay, with its look: a plain colour or a blur
-    // tinted with it.
+    // One window of the underlay, with its look (a plain colour or a blur
+    // tinted with it) and its fade.
     private sealed class Strip
     {
         // How much of the edge colour tints the blur: enough to carry the
@@ -245,9 +199,13 @@ internal sealed class TaskbarUnderlay : IDisposable
         public IntPtr Owner { get; private init; }
         public uint Color { get; private set; } = uint.MaxValue;
         public bool Blur { get; private set; }
+        public byte Alpha { get; private set; }
+        public bool Fading => _fadeStart != 0;
         private IntPtr _brush;
+        private byte _fadeFrom, _fadeTo;
+        private long _fadeStart;
 
-        public static Strip? Create(string className, IntPtr hInstance, IntPtr owner, uint color, bool blur, out int error)
+        public static Strip? Create(string className, IntPtr hInstance, IntPtr owner, uint color, bool blur, byte alpha, out int error)
         {
             // NOACTIVATE + TOOLWINDOW like the anchor: never focused, never
             // in Alt-Tab. LAYERED for the fade.
@@ -268,13 +226,32 @@ internal sealed class TaskbarUnderlay : IDisposable
             }
             error = 0;
 
-            // A layered window shows nothing until its alpha is set.
-            NativeMethods.SetLayeredWindowAttributes(hwnd, 0, 255, NativeMethods.LWA_ALPHA);
             uint corner = DWMWCP_DONOTROUND;
             NativeMethods.DwmSetWindowAttribute(hwnd, DWMWA_WINDOW_CORNER_PREFERENCE, ref corner, sizeof(uint));
             var strip = new Strip { Hwnd = hwnd, Owner = owner };
+            // A layered window shows nothing until its alpha is set.
+            strip.SetAlpha(alpha);
             strip.SetLook(color, blur);
             return strip;
+        }
+
+        // Starts a fade from the alpha shown now.
+        public void FadeTo(byte to)
+        {
+            _fadeFrom = Alpha;
+            _fadeTo = to;
+            _fadeStart = Alpha == to ? 0 : Environment.TickCount64;
+        }
+
+        // One frame of the fade; true when it is over.
+        public bool Tick(long now)
+        {
+            if (_fadeStart == 0) return true;
+            long elapsed = now - _fadeStart;
+            SetAlpha(UnderlayMotion.FadeAlpha(_fadeFrom, _fadeTo, elapsed));
+            if (!UnderlayMotion.FadeDone(elapsed)) return false;
+            _fadeStart = 0;
+            return true;
         }
 
         public void SetLook(uint color, bool blur)
@@ -293,8 +270,11 @@ internal sealed class TaskbarUnderlay : IDisposable
             InvalidateRect(Hwnd, IntPtr.Zero, true);
         }
 
-        public void SetAlpha(byte alpha) =>
+        public void SetAlpha(byte alpha)
+        {
+            Alpha = alpha;
             NativeMethods.SetLayeredWindowAttributes(Hwnd, 0, alpha, NativeMethods.LWA_ALPHA);
+        }
 
         // Over r, just under the window above, or where it is when zero:
         // an owned window stays above its owner on its own.

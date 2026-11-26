@@ -37,10 +37,11 @@ public sealed partial class TaskbarCoverHost
     // Task view hides every strip: its desktop previews show no taskbar, and
     // a strip there reads as a stray bar.
     //
-    // The strip moves when Deckle's animations are on (the preference the App
-    // passes, which follows Windows' « Animation effects » by default), and
-    // changes at once when they are off (TaskbarUnderlay). Task view, sleep
-    // and a lost layout take it away at once: nothing moves there to carry on.
+    // The strip dissolves when Deckle's animations are on (the preference the
+    // App passes, which follows Windows' « Animation effects » by default),
+    // and changes at once when they are off (TaskbarUnderlay). Task view,
+    // sleep and a lost layout take it away at once. Its fades step once per
+    // frame of the display, on a frame clock (WM_APP_UNDERLAY_FRAME).
     //
     // An app that shows Mica or Acrylic gets a blur tinted with its edge
     // colour instead of the plain colour, while it shows it: the focus moves
@@ -49,14 +50,10 @@ public sealed partial class TaskbarCoverHost
     private static readonly UIntPtr UnderlayPeriodTimer = 1;
     private static readonly UIntPtr UnderlaySoonTimer   = 2;
     private static readonly UIntPtr UnderlaySettleTimer = 3;
-    private static readonly UIntPtr UnderlayMotionTimer = 4;
     private const uint UnderlayPeriodMs = 500;
     private const uint UnderlaySoonMs   = 30;
     private const uint UnderlaySettleMs = 50;
     private const int  UnderlaySettleReads = 12;
-    // One frame of the strip's motion; Windows rounds a timer up to its
-    // clock tick, about 16 ms, about one frame at 60 Hz.
-    private const uint UnderlayMotionMs = 10;
     private const long UnderlayAnimationMs = 600;
     private const long UnderlayHoldMs = 400;
 
@@ -64,6 +61,10 @@ public sealed partial class TaskbarCoverHost
     private long _underlayHoldUntil;
     private int _underlaySettleReadsLeft;
     private bool _underlayFailureLogged;
+    // The frame clock's generation: a clock thread runs while its number is
+    // the current one, so stopping it is a bump and a new one never meets
+    // the old.
+    private int _underlayFrameClock;
     private bool _underlayMotionRunning;
 
     private void StartUnderlayPeriod() => SetTimer(_hwnd, UnderlayPeriodTimer, UnderlayPeriodMs, IntPtr.Zero);
@@ -93,12 +94,14 @@ public sealed partial class TaskbarCoverHost
         {
             RefreshUnderlays("period", readColor: true);
         }
-        else if (id == UnderlayMotionTimer)
-        {
-            long now = Environment.TickCount64;
-            foreach (var band in _bands) band.Underlay?.Tick(now);
-            KeepUnderlayMotion();
-        }
+    }
+
+    // WM_APP_UNDERLAY_FRAME: the display showed a frame.
+    private void OnUnderlayFrame()
+    {
+        long now = Environment.TickCount64;
+        foreach (var band in _bands) band.Underlay?.Tick(now);
+        KeepUnderlayMotion();
     }
 
     // The foreground changed: hold the reads through the flyout and window
@@ -112,9 +115,9 @@ public sealed partial class TaskbarCoverHost
 
     // The colour along the band's edge, or null while it cannot be trusted:
     // held, covered by another window, or refused by GDI.
-    private (uint Color, double Share)? ReadEdge(CoverBand band, IntPtr app)
+    private (uint Color, double Share)? ReadEdge(CoverBand band, IntPtr app, bool throughHold = false)
     {
-        if (Environment.TickCount64 < _underlayHoldUntil) return null;
+        if (!throughHold && Environment.TickCount64 < _underlayHoldUntil) return null;
         var line = EdgeColor.SampleLine(band.Rect, band.Edge);
         if (!TaskbarUnderlay.AppOwnsLine(app, line))
         {
@@ -130,14 +133,41 @@ public sealed partial class TaskbarCoverHost
         KeepUnderlayMotion();
     }
 
-    // Runs the motion timer while a strip moves, and only then.
+    // Runs the frame clock while a strip fades, and only then.
     private void KeepUnderlayMotion()
     {
         bool moving = _bands.Any(b => b.Underlay is { Animating: true });
         if (moving == _underlayMotionRunning) return;
         _underlayMotionRunning = moving;
-        if (moving) SetTimer(_hwnd, UnderlayMotionTimer, UnderlayMotionMs, IntPtr.Zero);
-        else        KillTimer(_hwnd, UnderlayMotionTimer);
+        int generation = Interlocked.Increment(ref _underlayFrameClock);
+        if (moving) StartFrameClock(_hwnd, generation);
+    }
+
+    private void StopUnderlayMotion()
+    {
+        _underlayMotionRunning = false;
+        Interlocked.Increment(ref _underlayFrameClock);
+    }
+
+    // Posts one frame message per frame the compositor shows, until the
+    // generation moves on. A DwmFlush refused (no composition) falls back
+    // to an 8 ms sleep, a frame at 120 Hz.
+    private void StartFrameClock(IntPtr hwnd, int generation)
+    {
+        var clock = new Thread(() =>
+        {
+            while (Volatile.Read(ref _underlayFrameClock) == generation)
+            {
+                if (DwmFlush() != 0) Thread.Sleep(8);
+                if (Volatile.Read(ref _underlayFrameClock) != generation) break;
+                PostMessage(hwnd, WM_APP_UNDERLAY_FRAME, IntPtr.Zero, IntPtr.Zero);
+            }
+        })
+        {
+            IsBackground = true,
+            Name = "Deckle.TaskbarCover.UnderlayFrames",
+        };
+        clock.Start();
     }
 
     private void RefreshUnderlay(CoverBand band, string reason, bool readColor)
@@ -171,10 +201,18 @@ public sealed partial class TaskbarCoverHost
                 return;
             }
         }
-        var reading = appChanged || readColor ? ReadEdge(band, app) : null;
+        // An app just maximized is read through the hold: activated and
+        // maximized together, it started the hold itself, and the strip
+        // changed 200 ms after the window had reached the edge instead of 34
+        // (measured). Through the hold only a far colour tells its arrival:
+        // the app below fades its edge as it loses the focus (T3 Code, 16
+        // steps over 150 ms, measured), and a read of that fade showed the
+        // strip a wrong colour before the right one.
+        bool held = Environment.TickCount64 < _underlayHoldUntil;
+        var reading = appChanged || readColor ? ReadEdge(band, app, throughHold: appChanged) : null;
         uint? color = reading?.Color;
         if (appChanged && color is { } seen && underlay.PendingBefore is { } before
-            && EdgeColor.Close(seen, before)
+            && (held ? !EdgeColor.Far(seen, before) : EdgeColor.Close(seen, before))
             && Environment.TickCount64 - underlay.PendingSince < UnderlayAnimationMs)
             return;
         // A failed read keeps the colour already shown; a new app with no
@@ -189,7 +227,7 @@ public sealed partial class TaskbarCoverHost
         // shows the wallpaper the app hides.
         bool blur = underlay.EdgeVaried && TaskbarUnderlay.ShowsBackdrop(app);
         bool wasVisible = underlay.Visible;
-        int error = underlay.Show(app, band.Rect, band.Edge, color ?? underlay.Color, blur, animate);
+        int error = underlay.Show(app, band.Rect, color ?? underlay.Color, blur, animate);
         if (error != 0)
         {
             if (!_underlayFailureLogged)
