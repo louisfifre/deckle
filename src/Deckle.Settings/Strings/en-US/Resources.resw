@@ -341,7 +341,7 @@
     <value>Turn Trackpad on or off</value>
   </data>
   <data name="GeneralHotkeyTaskbarCoverCard.Header" xml:space="preserve">
-    <value>Turn Taskbar cover on or off</value>
+    <value>Turn Taskbar fade on or off</value>
   </data>
   <data name="GeneralHotkeyAutocorrectCard.Header" xml:space="preserve">
     <value>Turn Autocorrect on or off</value>

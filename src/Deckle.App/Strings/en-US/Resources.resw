@@ -689,7 +689,7 @@
     <value>Autocorrect</value>
   </data>
   <data name="TrayMenu_TaskbarCover" xml:space="preserve">
-    <value>Taskbar cover</value>
+    <value>Taskbar fade</value>
   </data>
   <data name="TrayMenu_PrecisionScroll" xml:space="preserve">
     <value>Precision scrolling</value>
