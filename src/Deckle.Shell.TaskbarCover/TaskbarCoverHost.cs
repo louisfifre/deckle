@@ -11,9 +11,12 @@ namespace Deckle.Shell.TaskbarCover;
 // cover state machine: each taskbar fades itself away from the cursor and
 // comes back whole as the cursor approaches it (TaskbarFade); a fullscreen
 // foreground on a band's monitor, the taskbar holding the focus, sleep and
-// session lock leave it whole. The cover draws no window of its own: an
-// earlier black band over the taskbar showed as a black strip over the
-// wallpaper and in the Task view previews. Event driven only.
+// session lock leave it whole. Nothing is drawn over the taskbar: an earlier
+// black band showed as a black strip over the wallpaper and in the Task view
+// previews. The one window drawn is under it, while an app is maximized on
+// its monitor: the strip that continues the app's edge colour where the
+// faded taskbar would show the wallpaper (TaskbarCoverHost.Underlay). Event
+// driven, plus a slow period that follows the app's colour.
 //
 // The cursor WinEvent hook delivers on the thread that registered it, which
 // therefore owns a message pump; the same thread owns the windows, the hooks

@@ -86,6 +86,10 @@ internal sealed class CoverBand
     // Windows key setting): it stays whole until focus moves on.
     public bool TaskbarFocused { get; set; }
 
+    // The strip under the taskbar while an app is maximized on its monitor;
+    // created the first time one is (TaskbarCoverHost.Underlay).
+    public TaskbarUnderlay? Underlay { get; set; }
+
     // ── The taskbar's alpha — the band's only writes to Explorer's window ──
 
     // The alpha the taskbar was last given; Opaque while the band leaves it
