@@ -202,7 +202,56 @@ internal static class TaskbarCoverNativeMethods
     public const uint DWMWA_WINDOW_CORNER_PREFERENCE = 33;
     public const uint DWMWCP_DONOTROUND              = 1;
 
+    // An app's system backdrop (Windows 11): 2 Mica, 3 Acrylic, 4 Mica Alt.
+    public const uint DWMWA_SYSTEMBACKDROP_TYPE = 38;
+
+    public const uint GA_ROOTOWNER = 3;
+
+    [DllImport("user32.dll")]
+    public static extern IntPtr GetAncestor(IntPtr hwnd, uint gaFlags);
+
+    // ── Underlay: the blur behind it ─────────────────────────────────────────
+    //
+    // The documented Acrylic (DWMWA_SYSTEMBACKDROP_TYPE) turns solid while its
+    // window is inactive, and the underlay is never active. The accent policy
+    // of SetWindowCompositionAttribute keeps its blur whatever the focus: it
+    // is undocumented, and the Windows taskbar draws its own blur with it.
+    // Where the call fails, the underlay keeps its plain colour.
+
+    public const int WCA_ACCENT_POLICY              = 19;
+    public const int ACCENT_DISABLED                = 0;
+    public const int ACCENT_ENABLE_ACRYLICBLURBEHIND = 4;
+    // GradientColor carries the tint, 0xAABBGGRR.
+    public const int ACCENT_FLAG_GRADIENT_COLOR     = 2;
+
+    [StructLayout(LayoutKind.Sequential)]
+    public struct ACCENT_POLICY
+    {
+        public int  AccentState;
+        public int  AccentFlags;
+        public uint GradientColor;
+        public int  AnimationId;
+    }
+
+    [StructLayout(LayoutKind.Sequential)]
+    public struct WINDOWCOMPOSITIONATTRIBDATA
+    {
+        public int    Attrib;
+        public IntPtr pvData;
+        public int    cbData;
+    }
+
+    [DllImport("user32.dll")]
+    public static extern bool SetWindowCompositionAttribute(IntPtr hwnd, ref WINDOWCOMPOSITIONATTRIBDATA data);
+
     // ── Underlay: painting ───────────────────────────────────────────────────
+
+    // Under the blur the strip is painted black: GDI black is what the
+    // compositor leaves see-through, so the blur shows.
+    public const int BLACK_BRUSH = 4;
+
+    [DllImport("gdi32.dll")]
+    public static extern IntPtr GetStockObject(int i);
 
     public const uint WM_ERASEBKGND = 0x0014;
 

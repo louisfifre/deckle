@@ -26,6 +26,10 @@ public sealed partial class TaskbarCoverHost
     // found, and the app is shown when the edge no longer shows that colour,
     // or after UnderlayAnimationMs for an app whose edge is the same colour.
     // Until then the strip keeps its state, which matches the screen.
+    //
+    // An app that shows Mica or Acrylic gets a blur tinted with its edge
+    // colour instead of the plain colour, while it shows it: the focus moves
+    // through the foreground trigger, and the strip turns plain with the app.
 
     private static readonly UIntPtr UnderlayPeriodTimer = 1;
     private static readonly UIntPtr UnderlaySoonTimer   = 2;
@@ -119,7 +123,7 @@ public sealed partial class TaskbarCoverHost
         underlay.PendingApp = IntPtr.Zero;
 
         bool wasVisible = underlay.Visible;
-        underlay.Show(app, band.Rect, color ?? underlay.Color);
+        underlay.Show(app, band.Rect, color ?? underlay.Color, TaskbarUnderlay.ShowsBackdrop(app));
         if (!wasVisible) DeckleShellTaskbarCoverSource.Log.UnderlayShown(band.Index, reason);
     }
 
