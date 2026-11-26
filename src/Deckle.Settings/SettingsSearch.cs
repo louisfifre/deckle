@@ -137,7 +137,7 @@ public static class SettingsSearch
         new SettingSearchEntry
         {
             LabelKey = "GeneralHotkeyTaskbarCoverCard",
-            Keywords = ["shortcut", "hotkey", "keybinding", "taskbar cover"],
+            Keywords = ["shortcut", "hotkey", "keybinding", "taskbar fade", "taskbar cover"],
         },
         new SettingSearchEntry
         {

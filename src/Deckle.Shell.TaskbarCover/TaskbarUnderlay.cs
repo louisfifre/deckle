@@ -28,6 +28,8 @@ internal sealed class TaskbarUnderlay : IDisposable
 
     private IntPtr _brush;
     private uint _color = uint.MaxValue;
+    // The strip shows a tinted blur instead of its plain colour.
+    private bool _blur;
     private NativeMethods.RECT _rect;
 
     private TaskbarUnderlay(IntPtr hwnd) => Hwnd = hwnd;
@@ -54,14 +56,27 @@ internal sealed class TaskbarUnderlay : IDisposable
         return new TaskbarUnderlay(hwnd);
     }
 
-    // Shows the strip over rect, just below app, in color (a COLORREF). Each
-    // part is written only when it changed: this runs on every refresh.
-    public void Show(IntPtr app, NativeMethods.RECT rect, uint color)
+    // How much of the edge colour tints the blur: enough to carry the app's
+    // colour, little enough to let the blurred wallpaper through, as the
+    // app's own acrylic does.
+    private const uint BlurTintAlpha = 0x99;
+
+    // Shows the strip over rect, just below app, in color (a COLORREF),
+    // plain or as a blur tinted with it. Each part is written only when it
+    // changed: this runs on every refresh.
+    public void Show(IntPtr app, NativeMethods.RECT rect, uint color, bool blur)
     {
-        if (color != _color)
+        if (color != _color || blur != _blur)
         {
-            if (_brush != IntPtr.Zero) DeleteObject(_brush);
-            _brush = CreateSolidBrush(color);
+            if (color != _color)
+            {
+                if (_brush != IntPtr.Zero) DeleteObject(_brush);
+                _brush = CreateSolidBrush(color);
+            }
+            // A refused blur leaves the plain colour.
+            bool wasBlur = _blur;
+            _blur = blur && SetAccent(ACCENT_ENABLE_ACRYLICBLURBEHIND, BlurTintAlpha << 24 | color);
+            if (wasBlur && !_blur) SetAccent(ACCENT_DISABLED, 0);
             _color = color;
             InvalidateRect(Hwnd, IntPtr.Zero, true);
         }
@@ -77,6 +92,32 @@ internal sealed class TaskbarUnderlay : IDisposable
         _rect = rect;
     }
 
+    private bool SetAccent(int state, uint tint)
+    {
+        var policy = new ACCENT_POLICY
+        {
+            AccentState   = state,
+            AccentFlags   = ACCENT_FLAG_GRADIENT_COLOR,
+            GradientColor = tint,
+        };
+        IntPtr p = Marshal.AllocHGlobal(Marshal.SizeOf<ACCENT_POLICY>());
+        try
+        {
+            Marshal.StructureToPtr(policy, p, false);
+            var data = new WINDOWCOMPOSITIONATTRIBDATA
+            {
+                Attrib = WCA_ACCENT_POLICY,
+                pvData = p,
+                cbData = Marshal.SizeOf<ACCENT_POLICY>(),
+            };
+            return SetWindowCompositionAttribute(Hwnd, ref data);
+        }
+        finally
+        {
+            Marshal.FreeHGlobal(p);
+        }
+    }
+
     public void Hide()
     {
         if (!Visible) return;
@@ -84,11 +125,12 @@ internal sealed class TaskbarUnderlay : IDisposable
         App = IntPtr.Zero;
     }
 
-    // WM_ERASEBKGND: the whole strip in one colour.
+    // WM_ERASEBKGND: the whole strip in one colour, or black under the blur.
     public void Paint(IntPtr hdc)
     {
-        if (_brush == IntPtr.Zero || !GetClientRect(Hwnd, out var client)) return;
-        FillRect(hdc, ref client, _brush);
+        IntPtr brush = _blur ? GetStockObject(BLACK_BRUSH) : _brush;
+        if (brush == IntPtr.Zero || !GetClientRect(Hwnd, out var client)) return;
+        FillRect(hdc, ref client, brush);
     }
 
     public void Dispose()
@@ -114,6 +156,17 @@ internal sealed class TaskbarUnderlay : IDisposable
             return w;
         }
         return IntPtr.Zero;
+    }
+
+    // The app shows a see-through backdrop right now: it asked Windows for
+    // Mica or Acrylic, and it holds the focus — Windows draws an inactive
+    // window's backdrop as a plain colour, and the strip follows the app.
+    public static bool ShowsBackdrop(IntPtr app)
+    {
+        if (DwmGetWindowAttribute(app, DWMWA_SYSTEMBACKDROP_TYPE, out int type, sizeof(int)) != 0) return false;
+        if (type is < 2 or > 4) return false;
+        IntPtr foreground = NativeMethods.GetForegroundWindow();
+        return foreground != IntPtr.Zero && GetAncestor(foreground, GA_ROOTOWNER) == app;
     }
 
     // The dominant colour of the screen line, or null when GDI refused.
