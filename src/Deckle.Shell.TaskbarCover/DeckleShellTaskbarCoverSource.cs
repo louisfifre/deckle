@@ -58,6 +58,10 @@ public sealed class DeckleShellTaskbarCoverSource : DeckleEventSource
     public const int EvtTaskbarRestored         = 39;
     public const int EvtFadeFailed              = 40;
     public const int EvtFadeRecovered           = 41;
+    public const int EvtUnderlayShown           = 42;
+    public const int EvtUnderlayHidden          = 43;
+    public const int EvtUnderlayFailed          = 44;
+    public const int EvtUnderlayRecovered       = 45;
 
     // ── Host lifecycle ────────────────────────────────────────────────────────
 
@@ -204,6 +208,50 @@ public sealed class DeckleShellTaskbarCoverSource : DeckleEventSource
     public void FadeRecovered()
     {
         if (IsEnabled()) WriteEvent(EvtFadeRecovered);
+    }
+
+    // ── Underlay ──────────────────────────────────────────────────────────────
+    // The strip under a taskbar while an app is maximized on its monitor. Its
+    // colour comes from the screen and is never logged.
+
+    [Event(EvtUnderlayShown,
+           Level = EventLevel.Verbose,
+           Keywords = (EventKeywords)Keywords.Lifecycle,
+           Message = "band={0} | reason={1}")]
+    public void UnderlayShown(int band, string reason)
+    {
+        if (!IsWindowingDetailEnabled(EventLevel.Verbose, (EventKeywords)Keywords.Lifecycle)) return;
+        WriteEvent(EvtUnderlayShown, band, reason);
+    }
+
+    [Event(EvtUnderlayHidden,
+           Level = EventLevel.Verbose,
+           Keywords = (EventKeywords)Keywords.Lifecycle,
+           Message = "band={0} | reason={1}")]
+    public void UnderlayHidden(int band, string reason)
+    {
+        if (!IsWindowingDetailEnabled(EventLevel.Verbose, (EventKeywords)Keywords.Lifecycle)) return;
+        WriteEvent(EvtUnderlayHidden, band, reason);
+    }
+
+    // One Warning per incident: every later trigger retries the creation.
+    [Event(EvtUnderlayFailed,
+           Level = EventLevel.Warning,
+           Keywords = (EventKeywords)Keywords.Windowing,
+           Message = "Windows refused the strip under the taskbar — a faded taskbar shows the wallpaper beside a maximized app\nband={0} | win32_error={1}")]
+    public void UnderlayFailed(int band, int win32_error)
+    {
+        if (IsEnabled()) WriteEvent(EvtUnderlayFailed, band, win32_error);
+    }
+
+    [Event(EvtUnderlayRecovered,
+           Level = EventLevel.Informational,
+           Keywords = (EventKeywords)Keywords.Windowing,
+           Tags = ObservationTags.Milestone,
+           Message = "The strip under the taskbar shows again")]
+    public void UnderlayRecovered()
+    {
+        if (IsEnabled()) WriteEvent(EvtUnderlayRecovered);
     }
 
     // ── Gates ─────────────────────────────────────────────────────────────────

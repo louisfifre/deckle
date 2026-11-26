@@ -15,6 +15,7 @@ public sealed partial class TaskbarCoverHost
     private void BootstrapState()
     {
         RebuildLayout("boot");
+        StartUnderlayPeriod();
     }
 
     private void RunPump()
@@ -35,6 +36,7 @@ public sealed partial class TaskbarCoverHost
             _cursorHook = IntPtr.Zero;
         }
         RestoreAll("host_stopped");
+        foreach (var band in _bands) DisposeUnderlay(band);
         _bands.Clear();
         _fadedTaskbars = [];
         if (_hwnd != IntPtr.Zero)
@@ -55,6 +57,9 @@ public sealed partial class TaskbarCoverHost
         _layoutKnown         = false;
         _layoutFailureLogged = false;
         _fadeFailureLogged   = false;
+        _underlayFailureLogged = false;
+        _underlaySoonPending = false;
+        _underlaySettleReadsLeft = 0;
     }
 
     private IntPtr WndProc(IntPtr hWnd, uint msg, IntPtr wParam, IntPtr lParam)
@@ -62,7 +67,10 @@ public sealed partial class TaskbarCoverHost
         // _hwnd is still zero while the anchor itself is being created, and
         // its creation messages take the default path like any other.
         if (hWnd != _hwnd)
+        {
+            if (msg == WM_ERASEBKGND && TryPaintUnderlay(hWnd, wParam)) return 1;
             return NativeMethods.DefWindowProc(hWnd, msg, wParam, lParam);
+        }
 
         // Explorer's restart re-creates the taskbar: the old window took its
         // alpha with it, and the rebuild fades the new one (a new handle is a
@@ -88,6 +96,10 @@ public sealed partial class TaskbarCoverHost
                 // distance costs nothing. The zones are rebuilt through the
                 // layout path, the one place that computes them.
                 if (_requestedApproachDip != _approachDip) RebuildLayout("approach_change");
+                return IntPtr.Zero;
+
+            case WM_TIMER:
+                OnUnderlayTimer((UIntPtr)(ulong)wParam);
                 return IntPtr.Zero;
 
             case WM_SETTINGCHANGE:

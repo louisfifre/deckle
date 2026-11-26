@@ -2333,19 +2333,22 @@ _Generated from `git ls-files` — do not edit by hand._
 │   │   ├── CoverSuppression.cs
 │   │   ├── Deckle.Shell.TaskbarCover.csproj
 │   │   ├── DeckleShellTaskbarCoverSource.cs
+│   │   ├── EdgeColor.cs
 │   │   ├── SettingsSearch.cs
 │   │   ├── TaskbarCoverHost.Approach.cs
 │   │   ├── TaskbarCoverHost.CallbacksAndMessagePump.cs
 │   │   ├── TaskbarCoverHost.cs
 │   │   ├── TaskbarCoverHost.GeometryAndFullscreen.cs
 │   │   ├── TaskbarCoverHost.LifecycleAndWindow.cs
+│   │   ├── TaskbarCoverHost.Underlay.cs
 │   │   ├── TaskbarCoverHost.Visibility.cs
 │   │   ├── TaskbarCoverSettings.cs
 │   │   ├── TaskbarCoverSettingsModule.cs
 │   │   ├── TaskbarCoverSettingsService.cs
 │   │   ├── TaskbarFade.cs
 │   │   ├── TaskbarLocator.cs
-│   │   └── TaskbarPlacement.cs
+│   │   ├── TaskbarPlacement.cs
+│   │   └── TaskbarUnderlay.cs
 │   ├── Deckle.Shell.TrayMenu/
 │   │   ├── Interop/
 │   │   │   └── TrayMenuNativeMethods.cs
@@ -3398,6 +3401,7 @@ _Generated from `git ls-files` — do not edit by hand._
 │   │   ├── CoverGeometryTests.cs
 │   │   ├── CoverSuppressionTests.cs
 │   │   ├── Deckle.Shell.TaskbarCover.Tests.csproj
+│   │   ├── EdgeColorTests.cs
 │   │   ├── MessageTemplateDoctrineTests.cs
 │   │   ├── MilestoneClosersTests.cs
 │   │   ├── TaskbarCoverBugNotes.md

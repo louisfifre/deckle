@@ -27,6 +27,7 @@ public sealed partial class TaskbarCoverHost
         if (_systemSuspended || !_layoutKnown) return;
 
         foreach (var band in _bands) UpdateAppSuppressed(band, state);
+        RefreshUnderlays("foreground");
     }
 
     // ── Geometry ──────────────────────────────────────────────────────────
@@ -46,6 +47,7 @@ public sealed partial class TaskbarCoverHost
             }
             _layoutKnown = false;
             foreach (var band in _bands) UpdateCover(band, "layout_unknown");
+            RefreshUnderlays("layout_unknown");
             return;
         }
         if (_layoutFailureLogged)
@@ -99,6 +101,7 @@ public sealed partial class TaskbarCoverHost
         }
 
         if (anyPlaced) DeckleShellTaskbarCoverSource.Log.LayoutRebuilt();
+        RefreshUnderlays("layout_rebuilt");
     }
 
     // The band's taskbar is gone with its monitor, or hidden: it is given
@@ -106,6 +109,7 @@ public sealed partial class TaskbarCoverHost
     private void DropBand(CoverBand band)
     {
         ApplyTaskbarAlpha(band, TaskbarFade.Opaque, "taskbar_gone");
+        DisposeUnderlay(band);
         _bands.Remove(band);
         PublishFaded();
     }
@@ -129,6 +133,7 @@ public sealed partial class TaskbarCoverHost
         _systemSuspended = true;
 
         foreach (var band in _bands) UpdateCover(band, "suspended");
+        RefreshUnderlays("suspended");
         DeckleShellTaskbarCoverSource.Log.SystemSuspended();
         DeckleShellTaskbarCoverSource.Log.SystemSuspendedDetail(reason);
     }
@@ -144,6 +149,7 @@ public sealed partial class TaskbarCoverHost
             UpdateAppSuppressed(band, _foreground.Current);
             UpdateCover(band, "resumed");
         }
+        RefreshUnderlays("resumed");
         DeckleShellTaskbarCoverSource.Log.SystemResumed();
         DeckleShellTaskbarCoverSource.Log.SystemResumedDetail(reason);
     }

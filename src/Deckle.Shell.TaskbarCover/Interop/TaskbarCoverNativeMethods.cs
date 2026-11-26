@@ -173,4 +173,110 @@ internal static class TaskbarCoverNativeMethods
 
     [DllImport("wtsapi32.dll")]
     public static extern bool WTSUnRegisterSessionNotification(IntPtr hWnd);
+
+    // ── Underlay: the maximized app under a taskbar ──────────────────────────
+    //
+    // The z-order is walked from the top with GetTopWindow/GetWindow rather
+    // than EnumWindows: no callback, and the first match is the topmost one.
+    // A window on another virtual desktop is visible but cloaked.
+
+    public const int  OBJID_WINDOW  = 0;
+    public const uint GW_HWNDNEXT   = 2;
+    public const int  GWL_EXSTYLE   = -20;
+    public const uint DWMWA_CLOAKED = 14;
+
+    [DllImport("user32.dll")]
+    public static extern IntPtr GetTopWindow(IntPtr hWnd);
+
+    [DllImport("user32.dll")]
+    public static extern IntPtr GetWindow(IntPtr hWnd, uint uCmd);
+
+    [DllImport("user32.dll")]
+    public static extern bool IsZoomed(IntPtr hWnd);
+
+    [DllImport("dwmapi.dll")]
+    public static extern int DwmGetWindowAttribute(IntPtr hwnd, uint dwAttribute, out int pvAttribute, int cbAttribute);
+
+    // The underlay is a plain square strip: Windows 11 would round a popup's
+    // corners otherwise.
+    public const uint DWMWA_WINDOW_CORNER_PREFERENCE = 33;
+    public const uint DWMWCP_DONOTROUND              = 1;
+
+    // ── Underlay: painting ───────────────────────────────────────────────────
+
+    public const uint WM_ERASEBKGND = 0x0014;
+
+    [DllImport("gdi32.dll")]
+    public static extern IntPtr CreateSolidBrush(uint crColor);
+
+    [DllImport("gdi32.dll")]
+    public static extern bool DeleteObject(IntPtr hObject);
+
+    [DllImport("user32.dll")]
+    public static extern int FillRect(IntPtr hDC, ref NativeMethods.RECT lprc, IntPtr hbr);
+
+    [DllImport("user32.dll")]
+    public static extern bool GetClientRect(IntPtr hWnd, out NativeMethods.RECT lpRect);
+
+    [DllImport("user32.dll")]
+    public static extern bool InvalidateRect(IntPtr hWnd, IntPtr lpRect, bool bErase);
+
+    // ── Underlay: reading the app's edge ─────────────────────────────────────
+    //
+    // One BitBlt of the screen line into a top-down 32-bit DIB section, whose
+    // bits are read in place. No CAPTUREBLT: the line holds the app alone.
+
+    public const uint SRCCOPY = 0x00CC0020;
+
+    [StructLayout(LayoutKind.Sequential)]
+    public struct BITMAPINFOHEADER
+    {
+        public uint   biSize;
+        public int    biWidth;
+        public int    biHeight;
+        public ushort biPlanes;
+        public ushort biBitCount;
+        public uint   biCompression;
+        public uint   biSizeImage;
+        public int    biXPelsPerMeter;
+        public int    biYPelsPerMeter;
+        public uint   biClrUsed;
+        public uint   biClrImportant;
+    }
+
+    [DllImport("user32.dll")]
+    public static extern IntPtr GetDC(IntPtr hWnd);
+
+    [DllImport("user32.dll")]
+    public static extern int ReleaseDC(IntPtr hWnd, IntPtr hDC);
+
+    [DllImport("gdi32.dll")]
+    public static extern IntPtr CreateCompatibleDC(IntPtr hdc);
+
+    [DllImport("gdi32.dll")]
+    public static extern bool DeleteDC(IntPtr hdc);
+
+    [DllImport("gdi32.dll")]
+    public static extern IntPtr CreateDIBSection(
+        IntPtr hdc, ref BITMAPINFOHEADER pbmi, uint usage, out IntPtr ppvBits, IntPtr hSection, uint offset);
+
+    [DllImport("gdi32.dll")]
+    public static extern IntPtr SelectObject(IntPtr hdc, IntPtr h);
+
+    [DllImport("gdi32.dll")]
+    public static extern bool BitBlt(
+        IntPtr hdc, int x, int y, int cx, int cy, IntPtr hdcSrc, int x1, int y1, uint rop);
+
+    [DllImport("gdi32.dll")]
+    public static extern bool GdiFlush();
+
+    // ── Underlay: timers on the anchor ───────────────────────────────────────
+
+    public const uint WM_TIMER = 0x0113;
+
+    [DllImport("user32.dll")]
+    public static extern UIntPtr SetTimer(IntPtr hWnd, UIntPtr nIDEvent, uint uElapse, IntPtr lpTimerFunc);
+
+    [DllImport("user32.dll")]
+    public static extern bool KillTimer(IntPtr hWnd, UIntPtr uIDEvent);
 }

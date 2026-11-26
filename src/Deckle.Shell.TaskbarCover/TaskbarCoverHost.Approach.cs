@@ -41,6 +41,14 @@ public sealed partial class TaskbarCoverHost
     {
         if (_systemSuspended || !_layoutKnown) return;
 
+        // A top-level window moved, was maximized, restored or minimized:
+        // the underlays look again, throttled.
+        if (idObject == OBJID_WINDOW && idChild == 0 && hwnd != IntPtr.Zero)
+        {
+            ScheduleUnderlayRefresh();
+            return;
+        }
+
         if (idObject != OBJID_CURSOR || hwnd != IntPtr.Zero) return;
         if (!NativeMethods.GetCursorPos(out var p)) return;
 
