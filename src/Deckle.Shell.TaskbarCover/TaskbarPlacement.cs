@@ -4,7 +4,7 @@ namespace Deckle.Shell.TaskbarCover;
 
 // Where one taskbar sits: its window, its rect in physical pixels, the edge
 // it hugs, its monitor and that monitor's DPI over 96. Pure data, one per
-// taskbar on the desktop; the host lays one band over each.
+// taskbar on the desktop; the host gives each one band.
 public readonly record struct TaskbarPlacement(
     IntPtr Taskbar,
     NativeMethods.RECT Rect,

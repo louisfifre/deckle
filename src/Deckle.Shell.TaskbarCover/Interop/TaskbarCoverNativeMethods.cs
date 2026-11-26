@@ -41,17 +41,9 @@ internal static class TaskbarCoverNativeMethods
     [DllImport("kernel32.dll")]
     public static extern uint GetCurrentThreadId();
 
-    // ── Window styles / class resources ──────────────────────────────────────
+    // ── Window styles ────────────────────────────────────────────────────────
 
     public const uint WS_POPUP = 0x80000000;
-
-    // Class background brush for the band — released with DeleteObject after
-    // UnregisterClass (the system does not free class brushes on its own).
-    [DllImport("gdi32.dll")]
-    public static extern IntPtr CreateSolidBrush(uint crColor);
-
-    [DllImport("gdi32.dll")]
-    public static extern bool DeleteObject(IntPtr hObject);
 
     // ── Taskbar windows ──────────────────────────────────────────────────────
     //
@@ -135,27 +127,6 @@ internal static class TaskbarCoverNativeMethods
 
     [DllImport("user32.dll")]
     public static extern bool UnhookWinEvent(IntPtr hWinEventHook);
-
-    // ── Desktop reorder WinEvent hook ────────────────────────────────────────
-    //
-    // EVENT_OBJECT_REORDER is "sent by a parent window when the Z-order for
-    // the child windows changes" (Microsoft Learn, Event Constants); for
-    // top-level windows that parent is the desktop window, so a REORDER whose
-    // hwnd is GetDesktopWindow() is the signal that the top-level stack
-    // moved. Observed on Windows 11 24H2: the desktop raises it with
-    // idObject = OBJID_CLIENT and idChild = 0, hence the filter on the hwnd
-    // alone. Same hook mechanics as the cursor hook above: out of context,
-    // delivered on the registering thread, which pumps.
-
-    public const uint EVENT_OBJECT_REORDER = 0x8004;
-
-    [DllImport("user32.dll")]
-    public static extern IntPtr GetDesktopWindow();
-
-    // GetWindow command: the window above in the z-order, zero at the top.
-    // Each band climbs from its own window looking for its taskbar, the one
-    // TaskbarLocator placed it over.
-    public const uint GW_HWNDPREV = 3;
 
     // ── Foreground hand-off ──────────────────────────────────────────────────
     //

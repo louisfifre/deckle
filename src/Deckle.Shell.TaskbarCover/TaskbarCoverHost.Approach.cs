@@ -28,10 +28,10 @@ public sealed partial class TaskbarCoverHost
     }
 
     // The process's single global EVENT_OBJECT_LOCATIONCHANGE hook. It runs at
-    // input cadence, so it stays trivial: outside every zone with the bands
-    // opaque it costs one GetCursorPos and, per band, one rect test and one
+    // input cadence, so it stays trivial: outside every zone with the taskbars
+    // faded it costs one GetCursorPos and, per band, one rect test and one
     // byte compare. The zones never overlap — each is bounded to its band's
-    // extent on its own monitor — so at most one band fades at a time.
+    // extent on its own monitor — so at most one taskbar fades at a time.
     // The foreground window's in-place F11 toggle reaches the host through
     // the ForegroundWatcher, whose own location hook is narrowed to the
     // foreground process.
@@ -48,28 +48,19 @@ public sealed partial class TaskbarCoverHost
         {
             if (!CoverGeometry.Contains(band.Zone, p))
             {
-                if (band.Alpha != 255) SetCoverAlpha(band, 255, "zone_exit");
+                if (band.Level != 255) SetLevel(band, 255, "zone_exit");
                 continue;
             }
 
-            SetCoverAlpha(band, band.AlphaAt(p), "zone_fade");
+            SetLevel(band, band.LevelAt(p), "zone_fade");
         }
     }
 
-    // The one entry point that moves a band's opacity. Applies the alpha
-    // before UpdateCover may show the window, so it never flashes at a stale
-    // value. Back to fully opaque, the band re-asserts its place above the
-    // taskbar: the zone exit is a natural reconciliation point, and the
-    // taskbar may have restacked itself while the cursor was over it.
-    private void SetCoverAlpha(CoverBand band, byte alpha, string reason)
+    // The one entry point that moves a band's level from the cursor.
+    private void SetLevel(CoverBand band, byte level, string reason)
     {
-        if (alpha == band.Alpha) return;
-        bool wasVisible = band.Visible;
-
-        band.ApplyAlpha(alpha);
+        if (level == band.Level) return;
+        band.SetLevel(level);
         UpdateCover(band, reason);
-
-        // A fresh show already re-asserted topmost inside Show.
-        if (alpha == 255 && wasVisible && band.Visible) band.ReassertTopmost();
     }
 }

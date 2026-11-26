@@ -48,7 +48,7 @@ Deckle is one app with several modules. You choose them at setup and can change 
 
 A left click on the tray icon opens a menu with a switch per background feature (precision scrolling, trackpad, taskbar cover, autocorrect, rewrite, ambient light), then Paste to folder, Record, and Transcribe and rewrite, then Settings and Quit. Paste to folder saves what you copied as a file in a folder. Transcribe and rewrite opens one window for a text or for audio files: one file is transcribed into its text field, several at once into a list where each gets its own text file beside its audio. A right click opens the same menu, or, with Developer mode on, a developer menu with the features still in preview. A double click opens Settings.
 
-Smaller touches outside the module list: a **taskbar cover** that masks the taskbar with an opaque band (in progress); an **Apps and games** page, still foundations: a registry of your apps, filled by hand or from your Steam libraries and chosen folders, with an HDR rule per monitor applied while an app runs; and **precision scrolling**, a smooth scrolling engine for the mouse wheel with its own settings page.
+Smaller touches outside the module list: a **taskbar cover** that fades the taskbar away from the mouse and brings it back as the mouse comes near (in progress); an **Apps and games** page, still foundations: a registry of your apps, filled by hand or from your Steam libraries and chosen folders, with an HDR rule per monitor applied while an app runs; and **precision scrolling**, a smooth scrolling engine for the mouse wheel with its own settings page.
 
 ---
 

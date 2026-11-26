@@ -78,6 +78,9 @@ public sealed partial class TaskbarCoverHost
             }
 
             _running = true;
+            // The crash net: a faded taskbar outlives a Deckle that dies.
+            AppDomain.CurrentDomain.UnhandledException += OnProcessEnding;
+            AppDomain.CurrentDomain.ProcessExit += OnProcessEnding;
             // Subscribed on the caller's thread once the anchor exists: the
             // handler only posts to it. A switch landing before this line is
             // not lost — the boot layout reads the watcher's snapshot itself.
@@ -106,7 +109,15 @@ public sealed partial class TaskbarCoverHost
         }
 
         PostThreadMessage(threadId, WM_QUIT, IntPtr.Zero, IntPtr.Zero);
-        if (!thread.Join(TimeSpan.FromSeconds(3)))
+        bool joined = thread.Join(TimeSpan.FromSeconds(3));
+
+        // The worker's TearDown restored the taskbars; a stuck worker did not,
+        // so they are given back from here, from the list it last published.
+        if (!joined) OnProcessEnding(null, EventArgs.Empty);
+        AppDomain.CurrentDomain.UnhandledException -= OnProcessEnding;
+        AppDomain.CurrentDomain.ProcessExit -= OnProcessEnding;
+
+        if (!joined)
         {
             // Stuck worker. No call on the cover thread is known to block
             // since the layout stopped querying Explorer through
@@ -136,14 +147,12 @@ public sealed partial class TaskbarCoverHost
         _wmTaskbarCreated = RegisterWindowMessage("TaskbarCreated");
 
         _wndProcDelegate = WndProc;
-        _brush = CreateSolidBrush(0x000000);
 
         var wc = new WNDCLASSEX
         {
             cbSize        = (uint)Marshal.SizeOf<WNDCLASSEX>(),
             lpfnWndProc   = Marshal.GetFunctionPointerForDelegate(_wndProcDelegate),
             hInstance     = _hInstance,
-            hbrBackground = _brush,
             lpszClassName = ClassName,
         };
 
@@ -152,14 +161,14 @@ public sealed partial class TaskbarCoverHost
             throw new InvalidOperationException(
                 $"RegisterClassEx('{ClassName}') failed (Win32 err {Marshal.GetLastWin32Error()})");
 
-        // The anchor is a band-class window that is never shown; the bands
-        // themselves are created by the layout, one per taskbar found.
-        if (!TryCreateCoverWindow(out _hwnd))
+        // The anchor is a window that is never shown; the bands are created by
+        // the layout, one per taskbar found, and draw nothing.
+        if (!TryCreateAnchorWindow(out _hwnd))
             throw new InvalidOperationException(
                 $"CreateWindowEx failed (Win32 err {Marshal.GetLastWin32Error()})");
 
-        // Without the cursor signal the bands would cover the taskbars and
-        // never reveal them — a dead hook fails the whole start.
+        // Without the cursor signal the taskbars would fade and never come
+        // back — a dead hook fails the whole start.
         _cursorHookDelegate = OnLocationChange;
         _cursorHook = SetWinEventHook(
             EVENT_OBJECT_LOCATIONCHANGE, EVENT_OBJECT_LOCATIONCHANGE,
@@ -170,17 +179,6 @@ public sealed partial class TaskbarCoverHost
                 $"SetWinEventHook(EVENT_OBJECT_LOCATIONCHANGE) failed (Win32 err {Marshal.GetLastWin32Error()})");
         }
 
-        // The desktop reorder signal catches the taskbar restacking itself
-        // above the band outside every other reconciliation point. Without it
-        // the cover still works, it only reconciles later — a dead hook is
-        // logged, not fatal.
-        _reorderHookDelegate = OnDesktopReorder;
-        _reorderHook = SetWinEventHook(
-            EVENT_OBJECT_REORDER, EVENT_OBJECT_REORDER,
-            IntPtr.Zero, _reorderHookDelegate, 0, 0, WINEVENT_OUTOFCONTEXT);
-        if (_reorderHook == IntPtr.Zero)
-            DeckleShellTaskbarCoverSource.Log.ReorderHookFailed(Marshal.GetLastWin32Error());
-
         if (!WTSRegisterSessionNotification(_hwnd, NOTIFY_FOR_THIS_SESSION))
             DeckleShellTaskbarCoverSource.Log.SessionNotifyFailed(Marshal.GetLastWin32Error());
 
@@ -188,27 +186,12 @@ public sealed partial class TaskbarCoverHost
         DeckleShellTaskbarCoverSource.Log.HostStartedDetail(_hwnd.ToInt64(), (int)_threadId);
     }
 
-    // One window of the band class, hidden and sized 0×0 until a layout
-    // places it. Used for the anchor and for every band.
-    //
-    // NOACTIVATE + TOOLWINDOW: a band never takes focus and never appears in
-    // Alt-Tab. Not click-through — a click on a band is deliberately
-    // swallowed, the taskbar below stays masked.
-    // TOPMOST at creation, not via a later SetWindowPos: promoting an
-    // existing window to topmost needs SetForegroundWindow permission, which
-    // the process lacks while another app owns the foreground (the common
-    // case at boot and whenever a layout adds a band). The call succeeds yet
-    // silently leaves the band below the taskbar. Born topmost, it isn't
-    // subject to that gate; the SetWindowPos(HWND_TOPMOST) calls then only
-    // restack an already-topmost window, which carries no permission
-    // requirement.
-    // LAYERED: a band's opacity follows the cursor in its approach zone
-    // through SetLayeredWindowAttributes(LWA_ALPHA).
-    private bool TryCreateCoverWindow(out IntPtr hwnd)
+    // A hidden 0×0 popup: it only receives the broadcasts and the posts.
+    // NOACTIVATE + TOOLWINDOW: it never takes focus nor appears in Alt-Tab.
+    private bool TryCreateAnchorWindow(out IntPtr hwnd)
     {
         hwnd = NativeMethods.CreateWindowEx(
-            dwExStyle:    NativeMethods.WS_EX_TOOLWINDOW | NativeMethods.WS_EX_NOACTIVATE
-                        | NativeMethods.WS_EX_TOPMOST | NativeMethods.WS_EX_LAYERED,
+            dwExStyle:    NativeMethods.WS_EX_TOOLWINDOW | NativeMethods.WS_EX_NOACTIVATE,
             lpClassName:  ClassName,
             lpWindowName: null,
             dwStyle:      WS_POPUP,
@@ -218,11 +201,6 @@ public sealed partial class TaskbarCoverHost
             hInstance:    _hInstance,
             lpParam:      IntPtr.Zero);
 
-        if (hwnd == IntPtr.Zero) return false;
-
-        // A layered window renders nothing until its attributes are set once
-        // (Microsoft Learn, Window Features: layered windows).
-        NativeMethods.SetLayeredWindowAttributes(hwnd, 0, 255, NativeMethods.LWA_ALPHA);
-        return true;
+        return hwnd != IntPtr.Zero;
     }
 }

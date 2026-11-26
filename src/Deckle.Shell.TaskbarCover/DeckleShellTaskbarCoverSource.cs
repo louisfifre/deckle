@@ -4,11 +4,11 @@ using Deckle.Diagnostics;
 namespace Deckle.Shell.TaskbarCover;
 
 // TaskbarCover module provider. Cursor movement itself is never logged, nor
-// is each opacity step of the approach-zone fade: the WinEvent stream runs at
-// input cadence and only visibility transitions carry diagnostic value;
-// those surface through CoverShown / CoverHidden. Per-band events carry the
-// band ordinal: 0 is the primary taskbar's band, the others follow the
-// desktop top to bottom, left to right.
+// is each alpha step of the approach-zone fade: the WinEvent stream runs at
+// input cadence and only a taskbar's turns between whole and faded carry
+// diagnostic value; those surface through TaskbarFaded / TaskbarRestored.
+// Per-band events carry the band ordinal: 0 is the primary taskbar's band,
+// the others follow the desktop top to bottom, left to right.
 [EventSource(Name = "Deckle-TaskbarCover")]
 public sealed class DeckleShellTaskbarCoverSource : DeckleEventSource
 {
@@ -32,8 +32,7 @@ public sealed class DeckleShellTaskbarCoverSource : DeckleEventSource
     public const int EvtLayoutRebuilt           = 7;
     public const int EvtLayoutRebuiltDetail     = 8;
     public const int EvtLayoutQueryFailed       = 9;
-    public const int EvtCoverShown              = 10;
-    public const int EvtCoverHidden             = 11;
+    // 10 and 11 retired (CoverShown, CoverHidden: the band window is gone).
     public const int EvtCoverSuppressed         = 12;
     public const int EvtCoverSuppressedDetail   = 13;
     public const int EvtCoverUnsuppressed       = 14;
@@ -47,16 +46,18 @@ public sealed class DeckleShellTaskbarCoverSource : DeckleEventSource
     public const int EvtLayoutQueryRecovered    = 24;
     public const int EvtCoverUnsuppressedDetail = 26;
     // 27 retired.
-    public const int EvtBandCreateFailedDetail  = 28;
-    public const int EvtCoverRestacked          = 29;
+    // 28 and 29 retired (BandCreateFailedDetail, CoverRestacked).
     // 30 retired.
     public const int EvtHostStartFailed         = 31;
-    public const int EvtReorderHookFailed       = 32;
+    // 32 retired (ReorderHookFailed).
     public const int EvtSessionNotifyFailed     = 33;
-    public const int EvtBandCreateFailed        = 34;
-    public const int EvtBandCreateRecovered     = 35;
+    // 34 and 35 retired (BandCreateFailed, BandCreateRecovered).
     public const int EvtSettingsLoadWarning = 36;
     public const int EvtSettingsLoadError = 37;
+    public const int EvtTaskbarFaded            = 38;
+    public const int EvtTaskbarRestored         = 39;
+    public const int EvtFadeFailed              = 40;
+    public const int EvtFadeRecovered           = 41;
 
     // ── Host lifecycle ────────────────────────────────────────────────────────
 
@@ -87,7 +88,7 @@ public sealed class DeckleShellTaskbarCoverSource : DeckleEventSource
            Level = EventLevel.Error,
            Keywords = (EventKeywords)Keywords.Lifecycle,
            Tags = ObservationTags.Milestone,
-           Message = "The taskbar cover failed to start, so the taskbar stays uncovered\nreason={0} | ex_type={1} | ex_message={2}")]
+           Message = "The taskbar cover failed to start, so the taskbar stays as Windows draws it\nreason={0} | ex_type={1} | ex_message={2}")]
     public void HostStartFailed(string reason, string ex_type, string ex_message)
     {
         if (IsEnabled()) WriteEvent(EvtHostStartFailed, reason, ex_type, ex_message);
@@ -143,7 +144,7 @@ public sealed class DeckleShellTaskbarCoverSource : DeckleEventSource
     [Event(EvtLayoutQueryFailed,
            Level = EventLevel.Warning,
            Keywords = (EventKeywords)Keywords.Windowing,
-           Message = "The taskbar could not be located — the cover stays hidden until it appears")]
+           Message = "The taskbar could not be located — it stays as Windows draws it until it appears")]
     public void LayoutQueryFailed()
     {
         if (IsEnabled()) WriteEvent(EvtLayoutQueryFailed);
@@ -159,74 +160,50 @@ public sealed class DeckleShellTaskbarCoverSource : DeckleEventSource
         if (IsEnabled()) WriteEvent(EvtLayoutQueryRecovered);
     }
 
-    // One Warning per incident: every rebuild retries the missing band, and
-    // each raw attempt lands in BandCreateFailedDetail. band and win32_error
-    // are the attempt that opened the incident.
-    [Event(EvtBandCreateFailed,
-           Level = EventLevel.Warning,
-           Keywords = (EventKeywords)Keywords.Windowing,
-           Message = "A band window could not be created — that taskbar stays uncovered\nband={0} | win32_error={1}")]
-    public void BandCreateFailed(int band, int win32_error)
-    {
-        if (IsEnabled()) WriteEvent(EvtBandCreateFailed, band, win32_error);
-    }
-
-    [Event(EvtBandCreateRecovered,
-           Level = EventLevel.Informational,
-           Keywords = (EventKeywords)Keywords.Windowing,
-           Tags = ObservationTags.Milestone,
-           Message = "Every taskbar has its band again")]
-    public void BandCreateRecovered()
-    {
-        if (IsEnabled()) WriteEvent(EvtBandCreateRecovered);
-    }
-
-    [Event(EvtBandCreateFailedDetail,
-           Level = EventLevel.Verbose,
-           Keywords = (EventKeywords)Keywords.Windowing,
-           Message = "band={0} | win32_error={1}")]
-    public void BandCreateFailedDetail(int band, int win32_error)
-    {
-        if (!IsWindowingDetailEnabled(EventLevel.Verbose, (EventKeywords)Keywords.Windowing)) return;
-        WriteEvent(EvtBandCreateFailedDetail, band, win32_error);
-    }
-
-    // ── Cover visibility ──────────────────────────────────────────────────────
+    // ── The taskbar's fade ────────────────────────────────────────────────────
     //
     // Verbose: these flip on every approach and retreat of the cursor, noise
     // in the LogWindow outside a state-machine diagnosis.
 
-    [Event(EvtCoverShown,
+    [Event(EvtTaskbarFaded,
            Level = EventLevel.Verbose,
            Keywords = (EventKeywords)Keywords.Lifecycle,
            Message = "band={0} | reason={1}")]
-    public void CoverShown(int band, string reason)
+    public void TaskbarFaded(int band, string reason)
     {
         if (!IsWindowingDetailEnabled(EventLevel.Verbose, (EventKeywords)Keywords.Lifecycle)) return;
-        WriteEvent(EvtCoverShown, band, reason);
+        WriteEvent(EvtTaskbarFaded, band, reason);
     }
 
-    [Event(EvtCoverHidden,
+    [Event(EvtTaskbarRestored,
            Level = EventLevel.Verbose,
            Keywords = (EventKeywords)Keywords.Lifecycle,
            Message = "band={0} | reason={1}")]
-    public void CoverHidden(int band, string reason)
+    public void TaskbarRestored(int band, string reason)
     {
         if (!IsWindowingDetailEnabled(EventLevel.Verbose, (EventKeywords)Keywords.Lifecycle)) return;
-        WriteEvent(EvtCoverHidden, band, reason);
+        WriteEvent(EvtTaskbarRestored, band, reason);
     }
 
-    // A band found its taskbar above it and climbed back. Verbose and gated
-    // like the other cover transitions: it fires at the cadence of Explorer's
-    // restacks, a diagnosis signal rather than a milestone.
-    [Event(EvtCoverRestacked,
-           Level = EventLevel.Verbose,
+    // One Warning per incident: every cursor move inside a zone retries the
+    // write. band and win32_error are the attempt that opened the incident.
+    [Event(EvtFadeFailed,
+           Level = EventLevel.Warning,
            Keywords = (EventKeywords)Keywords.Windowing,
-           Message = "band={0} | reason={1}")]
-    public void CoverRestacked(int band, string reason)
+           Message = "Windows refused the taskbar's opacity — that taskbar stays visible\nband={0} | win32_error={1}")]
+    public void FadeFailed(int band, int win32_error)
     {
-        if (!IsWindowingDetailEnabled(EventLevel.Verbose, (EventKeywords)Keywords.Windowing)) return;
-        WriteEvent(EvtCoverRestacked, band, reason);
+        if (IsEnabled()) WriteEvent(EvtFadeFailed, band, win32_error);
+    }
+
+    [Event(EvtFadeRecovered,
+           Level = EventLevel.Informational,
+           Keywords = (EventKeywords)Keywords.Windowing,
+           Tags = ObservationTags.Milestone,
+           Message = "The taskbar fades again")]
+    public void FadeRecovered()
+    {
+        if (IsEnabled()) WriteEvent(EvtFadeRecovered);
     }
 
     // ── Gates ─────────────────────────────────────────────────────────────────
@@ -315,16 +292,6 @@ public sealed class DeckleShellTaskbarCoverSource : DeckleEventSource
 
     // A cursor hook failure is not an event of its own: it fails the setup
     // and surfaces as HostStartFailed with reason=setup_failed.
-
-    // SetWinEventHook documents no GetLastError, so win32_error may read 0.
-    [Event(EvtReorderHookFailed,
-           Level = EventLevel.Warning,
-           Keywords = (EventKeywords)Keywords.Lifecycle,
-           Message = "The desktop reorder hook failed — a taskbar restacked above the cover is only caught later\nwin32_error={0}")]
-    public void ReorderHookFailed(int win32_error)
-    {
-        if (IsEnabled()) WriteEvent(EvtReorderHookFailed, win32_error);
-    }
 
     [Event(EvtSessionNotifyFailed,
            Level = EventLevel.Warning,
