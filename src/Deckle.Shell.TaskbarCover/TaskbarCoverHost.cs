@@ -31,9 +31,14 @@ public sealed partial class TaskbarCoverHost : IDisposable
     // thread. The host never hooks the foreground itself.
     private readonly ForegroundWatcher _foreground;
 
-    public TaskbarCoverHost(ForegroundWatcher foreground)
+    // Whether Deckle may animate now: read on the worker thread at each
+    // change of the strip under the taskbar, so it must be thread-safe.
+    private readonly Func<bool> _animationsEnabled;
+
+    public TaskbarCoverHost(ForegroundWatcher foreground, Func<bool> animationsEnabled)
     {
         _foreground = foreground;
+        _animationsEnabled = animationsEnabled;
     }
 
     private Thread? _thread;

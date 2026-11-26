@@ -2348,7 +2348,8 @@ _Generated from `git ls-files` — do not edit by hand._
 │   │   ├── TaskbarFade.cs
 │   │   ├── TaskbarLocator.cs
 │   │   ├── TaskbarPlacement.cs
-│   │   └── TaskbarUnderlay.cs
+│   │   ├── TaskbarUnderlay.cs
+│   │   └── UnderlayMotion.cs
 │   ├── Deckle.Shell.TrayMenu/
 │   │   ├── Interop/
 │   │   │   └── TrayMenuNativeMethods.cs
@@ -3408,7 +3409,8 @@ _Generated from `git ls-files` — do not edit by hand._
 │   │   ├── TaskbarCoverSettingsModuleTests.cs
 │   │   ├── TaskbarCoverSettingsTests.cs
 │   │   ├── TaskbarFadeTests.cs
-│   │   └── TaskbarPlacementTests.cs
+│   │   ├── TaskbarPlacementTests.cs
+│   │   └── UnderlayMotionTests.cs
 │   ├── Deckle.Shell.Tests/
 │   │   ├── Deckle.Shell.Tests.csproj
 │   │   ├── DispatcherQueueExtensionsTests.cs

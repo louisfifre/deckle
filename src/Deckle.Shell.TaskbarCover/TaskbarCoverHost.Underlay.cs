@@ -37,6 +37,11 @@ public sealed partial class TaskbarCoverHost
     // Task view hides every strip: its desktop previews show no taskbar, and
     // a strip there reads as a stray bar.
     //
+    // The strip moves when Deckle's animations are on (the preference the App
+    // passes, which follows Windows' « Animation effects » by default), and
+    // changes at once when they are off (TaskbarUnderlay). Task view, sleep
+    // and a lost layout take it away at once: nothing moves there to carry on.
+    //
     // An app that shows Mica or Acrylic gets a blur tinted with its edge
     // colour instead of the plain colour, while it shows it: the focus moves
     // through the foreground trigger, and the strip turns plain with the app.
@@ -44,10 +49,14 @@ public sealed partial class TaskbarCoverHost
     private static readonly UIntPtr UnderlayPeriodTimer = 1;
     private static readonly UIntPtr UnderlaySoonTimer   = 2;
     private static readonly UIntPtr UnderlaySettleTimer = 3;
+    private static readonly UIntPtr UnderlayMotionTimer = 4;
     private const uint UnderlayPeriodMs = 500;
     private const uint UnderlaySoonMs   = 30;
     private const uint UnderlaySettleMs = 50;
     private const int  UnderlaySettleReads = 12;
+    // One frame of the strip's motion; Windows rounds a timer up to its
+    // clock tick, about 16 ms, about one frame at 60 Hz.
+    private const uint UnderlayMotionMs = 10;
     private const long UnderlayAnimationMs = 600;
     private const long UnderlayHoldMs = 400;
 
@@ -55,6 +64,7 @@ public sealed partial class TaskbarCoverHost
     private long _underlayHoldUntil;
     private int _underlaySettleReadsLeft;
     private bool _underlayFailureLogged;
+    private bool _underlayMotionRunning;
 
     private void StartUnderlayPeriod() => SetTimer(_hwnd, UnderlayPeriodTimer, UnderlayPeriodMs, IntPtr.Zero);
 
@@ -82,6 +92,12 @@ public sealed partial class TaskbarCoverHost
         else if (id == UnderlayPeriodTimer)
         {
             RefreshUnderlays("period", readColor: true);
+        }
+        else if (id == UnderlayMotionTimer)
+        {
+            long now = Environment.TickCount64;
+            foreach (var band in _bands) band.Underlay?.Tick(now);
+            KeepUnderlayMotion();
         }
     }
 
@@ -111,19 +127,30 @@ public sealed partial class TaskbarCoverHost
     private void RefreshUnderlays(string reason, bool readColor = true)
     {
         foreach (var band in _bands) RefreshUnderlay(band, reason, readColor);
+        KeepUnderlayMotion();
+    }
+
+    // Runs the motion timer while a strip moves, and only then.
+    private void KeepUnderlayMotion()
+    {
+        bool moving = _bands.Any(b => b.Underlay is { Animating: true });
+        if (moving == _underlayMotionRunning) return;
+        _underlayMotionRunning = moving;
+        if (moving) SetTimer(_hwnd, UnderlayMotionTimer, UnderlayMotionMs, IntPtr.Zero);
+        else        KillTimer(_hwnd, UnderlayMotionTimer);
     }
 
     private void RefreshUnderlay(CoverBand band, string reason, bool readColor)
     {
-        IntPtr app = _layoutKnown && !_systemSuspended && !TaskbarUnderlay.TaskViewShown()
-            ? TaskbarUnderlay.FindMaximizedApp(band.Monitor)
-            : IntPtr.Zero;
+        bool possible = _layoutKnown && !_systemSuspended && !TaskbarUnderlay.TaskViewShown();
+        IntPtr app = possible ? TaskbarUnderlay.FindMaximizedApp(band.Monitor) : IntPtr.Zero;
+        bool animate = possible && _animationsEnabled();
 
         if (app == IntPtr.Zero)
         {
             if (band.Underlay is { Visible: true } shown)
             {
-                shown.Hide();
+                shown.Hide(animate);
                 DeckleShellTaskbarCoverSource.Log.UnderlayHidden(band.Index, reason);
             }
             return;
@@ -162,7 +189,7 @@ public sealed partial class TaskbarCoverHost
         // shows the wallpaper the app hides.
         bool blur = underlay.EdgeVaried && TaskbarUnderlay.ShowsBackdrop(app);
         bool wasVisible = underlay.Visible;
-        int error = underlay.Show(app, band.Rect, color ?? underlay.Color, blur);
+        int error = underlay.Show(app, band.Rect, band.Edge, color ?? underlay.Color, blur, animate);
         if (error != 0)
         {
             if (!_underlayFailureLogged)
@@ -190,11 +217,7 @@ public sealed partial class TaskbarCoverHost
     private bool TryPaintUnderlay(IntPtr hwnd, IntPtr hdc)
     {
         foreach (var band in _bands)
-        {
-            if (band.Underlay?.Hwnd != hwnd) continue;
-            band.Underlay.Paint(hdc);
-            return true;
-        }
+            if (band.Underlay?.TryPaint(hwnd, hdc) == true) return true;
         return false;
     }
 }
