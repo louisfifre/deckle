@@ -212,6 +212,15 @@ internal static class TaskbarCoverNativeMethods
     public static extern IntPtr WindowFromPoint(POINT point);
 
     [DllImport("user32.dll")]
+    public static extern bool IsWindow(IntPtr hWnd);
+
+    [DllImport("user32.dll", CharSet = CharSet.Unicode)]
+    public static extern int GetClassName(IntPtr hWnd, System.Text.StringBuilder lpClassName, int nMaxCount);
+
+    // Task view's window on Windows 11 (build 26100, read on this machine).
+    public const string TaskViewClass = "XamlExplorerHostIslandWindow";
+
+    [DllImport("user32.dll")]
     public static extern IntPtr GetAncestor(IntPtr hwnd, uint gaFlags);
 
     // ── Underlay: the blur behind it ─────────────────────────────────────────
