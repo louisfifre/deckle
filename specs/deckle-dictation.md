@@ -10,7 +10,7 @@
 
 1. One gesture starts the listening from anywhere, and the same one stops it.
 2. While they speak, nothing asks for their attention and nothing rushes them.
-3. They are never cut off: a hesitation or a pause in the middle of a sentence closes nothing.
+3. They are never cut off: the listening goes on through a hesitation or a silence, however long.
 4. Only their voice counts: a rub or a noise around them does not pass for speech.
 5. An hour holds up as well as two minutes, and nothing of what they said is lost.
 6. They change subject, pause, resume: the change of subject is noticed by itself or on one gesture of theirs, and the text keeps these separations.
