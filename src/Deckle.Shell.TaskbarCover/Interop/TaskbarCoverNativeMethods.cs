@@ -205,7 +205,11 @@ internal static class TaskbarCoverNativeMethods
     // An app's system backdrop (Windows 11): 2 Mica, 3 Acrylic, 4 Mica Alt.
     public const uint DWMWA_SYSTEMBACKDROP_TYPE = 38;
 
+    public const uint GA_ROOT      = 2;
     public const uint GA_ROOTOWNER = 3;
+
+    [DllImport("user32.dll")]
+    public static extern IntPtr WindowFromPoint(POINT point);
 
     [DllImport("user32.dll")]
     public static extern IntPtr GetAncestor(IntPtr hwnd, uint gaFlags);

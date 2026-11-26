@@ -169,6 +169,24 @@ internal sealed class TaskbarUnderlay : IDisposable
         return foreground != IntPtr.Zero && GetAncestor(foreground, GA_ROOTOWNER) == app;
     }
 
+    // The app itself is what the screen shows along the line: no flyout
+    // (notification centre, Start, search) or other window lies over its edge.
+    // Checked at both ends and the middle.
+    public static bool AppOwnsLine(IntPtr app, NativeMethods.RECT line)
+    {
+        int length = line.bottom - line.top;
+        bool vertical = line.right - line.left == 1;
+        if (!vertical) length = line.right - line.left;
+        foreach (int at in (ReadOnlySpan<int>)[length / 10, length / 2, length * 9 / 10])
+        {
+            var p = vertical
+                ? new POINT { X = line.left, Y = line.top + at }
+                : new POINT { X = line.left + at, Y = line.top };
+            if (GetAncestor(WindowFromPoint(p), GA_ROOT) != app) return false;
+        }
+        return true;
+    }
+
     // The dominant colour of the screen line, or null when GDI refused.
     public static uint? ReadColor(NativeMethods.RECT line)
     {

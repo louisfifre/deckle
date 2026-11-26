@@ -27,6 +27,13 @@ public sealed partial class TaskbarCoverHost
     // or after UnderlayAnimationMs for an app whose edge is the same colour.
     // Until then the strip keeps its state, which matches the screen.
     //
+    // The edge is read only while the app itself shows along it: a flyout
+    // opened over it (Windows + N slides the notification centre in from the
+    // bar's side) would lend the strip its colour. And no read happens for
+    // UnderlayHoldMs after the foreground changes or a covered edge is seen:
+    // a flyout that closes slides out over the edge, still painted after it
+    // stopped being the window there. Settle reads cover the end of the hold.
+    //
     // An app that shows Mica or Acrylic gets a blur tinted with its edge
     // colour instead of the plain colour, while it shows it: the focus moves
     // through the foreground trigger, and the strip turns plain with the app.
@@ -39,8 +46,10 @@ public sealed partial class TaskbarCoverHost
     private const uint UnderlaySettleMs = 50;
     private const int  UnderlaySettleReads = 12;
     private const long UnderlayAnimationMs = 600;
+    private const long UnderlayHoldMs = 400;
 
     private bool _underlaySoonPending;
+    private long _underlayHoldUntil;
     private int _underlaySettleReadsLeft;
     private bool _underlayFailureLogged;
 
@@ -71,6 +80,29 @@ public sealed partial class TaskbarCoverHost
         {
             RefreshUnderlays("period", readColor: true);
         }
+    }
+
+    // The foreground changed: hold the reads through the flyout and window
+    // animations it starts, and read again once they are over.
+    private void HoldUnderlayReads()
+    {
+        _underlayHoldUntil = Environment.TickCount64 + UnderlayHoldMs;
+        _underlaySettleReadsLeft = UnderlaySettleReads;
+        SetTimer(_hwnd, UnderlaySettleTimer, UnderlaySettleMs, IntPtr.Zero);
+    }
+
+    // The colour along the band's edge, or null while it cannot be trusted:
+    // held, covered by another window, or refused by GDI.
+    private uint? ReadEdge(CoverBand band, IntPtr app)
+    {
+        if (Environment.TickCount64 < _underlayHoldUntil) return null;
+        var line = EdgeColor.SampleLine(band.Rect, band.Edge);
+        if (!TaskbarUnderlay.AppOwnsLine(app, line))
+        {
+            _underlayHoldUntil = Environment.TickCount64 + UnderlayHoldMs;
+            return null;
+        }
+        return TaskbarUnderlay.ReadColor(line);
     }
 
     private void RefreshUnderlays(string reason, bool readColor = true)
@@ -110,9 +142,7 @@ public sealed partial class TaskbarCoverHost
                 return;
             }
         }
-        uint? color = appChanged || readColor
-            ? TaskbarUnderlay.ReadColor(EdgeColor.SampleLine(band.Rect, band.Edge))
-            : null;
+        uint? color = appChanged || readColor ? ReadEdge(band, app) : null;
         if (appChanged && color is { } seen && underlay.PendingBefore is { } before
             && EdgeColor.Close(seen, before)
             && Environment.TickCount64 - underlay.PendingSince < UnderlayAnimationMs)
