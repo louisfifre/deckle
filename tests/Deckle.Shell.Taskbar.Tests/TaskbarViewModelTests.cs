@@ -155,11 +155,11 @@ public sealed class TaskbarViewModelTests : IDisposable
     {
         TaskbarSettings settings = TaskbarSettingsService.Instance.Current;
         settings.ShowAllTrayIcons = true;
-        settings.Background = TaskbarBackground.Black;
+        settings.Background = TaskbarBackground.Transparent;
         settings.CompactClock = true;
         TaskbarViewModel viewModel = ViewModel();
         Assert.True(viewModel.ShowAllTrayIcons);
-        Assert.Equal(TaskbarBackground.Black, viewModel.Background);
+        Assert.Equal(TaskbarBackground.Transparent, viewModel.Background);
         Assert.True(viewModel.CompactClock);
 
         Reset();
@@ -242,7 +242,7 @@ public sealed class TaskbarViewModelTests : IDisposable
     public void NothingIsSaidWhenAllIsFine()
     {
         TaskbarViewModel viewModel = ViewModel();
-        viewModel.Background = TaskbarBackground.Black;
+        viewModel.Background = TaskbarBackground.Transparent;
         viewModel.CompactTray = true;
         viewModel.CompactClock = true;
         viewModel.StartMenuFullHeight = true;

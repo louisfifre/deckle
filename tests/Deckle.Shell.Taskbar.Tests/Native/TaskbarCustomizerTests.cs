@@ -320,7 +320,7 @@ public sealed class TaskbarCustomizerTests
     [Fact]
     public async Task TheDocumentIsSentWhenTheEngineConnects()
     {
-        _settings.Background = TaskbarBackground.Black;
+        _settings.Background = TaskbarBackground.Transparent;
         TaskbarCustomizer customizer = Customizer();
         await customizer.ReconcileAsync("startup");
         FakeEngine explorer = Engine(TaskbarTargetKind.Explorer)!;
@@ -385,7 +385,7 @@ public sealed class TaskbarCustomizerTests
         Assert.True(first.Stopped);
         Assert.True(first.Disposed);
 
-        _settings.Background = TaskbarBackground.Black;
+        _settings.Background = TaskbarBackground.Transparent;
         await customizer.ReconcileAsync("setting");
 
         FakeEngine second = Engine(TaskbarTargetKind.Explorer)!;
@@ -471,7 +471,7 @@ public sealed class TaskbarCustomizerTests
     public async Task AMissingEngineIsAnErrorOnEveryPartThatWasAskedFor()
     {
         _dllMissing = true;
-        _settings.Background = TaskbarBackground.Black;
+        _settings.Background = TaskbarBackground.Transparent;
         _settings.StartMenuFullHeight = true;
         TaskbarCustomizer customizer = Customizer();
         int raised = 0;
@@ -504,7 +504,7 @@ public sealed class TaskbarCustomizerTests
     [Fact]
     public async Task QuittingRestoresAndUnloadsBothEngines()
     {
-        _settings.Background = TaskbarBackground.Black;
+        _settings.Background = TaskbarBackground.Transparent;
         _settings.StartMenuFullHeight = true;
         TaskbarCustomizer customizer = Customizer();
         await customizer.ReconcileAsync("startup");

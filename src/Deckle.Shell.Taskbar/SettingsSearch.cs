@@ -9,7 +9,7 @@ public static class SettingsSearch
         new SettingSearchEntry
         {
             LabelKey = "TaskbarPage_BackgroundCard",
-            Keywords = ["taskbar", "background", "transparent", "black", "translucent", "acrylic", "fill"],
+            Keywords = ["taskbar", "background", "transparent", "translucent", "acrylic", "fill"],
         },
         new SettingSearchEntry
         {
