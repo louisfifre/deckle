@@ -22,8 +22,13 @@ public static class EdgeColor
     // per channel, and the largest group gives its mean: a plain edge gives
     // its own colour, and a blurred or noisy one (an acrylic panel) gives the
     // colour most of its length shows rather than a muddy mean of everything.
-    public static uint Dominant(ReadOnlySpan<uint> pixels)
+    public static uint Dominant(ReadOnlySpan<uint> pixels) => Dominant(pixels, out _);
+
+    // share: the part of the line the dominant group covers, 0 to 1. A line
+    // that is nearly all one group is plain to the eye, a blur of it too.
+    public static uint Dominant(ReadOnlySpan<uint> pixels, out double share)
     {
+        share = 0;
         if (pixels.IsEmpty) return 0;
 
         Span<int> counts = stackalloc int[4096];
@@ -43,8 +48,13 @@ public static class EdgeColor
             b += p & 0xFF;
         }
         int n = counts[best];
+        share = (double)n / pixels.Length;
         return (uint)(r / n) | (uint)(g / n) << 8 | (uint)(b / n) << 16;
     }
+
+    // Below this share the edge shows more than one colour: a see-through
+    // backdrop over the wallpaper, or the app's own content.
+    public const double PlainShare = 0.9;
 
     // Two COLORREFs no channel of which differs by more than a few steps:
     // the same edge read twice, its dominant group shifting a little.

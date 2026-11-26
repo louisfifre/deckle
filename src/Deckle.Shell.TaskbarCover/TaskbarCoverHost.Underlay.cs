@@ -34,6 +34,9 @@ public sealed partial class TaskbarCoverHost
     // a flyout that closes slides out over the edge, still painted after it
     // stopped being the window there. Settle reads cover the end of the hold.
     //
+    // Task view hides every strip: its desktop previews show no taskbar, and
+    // a strip there reads as a stray bar.
+    //
     // An app that shows Mica or Acrylic gets a blur tinted with its edge
     // colour instead of the plain colour, while it shows it: the focus moves
     // through the foreground trigger, and the strip turns plain with the app.
@@ -93,7 +96,7 @@ public sealed partial class TaskbarCoverHost
 
     // The colour along the band's edge, or null while it cannot be trusted:
     // held, covered by another window, or refused by GDI.
-    private uint? ReadEdge(CoverBand band, IntPtr app)
+    private (uint Color, double Share)? ReadEdge(CoverBand band, IntPtr app)
     {
         if (Environment.TickCount64 < _underlayHoldUntil) return null;
         var line = EdgeColor.SampleLine(band.Rect, band.Edge);
@@ -112,7 +115,7 @@ public sealed partial class TaskbarCoverHost
 
     private void RefreshUnderlay(CoverBand band, string reason, bool readColor)
     {
-        IntPtr app = _layoutKnown && !_systemSuspended
+        IntPtr app = _layoutKnown && !_systemSuspended && !TaskbarUnderlay.TaskViewShown()
             ? TaskbarUnderlay.FindMaximizedApp(band.Monitor)
             : IntPtr.Zero;
 
@@ -126,8 +129,7 @@ public sealed partial class TaskbarCoverHost
             return;
         }
 
-        var underlay = band.Underlay ??= CreateUnderlay(band);
-        if (underlay is null) return;
+        var underlay = band.Underlay ??= new TaskbarUnderlay(ClassName, _hInstance);
 
         bool appChanged = app != underlay.App;
         if (appChanged)
@@ -136,13 +138,14 @@ public sealed partial class TaskbarCoverHost
             {
                 underlay.PendingApp = app;
                 underlay.PendingSince = Environment.TickCount64;
-                underlay.PendingBefore = TaskbarUnderlay.ReadColor(EdgeColor.SampleLine(band.Rect, band.Edge));
+                underlay.PendingBefore = TaskbarUnderlay.ReadColor(EdgeColor.SampleLine(band.Rect, band.Edge))?.Color;
                 _underlaySettleReadsLeft = UnderlaySettleReads;
                 SetTimer(_hwnd, UnderlaySettleTimer, UnderlaySettleMs, IntPtr.Zero);
                 return;
             }
         }
-        uint? color = appChanged || readColor ? ReadEdge(band, app) : null;
+        var reading = appChanged || readColor ? ReadEdge(band, app) : null;
+        uint? color = reading?.Color;
         if (appChanged && color is { } seen && underlay.PendingBefore is { } before
             && EdgeColor.Close(seen, before)
             && Environment.TickCount64 - underlay.PendingSince < UnderlayAnimationMs)
@@ -151,30 +154,30 @@ public sealed partial class TaskbarCoverHost
         // colour yet waits for the next trigger rather than show a guess.
         if (color is null && (appChanged || !underlay.Visible)) return;
         underlay.PendingApp = IntPtr.Zero;
+        if (reading is { } r) underlay.EdgeVaried = r.Share < EdgeColor.PlainShare;
 
+        // The blur only where the app's edge really shows through: an app can
+        // ask for Mica and paint its own opaque colour over it (T3 Code asks
+        // for Mica, type 2, and draws black), and a blur beside a plain edge
+        // shows the wallpaper the app hides.
+        bool blur = underlay.EdgeVaried && TaskbarUnderlay.ShowsBackdrop(app);
         bool wasVisible = underlay.Visible;
-        underlay.Show(app, band.Rect, color ?? underlay.Color, TaskbarUnderlay.ShowsBackdrop(app));
-        if (!wasVisible) DeckleShellTaskbarCoverSource.Log.UnderlayShown(band.Index, reason);
-    }
-
-    private TaskbarUnderlay? CreateUnderlay(CoverBand band)
-    {
-        var underlay = TaskbarUnderlay.Create(ClassName, _hInstance, out int error);
-        if (underlay is null)
+        int error = underlay.Show(app, band.Rect, color ?? underlay.Color, blur);
+        if (error != 0)
         {
             if (!_underlayFailureLogged)
             {
                 DeckleShellTaskbarCoverSource.Log.UnderlayFailed(band.Index, error);
                 _underlayFailureLogged = true;
             }
-            return null;
+            return;
         }
         if (_underlayFailureLogged)
         {
             DeckleShellTaskbarCoverSource.Log.UnderlayRecovered();
             _underlayFailureLogged = false;
         }
-        return underlay;
+        if (!wasVisible) DeckleShellTaskbarCoverSource.Log.UnderlayShown(band.Index, reason);
     }
 
     private static void DisposeUnderlay(CoverBand band)

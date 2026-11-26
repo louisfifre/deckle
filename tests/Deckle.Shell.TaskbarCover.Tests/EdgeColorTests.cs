@@ -62,4 +62,16 @@ public class EdgeColorTests
         Assert.True(EdgeColor.Close(0x00272757u, 0x002B2B5Au));
         Assert.False(EdgeColor.Close(0x00272757u, 0x0097572Bu));
     }
+
+    [Fact]
+    public void APlainEdgeCoversTheWholeLineAndAVariedOneDoesNot()
+    {
+        EdgeColor.Dominant(Enumerable.Repeat(0xFF000000u, 100).ToArray(), out double plain);
+        // A blurred wallpaper: shades far enough apart to fall in several groups.
+        uint[] blurred = [.. Enumerable.Range(0, 100).Select(i => 0xFF000000u | (uint)(i * 2) << 16 | (uint)(i * 2) << 8)];
+        EdgeColor.Dominant(blurred, out double varied);
+
+        Assert.True(plain >= EdgeColor.PlainShare);
+        Assert.True(varied < EdgeColor.PlainShare);
+    }
 }

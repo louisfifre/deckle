@@ -8,12 +8,21 @@ namespace Deckle.Shell.TaskbarCover;
 // under the taskbar while an app is maximized on its monitor and painted the
 // colour of that app's edge. The taskbar's alpha fades its background too, so
 // without it a faded taskbar shows the wallpaper between the screen's edge
-// and the app. It sits just below the maximized app in the z-order: under
-// the topmost taskbar, above the desktop, and never in a fight for the top.
+// and the app. It sits below the topmost taskbar, above the app it continues.
+//
+// The window is created owned by the app, one per app shown, and destroyed
+// when hidden. An owned window lives on its owner's virtual desktop, while a
+// tool window without an owner shows on every desktop (seen in Task view: a
+// strip beside the wallpaper of desktops with no maximized app). Windows
+// reads the owner at creation only, so a new app gets a new window. Windows
+// destroys an owned window with its owner; IsWindow catches it.
 // Worker thread only, like the band that owns it.
 internal sealed class TaskbarUnderlay : IDisposable
 {
-    public IntPtr Hwnd { get; }
+    private readonly string _className;
+    private readonly IntPtr _hInstance;
+
+    public IntPtr Hwnd { get; private set; }
     // The maximized app the underlay continues; zero while hidden.
     public IntPtr App { get; private set; }
     public bool Visible => App != IntPtr.Zero;
@@ -25,6 +34,8 @@ internal sealed class TaskbarUnderlay : IDisposable
     public uint? PendingBefore { get; set; }
     // The COLORREF last painted.
     public uint Color => _color;
+    // The last read edge showed more than one colour (EdgeColor.PlainShare).
+    public bool EdgeVaried { get; set; }
 
     private IntPtr _brush;
     private uint _color = uint.MaxValue;
@@ -32,28 +43,10 @@ internal sealed class TaskbarUnderlay : IDisposable
     private bool _blur;
     private NativeMethods.RECT _rect;
 
-    private TaskbarUnderlay(IntPtr hwnd) => Hwnd = hwnd;
-
-    // NOACTIVATE + TOOLWINDOW like the anchor: never focused, never in
-    // Alt-Tab. Returns null and the Win32 error when the window is refused.
-    public static TaskbarUnderlay? Create(string className, IntPtr hInstance, out int error)
+    public TaskbarUnderlay(string className, IntPtr hInstance)
     {
-        IntPtr hwnd = NativeMethods.CreateWindowEx(
-            dwExStyle:    NativeMethods.WS_EX_TOOLWINDOW | NativeMethods.WS_EX_NOACTIVATE,
-            lpClassName:  className,
-            lpWindowName: null,
-            dwStyle:      WS_POPUP,
-            x: 0, y: 0, nWidth: 0, nHeight: 0,
-            hWndParent:   IntPtr.Zero,
-            hMenu:        IntPtr.Zero,
-            hInstance:    hInstance,
-            lpParam:      IntPtr.Zero);
-        error = hwnd == IntPtr.Zero ? Marshal.GetLastWin32Error() : 0;
-        if (hwnd == IntPtr.Zero) return null;
-
-        uint corner = DWMWCP_DONOTROUND;
-        NativeMethods.DwmSetWindowAttribute(hwnd, DWMWA_WINDOW_CORNER_PREFERENCE, ref corner, sizeof(uint));
-        return new TaskbarUnderlay(hwnd);
+        _className = className;
+        _hInstance = hInstance;
     }
 
     // How much of the edge colour tints the blur: enough to carry the app's
@@ -61,11 +54,37 @@ internal sealed class TaskbarUnderlay : IDisposable
     // app's own acrylic does.
     private const uint BlurTintAlpha = 0x99;
 
-    // Shows the strip over rect, just below app, in color (a COLORREF),
-    // plain or as a blur tinted with it. Each part is written only when it
-    // changed: this runs on every refresh.
-    public void Show(IntPtr app, NativeMethods.RECT rect, uint color, bool blur)
+    // Shows the strip over rect beside app, in color (a COLORREF), plain or
+    // as a blur tinted with it. Each part is written only when it changed:
+    // this runs on every refresh. Returns 0, or the Win32 error of a window
+    // Windows refused, the strip then staying hidden.
+    public int Show(IntPtr app, NativeMethods.RECT rect, uint color, bool blur)
     {
+        bool created = false;
+        if (app != App || !IsWindow(Hwnd))
+        {
+            DestroyStrip();
+            // NOACTIVATE + TOOLWINDOW like the anchor: never focused, never
+            // in Alt-Tab.
+            Hwnd = NativeMethods.CreateWindowEx(
+                dwExStyle:    NativeMethods.WS_EX_TOOLWINDOW | NativeMethods.WS_EX_NOACTIVATE,
+                lpClassName:  _className,
+                lpWindowName: null,
+                dwStyle:      WS_POPUP,
+                x: 0, y: 0, nWidth: 0, nHeight: 0,
+                hWndParent:   app,
+                hMenu:        IntPtr.Zero,
+                hInstance:    _hInstance,
+                lpParam:      IntPtr.Zero);
+            if (Hwnd == IntPtr.Zero) return Marshal.GetLastWin32Error();
+
+            uint corner = DWMWCP_DONOTROUND;
+            NativeMethods.DwmSetWindowAttribute(Hwnd, DWMWA_WINDOW_CORNER_PREFERENCE, ref corner, sizeof(uint));
+            _color = uint.MaxValue;
+            _blur = false;
+            created = true;
+        }
+
         if (color != _color || blur != _blur)
         {
             if (color != _color)
@@ -83,13 +102,15 @@ internal sealed class TaskbarUnderlay : IDisposable
 
         bool moved = rect.left != _rect.left || rect.top != _rect.top
                   || rect.right != _rect.right || rect.bottom != _rect.bottom;
-        if (app == App && !moved) return;
+        if (!created && !moved) return 0;
 
-        NativeMethods.SetWindowPos(Hwnd, app,
+        // An owned window stays above its owner on its own: no z-order to set.
+        NativeMethods.SetWindowPos(Hwnd, IntPtr.Zero,
             rect.left, rect.top, rect.right - rect.left, rect.bottom - rect.top,
-            NativeMethods.SWP_NOACTIVATE | NativeMethods.SWP_SHOWWINDOW);
+            NativeMethods.SWP_NOACTIVATE | NativeMethods.SWP_NOZORDER | NativeMethods.SWP_SHOWWINDOW);
         App = app;
         _rect = rect;
+        return 0;
     }
 
     private bool SetAccent(int state, uint tint)
@@ -121,8 +142,15 @@ internal sealed class TaskbarUnderlay : IDisposable
     public void Hide()
     {
         if (!Visible) return;
-        NativeMethods.ShowWindow(Hwnd, NativeMethods.SW_HIDE);
+        DestroyStrip();
+    }
+
+    private void DestroyStrip()
+    {
+        if (Hwnd != IntPtr.Zero && IsWindow(Hwnd)) NativeMethods.DestroyWindow(Hwnd);
+        Hwnd = IntPtr.Zero;
         App = IntPtr.Zero;
+        _rect = default;
     }
 
     // WM_ERASEBKGND: the whole strip in one colour, or black under the blur.
@@ -135,7 +163,7 @@ internal sealed class TaskbarUnderlay : IDisposable
 
     public void Dispose()
     {
-        NativeMethods.DestroyWindow(Hwnd);
+        DestroyStrip();
         if (_brush != IntPtr.Zero) DeleteObject(_brush);
         _brush = IntPtr.Zero;
     }
@@ -187,8 +215,19 @@ internal sealed class TaskbarUnderlay : IDisposable
         return true;
     }
 
-    // The dominant colour of the screen line, or null when GDI refused.
-    public static uint? ReadColor(NativeMethods.RECT line)
+    // Task view is open: its desktop previews would show the strip as a bar
+    // beside the app, with no taskbar over it.
+    public static bool TaskViewShown()
+    {
+        var name = new System.Text.StringBuilder(64);
+        IntPtr foreground = NativeMethods.GetForegroundWindow();
+        return foreground != IntPtr.Zero && GetClassName(foreground, name, name.Capacity) > 0
+            && name.ToString() == TaskViewClass;
+    }
+
+    // The dominant colour of the screen line and the share of the line it
+    // covers, or null when GDI refused.
+    public static (uint Color, double Share)? ReadColor(NativeMethods.RECT line)
     {
         int width = line.right - line.left, height = line.bottom - line.top;
         if (width <= 0 || height <= 0) return null;
@@ -216,7 +255,8 @@ internal sealed class TaskbarUnderlay : IDisposable
 
             var pixels = new int[width * height];
             Marshal.Copy(bits, pixels, 0, pixels.Length);
-            return EdgeColor.Dominant(MemoryMarshal.Cast<int, uint>(pixels));
+            uint color = EdgeColor.Dominant(MemoryMarshal.Cast<int, uint>(pixels), out double share);
+            return (color, share);
         }
         finally
         {
