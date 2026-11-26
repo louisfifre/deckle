@@ -67,7 +67,7 @@ Run one with `pwsh -NoProfile -File scripts/<path> [arguments]`. An action names
 
 - `maintenance/apply-anytype-schema.ps1` — **Apply a schema manifest or a space plan to an Anytype space, or read a space into a plan.** With -Plan, builds a whole space from one plan file, in creation order: properties and options, types with their panel and default template, collections, queries, templates with their in-body views, type views, pages and, when asked for, objects and the sidebar.
   - Actions: Apply a schema manifest or a space plan to an Anytype space, or read a space into a plan
-  - Parameters: -Space <string> (required), -Manifest <string>, -Plan <string>, -Stages <string[]>, -Check, -RecheckAfterMinutes <int>, -ReadTo <string>, -Pages <string[]>, -InviteLink <string>, -Pilot, -AcceptTimeoutMinutes <int>, -DataRoot <string>
+  - Parameters: -Space <string> (required), -Manifest <string>, -Plan <string>, -Terms <string>, -Stages <string[]>, -Check, -RecheckAfterMinutes <int>, -ReadTo <string>, -Pages <string[]>, -InviteLink <string>, -Pilot, -AcceptTimeoutMinutes <int>, -DataRoot <string>
 - `maintenance/clean.ps1` — **Clean build outputs.** Removes the build output folders of every language present in the repository, each only when it passes three locks: it is a known output folder of a language the repository uses, git ignores it, and it holds no tracked file.
   - Actions: Preview / build outputs · Clean / build outputs `-Apply` (danger)
   - Parameters: -Target <string>, -Apply
