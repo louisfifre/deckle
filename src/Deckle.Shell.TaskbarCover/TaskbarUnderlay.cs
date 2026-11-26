@@ -83,6 +83,25 @@ internal sealed class TaskbarUnderlay : IDisposable
         _rect = rect;
         _edge = edge;
 
+        // Another maximized app takes the edge while the strip shows: the new
+        // app's strip comes in under the old one, which fades out over it, as
+        // a new look does. Destroying the old strip first showed the
+        // wallpaper until the new one slid out (seen in the trial).
+        if (animate && _extent > 0 && _current is not null && _current.Owner != app && IsWindow(_current.Hwnd))
+        {
+            var next = Strip.Create(_className, _hInstance, app, color, blur, out int error);
+            if (next is null) return error;
+            _leaving?.Destroy();
+            _leaving = _current;
+            _current = next;
+            _fadeStart = Environment.TickCount64;
+            // Caught mid-slide, out or in: it carries on to the screen's edge.
+            if (_extent < 1) StartSlide(slideIn: true, animate: true);
+            App = app;
+            Place();
+            return 0;
+        }
+
         if (_current is null || _current.Owner != app || !IsWindow(_current.Hwnd))
         {
             DestroyStrips();
