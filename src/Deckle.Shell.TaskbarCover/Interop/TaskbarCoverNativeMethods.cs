@@ -194,6 +194,18 @@ internal static class TaskbarCoverNativeMethods
     [DllImport("user32.dll")]
     public static extern bool IsZoomed(IntPtr hWnd);
 
+    [DllImport("user32.dll")]
+    public static extern bool IsIconic(IntPtr hWnd);
+
+    // The shell cloaked the window: it sits on a virtual desktop not shown.
+    public const int DWM_CLOAKED_SHELL = 0x2;
+
+    public const int SW_HIDE   = 0;
+    public const int SW_SHOWNA = 8;
+
+    [DllImport("user32.dll")]
+    public static extern bool ShowWindow(IntPtr hWnd, int nCmdShow);
+
     [DllImport("dwmapi.dll")]
     public static extern int DwmGetWindowAttribute(IntPtr hwnd, uint dwAttribute, out int pvAttribute, int cbAttribute);
 

@@ -24,6 +24,9 @@ public sealed partial class TaskbarCoverHost
     // fullscreen verdict (the band's suppression), which also catches what
     // the walk leaves out, such as an always-on-top game.
     //
+    // A strip whose app goes to a desktop not shown stays there, for the
+    // switch that returns (TaskbarUnderlay's parked strips).
+    //
     // Task view takes the strip away: it reads as the desktop. Windows
     // describes it as it describes Alt+Tab's switcher (same class, same
     // styles, measured 2026-11-27), and only the title tells them apart. It
@@ -140,6 +143,7 @@ public sealed partial class TaskbarCoverHost
         bool possible = _layoutKnown && !_systemSuspended && !band.AppSuppressed && !taskView;
         IntPtr app = possible ? TaskbarUnderlay.FindMaximizedApp(band.Monitor, band.MonitorRect) : IntPtr.Zero;
         bool animate = possible && _animationsEnabled();
+        band.Underlay?.ShowParked(!taskView);
 
         if (app == IntPtr.Zero)
         {

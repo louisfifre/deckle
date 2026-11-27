@@ -49,6 +49,14 @@ internal sealed class TaskbarUnderlay : IDisposable
     // fading out over it.
     private Strip? _current;
     private Strip? _leaving;
+    // The strips left on the virtual desktops not shown, one per desktop
+    // left with a maximized app. A strip whose app goes to another desktop
+    // stays there at full strength instead of fading out: Windows slides it
+    // away with its app on the switch, and back in with it on the switch
+    // that returns, where a strip made on arrival popped in once the slide
+    // had ended (Louis, trial of 2026-11-27). Its colour is the one it
+    // showed when it left; the edge reader corrects it on return.
+    private readonly List<Strip> _parked = [];
     private NativeMethods.RECT _rect;
 
     public TaskbarUnderlay(string className, IntPtr hInstance)
@@ -71,6 +79,19 @@ internal sealed class TaskbarUnderlay : IDisposable
 
         if (_current is not null && !IsWindow(_current.Hwnd)) _current = null;
         if (_leaving is not null && !IsWindow(_leaving.Hwnd)) _leaving = null;
+
+        // Back on a desktop left with its strip: that strip is the app's
+        // again, as it is, and the next frame read gives its colour.
+        if (_current is not null && _current.Owner != app) ParkCurrent();
+        if (_current is null && _parked.Find(s => s.Owner == app) is { } parked)
+        {
+            _parked.Remove(parked);
+            PruneParked();
+            _current = parked;
+            _current.Place(_rect, IntPtr.Zero);
+            return 0;
+        }
+        PruneParked();
 
         if (!animate)
         {
@@ -145,7 +166,10 @@ internal sealed class TaskbarUnderlay : IDisposable
     {
         if (!Visible) return;
         App = IntPtr.Zero;
-        if (!animate || _current is null)
+        ParkCurrent();
+        PruneParked();
+        if (_current is null) return;
+        if (!animate)
         {
             DestroyStrips();
             return;
@@ -190,16 +214,57 @@ internal sealed class TaskbarUnderlay : IDisposable
         App = IntPtr.Zero;
     }
 
-    // WM_ERASEBKGND for one of the strips; false when hwnd is neither.
+    // Leaves the current strip on its app's desktop when that app went to a
+    // desktop not shown, still maximized.
+    private void ParkCurrent()
+    {
+        if (_current is null || !OnHiddenDesktop(_current.Owner)) return;
+        _current.Settle();
+        _parked.Add(_current);
+        _current = null;
+    }
+
+    // Drops the strips whose app left its desktop maximized: closed (Windows
+    // destroys an owned window with its owner), minimized, restored, or
+    // shown again without being the app the strip continues.
+    private void PruneParked()
+    {
+        for (int i = _parked.Count - 1; i >= 0; i--)
+        {
+            if (OnHiddenDesktop(_parked[i].Owner)) continue;
+            _parked[i].Destroy();
+            _parked.RemoveAt(i);
+        }
+    }
+
+    private static bool OnHiddenDesktop(IntPtr app)
+        => IsWindow(app) && IsZoomed(app) && !IsIconic(app)
+           && DwmGetWindowAttribute(app, DWMWA_CLOAKED, out int cloaked, sizeof(int)) == 0
+           && (cloaked & DWM_CLOAKED_SHELL) != 0;
+
+    // Task view shows the desktops' windows without their taskbar: the
+    // strips left there hide while it is open.
+    public void ShowParked(bool shown)
+    {
+        foreach (var strip in _parked) strip.SetShown(shown);
+    }
+
+    // WM_ERASEBKGND for one of the strips; false when hwnd is none of them.
     public bool TryPaint(IntPtr hwnd, IntPtr hdc)
     {
-        var strip = _current?.Hwnd == hwnd ? _current : _leaving?.Hwnd == hwnd ? _leaving : null;
+        var strip = _current?.Hwnd == hwnd ? _current : _leaving?.Hwnd == hwnd ? _leaving
+                  : _parked.Find(s => s.Hwnd == hwnd);
         if (strip is null) return false;
         strip.Paint(hdc);
         return true;
     }
 
-    public void Dispose() => DestroyStrips();
+    public void Dispose()
+    {
+        DestroyStrips();
+        foreach (var strip in _parked) strip.Destroy();
+        _parked.Clear();
+    }
 
     // One window of the underlay, with its look (a plain colour or a blur
     // tinted with it) and its fade.
@@ -262,6 +327,16 @@ internal sealed class TaskbarUnderlay : IDisposable
             _fadeTo = to;
             _fadeStart = Alpha == to ? 0 : Environment.TickCount64;
         }
+
+        // Ends a fade under way at full strength.
+        public void Settle()
+        {
+            _fadeStart = 0;
+            SetAlpha(255);
+        }
+
+        public void SetShown(bool shown)
+            => ShowWindow(Hwnd, shown ? SW_SHOWNA : SW_HIDE);
 
         // One frame of the fade; true when it is over.
         public bool Tick(long now)
