@@ -3581,7 +3581,8 @@ _Generated from `git ls-files` — do not edit by hand._
 │   │   ├── VisionObservabilityCollection.cs
 │   │   └── WarpRig.cs
 │   ├── Directory.Build.props
-│   └── GLOSSARY.md  — glossary-deckle-tests Test taxonomy. It names the four categories inside the automatic scope (unit, i…
+│   ├── GLOSSARY.md  — glossary-deckle-tests Test taxonomy. It names the four categories inside the automatic scope (unit, i…
+│   └── process-wide-events.md
 ├── .editorconfig
 ├── .gitattributes
 ├── .gitignore
