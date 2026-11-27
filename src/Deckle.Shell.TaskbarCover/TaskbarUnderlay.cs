@@ -10,54 +10,55 @@ namespace Deckle.Shell.TaskbarCover;
 // without it a faded taskbar shows the wallpaper between the screen's edge
 // and the app. It sits below the topmost taskbar, above the app it continues.
 //
-// The window is created owned by the app, one per app shown, and destroyed
-// when hidden. An owned window lives on its owner's virtual desktop, while a
-// tool window without an owner shows on every desktop (seen in Task view: a
-// strip beside the wallpaper of desktops with no maximized app). Windows
-// reads the owner at creation only, so a new app gets a new window. Windows
-// destroys an owned window with its owner; IsWindow catches it.
+// One motion only. A strip is a window that Windows never shows, hides nor
+// animates once it is there: it changes its opacity, its colour and its blur
+// through one fade (UnderlayFade), and it is made and destroyed only at no
+// opacity, where nothing of Windows' opening or closing is seen. Windows
+// hides an owned window itself when its owner is minimized, or when another
+// window is maximized, through WM_SHOWWINDOW; the host refuses those
+// (TaskbarCoverHost's window procedure), and the strip fades out as its app
+// leaves. A strip made and destroyed per change, at full opacity, showed
+// Windows' own animations under the fade (Louis, trial of v0.159.0; the
+// minimize measured on 2026-11-27: the strip gone in one frame).
 //
-// Motion, while animations are on: every change dissolves. The strip fades
-// in when it shows and out when it hides. A new look (colour, blur on or
-// off, or another app's edge) comes in under the old one, which fades out
-// over it. The whole window fades, its blur too (WS_EX_LAYERED alpha, seen in
-// the trial to fade the acrylic with it), so a blur rises and falls with its
-// opacity. The new look goes under the old one because an acrylic window
-// blurs what lies under it: a blur fading in over the plain strip would blur
-// the strip, not the app's backdrop. A slide out of the app's edge was tried
-// first and dropped: it set off once the window had arrived and read as a
-// stiff move of its own (Louis, trial of 2026-11-26). Without animations
-// every change is instant. The curve and duration are UnderlayMotion's.
-// Worker thread only, like the band that owns it.
+// One strip per app shown, owned by the app. An owned window lives on its
+// owner's virtual desktop, so a switch of desktop slides the strip away with
+// its app, and back with it: a strip whose app is still maximized on a
+// desktop not shown stays there at the opacity it had. A strip of no owner
+// would show on every desktop, and Windows reads the owner at creation only,
+// so a new app gets a new strip. Windows destroys an owned window with its
+// owner (an app closed while maximized takes its strip at once); IsWindow
+// catches it.
+//
+// Two apps in turn (one maximized over the other, Alt+Tab between them):
+// the new one's strip fades in over the old one's, which fades out under it,
+// each from where it stands. Without animations every change is instant.
+// The curve and duration are UnderlayMotion's. Worker thread only, like the
+// band that owns it.
 internal sealed class TaskbarUnderlay : IDisposable
 {
+    // How much of the edge colour tints the blur: enough to carry the app's
+    // colour, little enough to let the blurred wallpaper through, as the
+    // app's own acrylic does. 255, the plain strip, is the tint at its full.
+    private const byte BlurTint = 0x99;
+    private const byte PlainTint = 0xFF;
+
     private readonly string _className;
     private readonly IntPtr _hInstance;
+    private readonly List<Strip> _strips = [];
+    // Windows refused the blur once: the strips stay plain.
+    private bool _blurRefused;
 
     // The maximized app the underlay continues; zero while hidden, fading
     // out included.
     public IntPtr App { get; private set; }
     public bool Visible => App != IntPtr.Zero;
     // The COLORREF last asked for.
-    public uint Color => _current?.Color ?? uint.MaxValue;
+    public uint Color { get; private set; } = uint.MaxValue;
     // The last read edge showed more than one colour (EdgeColor.PlainShare).
     public bool EdgeVaried { get; set; }
     // A fade is under way: the host ticks it.
-    public bool Animating => _current?.Fading == true || _leaving is not null;
-
-    // The strip showing the look asked for (null while hidden), and the one
-    // fading out over it.
-    private Strip? _current;
-    private Strip? _leaving;
-    // The strips left on the virtual desktops not shown, one per desktop
-    // left with a maximized app. A strip whose app goes to another desktop
-    // stays there at full strength instead of fading out: Windows slides it
-    // away with its app on the switch, and back in with it on the switch
-    // that returns, where a strip made on arrival popped in once the slide
-    // had ended (Louis, trial of 2026-11-27). Its colour is the one it
-    // showed when it left; the edge reader corrects it on return.
-    private readonly List<Strip> _parked = [];
-    private NativeMethods.RECT _rect;
+    public bool Animating => _strips.Exists(s => s.Fade.Moving);
 
     public TaskbarUnderlay(string className, IntPtr hInstance)
     {
@@ -65,176 +66,83 @@ internal sealed class TaskbarUnderlay : IDisposable
         _hInstance = hInstance;
     }
 
-    // Shows the strip over rect beside app, in color (a COLORREF), plain or
-    // as a blur tinted with it, dissolving there when animate. Each part is
-    // written only when it changed: this runs on every refresh. Returns 0, or
-    // the Win32 error of a window Windows refused, the strip then staying
-    // hidden.
-    public int Show(IntPtr app, NativeMethods.RECT rect, uint color, bool blur, bool animate)
+    // The one way the strips change. app's strip shows over rect in color (a
+    // COLORREF), plain or as a blur tinted with it; app zero shows none. Every
+    // other strip leaves, but for one whose app is still maximized on a
+    // desktop not shown, which keeps its opacity unless desktopsShown is
+    // false (Task view shows the desktops' windows without their taskbar).
+    // Fades when animate. Returns 0, or the Win32 error of a window Windows
+    // refused, that strip then staying hidden.
+    public int Update(IntPtr app, NativeMethods.RECT rect, uint color, bool blur, bool animate, bool desktopsShown)
     {
-        bool moved = rect.left != _rect.left || rect.top != _rect.top
-                  || rect.right != _rect.right || rect.bottom != _rect.bottom;
-        _rect = rect;
+        int error = 0;
+        if (app != IntPtr.Zero && _strips.Find(s => s.Owner == app) is null)
+        {
+            var created = Strip.Create(_className, _hInstance, app, out error);
+            if (created is null) app = IntPtr.Zero;
+            else _strips.Add(created);
+        }
         App = app;
+        if (app != IntPtr.Zero) Color = color;
 
-        if (_current is not null && !IsWindow(_current.Hwnd)) _current = null;
-        if (_leaving is not null && !IsWindow(_leaving.Hwnd)) _leaving = null;
-
-        // Back on a desktop left with its strip: that strip is the app's
-        // again, as it is, and the next frame read gives its colour.
-        if (_current is not null && _current.Owner != app) ParkCurrent();
-        if (_current is null && _parked.Find(s => s.Owner == app) is { } parked)
+        long now = Environment.TickCount64;
+        for (int i = _strips.Count - 1; i >= 0; i--)
         {
-            _parked.Remove(parked);
-            PruneParked();
-            _current = parked;
-            _current.Place(_rect, IntPtr.Zero);
-            return 0;
-        }
-        PruneParked();
-
-        if (!animate)
-        {
-            _leaving?.Destroy();
-            _leaving = null;
-            // Another app's strip is shown before the old one goes: destroyed
-            // first, the screen showed no strip for a frame or two (measured,
-            // 28 ms).
-            if (_current is null || _current.Owner != app)
+            var strip = _strips[i];
+            if (!IsWindow(strip.Hwnd))
             {
-                var next = Strip.Create(_className, _hInstance, app, color, blur, 255, out int error);
-                if (next is null) return error;
-                next.Place(_rect, SameOwner(_current, next) ? _current!.Hwnd : IntPtr.Zero);
-                _current?.Destroy();
-                _current = next;
+                strip.Release();
+                _strips.RemoveAt(i);
+                continue;
             }
-            _current.SetLook(color, blur);
-            _current.SetAlpha(255);
-            if (moved) Place();
-            return 0;
-        }
 
-        // The same app back while its strip fades out: it fades back in.
-        if (_current is null && _leaving is { } back && back.Owner == app && back.Color == color && back.Blur == blur)
-        {
-            _current = back;
-            _leaving = null;
-            _current.FadeTo(255);
-            Place();
-            return 0;
-        }
-
-        // A new colour for the same app while a fade is under way (the strip
-        // rising, or the old look still fading out over it) repaints the
-        // strip: the fade under way carries the change. A window just
-        // maximized shows black for one frame, then its colour (measured 25
-        // ms apart); a fade started for each pushed the strip that had just
-        // come in, black at full strength, out over the next one, and the
-        // taskbar flashed dark (seen in the trial of 2026-11-27).
-        if (_current is { } rising && rising.Owner == app && rising.Blur == blur && rising.Color != color
-            && (rising.Fading || _leaving is not null))
-        {
-            rising.SetLook(color, blur);
-            if (moved) Place();
-            return 0;
-        }
-
-        if (_current is null || _current.Owner != app || _current.Color != color || _current.Blur != blur)
-        {
-            // The new look starts where the strip it replaces stood, from
-            // nothing when none shows, and rises under the old one fading out.
-            byte from = _current?.Alpha ?? 0;
-            var next = Strip.Create(_className, _hInstance, app, color, blur, from, out int error);
-            if (next is null) return error;
-            next.FadeTo(255);
-            if (_current is not null)
+            UnderlayLook target;
+            bool keep;
+            if (strip.Owner == app)
             {
-                _leaving?.Destroy();
-                _leaving = _current;
-                _leaving.FadeTo(0);
+                strip.Parked = null;
+                strip.Place(rect);
+                target = new UnderlayLook(255, color, blur && !_blurRefused ? BlurTint : PlainTint);
+                keep = true;
             }
-            _current = next;
-            moved = true;
-        }
+            else if (OnHiddenDesktop(strip.Owner))
+            {
+                // Left there as it was when its app went.
+                strip.Parked ??= strip.Fade.Shown.Alpha > 0;
+                target = strip.Fade.Target with { Alpha = strip.Parked.Value && desktopsShown ? (byte)255 : (byte)0 };
+                keep = true;
+            }
+            else
+            {
+                strip.Parked = null;
+                target = strip.Fade.Target with { Alpha = 0 };
+                keep = false;
+            }
 
-        if (moved) Place();
-        return 0;
+            strip.Fade.MoveTo(target, animate, now);
+            if (!strip.Paint()) _blurRefused = true;
+            if (!keep && strip.Gone) Drop(i);
+        }
+        return error;
     }
 
-    // Hides the strip, fading it out when animate.
-    public void Hide(bool animate)
-    {
-        if (!Visible) return;
-        App = IntPtr.Zero;
-        ParkCurrent();
-        PruneParked();
-        if (_current is null) return;
-        if (!animate)
-        {
-            DestroyStrips();
-            return;
-        }
-        _leaving?.Destroy();
-        _leaving = _current;
-        _leaving.FadeTo(0);
-        _current = null;
-    }
-
-    // One frame of the fades, at now (TickCount64).
+    // One frame of the fades, at now (TickCount64). A strip that has faded
+    // away for good goes, unseen.
     public void Tick(long now)
     {
-        _current?.Tick(now);
-        if (_leaving is not null && _leaving.Tick(now) && _leaving.Alpha == 0)
+        for (int i = _strips.Count - 1; i >= 0; i--)
         {
-            _leaving.Destroy();
-            _leaving = null;
+            var strip = _strips[i];
+            strip.Fade.Tick(now);
+            strip.Paint();
+            if (strip.Gone && strip.Owner != App && strip.Parked is null) Drop(i);
         }
     }
 
-    // Puts the strips under the taskbar, each above its own app, and the
-    // fading one over the new one when both continue the same app. A strip
-    // is never placed against another app's strip: Windows keeps an owner
-    // under the windows it owns, so placing it under the strip of the app
-    // above raised its app over that app (Louis, trial of 2026-11-27: an
-    // Explorer restored over a maximized T3 Code went behind it).
-    private void Place()
+    private void Drop(int i)
     {
-        _leaving?.Place(_rect, IntPtr.Zero);
-        _current?.Place(_rect, SameOwner(_leaving, _current) ? _leaving!.Hwnd : IntPtr.Zero);
-    }
-
-    private static bool SameOwner(Strip? a, Strip? b) => a is not null && b is not null && a.Owner == b.Owner;
-
-    private void DestroyStrips()
-    {
-        _leaving?.Destroy();
-        _leaving = null;
-        _current?.Destroy();
-        _current = null;
-        App = IntPtr.Zero;
-    }
-
-    // Leaves the current strip on its app's desktop when that app went to a
-    // desktop not shown, still maximized.
-    private void ParkCurrent()
-    {
-        if (_current is null || !OnHiddenDesktop(_current.Owner)) return;
-        _current.Settle();
-        _parked.Add(_current);
-        _current = null;
-    }
-
-    // Drops the strips whose app left its desktop maximized: closed (Windows
-    // destroys an owned window with its owner), minimized, restored, or
-    // shown again without being the app the strip continues.
-    private void PruneParked()
-    {
-        for (int i = _parked.Count - 1; i >= 0; i--)
-        {
-            if (OnHiddenDesktop(_parked[i].Owner)) continue;
-            _parked[i].Destroy();
-            _parked.RemoveAt(i);
-        }
+        _strips[i].Destroy();
+        _strips.RemoveAt(i);
     }
 
     private static bool OnHiddenDesktop(IntPtr app)
@@ -242,55 +150,50 @@ internal sealed class TaskbarUnderlay : IDisposable
            && DwmGetWindowAttribute(app, DWMWA_CLOAKED, out int cloaked, sizeof(int)) == 0
            && (cloaked & DWM_CLOAKED_SHELL) != 0;
 
-    // Task view shows the desktops' windows without their taskbar: the
-    // strips left there hide while it is open.
-    public void ShowParked(bool shown)
-    {
-        foreach (var strip in _parked) strip.SetShown(shown);
-    }
-
     // WM_ERASEBKGND for one of the strips; false when hwnd is none of them.
     public bool TryPaint(IntPtr hwnd, IntPtr hdc)
     {
-        var strip = _current?.Hwnd == hwnd ? _current : _leaving?.Hwnd == hwnd ? _leaving
-                  : _parked.Find(s => s.Hwnd == hwnd);
+        var strip = _strips.Find(s => s.Hwnd == hwnd);
         if (strip is null) return false;
-        strip.Paint(hdc);
+        strip.Erase(hdc);
         return true;
     }
 
+    // The band is gone or the host stops: the strips go at once, at no
+    // opacity first.
     public void Dispose()
     {
-        DestroyStrips();
-        foreach (var strip in _parked) strip.Destroy();
-        _parked.Clear();
+        foreach (var strip in _strips) strip.Destroy();
+        _strips.Clear();
+        App = IntPtr.Zero;
     }
 
-    // One window of the underlay, with its look (a plain colour or a blur
-    // tinted with it) and its fade.
+    // One window of the underlay, owned by its app, with its fade.
     private sealed class Strip
     {
-        // How much of the edge colour tints the blur: enough to carry the
-        // app's colour, little enough to let the blurred wallpaper through,
-        // as the app's own acrylic does.
-        private const uint BlurTintAlpha = 0x99;
-
         public IntPtr Hwnd { get; private init; }
         public IntPtr Owner { get; private init; }
-        public uint Color { get; private set; } = uint.MaxValue;
-        public bool Blur { get; private set; }
-        public byte Alpha { get; private set; }
-        public bool Fading => _fadeStart != 0;
+        public UnderlayFade Fade { get; } = new();
+        // Set while the app is maximized on a desktop not shown: whether the
+        // strip showed when its app went there.
+        public bool? Parked { get; set; }
+        // Faded away and still: it can go unseen.
+        public bool Gone => Fade.Shown.Alpha == 0 && !Fade.Moving;
+        private UnderlayLook _painted;
+        private bool _accentOn;
         private IntPtr _brush;
-        private byte _fadeFrom, _fadeTo;
-        private long _fadeStart;
+        private NativeMethods.RECT _rect;
 
-        public static Strip? Create(string className, IntPtr hInstance, IntPtr owner, uint color, bool blur, byte alpha, out int error)
+        // Made at no opacity and shown once, for good: nothing of Windows'
+        // opening is seen.
+        public static Strip? Create(string className, IntPtr hInstance, IntPtr owner, out int error)
         {
-            // NOACTIVATE + TOOLWINDOW like the anchor: never focused, never
-            // in Alt-Tab. LAYERED for the fade.
+            // NOACTIVATE + TOOLWINDOW like the anchor: never focused, never in
+            // Alt-Tab. LAYERED for the fade, TRANSPARENT so that it takes no
+            // click.
             IntPtr hwnd = NativeMethods.CreateWindowEx(
-                dwExStyle:    NativeMethods.WS_EX_TOOLWINDOW | NativeMethods.WS_EX_NOACTIVATE | NativeMethods.WS_EX_LAYERED,
+                dwExStyle:    NativeMethods.WS_EX_TOOLWINDOW | NativeMethods.WS_EX_NOACTIVATE
+                            | NativeMethods.WS_EX_LAYERED | NativeMethods.WS_EX_TRANSPARENT,
                 lpClassName:  className,
                 lpWindowName: null,
                 dwStyle:      WS_POPUP,
@@ -308,90 +211,77 @@ internal sealed class TaskbarUnderlay : IDisposable
 
             uint corner = DWMWCP_DONOTROUND;
             NativeMethods.DwmSetWindowAttribute(hwnd, DWMWA_WINDOW_CORNER_PREFERENCE, ref corner, sizeof(uint));
-            // The strip's only motion is its own fade (Louis, trial of
-            // 2026-11-27: a strip that grew from one side on maximize and
-            // restore, while every other change faded).
             uint noTransitions = 1;
             NativeMethods.DwmSetWindowAttribute(hwnd, DWMWA_TRANSITIONS_FORCEDISABLED, ref noTransitions, sizeof(uint));
-            var strip = new Strip { Hwnd = hwnd, Owner = owner };
             // A layered window shows nothing until its alpha is set.
-            strip.SetAlpha(alpha);
-            strip.SetLook(color, blur);
-            return strip;
+            NativeMethods.SetLayeredWindowAttributes(hwnd, 0, 0, NativeMethods.LWA_ALPHA);
+            return new Strip { Hwnd = hwnd, Owner = owner };
         }
 
-        // Starts a fade from the alpha shown now.
-        public void FadeTo(byte to)
+        // Over r, where it is in the z-order: an owned window stays above
+        // its owner on its own, and placing it against another app's window
+        // would raise its owner with it (Louis, trial of 2026-11-27). The
+        // first call shows the window, for good.
+        public void Place(NativeMethods.RECT r)
         {
-            _fadeFrom = Alpha;
-            _fadeTo = to;
-            _fadeStart = Alpha == to ? 0 : Environment.TickCount64;
+            if (r.left == _rect.left && r.top == _rect.top && r.right == _rect.right && r.bottom == _rect.bottom) return;
+            _rect = r;
+            NativeMethods.SetWindowPos(Hwnd, IntPtr.Zero, r.left, r.top, r.right - r.left, r.bottom - r.top,
+                NativeMethods.SWP_NOACTIVATE | NativeMethods.SWP_NOZORDER | NativeMethods.SWP_SHOWWINDOW);
         }
 
-        // Ends a fade under way at full strength.
-        public void Settle()
+        // Writes what the fade shows now: the opacity, the colour, the blur.
+        // False when Windows refused the blur, the strip then plain.
+        public bool Paint()
         {
-            _fadeStart = 0;
-            SetAlpha(255);
-        }
-
-        public void SetShown(bool shown)
-            => ShowWindow(Hwnd, shown ? SW_SHOWNA : SW_HIDE);
-
-        // One frame of the fade; true when it is over.
-        public bool Tick(long now)
-        {
-            if (_fadeStart == 0) return true;
-            long elapsed = now - _fadeStart;
-            SetAlpha(UnderlayMotion.FadeAlpha(_fadeFrom, _fadeTo, elapsed));
-            if (!UnderlayMotion.FadeDone(elapsed)) return false;
-            _fadeStart = 0;
-            return true;
-        }
-
-        public void SetLook(uint color, bool blur)
-        {
-            if (color == Color && blur == Blur) return;
-            if (color != Color)
+            var look = Fade.Shown;
+            if (look == _painted && _brush != IntPtr.Zero) return true;
+            bool accepted = true;
+            if (look.Color != _painted.Color || _brush == IntPtr.Zero)
             {
                 if (_brush != IntPtr.Zero) DeleteObject(_brush);
-                _brush = CreateSolidBrush(color);
+                _brush = CreateSolidBrush(look.Color);
             }
-            // A refused blur leaves the plain colour.
-            bool wasBlur = Blur;
-            Blur = blur && SetAccent(ACCENT_ENABLE_ACRYLICBLURBEHIND, BlurTintAlpha << 24 | color);
-            if (wasBlur && !Blur) SetAccent(ACCENT_DISABLED, 0);
-            Color = color;
-            InvalidateRect(Hwnd, IntPtr.Zero, true);
-        }
-
-        public void SetAlpha(byte alpha)
-        {
-            Alpha = alpha;
-            NativeMethods.SetLayeredWindowAttributes(Hwnd, 0, alpha, NativeMethods.LWA_ALPHA);
-        }
-
-        // Over r, just under the window above, or where it is when zero:
-        // an owned window stays above its owner on its own.
-        public void Place(NativeMethods.RECT r, IntPtr above)
-        {
-            uint flags = NativeMethods.SWP_NOACTIVATE | NativeMethods.SWP_SHOWWINDOW;
-            if (above == IntPtr.Zero) flags |= NativeMethods.SWP_NOZORDER;
-            NativeMethods.SetWindowPos(Hwnd, above, r.left, r.top, r.right - r.left, r.bottom - r.top, flags);
+            bool accent = look.Tint < PlainTint;
+            if (accent && (!_accentOn || look.Tint != _painted.Tint || look.Color != _painted.Color))
+            {
+                _accentOn = SetAccent(ACCENT_ENABLE_ACRYLICBLURBEHIND, (uint)look.Tint << 24 | look.Color);
+                accepted = _accentOn;
+            }
+            else if (!accent && _accentOn)
+            {
+                SetAccent(ACCENT_DISABLED, 0);
+                _accentOn = false;
+            }
+            if (look.Color != _painted.Color || accent != (_painted.Tint < PlainTint) || _painted.Alpha == 0)
+                InvalidateRect(Hwnd, IntPtr.Zero, true);
+            if (look.Alpha != _painted.Alpha)
+                NativeMethods.SetLayeredWindowAttributes(Hwnd, 0, look.Alpha, NativeMethods.LWA_ALPHA);
+            _painted = look;
+            return accepted;
         }
 
         // WM_ERASEBKGND: the whole strip in one colour, or black under the
         // blur, which the accent draws as see-through.
-        public void Paint(IntPtr hdc)
+        public void Erase(IntPtr hdc)
         {
-            IntPtr brush = Blur ? GetStockObject(BLACK_BRUSH) : _brush;
-            if (brush == IntPtr.Zero || !GetClientRect(Hwnd, out var client)) return;
-            FillRect(hdc, ref client, brush);
+            IntPtr brush = _accentOn ? GetStockObject(BLACK_BRUSH) : _brush;
+            if (brush != IntPtr.Zero && GetClientRect(Hwnd, out var client)) FillRect(hdc, ref client, brush);
         }
 
         public void Destroy()
         {
-            if (IsWindow(Hwnd)) NativeMethods.DestroyWindow(Hwnd);
+            if (IsWindow(Hwnd))
+            {
+                NativeMethods.SetLayeredWindowAttributes(Hwnd, 0, 0, NativeMethods.LWA_ALPHA);
+                NativeMethods.DestroyWindow(Hwnd);
+            }
+            Release();
+        }
+
+        // The window is gone already: only its brush is left.
+        public void Release()
+        {
             if (_brush != IntPtr.Zero) DeleteObject(_brush);
             _brush = IntPtr.Zero;
         }
@@ -466,20 +356,32 @@ internal sealed class TaskbarUnderlay : IDisposable
         return foreground != IntPtr.Zero && GetAncestor(foreground, GA_ROOTOWNER) == app;
     }
 
-    // Task view holds the foreground: its desktop previews would show the
-    // strip as a bar beside the app with no taskbar over it. Alt+Tab's
-    // switcher is a window of the same class with the same styles (measured
-    // 2026-11-27); only its title, which Windows translates, tells it apart.
-    public static bool TaskViewShown()
+    // Task view while it covers the screen: known, the Task view window
+    // found before, as long as Windows shows it (it stays over the screen
+    // while it closes, after the app chosen took the foreground), else the
+    // foreground when it is Task view; zero otherwise. Alt+Tab's switcher is
+    // a window of the same class, styles and size; its title differs but
+    // Windows translates it. What tells them apart is the z-order band
+    // Windows puts each in: the switcher sits in the system tools band,
+    // Task view does not (measured 2026-11-27: bands 16 and 5).
+    // GetWindowBand is undocumented: where it is missing, nothing reads as
+    // Task view and the strip stays through it.
+    public static IntPtr FindTaskView(IntPtr known)
     {
+        if (known != IntPtr.Zero && IsWindow(known) && IsWindowVisible(known)) return known;
         IntPtr foreground = NativeMethods.GetForegroundWindow();
         var text = new System.Text.StringBuilder(64);
         if (foreground == IntPtr.Zero || GetClassName(foreground, text, text.Capacity) == 0
             || text.ToString() != TaskViewClass)
-            return false;
-        text.Clear();
-        GetWindowText(foreground, text, text.Capacity);
-        return text.ToString() != TaskSwitcherTitle;
+            return IntPtr.Zero;
+        try
+        {
+            return GetWindowBand(foreground, out uint band) && band != ZBID_SYSTEM_TOOLS ? foreground : IntPtr.Zero;
+        }
+        catch (EntryPointNotFoundException)
+        {
+            return IntPtr.Zero;
+        }
     }
 
     // The colour a strip starts from before the app's first frame is read:

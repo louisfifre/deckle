@@ -73,6 +73,11 @@ public sealed partial class TaskbarCoverHost
         if (hWnd != _hwnd)
         {
             if (msg == WM_ERASEBKGND && TryPaintUnderlay(hWnd, wParam)) return 1;
+            // A strip: Windows hides an owned window itself when its owner
+            // is minimized or another window is maximized (lParam names
+            // why; zero is a ShowWindow call of Deckle's own). Refused, so
+            // that the strip only ever leaves through its own fade.
+            if (msg == WM_SHOWWINDOW && lParam != IntPtr.Zero) return IntPtr.Zero;
             return NativeMethods.DefWindowProc(hWnd, msg, wParam, lParam);
         }
 

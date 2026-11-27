@@ -27,6 +27,7 @@ public sealed partial class TaskbarCoverHost
         if (_systemSuspended || !_layoutKnown) return;
 
         foreach (var band in _bands) UpdateAppSuppressed(band, state);
+        _underlaySettleUntil = Environment.TickCount64 + UnderlaySettleMs;
         RefreshUnderlays("foreground");
     }
 
