@@ -30,11 +30,13 @@ public sealed partial class TaskbarCoverHost
     // Task view takes the strip away: it reads as the desktop. It covers the
     // screen from the moment it takes the foreground until Windows hides it,
     // some 370 ms after the app chosen in it took the foreground back
-    // (measured 2026-11-27). The strip follows its window, not the
-    // foreground: a strip that came back with the foreground had faded in
-    // under Task view, and showed whole at once when Task view went. While
-    // Task view shows, the look runs every UnderlaySoonMs, so that its going
-    // is seen within a frame (TaskbarUnderlay.FindTaskView).
+    // (measured 2026-11-27). Windows draws no strip during Task view's
+    // closing animation, then draws it as it is: a strip left whole under
+    // Task view showed whole at once. So the strip fades away under Task
+    // view and comes back only once its window is hidden, following the
+    // window rather than the foreground. While Task view shows, the look
+    // runs every UnderlaySoonMs, so that its going is seen within a frame
+    // (TaskbarUnderlay.FindTaskView).
     //
     // Which colour: the app's own edge, read from the frames the app draws
     // (WindowEdgeReader), never from the screen. The screen shows whatever is
@@ -66,6 +68,13 @@ public sealed partial class TaskbarCoverHost
     private bool _underlaySoonPending;
     // Task view's window while it shows, zero otherwise.
     private IntPtr _taskView;
+    // The foreground event can be read before Windows has settled: Task view
+    // took the foreground some 60 ms after a staging window of the shell,
+    // and a look made in between missed it for its whole life (measured
+    // 2026-11-27). After each foreground change the look runs every
+    // UnderlaySoonMs until this tick.
+    private const long UnderlaySettleMs = 250;
+    private long _underlaySettleUntil;
     private bool _underlayFailureLogged;
     // The frame clock's generation: a clock thread runs while its number is
     // the current one, so stopping it is a bump and a new one never meets
@@ -106,7 +115,7 @@ public sealed partial class TaskbarCoverHost
         bool taskView = _taskView != IntPtr.Zero;
         foreach (var band in _bands) RefreshUnderlay(band, reason, taskView);
         KeepUnderlayMotion();
-        if (taskView) ScheduleUnderlayRefresh();
+        if (taskView || Environment.TickCount64 < _underlaySettleUntil) ScheduleUnderlayRefresh();
     }
 
     // Runs the frame clock while a strip fades, and only then.
