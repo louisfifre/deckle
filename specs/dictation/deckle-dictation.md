@@ -26,7 +26,7 @@
 
 | The user wants to | The product must |
 | --- | --- |
-| start speaking from wherever they are, without leaving what they do | start the [dictation](GLOSSARY.md#dictation) on one [gesture](../GLOSSARY.md#gesture), the same across the [system](../GLOSSARY.md#system), and leave them where they were |
+| start speaking from wherever they are, without leaving what they do | start the [dictation](../GLOSSARY.md#dictation) on one [gesture](../GLOSSARY.md#gesture), the same across the [system](../GLOSSARY.md#system), and leave them where they were |
 | think aloud for as long as it takes, often doing something else | keep [listening](GLOSSARY.md#listening) without asking for anything, without cutting them on a [pause](GLOSSARY.md#pause) or a [hesitation](GLOSSARY.md#hesitation), and take only their [voice](GLOSSARY.md#voice) |
 | find their thread again | show their last words at a glance, out of the way of what they are looking at |
 | change subject, pause, resume | mark the [change of subject](GLOSSARY.md#change-of-subject) automatically or on one gesture of theirs, and keep these separations in the text |
@@ -40,7 +40,7 @@ Thinking aloud, finding the thread and changing subject happen together, while t
 1. [What the product shows is its real state.](../deckle.rules.md)
 2. [Everything the product tells the user reaches them with animations off as well.](../deckle.rules.md)
 3. [Everything the product tells the user reaches them with colours off as well.](../deckle.rules.md)
-4. Whatever stops a [dictation](GLOSSARY.md#dictation), what was said in it is found again, and the [product](../GLOSSARY.md#product) says so when it gives it back, and when only part of it came back.
+4. Whatever stops a [dictation](../GLOSSARY.md#dictation), what was said in it is found again, and the [product](../GLOSSARY.md#product) says so when it gives it back, and when only part of it came back.
 5. [Smoothed](../GLOSSARY.md#smooth) or not, the [transcription](../GLOSSARY.md#transcribe) keeps what the [user](../GLOSSARY.md#user) said and what they meant.
 
 ## Workflow
@@ -49,7 +49,7 @@ Thinking aloud, finding the thread and changing subject happen together, while t
 
 When it goes well:
 
-1. From wherever they are, one [gesture](../GLOSSARY.md#gesture) starts a [dictation](GLOSSARY.md#dictation).
+1. From wherever they are, one [gesture](../GLOSSARY.md#gesture) starts a [dictation](../GLOSSARY.md#dictation).
 2. Nothing is taken from what they were doing: they go on with it.
 3. The first words they say after the gesture are in the text: they wait for no signal to speak.
 4. The [product](../GLOSSARY.md#product) shows them that it [listens](GLOSSARY.md#listening).
@@ -63,7 +63,7 @@ Otherwise:
 
 When it goes well:
 
-1. The [dictation](GLOSSARY.md#dictation) goes on until they stop it, however long they are [silent](GLOSSARY.md#silence): nothing counts down, and they never make a sound to keep it going.
+1. The [dictation](../GLOSSARY.md#dictation) goes on until they stop it, however long they are [silent](GLOSSARY.md#silence): nothing counts down, and they never make a sound to keep it going.
 2. A [hesitation](GLOSSARY.md#hesitation), a stammer or a silence in the middle of a sentence never splits the sentence in the text.
 3. Only their [voice](GLOSSARY.md#voice) adds text: no other sound around them does.
 4. Nothing the [product](../GLOSSARY.md#product) shows presses them or asks for a [gesture](../GLOSSARY.md#gesture).
@@ -97,7 +97,7 @@ When it goes well:
 
 When it goes well:
 
-1. The same [gesture](../GLOSSARY.md#gesture) stops the [dictation](GLOSSARY.md#dictation) at once: the last words said before it are in the text, and nothing said after it is.
+1. The same [gesture](../GLOSSARY.md#gesture) stops the [dictation](../GLOSSARY.md#dictation) at once: the last words said before it are in the text, and nothing said after it is.
 2. The whole text, [rewritten](../GLOSSARY.md#rewrite) when they chose it, is ready for them to put where they want, and the [product](../GLOSSARY.md#product) tells them so. The product puts it nowhere by itself.
 
 Otherwise:
@@ -109,7 +109,7 @@ Otherwise:
 
 ### Choosing the rewriting
 
-1. The [user](../GLOSSARY.md#user) chooses once whether their [dictations](GLOSSARY.md#dictation) are [rewritten](../GLOSSARY.md#rewrite), and how, by their length. The choice holds for every dictation until they change it.
+1. The [user](../GLOSSARY.md#user) chooses once whether their [dictations](../GLOSSARY.md#dictation) are [rewritten](../GLOSSARY.md#rewrite), and how, by their length. The choice holds for every dictation until they change it.
 
 ## How Deckle answers, a sample on two lines
 
@@ -121,7 +121,7 @@ Otherwise:
 
 ### 1.3.5 Nothing of what they said is lost
 
-1. While the [user](../GLOSSARY.md#user) speaks, the [product](../GLOSSARY.md#product) keeps on the machine the sound of the [dictation](GLOSSARY.md#dictation) and the text [transcribed](../GLOSSARY.md#transcribe) so far, protected so that only the user can read them.
+1. While the [user](../GLOSSARY.md#user) speaks, the [product](../GLOSSARY.md#product) keeps on the machine the sound of the [dictation](../GLOSSARY.md#dictation) and the text [transcribed](../GLOSSARY.md#transcribe) so far, protected so that only the user can read them.
 2. Keeping them never makes the [listening](GLOSSARY.md#listening) wait.
 3. Once the text is given back, or the dictation is thrown away, the product removes what it kept.
 4. When a dictation ended before its text was given back, the next time the product starts it transcribes again what it kept, takes the kept text where the sound gives none, and tells the user what came back.

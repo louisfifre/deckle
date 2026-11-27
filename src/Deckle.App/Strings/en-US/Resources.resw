@@ -512,7 +512,7 @@
   <data name="TrayMenu_TranscribeRewrite" xml:space="preserve">
     <value>Transcribe and rewrite…</value>
   </data>
-  <!-- Transcribe and rewrite window (specs/deckle-transcribe-and-rewrite.md). -->
+  <!-- Transcribe and rewrite window (specs/transcribe-and-rewrite/deckle-transcribe-and-rewrite.md). -->
   <data name="TranscribeRewrite_WindowTitle" xml:space="preserve">
     <value>Transcribe and rewrite</value>
   </data>
@@ -635,7 +635,7 @@
     <value>Text</value>
   </data>
   <!-- A file's state on the window's list of several files
-       (specs/deckle-transcribe-and-rewrite.md, Several files). -->
+       (specs/transcribe-and-rewrite/deckle-transcribe-and-rewrite.md, Transcribing many recordings). -->
   <data name="FileTranscription_StateWaiting" xml:space="preserve">
     <value>Waiting</value>
   </data>

@@ -6,11 +6,29 @@ What the product does once something starts it, a gesture of the user or the pro
 
 Avoid: [gesture](#gesture).
 
+### Agent
+
+A program driven by a language model that works in a project for the user, in sessions they start.
+
 ### Application
 
 A program the user works in, such as an editor, a browser or a mail client.
 
 Avoid: [product](#product), [system](#system).
+
+### Closed navigation
+
+A navigation that shows only the icon of each of its places, beside the page.
+
+Avoid: [open navigation](#open-navigation).
+
+### Context
+
+What an agent reads of a project at the start of every session, before the user asks anything.
+
+### Dictation
+
+What the user says between the gesture that starts it and the gesture that stops it, and the text it gives back.
 
 ### Gesture
 
@@ -22,11 +40,39 @@ Avoid: [action](#action).
 
 The device that picks up sound for the computer or the phone.
 
+### Navigation
+
+The list of the places of a window, through which the user goes from one place to another.
+
+Avoid: [page](#page).
+
+### Open navigation
+
+A navigation that shows the icon and the name of each of its places, beside the page.
+
+Avoid: [closed navigation](#closed-navigation).
+
+### Page
+
+What a window shows of the place the user is in.
+
+Avoid: [place](#place).
+
+### Paste
+
+The gesture by which the user gives an application what they copied, the same across the system.
+
 ### Person
 
 A human being, whether they interact with the product or not, such as someone who speaks near the user.
 
 Avoid: [user](#user).
+
+### Place
+
+A part of a window that the user can go to, named and marked by an icon.
+
+Avoid: [page](#page).
 
 ### Product
 
@@ -34,11 +80,19 @@ The whole of what is made and offered to the user: what they see, what they do w
 
 Avoid: [application](#application), [system](#system).
 
+### Profile
+
+A way of rewriting a text, which the user writes and names.
+
 ### Rewrite
 
 To change the words of a transcribed text in the way the user chose; a translation is a rewrite.
 
 Avoid: [smooth](#smooth), [transcribe](#transcribe).
+
+### Script
+
+A file of a project that does one job of that project when it runs, such as building or publishing it.
 
 ### Smooth
 
@@ -61,3 +115,9 @@ To turn speech into written text.
 A person who interacts with the product.
 
 Avoid: [person](#person).
+
+### Window
+
+A frame of the product on the screen, which the user opens, moves and resizes, and which holds pages.
+
+Avoid: [application](#application).

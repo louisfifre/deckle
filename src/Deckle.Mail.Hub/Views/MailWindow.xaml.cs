@@ -180,7 +180,7 @@ public sealed partial class MailWindow : Window, IMailShell
     // ── Pane ─────────────────────────────────────────────────────────────────
 
     // Rail or open beside the page, as the user chose, or over the page in a
-    // narrow window (specs/deckle-navigation-pane.md).
+    // narrow window (specs/navigation-pane/deckle-navigation-pane.md).
     private readonly NavigationPane _pane;
 
     private void OnTitleBarPaneToggleRequested(TitleBar sender, object args) => _pane.Toggle();

@@ -1,7 +1,7 @@
 namespace Deckle.Core;
 
 // The symbols an IconChoice can show, in the order the picker lays them out,
-// six to a row (specs/folders.md, Added folders): twenty-four, four rows. The
+// six to a row (as drawn for specs/folders/deckle-folders.md): twenty-four, four rows. The
 // first two rows say what a folder holds; the last two, added for sorting
 // work (Louis, 2026-11-21), say what the person does with it: development on
 // the third row, marks on the fourth.

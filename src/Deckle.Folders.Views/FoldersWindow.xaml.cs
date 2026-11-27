@@ -40,7 +40,7 @@ public sealed partial class FoldersWindow : Window
 
         BuildToolButtons();
         // Open the first time (boards 24/11, A2), then as the user left it
-        // (specs/deckle-navigation-pane.md). Attached before the items, which
+        // (specs/navigation-pane/deckle-navigation-pane.md). Attached before the items, which
         // read whether the pane is open.
         _pane = NavigationPane.Attach(Nav, windowKey: "folders", openAtFirst: true);
         SyncFolderItems();

@@ -168,7 +168,7 @@
         <!-- The pane of added folders (12.1, 12.2): reduced to their icons in
              a rail, opened beside the content by the first button of the top
              row. Its display mode is set in code (NavigationPane,
-             specs/deckle-navigation-pane.md); its own toggle is hidden because
+             specs/navigation-pane/deckle-navigation-pane.md); its own toggle is hidden because
              the title bar's opens it. Its content area brings the layer fill
              and the stroke the boards draw; the three resources below make
              it a card, rounded on its four corners and inset from the

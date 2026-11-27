@@ -320,17 +320,35 @@ _Generated from `git ls-files` — do not edit by hand._
 │   ├── verify-branch-server.ps1
 │   └── verify-branch.ps1  — Verify a branch on win-serv Sends a committed branch to the verification machine, win-serv, which builds it…
 ├── specs/
+│   ├── ambient-lighting/
+│   │   ├── deckle-ambient-lighting.md
+│   │   └── GLOSSARY.md
 │   ├── dictation/
 │   │   ├── deckle-dictation.md
 │   │   └── GLOSSARY.md
-│   ├── deckle-mail.md
-│   ├── deckle-navigation-pane.md
-│   ├── deckle-paste-to-folder.md
-│   ├── deckle-projects.md
-│   ├── deckle-transcribe-and-rewrite.md
+│   ├── folders/
+│   │   ├── deckle-folders.md
+│   │   └── GLOSSARY.md
+│   ├── home-inventory/
+│   │   ├── deckle-home-inventory.md
+│   │   └── GLOSSARY.md
+│   ├── mail/
+│   │   ├── deckle-mail.md
+│   │   └── GLOSSARY.md
+│   ├── navigation-pane/
+│   │   ├── deckle-navigation-pane.md
+│   │   └── GLOSSARY.md
+│   ├── paste-to-folder/
+│   │   ├── deckle-paste-to-folder.md
+│   │   └── GLOSSARY.md
+│   ├── projects/
+│   │   ├── deckle-projects.md
+│   │   └── GLOSSARY.md
+│   ├── transcribe-and-rewrite/
+│   │   ├── deckle-transcribe-and-rewrite.md
+│   │   └── GLOSSARY.md
 │   ├── deckle.md
 │   ├── deckle.rules.md
-│   ├── folders.md
 │   └── GLOSSARY.md
 ├── src/
 │   ├── Deckle.Anytype/

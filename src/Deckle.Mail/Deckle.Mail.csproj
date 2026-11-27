@@ -1,5 +1,5 @@
 <Project Sdk="Microsoft.NET.Sdk">
-  <!-- The deterministic core of Deckle Mail (specs/deckle-mail.md): the domain,
+  <!-- The deterministic core of Deckle Mail (specs/mail/deckle-mail.md): the domain,
        the rules the spec states, and the gestures as pure state transitions that
        return the intents an outer layer sends to the mail server or Anytype.
        It reads no network, no storage and no clock, and references no other

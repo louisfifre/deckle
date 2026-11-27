@@ -8,7 +8,7 @@ namespace Deckle.Projects.Views;
 // its projects, then "Without a category" as a node. "All projects" shows Home,
 // a category shows its page, a project shows its page (spec, Window).
 //
-// Its shape follows specs/deckle-navigation-pane.md through NavigationPane: the
+// Its shape follows specs/navigation-pane/deckle-navigation-pane.md through NavigationPane: the
 // rail or open beside the page as the user chose, over the page in a narrow
 // window. The window opens with the rail the first time (spec, Window); only the
 // hamburger opens it.

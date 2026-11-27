@@ -156,7 +156,7 @@ public sealed partial class MailWindow
             },
         },
         // Between wide and narrow: the navigation stays as the user left it,
-        // open here (specs/deckle-navigation-pane.md). The list of mails stays
+        // open here (specs/navigation-pane/deckle-navigation-pane.md). The list of mails stays
         // under the text, as in the narrow window that stacked it first.
         new("subject-rail", "3.1 A subject opened in a medium window, the navigation kept open", true, w =>
         {

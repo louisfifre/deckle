@@ -4,10 +4,6 @@
 
 The moment the user moves from one subject to another.
 
-### Dictation
-
-What the user says between the gesture that starts it and the gesture that stops it, and the text it gives back.
-
 ### Hesitation
 
 A short stop or a filler sound inside a sentence, while the user looks for their words.
@@ -18,7 +14,7 @@ Avoid: [pause](#pause).
 
 The time during which the product takes in the user's voice, from the gesture that starts a dictation to the gesture that stops it.
 
-Avoid: [dictation](#dictation).
+Avoid: [dictation](../GLOSSARY.md#dictation).
 
 ### Noise
 

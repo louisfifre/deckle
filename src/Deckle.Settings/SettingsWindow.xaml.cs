@@ -18,7 +18,7 @@ namespace Deckle.Settings;
 
 // ─── Settings Window ──────────────────────────────────────────────────────────
 //
-// The navigation follows specs/deckle-navigation-pane.md through NavigationPane
+// The navigation follows specs/navigation-pane/deckle-navigation-pane.md through NavigationPane
 // (Deckle.Shell.WindowChrome); its own pane toggle is off — the TitleBar carries
 // the hamburger and relays through PaneToggleRequested.
 //

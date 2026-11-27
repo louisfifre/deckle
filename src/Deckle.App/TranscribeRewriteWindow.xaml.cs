@@ -15,7 +15,7 @@ using WinRT.Interop;
 
 namespace Deckle.App;
 
-// The Transcribe and rewrite window (specs/deckle-transcribe-and-rewrite.md):
+// The Transcribe and rewrite window (specs/transcribe-and-rewrite/deckle-transcribe-and-rewrite.md):
 // a text pasted or transcribed from a file, rewritten on demand by the profile
 // shown. The App hands in the engines as callbacks, as it does for LogWindow,
 // so the window never builds a service of its own. The commands live in
