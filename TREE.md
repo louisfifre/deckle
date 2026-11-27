@@ -324,7 +324,8 @@ _Generated from `git ls-files` — do not edit by hand._
 │   │   ├── deckle-dictation.md
 │   │   └── GLOSSARY.md
 │   ├── mail/
-│   │   └── deckle-mail.md
+│   │   ├── deckle-mail.md
+│   │   └── GLOSSARY.md
 │   ├── navigation-pane/
 │   │   ├── deckle-navigation-pane.md
 │   │   └── GLOSSARY.md
