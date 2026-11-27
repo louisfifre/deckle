@@ -35,12 +35,15 @@ public sealed partial class TaskbarCoverHost
     // stopped being the window there. Settle reads cover the end of the hold.
     //
     // Task view hides every strip: its desktop previews show no taskbar, and
-    // a strip there reads as a stray bar.
+    // a strip there reads as a stray bar. A fullscreen app hides its
+    // monitor's strip too (the band's suppression): a browser playing a
+    // video fullscreen stays maximized, and the strip, owned by it and above
+    // it, sat over the video (seen by Louis on YouTube).
     //
     // The strip dissolves when Deckle's animations are on (the preference the
     // App passes, which follows Windows' « Animation effects » by default),
     // and changes at once when they are off (TaskbarUnderlay). Task view,
-    // sleep and a lost layout take it away at once. Its fades step once per
+    // fullscreen, sleep and a lost layout take it away at once. Its fades step once per
     // frame of the display, on a frame clock (WM_APP_UNDERLAY_FRAME).
     //
     // An app that shows Mica or Acrylic gets a blur tinted with its edge
@@ -172,7 +175,7 @@ public sealed partial class TaskbarCoverHost
 
     private void RefreshUnderlay(CoverBand band, string reason, bool readColor)
     {
-        bool possible = _layoutKnown && !_systemSuspended && !TaskbarUnderlay.TaskViewShown();
+        bool possible = _layoutKnown && !_systemSuspended && !band.AppSuppressed && !TaskbarUnderlay.TaskViewShown();
         IntPtr app = possible ? TaskbarUnderlay.FindMaximizedApp(band.Monitor) : IntPtr.Zero;
         bool animate = possible && _animationsEnabled();
 
