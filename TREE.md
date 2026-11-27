@@ -323,6 +323,8 @@ _Generated from `git ls-files` — do not edit by hand._
 │   ├── dictation/
 │   │   ├── deckle-dictation.md
 │   │   └── GLOSSARY.md
+│   ├── mail/
+│   │   └── deckle-mail.md
 │   ├── navigation-pane/
 │   │   ├── deckle-navigation-pane.md
 │   │   └── GLOSSARY.md
@@ -335,7 +337,6 @@ _Generated from `git ls-files` — do not edit by hand._
 │   ├── transcribe-and-rewrite/
 │   │   ├── deckle-transcribe-and-rewrite.md
 │   │   └── GLOSSARY.md
-│   ├── deckle-mail.md
 │   ├── deckle.md
 │   ├── deckle.rules.md
 │   ├── folders.md
