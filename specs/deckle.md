@@ -25,7 +25,7 @@ Draft, not confirmed
 - Know where you stand in your folders, and sort, clean and picture them in one familiar place: `folders.md`.
 - Find any of your projects and reach its folders, its version and its scripts from one place: `projects/deckle-projects.md`.
 - Save what you copied as a file in a folder, with one paste: `paste-to-folder/deckle-paste-to-folder.md`.
-- Ambient lighting, in progress: its goal is not written yet, and it has no spec.
+- Light the room with what your screen shows, vivid or realistic, fast or slow: `ambient-lighting/deckle-ambient-lighting.md`.
 - The inventory of a home, kept in Anytype: its goal is not written yet, and it has no spec.
 
 What every window rests on:
