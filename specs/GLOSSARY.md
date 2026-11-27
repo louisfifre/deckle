@@ -60,6 +60,10 @@ The whole of what is made and offered to the user: what they see, what they do w
 
 Avoid: [application](#application), [system](#system).
 
+### Profile
+
+A way of rewriting a text, which the user writes and names.
+
 ### Rewrite
 
 To change the words of a transcribed text in the way the user chose; a translation is a rewrite.
