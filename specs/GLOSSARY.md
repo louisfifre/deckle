@@ -22,11 +22,29 @@ Avoid: [action](#action).
 
 The device that picks up sound for the computer or the phone.
 
+### Navigation
+
+The list of the places of a window, through which the user goes from one place to another.
+
+Avoid: [page](#page).
+
+### Page
+
+What a window shows of the place the user is in.
+
+Avoid: [place](#place).
+
 ### Person
 
 A human being, whether they interact with the product or not, such as someone who speaks near the user.
 
 Avoid: [user](#user).
+
+### Place
+
+A part of a window that the user can go to, named and marked by an icon.
+
+Avoid: [page](#page).
 
 ### Product
 
@@ -61,3 +79,9 @@ To turn speech into written text.
 A person who interacts with the product.
 
 Avoid: [person](#person).
+
+### Window
+
+A frame of the product on the screen, which the user opens, moves and resizes, and which holds pages.
+
+Avoid: [application](#application).
