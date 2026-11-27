@@ -27,6 +27,9 @@ public sealed partial class TaskbarCoverHost
         if (_systemSuspended || !_layoutKnown) return;
 
         foreach (var band in _bands) UpdateAppSuppressed(band, state);
+        // Alt+Tab's switcher starts no flyout over an edge, and the strips
+        // stay as they are while it shows (RefreshUnderlays).
+        if (TaskbarUnderlay.ForegroundShellView() == TaskbarUnderlay.ShellView.TaskSwitcher) return;
         HoldUnderlayReads();
         RefreshUnderlays("foreground");
     }

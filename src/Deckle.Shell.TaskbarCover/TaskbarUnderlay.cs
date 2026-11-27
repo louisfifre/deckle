@@ -375,14 +375,22 @@ internal sealed class TaskbarUnderlay : IDisposable
         return true;
     }
 
-    // Task view is open: its desktop previews would show the strip as a bar
-    // beside the app, with no taskbar over it.
-    public static bool TaskViewShown()
+    // Which of the shell's full-screen views holds the foreground: Task
+    // view, whose desktop previews would show the strip as a bar beside the
+    // app with no taskbar over it, or Alt+Tab's switcher, which leaves the
+    // desktop as it is under its list.
+    public enum ShellView { None, TaskView, TaskSwitcher }
+
+    public static ShellView ForegroundShellView()
     {
-        var name = new System.Text.StringBuilder(64);
         IntPtr foreground = NativeMethods.GetForegroundWindow();
-        return foreground != IntPtr.Zero && GetClassName(foreground, name, name.Capacity) > 0
-            && name.ToString() == TaskViewClass;
+        var text = new System.Text.StringBuilder(64);
+        if (foreground == IntPtr.Zero || GetClassName(foreground, text, text.Capacity) == 0
+            || text.ToString() != TaskViewClass)
+            return ShellView.None;
+        text.Clear();
+        GetWindowText(foreground, text, text.Capacity);
+        return text.ToString() == TaskSwitcherTitle ? ShellView.TaskSwitcher : ShellView.TaskView;
     }
 
     // The dominant colour of the screen line and the share of the line it

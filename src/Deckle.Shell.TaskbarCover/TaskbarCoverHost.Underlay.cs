@@ -132,7 +132,14 @@ public sealed partial class TaskbarCoverHost
 
     private void RefreshUnderlays(string reason, bool readColor = true)
     {
-        foreach (var band in _bands) RefreshUnderlay(band, reason, readColor);
+        // Alt+Tab's switcher leaves every strip as it is: the list floats
+        // over the desktop, and the strips change once a window is chosen.
+        // Read as Task view, it took the strip away the moment Tab was
+        // pressed, and the strip came back 645 ms after the switcher closed
+        // (measured 2026-11-27): the taskbar showed no strip in between.
+        var view = TaskbarUnderlay.ForegroundShellView();
+        if (view == TaskbarUnderlay.ShellView.TaskSwitcher) return;
+        foreach (var band in _bands) RefreshUnderlay(band, reason, readColor, view);
         KeepUnderlayMotion();
     }
 
@@ -173,9 +180,9 @@ public sealed partial class TaskbarCoverHost
         clock.Start();
     }
 
-    private void RefreshUnderlay(CoverBand band, string reason, bool readColor)
+    private void RefreshUnderlay(CoverBand band, string reason, bool readColor, TaskbarUnderlay.ShellView view)
     {
-        bool possible = _layoutKnown && !_systemSuspended && !band.AppSuppressed && !TaskbarUnderlay.TaskViewShown();
+        bool possible = _layoutKnown && !_systemSuspended && !band.AppSuppressed && view != TaskbarUnderlay.ShellView.TaskView;
         IntPtr app = possible ? TaskbarUnderlay.FindMaximizedApp(band.Monitor) : IntPtr.Zero;
         bool animate = possible && _animationsEnabled();
 
@@ -198,7 +205,14 @@ public sealed partial class TaskbarCoverHost
             {
                 underlay.PendingApp = app;
                 underlay.PendingSince = Environment.TickCount64;
-                underlay.PendingBefore = TaskbarUnderlay.ReadColor(EdgeColor.SampleLine(band.Rect, band.Edge))?.Color;
+                // What the edge showed before the app: the colour of the
+                // strip shown, else the screen. Read from the screen while a
+                // strip showed, an app already maximized and brought forward
+                // (Alt+Tab) was its own "before", and the strip waited out
+                // the whole maximize allowance for an animation that never ran.
+                underlay.PendingBefore = underlay.Visible
+                    ? underlay.Color
+                    : TaskbarUnderlay.ReadColor(EdgeColor.SampleLine(band.Rect, band.Edge))?.Color;
                 _underlaySettleReadsLeft = UnderlaySettleReads;
                 SetTimer(_hwnd, UnderlaySettleTimer, UnderlaySettleMs, IntPtr.Zero);
                 return;

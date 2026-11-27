@@ -218,7 +218,15 @@ internal static class TaskbarCoverNativeMethods
     public static extern int GetClassName(IntPtr hWnd, System.Text.StringBuilder lpClassName, int nMaxCount);
 
     // Task view's window on Windows 11 (build 26100, read on this machine).
+    // Alt+Tab's switcher is a window of the same class, style and size (the
+    // whole screen), told apart by its title only: "Task Switching", against
+    // "Task View" (read 2026-11-27). The title follows the display language:
+    // another language reads as Task view, the strip then leaving as before.
     public const string TaskViewClass = "XamlExplorerHostIslandWindow";
+    public const string TaskSwitcherTitle = "Task Switching";
+
+    [DllImport("user32.dll", CharSet = CharSet.Unicode)]
+    public static extern int GetWindowText(IntPtr hWnd, System.Text.StringBuilder lpString, int nMaxCount);
 
     [DllImport("user32.dll")]
     public static extern IntPtr GetAncestor(IntPtr hwnd, uint gaFlags);
