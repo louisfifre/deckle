@@ -3240,6 +3240,7 @@ _Generated from `git ls-files` — do not edit by hand._
 │   │   ├── FakeNotificationChannel.cs
 │   │   ├── MessageTemplateDoctrineTests.cs
 │   │   ├── NotificationCatalogTests.cs
+│   │   ├── NotificationDispatcherCollection.cs
 │   │   ├── NotificationDispatcherTests.cs
 │   │   ├── ToastChannelBugNotes.md
 │   │   ├── ToastElevationIncidentTests.cs
