@@ -109,3 +109,20 @@ Otherwise:
 ### Choosing the rewriting
 
 1. The user chooses once whether their dictations are rewritten, and how, by their length. The choice holds for every dictation until they change it.
+
+## How Deckle answers, a sample on two lines
+
+### 1.3.3 They are never cut off
+
+1. The listening has no end of its own: `CaptureSettings.MaxRecordingDurationSeconds` is zero by default, which means no limit, and the capture runs until the gesture stops it.
+2. The `EnergySegmenter` cuts the audio into utterances (`Utterance`) on the silences, to transcribe it piece by piece: a cut ends an utterance, never the listening.
+3. A pause inside a sentence does not cut it: the segmenter ends an utterance only after a silence longer than its hangover, and the hangover shrinks as the utterance grows, so a long utterance ends on a short pause, never in the middle of a word.
+4. Where Deckle does not answer yet: the user can set a maximum length on the Dictation page (`RecordingLimit`), and the capture ends when it is reached (`CaptureOutcome.CapHit`).
+5. To check against 4.2.1: the HUD shows a gauge of the silence before each cut (`UtteranceCountdownVisual`); it counts toward the cut of an utterance, not toward the end of the listening.
+
+### 1.3.5 Nothing of what they said is lost
+
+1. While they speak, the `TakeAudioRecorder` writes the audio of the dictation to disk, sealed, block by block, through the `TakeAudioRecoveryStore`, and the capture never waits for the disk.
+2. At every utterance, the `DictationRecoveryStore` rewrites the text transcribed so far, sealed for the user's account.
+3. Both files are deleted once the text is delivered or the dictation is discarded, so they remain only when a dictation ended before its text was delivered.
+4. At the next start, `App.Startup.DictationRecovery` finds them: the audio is transcribed again through `TakeAudioRecovery`, the text copy stands in when the audio cannot give its text, and the product tells the user what came back.
