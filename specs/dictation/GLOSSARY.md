@@ -1,4 +1,4 @@
-# Words of the dictation
+# Glossary
 
 ## Common words
 

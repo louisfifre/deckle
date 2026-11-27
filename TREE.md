@@ -299,8 +299,9 @@ _Generated from `git ls-files` — do not edit by hand._
 │   ├── verify-branch-server.ps1
 │   └── verify-branch.ps1  — Verify a branch on win-serv Sends a committed branch to the verification machine, win-serv, which builds it…
 ├── specs/
-│   ├── deckle-dictation.glossary.md
-│   ├── deckle-dictation.md
+│   ├── dictation/
+│   │   ├── deckle-dictation.md
+│   │   └── GLOSSARY.md
 │   ├── deckle-mail.md
 │   ├── deckle-navigation-pane.md
 │   ├── deckle-paste-to-folder.md
