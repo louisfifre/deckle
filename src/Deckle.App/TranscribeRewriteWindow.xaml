@@ -5,7 +5,7 @@
     xmlns:local="using:Deckle.App"
     Title="Transcribe and rewrite">
 
-    <!-- specs/deckle-transcribe-and-rewrite.md, form C: one text field at the
+    <!-- specs/transcribe-and-rewrite/deckle-transcribe-and-rewrite.md, form C: one text field at the
          centre, the way in (a file) top left, what to do with the text top
          right, the rewrite bottom left and its settings alone bottom right.
          Several files chosen at once put the list of those files where the

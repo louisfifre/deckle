@@ -11,7 +11,7 @@ using Microsoft.UI.Xaml.Controls;
 
 namespace Deckle.App;
 
-// Several files at once (specs/deckle-transcribe-and-rewrite.md, Several files).
+// Several files at once (specs/transcribe-and-rewrite/deckle-transcribe-and-rewrite.md, Transcribing many recordings).
 // The list takes the field's place: each file is transcribed in turn and its
 // .txt written beside its audio as soon as its text comes, so a long batch
 // loses nothing if Deckle quits. A header says how far the batch is and where

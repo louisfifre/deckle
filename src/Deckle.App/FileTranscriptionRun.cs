@@ -4,7 +4,7 @@ using System.Runtime.CompilerServices;
 
 namespace Deckle.App;
 
-// One file of the window's file list (specs/deckle-transcribe-and-rewrite.md,
+// One file of the window's file list (specs/transcribe-and-rewrite/deckle-transcribe-and-rewrite.md,
 // Several files): its path, its duration once read, where its run stands and
 // the text it holds. The window binds to it; the run changes it.
 public sealed class FileTranscriptionItem(string path) : INotifyPropertyChanged
