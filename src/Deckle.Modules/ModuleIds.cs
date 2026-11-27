@@ -17,5 +17,4 @@ public static class ModuleIds
     public const string PrecisionScroll = "precision-scroll";
     public const string Orchestration   = "orchestration";
     public const string Anytype         = "anytype";
-    public const string Projects        = "projects";
 }

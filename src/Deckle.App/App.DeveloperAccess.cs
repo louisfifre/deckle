@@ -2,7 +2,6 @@ using Deckle.Catalog;
 using Deckle.Settings;
 using Deckle.Shell;
 using Deckle.Shell.TrayMenu;
-using Microsoft.UI.Dispatching;
 using Deckle.Localization;
 
 namespace Deckle.App;
@@ -10,10 +9,7 @@ namespace Deckle.App;
 // Developer mode (Settings > General > Developer, off by default) is the one
 // door to what an ordinary user has no use for: the surfaces still in alpha
 // and the developer tools. Its entry point is the right-click tray menu,
-// driven from here, and the contribution host refuses to open a developer-only
-// window while the mode is off, so no path can bypass it. A developer-only
-// window left open when the mode goes off is closed, since its entry
-// point is gone.
+// driven from here.
 public partial class App
 {
     private static bool DeveloperModeEnabled
@@ -23,10 +19,7 @@ public partial class App
     // holds, and module presence does not change during a run.
     private IReadOnlyList<TrayMenuEntry> ComposeDeveloperTray()
         => TrayDeveloperMenu.Compose(
-            PublishedHost.TrayEntries(forDeveloperMenu: true),
-            ProjectsPresent,
             key => Loc.Get(key),
-            () => ShowProjectsWindowLazy(),
             () => CaptureInterfaceFromTray(),
             () => ShowLogWindowLazy(),
             () => RestartAppFromTray());
@@ -41,20 +34,5 @@ public partial class App
             _trayDeveloperMenu?.Show();
         else
             ShowTrayActions();
-    }
-
-    // SettingsService.Changed fires after the disk write, on any thread. The
-    // window is closed on the UI thread.
-    private void WireDeveloperAccess(DispatcherQueue ui)
-    {
-        SettingsService.Instance.Changed += () =>
-            ui.TryEnqueueOrLog(ApplyDeveloperAccess, "SETTINGS", "developer access");
-    }
-
-    private void ApplyDeveloperAccess()
-    {
-        if (DeveloperModeEnabled) return;
-        foreach (Microsoft.UI.Xaml.Window window in PublishedHost.DeveloperOnlyOpenWindows)
-            window.Close();
     }
 }

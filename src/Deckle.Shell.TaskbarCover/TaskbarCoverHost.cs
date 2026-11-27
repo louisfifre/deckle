@@ -7,11 +7,16 @@ using static Deckle.Shell.TaskbarCover.TaskbarCoverNativeMethods;
 
 namespace Deckle.Shell.TaskbarCover;
 
-// Dedicated thread owning the cover bands, one opaque black topmost window
-// per taskbar sized to its exact rect, and the whole cover state machine:
-// a band fades as the cursor approaches its taskbar, a fullscreen foreground
-// on a band's monitor suppresses that band, sleep and session lock park them
-// all. Event driven only.
+// Dedicated thread owning the cover bands, one per taskbar, and the whole
+// cover state machine: each taskbar fades itself away from the cursor and
+// comes back whole as the cursor approaches it (TaskbarFade); a fullscreen
+// foreground on a band's monitor, the taskbar holding the focus, sleep and
+// session lock leave it whole. Nothing is drawn over the taskbar: an earlier
+// black band showed as a black strip over the wallpaper and in the Task view
+// previews. The one window drawn is under it, while an app is maximized on
+// its monitor: the strip that continues the app's edge colour where the
+// faded taskbar would show the wallpaper (TaskbarCoverHost.Underlay). Event
+// driven, plus a slow period that follows the app's colour.
 //
 // The cursor WinEvent hook delivers on the thread that registered it, which
 // therefore owns a message pump; the same thread owns the windows, the hooks
@@ -26,9 +31,14 @@ public sealed partial class TaskbarCoverHost : IDisposable
     // thread. The host never hooks the foreground itself.
     private readonly ForegroundWatcher _foreground;
 
-    public TaskbarCoverHost(ForegroundWatcher foreground)
+    // Whether Deckle may animate now: read on the worker thread at each
+    // change of the strip under the taskbar, so it must be thread-safe.
+    private readonly Func<bool> _animationsEnabled;
+
+    public TaskbarCoverHost(ForegroundWatcher foreground, Func<bool> animationsEnabled)
     {
         _foreground = foreground;
+        _animationsEnabled = animationsEnabled;
     }
 
     private Thread? _thread;
@@ -37,24 +47,20 @@ public sealed partial class TaskbarCoverHost : IDisposable
     // run over it until it has fully exited and torn itself down.
     private Thread? _defunctThread;
     private uint _threadId;
-    // The anchor: a window of the band class that is never shown. It receives
+    // The anchor: a window that is never shown. It receives
     // the broadcasts (TaskbarCreated, WM_SETTINGCHANGE, WM_DISPLAYCHANGE,
     // WM_POWERBROADCAST), the session notifications and the App's posts, so
     // the bands can come and go with the taskbars while the host keeps one
-    // stable mailbox. The band windows receive the same broadcasts and ignore
-    // them.
+    // stable mailbox.
     private IntPtr _hwnd;
     private ushort _classAtom;
     private IntPtr _hInstance;
-    private IntPtr _brush;
     private IntPtr _cursorHook;
-    private IntPtr _reorderHook;
     private uint _wmTaskbarCreated;
 
     // Rooted for the GC while native code holds their function pointers.
     private NativeMethods.WndProc? _wndProcDelegate;
     private WinEventProc? _cursorHookDelegate;
-    private WinEventProc? _reorderHookDelegate;
 
     private volatile bool _running;
 
@@ -65,8 +71,8 @@ public sealed partial class TaskbarCoverHost : IDisposable
 
     // ── State machine — worker thread only ───────────────────────────────
     // _bands           : one per taskbar the last layout found, the primary's
-    //                    first; each carries its own opacity, visibility and
-    //                    fullscreen suppression (CoverBand)
+    //                    first; each carries its own level, its taskbar's
+    //                    alpha and its fullscreen suppression (CoverBand)
     // _systemSuspended : sleep or locked session — machine parked
     // _layoutKnown     : the last layout found the primary taskbar
     private readonly List<CoverBand> _bands = new();
@@ -74,7 +80,7 @@ public sealed partial class TaskbarCoverHost : IDisposable
 
     private bool _layoutKnown;
     private bool _layoutFailureLogged;
-    private bool _bandCreateFailureLogged;
+    private bool _fadeFailureLogged;
     // Distance the bands were last placed at; differs from
     // _requestedApproachDip until the cover thread rebuilds the layout.
     private int _approachDip = ApproachDistance.DefaultDip;

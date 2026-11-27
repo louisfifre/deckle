@@ -2,6 +2,7 @@ using Deckle.Autocorrect;
 using Deckle.Core;
 using Deckle.Llm;
 using Deckle.Input;
+using Deckle.Modules;
 using Deckle.Llm.Rewrite;
 using Deckle.Llm.Rewrite.Views;
 using Deckle.Shell;
@@ -14,13 +15,15 @@ namespace Deckle.App;
 // file wires the process-shared Raw Input
 // stream to that surface through a keystroke state machine (OnParagraphKey:
 // text and Backspace grow the draft, Shift+Enter closes it and requests an
-// offer, any other key, click or focus change invalidates it, and a disabled
-// module, a non-editable or password surface drops it). It also probes the
+// offer, any other key, click or focus change invalidates it, and a surface
+// where paragraph correction does not act drops it). It also probes the
 // focused surface and restores the captured target before an accepted offer
 // is injected.
 //
-// The host is held only while paragraph rewriting is on and Ollama holds the
-// pinned model on this PC (ReconcileParagraphRewrite).
+// The host is held only while paragraph correction is on and Ollama holds the
+// pinned model on this PC (ReconcileParagraphRewrite). It is Autocorrect that
+// decides when it acts (ParagraphCorrectionGate): the Rewriting switch is not
+// read here.
 public partial class App
 {
     private ParagraphDraft? _paragraphDraft;
@@ -37,9 +40,13 @@ public partial class App
     private volatile bool _paragraphOfferVisible;
     private bool _paragraphRewriteStarted;
 
+    // Without the Autocorrect module there is no switch to read, and paragraph
+    // correction is off.
+    private bool _paragraphAutocorrectPresent;
+
     // Paragraph rewriting needs the local Ollama and the pinned model on this
     // PC (ParagraphRewriteAvailabilityMonitor). The shared keyboard and mouse
-    // host is held only while that is true and the module is switched on;
+    // host is held only while that is true and paragraph correction is switched on;
     // everything else on this file is built once and sleeps in between.
     private Microsoft.UI.Dispatching.DispatcherQueue? _paragraphUi;
     private Microsoft.UI.Dispatching.DispatcherQueueTimer? _paragraphProbeRetry;
@@ -53,6 +60,8 @@ public partial class App
     private void InitializeParagraphRewrite()
     {
         if (_keyboardMouseHost is null || _paragraphRewriteCoordinator is not null) return;
+
+        _paragraphAutocorrectPresent = ModulePresence.IsPresent(ModuleIds.Autocorrect);
 
         _paragraphDraft = new ParagraphDraft();
         _paragraphKeyDecoder = new KeyDecoder();
@@ -72,7 +81,11 @@ public partial class App
         _paragraphProbeRetry.Interval = ParagraphProbeRetryInterval;
         _paragraphProbeRetry.Tick += OnParagraphProbeRetry;
 
+        // The provider's address (Rewriting) and the two switches (Autocorrect)
+        // both change what the reconcile decides.
         LlmSettingsService.Instance.Changed += OnParagraphSettingsChanged;
+        if (_paragraphAutocorrectPresent)
+            AutocorrectSettingsService.Instance.Changed += OnParagraphSettingsChanged;
         ParagraphRewriteAvailabilityMonitor.Instance.Changed += OnParagraphAvailabilityChanged;
 
         ReconcileParagraphRewrite();
@@ -95,7 +108,10 @@ public partial class App
     {
         if (_paragraphRewriteCoordinator is null) return;
 
-        bool enabled = LlmSettingsService.Instance.Current.Enabled;
+        // Wanted: the person's side of the gate, whatever the PC can serve; a
+        // PC that cannot is probed and retried, one that is not wanted asks
+        // nothing.
+        bool enabled = ParagraphCorrectionAllowed(surface: null, ollamaAvailable: true);
         ParagraphRewriteAvailabilityMonitor monitor = ParagraphRewriteAvailabilityMonitor.Instance;
 
         // The answer is stale when the provider's address changed or nothing
@@ -114,6 +130,17 @@ public partial class App
         if (retrying && !_paragraphProbeRetry!.IsRunning) _paragraphProbeRetry.Start();
         else if (!retrying && _paragraphProbeRetry!.IsRunning) _paragraphProbeRetry.Stop();
     }
+
+    // The one question every gate asks, answered by Autocorrect's gate: the
+    // Autocorrect settings, the focused surface (null at the host level) and
+    // what the PC can serve.
+    private bool ParagraphCorrectionAllowed(FocusedSurface? surface, bool ollamaAvailable) =>
+        _paragraphAutocorrectPresent
+        && ParagraphCorrectionGate.IsActive(
+            AutocorrectSettingsService.Instance.Current, surface, ollamaAvailable);
+
+    private static bool ParagraphOllamaAvailable() =>
+        ParagraphRewriteAvailabilityMonitor.Instance.Current == ParagraphRewriteAvailability.Available;
 
     private static string ParagraphProviderKey()
     {
@@ -199,9 +226,7 @@ public partial class App
 
         int revision = Interlocked.Increment(ref _paragraphRecoveryRevision);
 
-        if (!LlmSettingsService.Instance.Current.Enabled
-            || !_paragraphSurface.IsTextEditable
-            || _paragraphSurface.IsPassword)
+        if (!ParagraphCorrectionAllowed(_paragraphSurface, ParagraphOllamaAvailable()))
         {
             _paragraphDraft.Invalidate();
             _paragraphRewriteCoordinator.Invalidate();
@@ -281,7 +306,10 @@ public partial class App
 
         window.DispatcherQueue.TryEnqueueOrLog(() =>
         {
+            // The offer is a gate too: the switch, the app or the model may
+            // have changed while the model was answering.
             if (_paragraphRewriteCoordinator?.IsCurrent(offer.Revision) != true
+                || !ParagraphCorrectionAllowed(_paragraphSurface, ParagraphOllamaAvailable())
                 || _paragraphTargetHwnd == IntPtr.Zero
                 || NativeMethods.GetForegroundWindow() != _paragraphTargetHwnd)
                 return;
@@ -368,9 +396,7 @@ public partial class App
             if (!recovery.Succeeded
                 || recovery.Revision != Volatile.Read(ref _paragraphRecoveryRevision)
                 || _paragraphRewriteCoordinator is null
-                || !LlmSettingsService.Instance.Current.Enabled
-                || !_paragraphSurface.IsTextEditable
-                || _paragraphSurface.IsPassword)
+                || !ParagraphCorrectionAllowed(_paragraphSurface, ParagraphOllamaAvailable()))
                 continue;
 
             CaretParagraphContextResult context = CaretParagraphContext.ExtractClosed(
@@ -387,6 +413,8 @@ public partial class App
     private void ShutdownParagraphRewrite()
     {
         LlmSettingsService.Instance.Changed -= OnParagraphSettingsChanged;
+        if (_paragraphAutocorrectPresent)
+            AutocorrectSettingsService.Instance.Changed -= OnParagraphSettingsChanged;
         ParagraphRewriteAvailabilityMonitor.Instance.Changed -= OnParagraphAvailabilityChanged;
         _paragraphProbeRetry?.Stop();
         _paragraphProbeRetry = null;

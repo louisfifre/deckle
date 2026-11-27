@@ -559,6 +559,76 @@ public class McpHttpHostTests
         Assert.NotEqual(HttpStatusCode.TooManyRequests, independent.StatusCode);
     }
 
+    // Several agents share one client token. A burst above the budget used to be
+    // refused at once with 429, which a client only reports as « Error POSTing
+    // to endpoint »; within the queue it must wait for its turn and succeed.
+    [Fact]
+    [Trait("Category", "regression")]
+    public async Task ABurstAboveTheBudgetWaitsForItsTurnInsteadOfBeingRefused()
+    {
+        var requestLimit = new McpRequestRateLimit(
+            permitLimit: 2, window: TimeSpan.FromSeconds(1), queueLimit: 4);
+        await using var harness = Harness.Start(requestRateLimit: requestLimit);
+        string claudeBearer = harness.Bearers[McpClients.Claude.Id];
+        int burst = requestLimit.PermitLimit + requestLimit.QueueLimit;
+
+        HttpResponseMessage[] responses = await Task.WhenAll(
+            Enumerable.Range(0, burst).Select(_ => harness.Http.SendAsync(
+                Post(harness.BaseUrl, claudeBearer, "{}"), Ct)));
+        try
+        {
+            Assert.All(responses, response =>
+                Assert.NotEqual(HttpStatusCode.TooManyRequests, response.StatusCode));
+        }
+        finally
+        {
+            foreach (HttpResponseMessage response in responses)
+                response.Dispose();
+        }
+    }
+
+    // The wait is bounded: past the queue a runaway client is still refused, at
+    // once, with a delay to retry after and a body that says why.
+    [Fact]
+    [Trait("Category", "regression")]
+    public async Task ARequestThatFindsTheQueueFullIsRefusedWithARetryDelay()
+    {
+        var requestLimit = new McpRequestRateLimit(
+            permitLimit: 1, window: TimeSpan.FromHours(1), queueLimit: 1);
+        await using var harness = Harness.Start(requestRateLimit: requestLimit);
+        string claudeBearer = harness.Bearers[McpClients.Claude.Id];
+
+        using (HttpResponseMessage first = await harness.Http.SendAsync(
+            Post(harness.BaseUrl, claudeBearer, "{}"), Ct))
+        {
+            Assert.NotEqual(HttpStatusCode.TooManyRequests, first.StatusCode);
+        }
+
+        // Both arrive over budget: one takes the single queue place and waits
+        // for an hour, the other finds the queue full. Which is which is a race,
+        // so the test reads whichever answers first.
+        using var waiting = CancellationTokenSource.CreateLinkedTokenSource(Ct);
+        Task<HttpResponseMessage>[] overBudget =
+        [
+            harness.Http.SendAsync(Post(harness.BaseUrl, claudeBearer, "{}"), waiting.Token),
+            harness.Http.SendAsync(Post(harness.BaseUrl, claudeBearer, "{}"), waiting.Token),
+        ];
+        Task<HttpResponseMessage> answered = await Task.WhenAny(overBudget)
+            .WaitAsync(TimeSpan.FromSeconds(10), Ct);
+        using HttpResponseMessage refused = await answered;
+
+        Assert.Equal(HttpStatusCode.TooManyRequests, refused.StatusCode);
+        Assert.NotNull(refused.Headers.RetryAfter?.Delta);
+        Assert.True(refused.Headers.RetryAfter!.Delta > TimeSpan.Zero);
+        string body = await refused.Content.ReadAsStringAsync(Ct);
+        Assert.Contains("retry", body, StringComparison.OrdinalIgnoreCase);
+
+        Task<HttpResponseMessage> queued = overBudget.Single(task => task != answered);
+        Assert.False(queued.IsCompleted);
+        await waiting.CancelAsync();
+        await Assert.ThrowsAnyAsync<OperationCanceledException>(() => queued);
+    }
+
     [Theory]
     [InlineData(ModernProtocol)]
     [InlineData(DownLevelProtocol)]

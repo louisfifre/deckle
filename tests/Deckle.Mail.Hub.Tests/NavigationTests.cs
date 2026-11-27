@@ -60,14 +60,14 @@ public sealed class NavigationTests
         IReadOnlyList<RailEntry> rail = MailRail.Build(Open(SampleScenario.MailboxCannotConnect), _ => true);
 
         RailEntry maison = rail.Single(e => e.MailboxId == "mb-maison");
-        Assert.Equal("maison@exemple.fr", maison.Label);
+        Assert.Equal("maison@example.com", maison.Label);
         Assert.True(maison.CannotConnect);
     }
 
     [Theory]
-    [InlineData("shop@exemple.fr", true, "Shop")]
-    [InlineData("facture@exemple.fr", true, "Facture")]
-    [InlineData("shop@exemple.fr", false, "shop@exemple.fr")]
+    [InlineData("shop@example.com", true, "Shop")]
+    [InlineData("facture@example.com", true, "Facture")]
+    [InlineData("shop@example.com", false, "shop@example.com")]
     public void AnAliasIsNamedFromItsAddressWithACapital(string address, bool fromAddress, string expected)
     {
         Assert.Equal(expected, MailNames.Alias(new MailAlias("a", address), fromAddress));
@@ -76,7 +76,7 @@ public sealed class NavigationTests
     [Fact]
     public void ANameTheAliasWasGivenStays()
     {
-        Assert.Equal("Boutique", MailNames.Alias(new MailAlias("a", "shop@exemple.fr", "Boutique"), true));
+        Assert.Equal("Boutique", MailNames.Alias(new MailAlias("a", "shop@example.com", "Boutique"), true));
     }
 
     // A gesture changes numbers, not the items: the window keeps its items

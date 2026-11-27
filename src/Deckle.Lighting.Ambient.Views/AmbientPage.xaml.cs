@@ -29,8 +29,7 @@ namespace Deckle.Lighting.Ambient.Views;
 //
 // Sync : the view model writes every edit straight to AmbientSettingsService
 // and saves. The page observes AmbientSettingsService.Changed and reloads the
-// view model, so an edit from the tray or a preset lands here
-// at once; the composers follow the view model's PropertyChanged. The
+// view model, so an edit from the tray lands here at once; the composers follow the view model's PropertyChanged. The
 // HuePairingService.BridgeChanged event re-syncs the Hue expander. Both are
 // wired in Loaded and dropped in Unloaded. A _loading flag keeps the display
 // combo's SelectionChanged from saving while the page fills it.
@@ -193,19 +192,39 @@ public sealed partial class AmbientPage : Page
 
     // The engine reports a failed start as Error, then Off. The banner says it
     // while the switch stays on, and goes when a start begins again or the
-    // switch goes off (ResyncFromSettings).
+    // switch goes off (ResyncFromSettings). When the cause is one the person
+    // fixes, in the Hue app or by pairing again, the banner says which; the
+    // failure is read on the engine thread, before the hop to the UI.
     private AmbientEngine? _engine;
 
     private void OnEngineStateChanged(AmbientEngineState state)
-        => DispatcherQueue.TryEnqueueObserved(
+    {
+        string? message = state == AmbientEngineState.Error
+            ? StartFailedMessage(_engine?.LastStartFailure ?? AmbientStartFailure.Other)
+            : null;
+        DispatcherQueue.TryEnqueueObserved(
             operation: "ui-update", caller: "ambient-page-start-failed",
             callback: () =>
             {
-                if (state == AmbientEngineState.Error) StartFailedInfoBar.IsOpen = true;
+                if (state == AmbientEngineState.Error)
+                {
+                    StartFailedInfoBar.Message = message ?? string.Empty;
+                    StartFailedInfoBar.IsOpen = true;
+                }
                 else if (state is AmbientEngineState.Starting or AmbientEngineState.Running)
+                {
                     StartFailedInfoBar.IsOpen = false;
+                }
             },
             rejectSource: "AMBIENT", rejectWhat: "start failed banner");
+    }
+
+    private static string? StartFailedMessage(AmbientStartFailure failure) => failure switch
+    {
+        AmbientStartFailure.NoEntertainmentArea => Loc.Get("AmbientStartFailed_NoArea"),
+        AmbientStartFailure.NoClientKey         => Loc.Get("AmbientStartFailed_NoClientKey"),
+        _                                       => null,
+    };
 
     // Pulls the persisted state the bespoke cards show: the display picker
     // and the NotPaired banner. Guarded by _loading so the display combo's

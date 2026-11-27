@@ -182,8 +182,8 @@ public sealed class FileTranscriptionRunTests
 
         await FileTranscriptionRun.RewriteAllAsync(items, text => text.ToUpperInvariant(), disk.Overwrite, TestContext.Current.CancellationToken);
 
-        Assert.Equal(@"RAW OF C:\A.MP3", disk.Files[@"C:\a.mp3.txt"]);
-        Assert.Equal(@"RAW OF C:\B.MP3", items[1].Text);
+        Assert.Equal(("raw of " + items[0].Path).ToUpperInvariant(), disk.Files[@"C:\a.mp3.txt"]);
+        Assert.Equal(("raw of " + items[1].Path).ToUpperInvariant(), items[1].Text);
         Assert.All(items, i => Assert.Equal(FileTranscriptionState.Done, i.State));
     }
 
@@ -357,7 +357,7 @@ public sealed class FileTranscriptionRunTests
         await FileTranscriptionRun.RewriteAllAsync(
             items, text => { stop.Cancel(); return text.ToUpperInvariant(); }, disk.Overwrite, stop.Token);
 
-        Assert.Equal(@"RAW OF C:\A.MP3", disk.Files[@"C:\a.mp3.txt"]);
+        Assert.Equal(("raw of " + items[0].Path).ToUpperInvariant(), disk.Files[@"C:\a.mp3.txt"]);
         Assert.True(items[0].Rewritten);
         Assert.Equal(@"raw of C:\b.mp3", disk.Files[@"C:\b.mp3.txt"]);
         Assert.False(items[1].Rewritten);

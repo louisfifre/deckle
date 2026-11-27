@@ -92,12 +92,12 @@ public partial class App
             };
             _engine.TranscriptionFinished += outcome =>
             {
-                switch (outcome)
+                switch (HudCompletion.For(outcome))
                 {
-                    case TranscriptionOutcome.ClipboardOnly:
+                    case HudCompletionMessage.Copied:
                         _hudWindow.ShowCopied();
                         break;
-                    case TranscriptionOutcome.SavedToFile:
+                    case HudCompletionMessage.FileSaved:
                         // Nothing opens: the HUD message is the only completion signal.
                         _hudWindow.ShowFileSaved();
                         break;
@@ -134,11 +134,6 @@ public partial class App
             }
 
             AmbientSettingsService.Instance.Changed += OnAmbientSettingsChanged;
-
-            // The performance mode lives in the shell's settings and lowers
-            // the capture rate's ceiling; a change there restarts a running
-            // engine, which the start settings' comparison decides.
-            Settings.SettingsService.Instance.Changed += OnAmbientSettingsChanged;
         }
 
         // Tray menus — two native MenuFlyouts, each on an invisible anchor
@@ -153,7 +148,6 @@ public partial class App
             Entries = ComposeDeveloperTray(),
         };
         _tray.RightClickRequested += ShowRightClickTray;
-        WireDeveloperAccess(Microsoft.UI.Dispatching.DispatcherQueue.GetForCurrentThread());
 
         // Left click, the menu of every day, three groups behind separators,
         // read from the top: the switches (the background ones, set once and

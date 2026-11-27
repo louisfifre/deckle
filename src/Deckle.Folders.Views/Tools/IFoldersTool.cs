@@ -19,7 +19,7 @@ public interface IFoldersTool
     // Stable, lowercase, ASCII: what the log and the self-check name it by.
     string Id { get; }
 
-    // What the active tool button shows and what the others say on hover.
+    // What the tool's button shows next to its glyph, and says on hover.
     string Name { get; }
 
     // A Segoe Fluent Icons code point.
@@ -55,8 +55,10 @@ public interface IFoldersToolHost
 
     // The selection changed. The path is kept when the person switches tool
     // (spec: the selection stays); details is what the panel holds for it,
-    // and null closes the panel. A click selects and opens the panel; it never
-    // opens the item (spec, Behaviours).
+    // and null means the tool has nothing to show for this selection. The
+    // window decides whether the panel shows at all (the person's toggle, a
+    // folder on show), so a click selects and hands over its details without
+    // opening the panel, and never opens the item (spec, Behaviours).
     void Select(string? path, UIElement? details);
 
     // Maps a path and a pixel size to the icon a list shows for it, or null

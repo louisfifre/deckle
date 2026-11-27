@@ -1,7 +1,7 @@
 namespace Deckle.Mail.Hub;
 
 // The synthetic mail of the sample, one scenario at a time. Every person,
-// company and address is invented, on the domains the spec uses (exemple.fr,
+// company and address is invented, on the domains the spec uses (example.com,
 // .example); the sentences are those of the frames, in French as the mails
 // they stand for would be.
 //
@@ -69,20 +69,20 @@ internal static class SampleWorld
         var infomaniak = new MailServer("Infomaniak", "mail.infomaniak.com", 993);
         return
         [
-            new Mailbox("mb-perso", "moi@exemple.fr", "Perso",
+            new Mailbox("mb-perso", "moi@example.com", "Perso",
                 [
-                    new MailAlias("al-facture", "facture@exemple.fr"),
-                    new MailAlias("al-shop", "shop@exemple.fr"),
-                    new MailAlias("al-contact", "contact@exemple.fr"),
+                    new MailAlias("al-facture", "facture@example.com"),
+                    new MailAlias("al-shop", "shop@example.com"),
+                    new MailAlias("al-contact", "contact@example.com"),
                 ],
                 MailboxConnection.Connected, HasSavedPassword: true, infomaniak,
                 SortsByAlias: true, NamesAliasesFromAddress: true, At(9, 9, 41)),
-            new Mailbox("mb-outils", "outils@exemple.fr", "Outils",
-                [new MailAlias("al-alertes", "alertes@exemple.fr")],
+            new Mailbox("mb-outils", "outils@example.com", "Outils",
+                [new MailAlias("al-alertes", "alertes@example.com")],
                 MailboxConnection.Connected, HasSavedPassword: true, infomaniak,
                 SortsByAlias: true, NamesAliasesFromAddress: true, At(9, 9, 41)),
             // Added without a name: the window shows its address.
-            new Mailbox("mb-maison", "maison@exemple.fr", null, [],
+            new Mailbox("mb-maison", "maison@example.com", null, [],
                 maisonCannotConnect ? MailboxConnection.CannotConnect : MailboxConnection.Connected,
                 HasSavedPassword: !maisonCannotConnect, infomaniak,
                 SortsByAlias: false, NamesAliasesFromAddress: true,
@@ -120,7 +120,7 @@ internal static class SampleWorld
         "s-camille", "mb-perso", null,
         "Camille : choisir samedi ou dimanche pour la visite de la maison", Fr, null,
         [
-            Mail("m-camille", "Camille", "camille@exemple.fr", At(2, 19, 20),
+            Mail("m-camille", "Camille", "camille@example.com", At(2, 19, 20),
                 "Samedi ou dimanche pour la visite ?",
                 "Coucou,",
                 "L'agence nous propose de visiter la maison ce week-end. Tu préfères samedi ou dimanche ? Dis-moi vite, ils attendent notre réponse pour caler le rendez-vous.",
@@ -140,7 +140,7 @@ internal static class SampleWorld
                     "Cordialement,\nJulien Martin\nPlomberie Martin",
                 ],
                 [new MailAttachment("Devis-2611.pdf", "PDF", 96 * 1024)]),
-            Mail("m-devis-2", "You", "moi@exemple.fr", At(4, 18, 2),
+            Mail("m-devis-2", "You", "moi@example.com", At(4, 18, 2),
                 "Visite proposée jeudi matin",
                 [
                     "Bonjour,",

@@ -21,11 +21,10 @@ public class ConservativeTypoCorrectorTests
     private static ConservativeTypoCorrector Corrector(
         string? frenchTsv = null,
         FrequencyLexicon? english = null,
-        IPersonalLexicon? personal = null,
-        TypoOptions? options = null)
+        IPersonalLexicon? personal = null)
     {
         var french = FrequencyLexicon.LoadTsv(new StringReader(frenchTsv ?? FrenchTsv));
-        return new ConservativeTypoCorrector(french, english, personal, options);
+        return new ConservativeTypoCorrector(french, english, personal);
     }
 
     // ── Corrections that earned it ──────────────────────────────────────────

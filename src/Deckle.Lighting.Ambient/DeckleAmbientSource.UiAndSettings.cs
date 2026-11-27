@@ -37,26 +37,6 @@ public sealed partial class DeckleAmbientSource
         WriteEvent(EvtTuningChanged, setting, value);
     }
 
-    [Event(EvtPipelineModeChanged,
-           Level = EventLevel.Informational,
-           Keywords = (EventKeywords)Keywords.Pipeline,
-           Message = "The ambient pipeline mode changed")]
-    public void PipelineModeChanged()
-    {
-        if (IsEnabled(EventLevel.Informational, (EventKeywords)Keywords.Pipeline))
-            WriteEvent(EvtPipelineModeChanged);
-    }
-
-    [Event(EvtPipelineModeChangedDetail,
-           Level = EventLevel.Verbose,
-           Keywords = (EventKeywords)Keywords.Pipeline,
-           Message = "mode={0}")]
-    public void PipelineModeChangedDetail(string mode)
-    {
-        if (!IsAmbientDetailEnabled(EventLevel.Verbose, (EventKeywords)Keywords.Pipeline)) return;
-        WriteEvent(EvtPipelineModeChangedDetail, mode);
-    }
-
     // ── Settings persistence ────────────────────────────────────────────
 
     [Event(EvtSettingsLoadWarning,
@@ -76,17 +56,4 @@ public sealed partial class DeckleAmbientSource
     {
         if (IsEnabled()) WriteEvent(EvtSettingsLoadError, message);
     }
-
-    // The settings file stores the selected tuning preset by id. An id that
-    // names no preset (one retired by an update, or a hand-edited file) is
-    // replaced by the selection the stored values match, so the tuning on screen
-    // can differ from the one the person chose. Both ids are declared preset
-    // ids or "custom", never user content.
-    [Event(EvtPresetSelectionReplaced,
-           Level = EventLevel.Warning,
-           Keywords = (EventKeywords)Keywords.Lifecycle,
-           Message = "A stored Ambient preset names no preset, the selection was derived from the values\nasked={0} | obtained={1}")]
-    public void PresetSelectionReplaced(string asked, string obtained)
-    {
-        if (IsEnabled()) WriteEvent(EvtPresetSelectionReplaced, asked, obtained);
-    }}
+}

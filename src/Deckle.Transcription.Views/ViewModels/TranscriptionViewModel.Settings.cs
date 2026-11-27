@@ -9,7 +9,7 @@ namespace Deckle.Transcription.Views;
 
 // ── TranscriptionViewModel — settings manifest ──────────────────────────────────────
 //
-// The declarative half of the module's pages (General, Lexicon, Streaming),
+// The declarative half of the module's pages (General, Lexicon),
 // kept beside the ViewModel that owns the values rather than in the page
 // code-behind. Each entry declares one setting — its kind, its
 // localization key (the x:Uid the hand-authored card carried, so the composer
@@ -68,6 +68,29 @@ public partial class TranscriptionViewModel
             defaultValue: () => new OverlaySettings().Enabled),
     ];
 
+    // Maximum recording length — a group: the master switch "Limit recording
+    // duration", off by default (the POCO's 0 = no limit), reveals one length in
+    // minutes, a field with a slider (a length is swept by feel). The POCO and
+    // the capture loop keep seconds; RecordingLimit and the two VM accessors do
+    // the conversion. The child's default is the length the switch restores, so
+    // the section reset returns the group to off. Hosted here, stored in the
+    // capture settings (TranscriptionViewModel.RecordingLimit.cs).
+    public IReadOnlyList<SettingDescriptor> RecordingLimitSettings =>
+    [
+        Setting.Group("RecordingLimitCard",
+            () => LimitRecordingDuration,
+            value => LimitRecordingDuration = value,
+            [
+                Setting.Magnitude("RecordingLimitDurationCard",
+                    () => MaxRecordingDurationMinutes,
+                    value => MaxRecordingDurationMinutes = value,
+                    new MagnitudeArgs(Deckle.Audio.RecordingLimit.MinMinutes, Deckle.Audio.RecordingLimit.MaxMinutes,
+                        Unit: "min", Integer: true),
+                    defaultValue: () => Deckle.Audio.RecordingLimit.DefaultMinutes),
+            ],
+            defaultValue: () => Deckle.Audio.RecordingLimit.IsLimited(new Deckle.Audio.CaptureSettings().MaxRecordingDurationSeconds)),
+    ];
+
     // GPU acceleration — the flat toggle under the "Speech engine" header. The
     // default reads the EngineSettings POCO initializer. UseGpu is
     // restart-coupled, but the RESTART FOOTER stays bespoke: it watches VM.UseGpu
@@ -99,7 +122,8 @@ public partial class TranscriptionViewModel
     ];
 
     // The guard against text from silence and noise: the Silero trim, one fold
-    // with no master at the foot of the Streaming page, collapsed. Its values
+    // with no master in the Segmentation section at the foot of Dictation >
+    // General (developer mode only), collapsed. Its values
     // apply to EVERY recording (the streaming dictation, the monolithic take, a
     // file, a recovered take), so the fold shows whatever the streaming switch
     // says. It stays collapsed: almost nobody moves these values.
@@ -151,11 +175,11 @@ public partial class TranscriptionViewModel
             ]),
     ];
 
-    // Streaming pipeline — the energy segmenter. The switch is StreamingEnabled
+    // Transcribe as you speak — the streaming pipeline. The switch is StreamingEnabled
     // (the user-facing on/off projected onto PipelineStrategyKind), a plain card
-    // first and alone. It chooses the dictation pipeline only: the sections under
-    // it stay visible while streaming is off, since files and recovered takes
-    // are always cut and trimmed with them.
+    // first in the "While you speak" section. It chooses the dictation pipeline
+    // only: the Segmentation section stays as it is while streaming is off, since
+    // files and recovered takes are always cut and trimmed with its values.
     //
     // The switch's default mirrors the VM's own projection of the segmenter Strategy
     // onto the bool (Load/Push: StreamingEnabled = Strategy == Streaming), read off a
@@ -169,14 +193,14 @@ public partial class TranscriptionViewModel
             defaultValue: () => new StreamingSettings().Strategy == PipelineStrategyKind.Streaming),
     ];
 
-    // The segmentation section of the Streaming page, under the switch and
+    // The segmentation section of Dictation > General (developer mode only),
     // above the silence guards' fold: the cut curve, with the cut margin and
     // the minimum speech in its pause strip.
     // The minimum speech is the one floor the segmenter and Silero share
     // (Streaming.MinSpeechMs); it sits here and not in the guards' fold
     // because it is the cut's own floor, and the guard left when Silero is off
     // or its model is missing. The level that makes a frame voiced is not here: it is the voice
-    // level of the Recording page (CaptureSettings.VoiceLevelDbfs), since the HUD
+    // level of the Microphone page (CaptureSettings.VoiceLevelDbfs), since the HUD
     // and the low-audio warning read it too. The curve is the segmentation's
     // instrument, at full width, with no fold around it (2026-10-14). Every
     // value shows whatever the strategy: files and recovered takes are always

@@ -40,7 +40,9 @@ internal sealed record MainActionState(string Label, bool Enabled, MainActionSta
         // Before the first reading nothing is known against the action, so the
         // button is offered; the engine refuses a start that cannot be made.
         bool menuThere = reading is null || reading.HasScriptMenu;
-        bool enabled = running is null && menuThere && workspace.Shell is not null;
+        IReadOnlyList<ScriptMenuEntry>? listed = workspace.Menus.Cached(project.Id);
+        bool menuGivesIt = listed is null || listed.Any(e => e.GivesPin(main));
+        bool enabled = running is null && menuThere && menuGivesIt && workspace.Shell is not null;
 
         MainActionStatus status = running is not null ? MainActionStatus.Running
             : last?.IsFailure == true ? MainActionStatus.Failed

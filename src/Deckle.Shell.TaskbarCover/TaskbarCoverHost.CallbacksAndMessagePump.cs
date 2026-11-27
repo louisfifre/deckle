@@ -10,11 +10,12 @@ public sealed partial class TaskbarCoverHost
 {
     // First layout off Start()'s critical path: the gated section
     // (SetupWindow) makes local calls only, and the layout walks the taskbar
-    // windows, places each band, reads its alpha from the cursor and applies
+    // windows, places each band, reads its level from the cursor and applies
     // the foreground verdict in one pass.
     private void BootstrapState()
     {
         RebuildLayout("boot");
+        StartUnderlayPeriod();
     }
 
     private void RunPump()
@@ -34,14 +35,11 @@ public sealed partial class TaskbarCoverHost
             UnhookWinEvent(_cursorHook);
             _cursorHook = IntPtr.Zero;
         }
-        if (_reorderHook != IntPtr.Zero)
-        {
-            UnhookWinEvent(_reorderHook);
-            _reorderHook = IntPtr.Zero;
-        }
-        foreach (var band in _bands)
-            NativeMethods.DestroyWindow(band.Hwnd);
+        RestoreAll("host_stopped");
+        StopUnderlayMotion();
+        foreach (var band in _bands) DisposeUnderlay(band);
         _bands.Clear();
+        _fadedTaskbars = [];
         if (_hwnd != IntPtr.Zero)
         {
             WTSUnRegisterSessionNotification(_hwnd);
@@ -53,31 +51,31 @@ public sealed partial class TaskbarCoverHost
             NativeMethods.UnregisterClass(ClassName, _hInstance);
             _classAtom = 0;
         }
-        if (_brush != IntPtr.Zero)
-        {
-            // UnregisterClass does not free class brushes.
-            DeleteObject(_brush);
-            _brush = IntPtr.Zero;
-        }
 
         // Restore the boot-pessimistic state for a potential restart; the
         // per-band state left with the bands.
         _systemSuspended     = false;
         _layoutKnown         = false;
         _layoutFailureLogged = false;
-        _bandCreateFailureLogged = false;
+        _fadeFailureLogged   = false;
+        _underlayFailureLogged = false;
+        _underlaySoonPending = false;
+        _underlaySettleReadsLeft = 0;
     }
 
     private IntPtr WndProc(IntPtr hWnd, uint msg, IntPtr wParam, IntPtr lParam)
     {
-        // The bands share the class and receive the same broadcasts; only
-        // the anchor acts on them, so one WM_SETTINGCHANGE rebuilds the
-        // layout once, not once per band. _hwnd is still zero while the
-        // anchor itself is being created, and its creation messages take
-        // the default path like any other.
+        // _hwnd is still zero while the anchor itself is being created, and
+        // its creation messages take the default path like any other.
         if (hWnd != _hwnd)
+        {
+            if (msg == WM_ERASEBKGND && TryPaintUnderlay(hWnd, wParam)) return 1;
             return NativeMethods.DefWindowProc(hWnd, msg, wParam, lParam);
+        }
 
+        // Explorer's restart re-creates the taskbar: the old window took its
+        // alpha with it, and the rebuild fades the new one (a new handle is a
+        // new placement).
         if (_wmTaskbarCreated != 0 && msg == _wmTaskbarCreated)
         {
             RebuildLayout("taskbar_created");
@@ -99,6 +97,14 @@ public sealed partial class TaskbarCoverHost
                 // distance costs nothing. The zones are rebuilt through the
                 // layout path, the one place that computes them.
                 if (_requestedApproachDip != _approachDip) RebuildLayout("approach_change");
+                return IntPtr.Zero;
+
+            case WM_APP_UNDERLAY_FRAME:
+                OnUnderlayFrame();
+                return IntPtr.Zero;
+
+            case WM_TIMER:
+                OnUnderlayTimer((UIntPtr)(ulong)wParam);
                 return IntPtr.Zero;
 
             case WM_SETTINGCHANGE:

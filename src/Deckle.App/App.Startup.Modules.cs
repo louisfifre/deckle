@@ -69,7 +69,7 @@ public partial class App
         {
             context.Skip(ModuleIds.Transcription, engineSkip);
             // A present module that cannot run is the person's to fix. The
-            // incident opens the Transcription page, whose setup bar starts the
+            // incident opens the Dictation page, whose setup bar starts the
             // download, so startup opens no window of its own at each launch.
             // Nothing closes it in this process: the engine is composed only at
             // start, so what fixes it is the restart that follows provisioning.
@@ -143,24 +143,5 @@ public partial class App
             context.Compose(ModuleIds.Anytype, StartAnytypeRuntime);
         else
             context.Skip(ModuleIds.Anytype, SkipNotPresent);
-
-        // The contributed modules (PublishedComposition), none today:
-        // nothing runs at start, the tray builds the window the first time it
-        // opens it. Logged so the boot names the module.
-        foreach (Contributions.IContribution contribution in PublishedComposition.All)
-        {
-            if (contribution.Descriptor is not { } module) continue;
-            if (ModulePresence.IsPresent(module.Id))
-                context.Compose(module.Id, () => { });
-            else
-                context.Skip(module.Id, SkipNotPresent);
-        }
-
-        // Same: nothing runs at start, the tray builds the window
-        // (App.Projects.cs).
-        if (ModulePresence.IsPresent(ModuleIds.Projects))
-            context.Compose(ModuleIds.Projects, () => { });
-        else
-            context.Skip(ModuleIds.Projects, SkipNotPresent);
     }
 }

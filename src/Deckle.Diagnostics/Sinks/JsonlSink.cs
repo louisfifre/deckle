@@ -4,9 +4,11 @@ namespace Deckle.Diagnostics;
 
 // Persists one selected event stream to a fixed JSONL destination. Write only
 // performs a bounded in-memory hand-off; one worker serializes and appends
-// entries in acceptance order. When the queue reaches its fixed cap,
-// producers wait instead of losing rows or allowing memory to grow without
-// bound. Flush is the explicit clean-shutdown boundary.
+// entries in acceptance order. When the queue reaches its fixed cap (the disk
+// no longer writes), the new line is dropped instead of making the emitter
+// wait, and memory does not grow: the next line that lands is followed by one
+// LinesLost event saying how many were refused. Flush is the explicit
+// clean-shutdown boundary.
 //
 // The worker keeps the active stream open. Each line is flushed to the OS
 // before the next item, so a process crash keeps every written line, and the
@@ -89,7 +91,10 @@ public sealed class JsonlSink : IFlushableLogSink
             onFault: ex => DeckleDiagnosticsSource.Log.SinkFaulted(
                 sinkName, ex.GetType().Name, ex.Message),
             onRecovered: failures => DeckleDiagnosticsSource.Log.SinkRecovered(
-                sinkName, failures));
+                sinkName, failures),
+            dropWhenFull: true,
+            onDropped: lost => DeckleDiagnosticsSource.Log.LinesLost(
+                sinkName, lost));
     }
 
     public bool Wants(EventEntry entry) => _predicate(entry);

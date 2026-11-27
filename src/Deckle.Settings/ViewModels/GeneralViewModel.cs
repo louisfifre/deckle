@@ -190,17 +190,6 @@ public partial class GeneralViewModel : ObservableObject
         PushToSettings();
     }
 
-    // ── Performance ──────────────────────────────────────────────────────────
-
-    [ObservableProperty]
-    public partial bool PerformanceMode { get; set; }
-
-    partial void OnPerformanceModeChanged(bool value)
-    {
-        if (_isSyncing) return;
-        PushToSettings();
-    }
-
     // ── Developer ────────────────────────────────────────────────────────────
 
     // The page shows the developer tools while this is on; the App reads the
@@ -279,7 +268,6 @@ public partial class GeneralViewModel : ObservableObject
         ElevatedStartupEnabled = ElevatedStartupService.DefaultEnabled;
         BackupDirectory = paths.BackupDirectory;
         UpdateAutoCheckEnabled = updates.AutoCheckEnabled;
-        PerformanceMode = new PerformanceSettings().PerformanceMode;
         DeveloperMode = new DeveloperSettings().DeveloperMode;
         LoadHotkeys(new HotkeysSettings());
 
@@ -304,7 +292,6 @@ public partial class GeneralViewModel : ObservableObject
             AutostartEnabled = elevated || AutostartService.IsEnabled();
             BackupDirectory = shell.Paths.BackupDirectory;
             UpdateAutoCheckEnabled = shell.Updates.AutoCheckEnabled;
-            PerformanceMode = shell.Performance.PerformanceMode;
             DeveloperMode = shell.Developer.DeveloperMode;
             LoadHotkeys(shell.Hotkeys);
         }
@@ -339,7 +326,6 @@ public partial class GeneralViewModel : ObservableObject
         shell.Appearance.Animations = Animations;
         shell.Paths.BackupDirectory = BackupDirectory ?? "";
         shell.Updates.AutoCheckEnabled = UpdateAutoCheckEnabled;
-        shell.Performance.PerformanceMode = PerformanceMode;
         shell.Developer.DeveloperMode = DeveloperMode;
         SettingsService.Instance.Save();
     }

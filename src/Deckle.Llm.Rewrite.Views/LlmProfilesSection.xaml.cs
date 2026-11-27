@@ -70,6 +70,13 @@ public sealed partial class LlmProfilesSection : UserControl
         foreach (var vm in Profiles) ApplyProvider(vm);
     }
 
+    /// <summary>A setting changed (a dictation step, a shortcut): each card
+    /// words who uses its profile again.</summary>
+    internal void RefreshUsers()
+    {
+        foreach (var vm in Profiles) vm.RefreshSummary();
+    }
+
     internal void SetAvailableModelNames(string providerId, IEnumerable<string> names)
     {
         _modelNamesByProvider[providerId] = names.ToList();

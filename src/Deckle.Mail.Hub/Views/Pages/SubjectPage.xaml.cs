@@ -200,13 +200,10 @@ public sealed partial class SubjectPage : Page
     private async void OnTrashClick(object sender, RoutedEventArgs e)
     {
         if (_subject is null || _session is null || !_session.AcceptsClick(_subject.Id)) return;
-        if (!_session.IsTrashNoticeAccepted)
-        {
-            if (!await TrashNotice.AskAsync(XamlRoot, _session, _subject)) return;
-            _session.AcceptTrashNotice();
-        }
-        bool applied = _session.MoveToTrash(_subject.Id);
-        DeckleMailHubSource.Log.GestureApplied("move_to_trash", applied);
+        MailSubject subject = _subject;
+        TrashOutcome outcome = await _session.MoveToTrashAsync(subject.Id, () => TrashNotice.AskAsync(XamlRoot, _session, subject));
+        if (outcome == TrashOutcome.Declined) return;
+        DeckleMailHubSource.Log.GestureApplied("move_to_trash", outcome == TrashOutcome.Applied);
     }
 
     private void OnUndo()

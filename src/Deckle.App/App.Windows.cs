@@ -11,7 +11,6 @@ public partial class App
     private void ApplyRecordingStateToWindows(bool isRecording)
     {
         _logWindow?.SetRecordingState(isRecording);
-        _publishedHost?.SetRecordingState(isRecording);
         _settingsWindow?.SetRecordingState(isRecording);
     }
 

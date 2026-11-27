@@ -26,9 +26,6 @@ public partial class App
             ("log", EnsureLogWindow),
             ("transcribe-rewrite", EnsureTranscribeRewriteWindow),
         };
-        foreach (string name in PublishedHost.WindowNames)
-            windows.Add((name, () => PublishedHost.Ensure(name)));
-        windows.Add(("projects", EnsureProjectsWindow));
         foreach ((string name, Func<Microsoft.UI.Xaml.Window> window) in windows)
         {
             nint hwnd = WindowNative.GetWindowHandle(window());

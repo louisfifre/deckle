@@ -34,15 +34,37 @@ namespace Deckle.Transcription.Views;
 // the XAML so a hit can scroll to it.
 public static class SettingsSearch
 {
-    // The module's General page: overlay, engine and models folder.
+    // The module's General page, the Dictation node's first: the streaming
+    // switch, the overlay and the recording length ("While you speak"), then
+    // engine and models folder. The segmentation cards (the cut curve and the
+    // silence and noise filtering fold) are in no list: they show in developer
+    // mode only, so a search never offers them.
     public static IReadOnlyList<SettingSearchEntry> Entries { get; } =
     [
-        // "Overlay" — the overlay group (fade / position / transcript
-        // panel side ride under it as composed children).
+        // "Transcribe as you speak" — the streaming switch. The words of the
+        // page's old names ("transcription", "streaming") and of the segmenter
+        // still find it.
+        new SettingSearchEntry
+        {
+            LabelKey = "TranscriptionStreamingEnabledCard",
+            Keywords = ["transcription", "streaming", "realtime", "live", "segmenter", "utterance"],
+        },
+
+        // "Show the overlay while recording" — the overlay group (fade / position
+        // / transcript panel side ride under it as composed children).
         new SettingSearchEntry
         {
             LabelKey = "GeneralOverlayExpander",
             Keywords = ["hud", "indicator", "fade", "position", "transcript", "panel"],
+        },
+
+        // "Limit recording duration" — the group (switch + length in minutes),
+        // hosted here but stored in the capture settings. "recording" is the
+        // word of the Recording page it came from.
+        new SettingSearchEntry
+        {
+            LabelKey = "RecordingLimitCard",
+            Keywords = ["recording", "duration", "length", "limit", "minutes", "cap", "stop", "cut off", "time"],
         },
 
         // "Speech engine" — the engine fold (the Parakeet model folder, the state
@@ -82,39 +104,6 @@ public static class SettingsSearch
         {
             LabelKey = "LexiconBoostCard",
             Keywords = ["boost", "bias", "favor"],
-        },
-    ];
-
-    // The Streaming page: the pipeline switch, segmentation, silence and noise
-    // filtering.
-    public static IReadOnlyList<SettingSearchEntry> StreamingEntries { get; } =
-    [
-        // "Streaming pipeline" — the switch, first and alone (the cards under it
-        // show whatever it says: files and recovered takes always use them).
-        new SettingSearchEntry
-        {
-            LabelKey = "TranscriptionStreamingEnabledCard",
-            Keywords = ["realtime", "live", "segmenter", "utterance"],
-        },
-
-        // "Pause before cutting" — the curve block: the four hangover anchors,
-        // and the cut margin and the minimum speech in its pause strip, so the
-        // words that found those two cards find the card that now holds them.
-        new SettingSearchEntry
-        {
-            LabelKey = "TranscriptionCutCurveCard",
-            Keywords = ["hangover", "pause", "cut", "ramp", "wait",
-                        "margin", "silence", "end", "clip", "trailing",
-                        "minimum", "speech", "blip", "noise", "short", "word", "drop", "cough"],
-        },
-
-        // "Silence and noise filtering" — the Silero trim fold (its switch, then
-        // threshold, minimum silence and padding ride under it).
-        new SettingSearchEntry
-        {
-            LabelKey = "TranscriptionSilenceGuardsFold",
-            Keywords = ["silero", "vad", "voice activity", "silence", "noise", "trim",
-                        "threshold", "padding"],
         },
     ];
 

@@ -24,14 +24,13 @@ public sealed partial class GeneralPage : Page
 
         ComposeAppearanceSection();
         ComposeStartupSection();
-        ComposePerformanceSection();
         ComposeUpdatesSection();
         ComposeApplicationDataSection();
         ComposeDataFolderSection();
         ComposeDeveloperSection();
 
         foreach (var composer in new[]
-                 { _appearanceComposer, _startupComposer, _performanceComposer, _updatesComposer,
+                 { _appearanceComposer, _startupComposer, _updatesComposer,
                    _applicationDataComposer, _dataFolderComposer, _developerComposer })
             composer!.DirtyChanged += (_, _) => GateResetAll();
 
@@ -67,18 +66,6 @@ public sealed partial class GeneralPage : Page
     {
         _startupComposer = new SettingsComposer(TopHost, ViewModel);
         _startupComposer.Compose(ViewModel.StartupSettings);
-    }
-
-    // ── Composed performance card ─────────────────────────────────────────────
-    //
-    // One card in TopHost after the startup switches, under no title, like
-    // them: it is a machine-wide choice, not a part of any one section.
-    private SettingsComposer? _performanceComposer;
-
-    private void ComposePerformanceSection()
-    {
-        _performanceComposer = new SettingsComposer(TopHost, ViewModel);
-        _performanceComposer.Compose(ViewModel.PerformanceSettings);
     }
 
     // ── Composed Updates section ──────────────────────────────────────────────
@@ -208,7 +195,6 @@ public sealed partial class GeneralPage : Page
         Header.IsResetAllEnabled =
             (_appearanceComposer?.IsDirty() ?? false) ||
             (_startupComposer?.IsDirty() ?? false) ||
-            (_performanceComposer?.IsDirty() ?? false) ||
             (_updatesComposer?.IsDirty() ?? false) ||
             (_applicationDataComposer?.IsDirty() ?? false) ||
             (_dataFolderComposer?.IsDirty() ?? false) ||
@@ -222,7 +208,6 @@ public sealed partial class GeneralPage : Page
     {
         _appearanceComposer?.ResetAll();
         _startupComposer?.ResetAll();
-        _performanceComposer?.ResetAll();
         _updatesComposer?.ResetAll();
         _developerComposer?.ResetAll();
         _applicationDataComposer?.ResetAll();

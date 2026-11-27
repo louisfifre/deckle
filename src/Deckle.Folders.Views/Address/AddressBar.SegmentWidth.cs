@@ -25,10 +25,16 @@ internal sealed partial class AddressBar
 
     private void OnSegmentsModeSizeChanged(object sender, SizeChangedEventArgs e) => FitSegmentNames();
 
+    // The drive and its separator take room before the first segment.
+    private void OnDrivePrefixSizeChanged(object sender, SizeChangedEventArgs e) => FitSegmentNames();
+
     // Called when the bar's width changes and when it shows another place.
     private void FitSegmentNames()
     {
-        double reserved = SegmentRoomReserved + (_place?.Segments.Count > 1 ? FoldButtonWidth : 0);
+        double prefix = DrivePrefix.Visibility == Visibility.Visible
+            ? DrivePrefix.ActualWidth + DrivePrefix.Margin.Left + DrivePrefix.Margin.Right
+            : 0;
+        double reserved = SegmentRoomReserved + prefix + (_place?.Segments.Count > 1 ? FoldButtonWidth : 0);
         _crumbNameMaxWidth = Math.Max(SegmentNameMinWidth, SegmentsMode.ActualWidth - reserved);
         foreach (TextBlock name in _crumbNames) name.MaxWidth = _crumbNameMaxWidth;
     }

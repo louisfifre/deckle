@@ -10,36 +10,35 @@ public sealed class AmbientStartSettingsTests
     {
         var settings = new AmbientSettings();
 
-        var started = AmbientStartSettings.From(settings, performanceMode: false);
+        var started = AmbientStartSettings.From(settings);
         settings.SmoothingAlpha = 0.5;
-        settings.ChangeThreshold = 20;
 
-        Assert.Equal("", started.ChangedSettings(AmbientStartSettings.From(settings, performanceMode: false)));
+        Assert.Equal("", started.ChangedSettings(AmbientStartSettings.From(settings)));
     }
 
     [Fact]
-    public void EachStartSettingIsNamedWhenItChanges()
+    public void TheMonitorIsNamedWhenItChanges()
     {
         var settings = new AmbientSettings();
-        var started = AmbientStartSettings.From(settings, performanceMode: false);
+        var started = AmbientStartSettings.From(settings);
 
         settings.SelectedMonitorDeviceName = @"\\.\DISPLAY2";
-        settings.UseMultiLight = !settings.UseMultiLight;
 
         Assert.Equal(
-            "SelectedMonitorDeviceName,UseMultiLight,PerformanceMode",
-            started.ChangedSettings(AmbientStartSettings.From(settings, performanceMode: true)));
+            "SelectedMonitorDeviceName",
+            started.ChangedSettings(AmbientStartSettings.From(settings)));
     }
 
+    // A zone pick or a per-light brightness is read on every tick, so a
+    // change to one never restarts the run.
     [Fact]
-    public void TurningThePerformanceModeOnOrOffIsAStartChange()
+    public void AZonePickDoesNotRestartTheRun()
     {
         var settings = new AmbientSettings();
+        var started = AmbientStartSettings.From(settings);
 
-        var normal = AmbientStartSettings.From(settings, performanceMode: false);
-        var lowPower = AmbientStartSettings.From(settings, performanceMode: true);
+        settings.LightZones = new Dictionary<string, LightZone> { ["1"] = LightZone.Left };
 
-        Assert.Equal("PerformanceMode", normal.ChangedSettings(lowPower));
-        Assert.Equal("PerformanceMode", lowPower.ChangedSettings(normal));
+        Assert.Equal("", started.ChangedSettings(AmbientStartSettings.From(settings)));
     }
 }

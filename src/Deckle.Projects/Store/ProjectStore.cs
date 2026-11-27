@@ -307,10 +307,12 @@ public sealed class ProjectStore
     }
 
     // Brings the pins up to date with a listing of the menu just read: the
-    // label and script of every pin the menu still gives are replaced by the
-    // current ones. A pin the menu no longer gives is left alone and keeps its
-    // card with the label it had (spec, Pinned actions). Saves and raises
-    // Changed only when something changed.
+    // label of every pin the menu still gives is replaced by the current one.
+    // A pin the menu no longer gives is left alone and keeps its card with the
+    // label it had (spec, Pinned actions). So is a pin whose identifier now
+    // names another script: the identifier follows the entry's position in the
+    // menu, so a shifted menu must never make the pin launch another script.
+    // Saves and raises Changed only when something changed.
     public ProjectEntry? RefreshPinned(string id, IReadOnlyList<ScriptMenuEntry> entries)
     {
         return Replace(id, p =>
@@ -319,10 +321,10 @@ public sealed class ProjectStore
             for (int i = 0; i < p.Pinned.Count; i++)
             {
                 PinnedAction pin = p.Pinned[i];
-                ScriptMenuEntry? entry = entries.FirstOrDefault(e => e.Gives(pin.Action));
-                if (entry is null || (entry.Label == pin.Label && entry.Script == pin.Script)) continue;
+                ScriptMenuEntry? entry = entries.FirstOrDefault(e => e.GivesPin(pin));
+                if (entry is null || entry.Label == pin.Label) continue;
                 updated ??= [.. p.Pinned];
-                updated[i] = pin with { Label = entry.Label, Script = entry.Script };
+                updated[i] = pin with { Label = entry.Label };
             }
             return updated is null ? p : p with { Pinned = updated };
         });

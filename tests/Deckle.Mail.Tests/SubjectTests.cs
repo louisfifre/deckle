@@ -37,8 +37,8 @@ public class SubjectTests
     public void MailsThatCarryTheSameOrderNumberAreOneSubject()
     {
         // The order confirmation from a shop and the pickup notice from its carrier.
-        var confirmation = To(deliveredTo: "shop@exemple.fr", from: "boutique@example.com", minutesAgo: 600);
-        var pickup = To(deliveredTo: "shop@exemple.fr", from: "transporteur@example.com", minutesAgo: 60);
+        var confirmation = To(deliveredTo: "shop@example.com", from: "boutique@example.com", minutesAgo: 600);
+        var pickup = To(deliveredTo: "shop@example.com", from: "transporteur@example.com", minutesAgo: 60);
 
         var state = Sorted(
             (confirmation, MailJudgment.SetAside(SetAsideReason.Receipt, "Commande 4521 confirmée") with { MatterNumbers = ["4521"] }),

@@ -124,7 +124,6 @@
                       Private="false"
                       OutputItemType="DeckleGatewayTarget"
                       GlobalPropertiesToRemove="RuntimeIdentifier;RuntimeIdentifierOverride;SelfContained" />
-    <ProjectReference Include="..\Deckle.Contributions\Deckle.Contributions.csproj" />
     <ProjectReference Include="..\Deckle.Hosting\Deckle.Hosting.csproj" />
     <ProjectReference Include="..\Deckle.Audio\Deckle.Audio.csproj" />
     <ProjectReference Include="..\Deckle.Audio.Views\Deckle.Audio.Views.csproj" />
@@ -132,7 +131,6 @@
     <!-- Catalog's compiled XAML dictionaries (icons, page header brushes).
          The host references them; Catalog and the modules name them by URI. -->
     <ProjectReference Include="..\Deckle.Catalog.Themes\Deckle.Catalog.Themes.csproj" />
-    <ProjectReference Include="..\Deckle.Chrono\Deckle.Chrono.csproj" />
     <ProjectReference Include="..\Deckle.Composition\Deckle.Composition.csproj" />
     <ProjectReference Include="..\Deckle.Core\Deckle.Core.csproj" />
     <ProjectReference Include="..\Deckle.Diagnostics\Deckle.Diagnostics.csproj" />
@@ -156,8 +154,6 @@
     <ProjectReference Include="..\Deckle.Notifications\Deckle.Notifications.csproj" />
     <ProjectReference Include="..\Deckle.Orchestration\Deckle.Orchestration.csproj" />
     <ProjectReference Include="..\Deckle.Paste.Views\Deckle.Paste.Views.csproj" />
-    <ProjectReference Include="..\Deckle.Projects\Deckle.Projects.csproj" />
-    <ProjectReference Include="..\Deckle.Projects.Views\Deckle.Projects.Views.csproj" />
     <ProjectReference Include="..\Deckle.Settings\Deckle.Settings.csproj" />
     <ProjectReference Include="..\Deckle.Setup\Deckle.Setup.csproj" />
     <ProjectReference Include="..\Deckle.Shell\Deckle.Shell.csproj" />

@@ -39,16 +39,27 @@
                     </InfoBar.ActionButton>
                 </InfoBar>
 
-                <!-- ── Overlay ──────────────────────────────────────────────────
-                     The dictation experience — the on-screen HUD,
-                     relocated from General. Composed from TranscriptionViewModel.BehaviourSettings
-                     into the host below; its own section reset gates active-when-dirty. -->
-                <catalog:SettingsSection x:Name="BehaviourSection"
-                                         x:Uid="TranscriptionPageBehaviourSection"
+                <!-- ── While you speak ──────────────────────────────────────────
+                     What happens during a take, in order: the streaming switch
+                     (composed, first and outside every reset: on or off is the
+                     person's choice, not a value), the overlay fold (the
+                     on-screen HUD, composed from
+                     TranscriptionViewModel.BehaviourSettings) and the maximum
+                     recording length (composed from RecordingLimitSettings,
+                     stored in the capture settings). The section's reset spans
+                     the overlay and the length, gated active-when-dirty. -->
+                <catalog:SettingsSection x:Name="WhileYouSpeakSection"
+                                         x:Uid="TranscriptionPageWhileYouSpeakSection"
                                          HasReset="True"
-                                         ResetRequested="ResetBehaviour_Click">
-                    <StackPanel x:Name="BehaviourHost"
-                                Spacing="{StaticResource SettingsCardSpacing}" />
+                                         ResetRequested="ResetWhileYouSpeak_Click">
+                    <StackPanel Spacing="{StaticResource SettingsCardSpacing}">
+                        <StackPanel x:Name="StreamingSwitchHost"
+                                    Spacing="{StaticResource SettingsCardSpacing}" />
+                        <StackPanel x:Name="BehaviourHost"
+                                    Spacing="{StaticResource SettingsCardSpacing}" />
+                        <StackPanel x:Name="RecordingLimitHost"
+                                    Spacing="{StaticResource SettingsCardSpacing}" />
+                    </StackPanel>
                 </catalog:SettingsSection>
 
                 <!-- ── Transcription ───────────────────────────────────────── -->
@@ -88,11 +99,32 @@
                 </StackPanel>
                 </catalog:SettingsSection>
 
-                <!-- The lexicon and the streaming pipeline live on their own pages,
-                     LexiconPage and StreamingPage, nested under this module in the
-                     rail. The dictation's dataset consents (latency, audio corpus)
-                     live on Settings > Diagnostics, the one editor of what Deckle
-                     records (TranscriptionTelemetryViewModel, 2026-10-14). -->
+                <!-- ── Segmentation ─────────────────────────────────────────────
+                     Developer mode only: the page shows it when it is navigated
+                     to with developer mode on, and Reset all counts its values
+                     only then. The cut curve (its corners drag the ramp and the
+                     waits, its pause strip the cut margin and the minimum
+                     speech), then the Silero trim fold, which applies to every
+                     recording, whatever the streaming switch says.
+                     TranscriptionViewModel.SegmentationSettings and
+                     SilenceGuardSettings. -->
+                <catalog:SettingsSection x:Name="SegmentationSection"
+                                         x:Uid="TranscriptionPageSegmentationSection"
+                                         Visibility="Collapsed">
+                    <StackPanel Spacing="{StaticResource SettingsCardSpacing}">
+                        <StackPanel x:Name="SegmentationHost"
+                                    Spacing="{StaticResource SettingsCardSpacing}" />
+                        <StackPanel x:Name="SilenceGuardsHost"
+                                    Spacing="{StaticResource SettingsCardSpacing}" />
+                    </StackPanel>
+                </catalog:SettingsSection>
+
+                <!-- The lexicon lives on its own page, LexiconPage, and the
+                     microphone on the Microphone page (RecordingPage), both nested
+                     under this module in the rail. The dictation's dataset
+                     consents (latency, audio corpus) live on Settings >
+                     Diagnostics, the one editor of what Deckle records
+                     (TranscriptionTelemetryViewModel, 2026-10-14). -->
 
             </StackPanel>
             </Grid>

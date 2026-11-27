@@ -45,17 +45,18 @@ public class SelfCheckTests
             SelfCheckMicrophoneOutcome.From(true, null, MicErrorKind.Unavailable, "", "").Outcome);
     }
 
-    // The published run walks the host's own windows around the contributed
-    // ones, Projects last, and Projects shows several views.
+    // The published run walks the host's own windows, in order. Projects is not
+    // among them: Deckle Projects walks itself
+    // (DeckleProjects.exe --self-check).
     [Fact]
     [Trait("Category", "unit")]
-    public void Catalog_WalksTheHostWindowsThenTheContributedOnesThenProjects()
+    public void Catalog_WalksTheHostWindowsInOrderAndNotProjects()
     {
         SelfCheckWindows catalog = SelfCheckWindowCatalog.Published;
 
         Assert.Equal(["settings", "log", "transcribe-rewrite", "paste-to-folder"], catalog.Windows.Take(4));
-        Assert.Equal("projects", catalog.Windows[^1]);
-        Assert.Contains("projects", catalog.WithViews);
+        Assert.DoesNotContain("projects", catalog.Windows);
+        Assert.DoesNotContain("projects", catalog.WithViews);
         Assert.DoesNotContain("log", catalog.WithViews);
     }
 }

@@ -15,21 +15,21 @@ public class MailboxNamingTests
     [Fact]
     public void AMailboxAddedWithoutANameShowsItsAddress()
     {
-        Assert.Equal("maison@exemple.fr", MailboxNaming.NameOf(Maison));
-        Assert.Equal("maison@exemple.fr", MailboxNaming.NameOf(Maison with { Name = "  " }));
+        Assert.Equal("maison@example.com", MailboxNaming.NameOf(Maison));
+        Assert.Equal("maison@example.com", MailboxNaming.NameOf(Maison with { Name = "  " }));
     }
 
     [Fact]
     public void AnAliasIsNamedByThePartBeforeTheAtWithACapital()
     {
-        Assert.Equal("Shop", MailboxNaming.NameOf(Perso, new MailAlias("shop@exemple.fr")));
-        Assert.Equal("Facture", MailboxNaming.NameOf(Perso, new MailAlias("facture@exemple.fr")));
+        Assert.Equal("Shop", MailboxNaming.NameOf(Perso, new MailAlias("shop@example.com")));
+        Assert.Equal("Facture", MailboxNaming.NameOf(Perso, new MailAlias("facture@example.com")));
     }
 
     [Fact]
     public void AnAliasRenamedByHandShowsItsNewName()
     {
-        Assert.Equal("Achats", MailboxNaming.NameOf(Perso, new MailAlias("shop@exemple.fr", "Achats")));
+        Assert.Equal("Achats", MailboxNaming.NameOf(Perso, new MailAlias("shop@example.com", "Achats")));
     }
 
     [Fact]
@@ -37,7 +37,7 @@ public class MailboxNamingTests
     {
         var mailbox = Perso with { CapitalizesAliasNames = false };
 
-        Assert.Equal("shop", MailboxNaming.NameOf(mailbox, new MailAlias("shop@exemple.fr")));
+        Assert.Equal("shop", MailboxNaming.NameOf(mailbox, new MailAlias("shop@example.com")));
     }
 
     [Fact]

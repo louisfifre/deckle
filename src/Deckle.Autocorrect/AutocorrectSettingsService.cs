@@ -86,6 +86,15 @@ public sealed class AutocorrectSettingsService
         }
     }
 
+    public void SetParagraphCorrection(bool enabled)
+    {
+        lock (_writeLock)
+        {
+            Current.ParagraphCorrection = enabled;
+            Save();
+        }
+    }
+
     public void SetDecision(string process, bool enabled)
     {
         if (string.IsNullOrEmpty(process)) return;

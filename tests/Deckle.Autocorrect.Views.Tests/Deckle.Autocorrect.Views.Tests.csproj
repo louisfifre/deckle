@@ -1,0 +1,7 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <ItemGroup>
+    <ProjectReference Include="..\..\src\Deckle.Autocorrect.Views\Deckle.Autocorrect.Views.csproj" />
+    <!-- The shell's search index, which the module's entries are registered in. -->
+    <ProjectReference Include="..\..\src\Deckle.Settings\Deckle.Settings.csproj" />
+  </ItemGroup>
+</Project>

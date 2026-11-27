@@ -66,7 +66,7 @@ public sealed class DeckleShellSource : DeckleEventSource
     public const int EvtMessageOnlyHostDestroyed           = 53;
     public const int EvtCursorSignalDisarmed               = 54;
     public const int EvtTrayIconHostDestroyed              = 55;
-    public const int EvtWindowSubclassFailed               = 56;
+    // 56 retired.
     public const int EvtTrayIconFallback                   = 57;
     public const int EvtSessionEndAsked                    = 58;
     public const int EvtSessionEnding                      = 59;
@@ -287,20 +287,6 @@ public sealed class DeckleShellSource : DeckleEventSource
     public void MessageOnlyHostDestroyed(long hwnd)
     {
         if (IsEnabled()) WriteEvent(EvtMessageOnlyHostDestroyed, hwnd);
-    }
-
-    // ── Resize coalescing ───────────────────────────────────────────────
-
-    // window: the DeckleWindowingSource vocabulary. Register throws right
-    // after; this line keeps the window and the code whatever the caller does
-    // with the exception.
-    [Event(EvtWindowSubclassFailed,
-           Level = EventLevel.Warning,
-           Keywords = (EventKeywords)Keywords.Windowing,
-           Message = "Could not watch window resizing\nwindow={0} | win32_error={1}")]
-    public void WindowSubclassFailed(string window, int win32_error)
-    {
-        if (IsEnabled()) WriteEvent(EvtWindowSubclassFailed, window, win32_error);
     }
 
     // ── Cursor movement signal ──────────────────────────────────────────

@@ -49,13 +49,6 @@ public static class SettingsSearch
             Keywords = ["admin", "administrator", "uac", "privileges"],
         },
 
-        // ── Performance (composed: GeneralViewModel.PerformanceSettings) ──
-        new SettingSearchEntry
-        {
-            LabelKey = "GeneralPerformanceModeCard",
-            Keywords = ["performance", "low power", "battery", "slow", "lighter", "fps", "frame rate"],
-        },
-
         // ── Updates (composed: GeneralViewModel.UpdatesSettings, then the bespoke
         // version card, Tag'd in the XAML) ──
         new SettingSearchEntry
@@ -144,7 +137,7 @@ public static class SettingsSearch
         new SettingSearchEntry
         {
             LabelKey = "GeneralHotkeyTaskbarCoverCard",
-            Keywords = ["shortcut", "hotkey", "keybinding", "taskbar cover"],
+            Keywords = ["shortcut", "hotkey", "keybinding", "taskbar fade", "taskbar cover"],
         },
         new SettingSearchEntry
         {

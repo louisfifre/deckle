@@ -6,17 +6,13 @@ namespace Deckle.Lighting.Ambient.Tests;
 [Trait("Category", "unit")]
 public sealed class AmbientPushCadenceTests
 {
-    [Theory]
-    [InlineData(false)]
-    [InlineData(true)]
-    public void TransportPreferenceOverridesPipelineShape(bool multiLight)
-        => Assert.Equal(50, AmbientPushCadence.ResolveRateHz(50, multiLight));
+    [Fact]
+    public void TheTransportPreferenceSetsTheRate()
+        => Assert.Equal(50, AmbientPushCadence.ResolveRateHz(50));
 
-    [Theory]
-    [InlineData(false, 15)]
-    [InlineData(true, 10)]
-    public void MissingTransportPreferenceKeepsRestCadence(bool multiLight, int expectedRateHz)
-        => Assert.Equal(expectedRateHz, AmbientPushCadence.ResolveRateHz(null, multiLight));
+    [Fact]
+    public void AnOutputWithNoPreferencePushesAtTheSmoothingReferenceRate()
+        => Assert.Equal(15, AmbientPushCadence.ResolveRateHz(null));
 
     [Theory]
     [InlineData(0.15)]

@@ -3,8 +3,7 @@ namespace Deckle.Autocorrect;
 public sealed partial class AutocorrectEngine
 {
     private static bool IsEnabledFor(AutocorrectSettings settings, string processName)
-        => processName.Length > 0
-        && settings.Apps.TryGetValue(processName, out bool on) && on;
+        => settings.IsEnabledFor(processName);
 
     // The user has answered for this app (on or off) — absent means never met.
     private static bool IsDecided(AutocorrectSettings settings, string processName)

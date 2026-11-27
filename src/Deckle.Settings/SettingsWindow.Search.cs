@@ -43,12 +43,6 @@ public sealed partial class SettingsWindow
     private enum SearchPresentation { Inline, Icon, Overlay }
     private SearchPresentation _searchPresentation = SearchPresentation.Inline;
 
-    private DispatcherQueueTimer? _searchDebounce;
-
-    // Debounce window before a query runs: long enough to skip mid-word passes,
-    // short enough to feel immediate once the user pauses.
-    private const int SearchDebounceMs = 300;
-
     // Rendered-hit cap. A total beyond this appends a "+N more — refine" notice
     // rather than growing the list — the search stays a shortcut, not a browser.
     private const int MaxSuggestions = 7;
@@ -197,15 +191,7 @@ public sealed partial class SettingsWindow
         // back, or the post-navigation clear) must not re-run the search.
         if (args.Reason != AutoSuggestionBoxTextChangeReason.UserInput) return;
 
-        if (_searchDebounce is null)
-        {
-            _searchDebounce = DispatcherQueue.CreateTimer();
-            _searchDebounce.Interval = TimeSpan.FromMilliseconds(SearchDebounceMs);
-            _searchDebounce.IsRepeating = false;
-            _searchDebounce.Tick += (_, _) => RunSearch();
-        }
-        _searchDebounce.Stop();
-        _searchDebounce.Start();
+        RunSearch();
     }
 
     private void RunSearch()

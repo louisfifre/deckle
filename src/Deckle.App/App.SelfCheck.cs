@@ -2,7 +2,6 @@ using Deckle.App.SelfCheck;
 using Deckle.Hosting.SelfCheck;
 using static Deckle.Hosting.SelfCheck.SelfCheckCapture;
 using static Deckle.Hosting.SelfCheck.SelfCheckProcess;
-using Deckle.Contributions;
 using Deckle.Core;
 using Deckle.Diagnostics;
 using Deckle.Diagnostics.Logging;
@@ -23,7 +22,7 @@ namespace Deckle.App;
 // composes a short, explicit list of pieces (below); probes the microphone once;
 // opens the Settings window and walks every page of the rail, then opens the Log
 // window, the Transcribe and rewrite and Paste to folder windows in each of
-// their states, then the contributed windows (PublishedComposition);
+// their states;
 // photographs each, then the icon each window and Deckle.exe give the taskbar;
 // writes report.json (the contract
 // with scripts/self-check.ps1) and exits 0 when all is well, 1 otherwise.
@@ -48,8 +47,7 @@ public partial class App
         "module registry and presence flags (a fresh root has no choice, so every module is present)",
         "settings surface: host hooks and every module's pages and search entries, as the resident app registers them",
         "theme from the settings of the run's own root",
-        "windows: Settings, Log, Transcribe and rewrite, Paste to folder, Projects, created by the same lazy paths the tray uses",
-        "projects: sample projects (folders, git repositories, stub script menus) generated under the run's own root, with a terminal that opens nothing and a fixed clock",
+        "windows: Settings, Log, Transcribe and rewrite, Paste to folder, created by the same lazy paths the tray uses",
         "microphone: one shared open and close through MicrophoneCapture.Probe",
         "interface capture: the walk and the WindowSnapshot of the interface capture",
     ];
@@ -71,7 +69,7 @@ public partial class App
         new("paragraph rewrite",
             "Foreground and UI Automation probes of other applications."),
         new("foreground watcher, taskbar cover",
-            "A WinEvent hook on every foreground change, and a window drawn over the taskbar."),
+            "A WinEvent hook on every foreground change, and the real taskbar's opacity."),
         new("taskbar tray icons, taskbar engines",
             "The tray icons write the user's notify icon settings and keep a registry watcher on that key; the engines inject a DLL into the real explorer and Start menu host. The Taskbar page still opens, and its switches are never touched."),
         new("orchestration",
@@ -240,6 +238,8 @@ public partial class App
         {
             // The Rewriting page with its dictation steps shown (App.SelfCheck.Rewriting.cs).
             SeedRewritingSample(whileSpeaking: true);
+            // The Autocorrect page with its switch on (App.SelfCheck.Autocorrect.cs).
+            SeedAutocorrectOn();
 
             Step("settings");
             Settings.SettingsWindow settings = EnsureSettingsWindow();
@@ -417,26 +417,6 @@ public partial class App
                 if (states.Count > 0) paste.ShowStateForCapture(states[0]);
             }
             report.Save(outputFolder);
-        }
-
-        // The contributed windows (PublishedComposition), in composition order:
-        // none today. Each walk is told its window's name and the
-        // view asked for; one that ends on a targeted view without a failure
-        // says so itself.
-        foreach (ContributedWalk walk in PublishedHost.Walks)
-        {
-            if (!Wants(walk.WindowName)) continue;
-            Step(walk.WindowName);
-            await walk.Run(new SelfCheckWalkContext(
-                this, report, run, outputFolder, target?.View, Step));
-        }
-        if (Wants("projects"))
-        {
-            Step("projects");
-            var gate = new SelfCheckWalkGate(target?.View);
-            try { await WalkProjectsAsync(report, run, outputFolder, Step, gate); }
-            catch (OperationCanceledException) when (gate.Done) { }
-            if (target?.View is not null && !gate.Reached) report.Views = gate.Offered;
         }
 
         // What the taskbar is handed, once every window has been opened

@@ -160,6 +160,22 @@ try {
         Assert-DeckleReleaseArchive -PublishDir $publish -ZipPath $brokenZip
     } 'unsafe path'
 
+    # A standalone app's archive names its own exe and .pri; Deckle's archive
+    # still requires Deckle's when no entry is named.
+    $appPublish = Join-Path $root 'app-publish'
+    $null = New-Item -ItemType Directory -Path $appPublish
+    Set-Content -LiteralPath (Join-Path $appPublish 'DeckleFolders.exe') -Value 'exe'
+    Set-Content -LiteralPath (Join-Path $appPublish 'DeckleFolders.pri') -Value 'pri'
+    $appZip = Join-Path $root 'DeckleFolders-v0.13.8.zip'
+    [System.IO.Compression.ZipFile]::CreateFromDirectory($appPublish, $appZip)
+    Assert-DeckleReleaseArchive -PublishDir $appPublish -ZipPath $appZip -RequiredEntries @('DeckleFolders.exe', 'DeckleFolders.pri')
+    Assert-Throws {
+        Assert-DeckleReleaseArchive -PublishDir $appPublish -ZipPath $appZip
+    } 'missing required root entry Deckle.exe'
+    Assert-Throws {
+        Assert-DeckleReleaseArchive -ZipPath $zip -RequiredEntries @('DeckleFolders.exe', 'DeckleFolders.pri')
+    } 'missing required root entry DeckleFolders.exe'
+
     Write-Host 'release-validation.tests.ps1 passed' -ForegroundColor Green
 } finally {
     if (Test-Path $root) { Remove-Item -LiteralPath $root -Recurse -Force }

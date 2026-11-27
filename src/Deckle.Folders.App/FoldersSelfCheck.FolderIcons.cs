@@ -91,6 +91,25 @@ internal static partial class FoldersSelfCheck
             CollectGarbageNow();
             window.SetPaneOpenForReview(true);
         });
+
+        // Home with the pane open and the five folders added; then a tile
+        // opens a folder, and Back returns to Home with Forward enabled.
+        await Capture("folders-home", () =>
+        {
+            window.NavigateHomeForReview();
+            if (!window.AtHomeForReview) throw new InvalidOperationException("The window does not stand at Home.");
+            return Task.CompletedTask;
+        });
+        await Capture("folders-home-back", async () =>
+        {
+            if (!window.OpenHomeTileForReview(Path.Combine(sample, "Photos")))
+                throw new InvalidOperationException("The Home page has no tile for the Photos folder.");
+            await Task.Delay(300);
+            if (window.AtHomeForReview) throw new InvalidOperationException("A tile did not open its folder.");
+            window.GoBackForReview();
+            if (!window.AtHomeForReview) throw new InvalidOperationException("Back did not return to Home.");
+            if (!window.CanGoForwardForReview) throw new InvalidOperationException("Forward is not enabled after Back to Home.");
+        });
         window.SetPaneOpenForReview(false);
 
         await Capture("folder-icon-picker-background", async () =>
@@ -100,6 +119,28 @@ internal static partial class FoldersSelfCheck
         }, keepPopups: true);
         window.CloseIconPickerForReview();
         await Task.Delay(300);
+
+        // Each added folder remembers its tool: the sample goes to Photos, the
+        // Photos folder added inside it still opens in Files, and coming back
+        // to the sample finds Photos. Both are put back to Files afterwards so
+        // the later scenes keep their look.
+        await Capture("tool-per-folder", async () =>
+        {
+            string other = Path.Combine(sample, "Photos");
+            await window.AddFolderForReviewAsync(sample);
+            await window.ShowToolForReviewAsync("photos");
+            await window.AddFolderForReviewAsync(other);
+            if (window.ActiveToolIdForReview != "files")
+                throw new InvalidOperationException(
+                    $"The second added folder opened in {window.ActiveToolIdForReview}, not in Files: the first one's tool carried over.");
+            await window.AddFolderForReviewAsync(sample);
+            if (window.ActiveToolIdForReview != "photos")
+                throw new InvalidOperationException(
+                    $"The first added folder opened in {window.ActiveToolIdForReview} on coming back, not in Photos: it did not keep its tool.");
+        });
+        await window.ShowToolForReviewAsync("files");
+        await window.AddFolderForReviewAsync(Path.Combine(sample, "Photos"));
+        await window.ShowToolForReviewAsync("files");
     }
 
     // What the garbage collector does on its own time, done at a moment the

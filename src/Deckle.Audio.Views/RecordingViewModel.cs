@@ -57,65 +57,10 @@ public partial class RecordingViewModel : ObservableObject
         PushToSettings();
     }
 
-    // ── Maximum recording length ────────────────────────────────────────────
-    //
-    // Seconds, the POCO's unit; 0 = no limit (the default). The capture loop
-    // snapshots it at recording start, so a change applies to the next take.
-
-    [ObservableProperty]
-    public partial int MaxRecordingDurationSeconds { get; set; }
-
-    partial void OnMaxRecordingDurationSecondsChanged(int value)
-    {
-        if (_isSyncing) return;
-        PushToSettings();
-    }
-
-    // The page's two faces of that one value: a switch and a length in minutes
-    // (RecordingLimit holds the conversion). Both read and write
-    // MaxRecordingDurationSeconds, so the POCO stays the single truth. The last
-    // length lives only here, for the session: switching off writes 0, and
-    // switching on again restores it.
-    private int _lastLimitMinutes = RecordingLimit.DefaultMinutes;
-
-    public bool LimitRecordingDuration
-    {
-        get => RecordingLimit.IsLimited(MaxRecordingDurationSeconds);
-        set
-        {
-            if (value == LimitRecordingDuration) return;
-            if (value) MaxRecordingDurationSeconds = RecordingLimit.SecondsFor(_lastLimitMinutes);
-            else
-            {
-                _lastLimitMinutes = RecordingLimit.MinutesToShow(MaxRecordingDurationSeconds, _lastLimitMinutes);
-                MaxRecordingDurationSeconds = 0;
-            }
-        }
-    }
-
-    // A cleared number field gives NaN, which is ignored.
-    public double MaxRecordingDurationMinutes
-    {
-        get => RecordingLimit.MinutesToShow(MaxRecordingDurationSeconds, _lastLimitMinutes);
-        set
-        {
-            if (double.IsNaN(value)) return;
-            _lastLimitMinutes = RecordingLimit.Clamp((int)Math.Round(value));
-            if (LimitRecordingDuration) MaxRecordingDurationSeconds = RecordingLimit.SecondsFor(_lastLimitMinutes);
-            else OnPropertyChanged(nameof(MaxRecordingDurationMinutes)); // seconds did not move
-        }
-    }
-
-    // The two accessors above are derived from the seconds: tell the page when
-    // they move, whichever way the seconds changed (a switch, the field, Load,
-    // a reset).
-    partial void OnMaxRecordingDurationSecondsChanged(int oldValue, int newValue)
-    {
-        // Any non-zero length, from the file or a field, is the one to restore.
-        if (newValue > 0) _lastLimitMinutes = RecordingLimit.MinutesToShow(newValue, _lastLimitMinutes);
-        OnPropertyChanged(nameof(LimitRecordingDuration));
-        OnPropertyChanged(nameof(MaxRecordingDurationMinutes));
-    }
+    // The maximum recording length is not set here: it sits on Dictation >
+    // General (TranscriptionViewModel), which writes CaptureSettings.
+    // MaxRecordingDurationSeconds itself. This view model must not write it
+    // back: PushToSettings below leaves it as it finds it.
 
     // ── Transcription pre-processing (DSP black box) ──────────────────────────
 
@@ -238,7 +183,6 @@ public partial class RecordingViewModel : ObservableObject
         AudioInputEndpointId = new CaptureSettings().AudioInputEndpointId;
         ExclusiveMode = new CaptureSettings().ExclusiveMode;
         VoiceLevelDbfs = new CaptureSettings().VoiceLevelDbfs;
-        MaxRecordingDurationSeconds = new CaptureSettings().MaxRecordingDurationSeconds;
         PreprocessingEnabled = new PreprocessingSettings().Enabled;
 
         // _isSyncing stays true — Load() will set it to false.
@@ -254,7 +198,6 @@ public partial class RecordingViewModel : ObservableObject
             AudioInputEndpointId = capture.AudioInputEndpointId;
             ExclusiveMode = capture.ExclusiveMode;
             VoiceLevelDbfs = capture.VoiceLevelDbfs;
-            MaxRecordingDurationSeconds = capture.MaxRecordingDurationSeconds;
             PreprocessingEnabled = capture.Preprocessing.Enabled;
         }
         finally
@@ -270,7 +213,6 @@ public partial class RecordingViewModel : ObservableObject
         capture.AudioInputEndpointId = AudioInputEndpointId;
         capture.ExclusiveMode = ExclusiveMode;
         if (!double.IsNaN(VoiceLevelDbfs)) capture.VoiceLevelDbfs = VoiceLevelDbfs;
-        capture.MaxRecordingDurationSeconds = MaxRecordingDurationSeconds;
         capture.Preprocessing.Enabled = PreprocessingEnabled;
 
         CaptureSettingsService.Instance.Save();

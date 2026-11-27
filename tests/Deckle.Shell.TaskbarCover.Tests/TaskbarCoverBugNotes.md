@@ -44,3 +44,12 @@
 - **Violated invariant:** Every taskbar Windows shows has a band over it, each sized to its own taskbar, on its own monitor, at its own DPI.
 - **Recurrence cue:** A layout source that describes one taskbar (the appbar API, `FindWindow("Shell_TrayWnd")` alone, a single rect field); a per-cover state that is not per-band (one alpha, one monitor, one zone); or a rebuild that stops at the first taskbar found. `TaskbarLocator.Locate` is now the one reader of the layout and walks both window classes.
 - **Regression coverage:** None reproduces the symptom: the bug lives in a Win32 enumeration with no natural seam, and the repository does not accept a seam created only for a test. The geometry the fix introduced is guarded by `TaskbarPlacementTests`: `EdgeOfASecondaryTaskbarIsReadAgainstItsOwnMonitor` pins that a secondary taskbar's edge comes from its own monitor, and the desktop-order tests pin that a band keeps its taskbar across rebuilds.
+
+## Strip under the taskbar shown over a fullscreen video
+
+- **Trigger:** A maximized browser plays a video fullscreen (Louis, YouTube, 2026-11-26) on a monitor whose taskbar is faded and whose strip under the taskbar shows.
+- **Observed symptom:** Louis saw the strip stay over the fullscreen video. Reproduced on 2026-11-27 with a probe window that drops its frame and covers its monitor while staying zoomed: the foreground watcher read it as fullscreen (`Geometry`), the band was suppressed, and the strip still showed.
+- **Cause:** `TaskbarCoverHost.RefreshUnderlay` decided from the layout, sleep and Task view only, never from the band's fullscreen suppression. A browser in fullscreen stays `IsZoomed`, so `FindMaximizedApp` kept finding it, and the strip, owned by the app and placed above it, sat over the video. Main had the same gap before the strip learned to fade.
+- **Violated invariant:** No strip shows on a monitor whose band a fullscreen app suppresses. See the `possible` gate in `RefreshUnderlay` and the comment above the Task view paragraph of `TaskbarCoverHost.Underlay.cs`.
+- **Recurrence cue:** A new reason to show or keep the strip that is not gated by `band.AppSuppressed`; or a fullscreen detection that stops reading a borderless zoomed window as fullscreen.
+- **Regression coverage:** None. The decision runs inside the cover thread against real windows, and no existing seam reproduces it. The probe of 2026-11-27 (maximized, then fullscreen, then back: strips 1, 0, 1 after the fix; 1, 1, 1 before) is the check to rerun.

@@ -20,14 +20,10 @@ namespace Deckle.Llm;
 // transport. Only the transcript rewrite of a take is lasting work: it writes
 // TranscriptRewriteStarted, then TranscriptRewriteCompleted, RewriteTimeout or
 // RewriteUnavailable, all carrying one work_id, and the first and last are in
-// the log. The paragraph and sentence rewrites run on every pause in
+// the log. The paragraph rewrite runs on every pause in
 // typing: their Started, Completed and Cancelled lines are Verbose detail,
 // outside the log. Prompt and completion text never enter a payload: counts,
 // models, providers and timings only.
-//
-// The Ollama /api/ps probe exists only to enrich admitted Transcription
-// detail, so its whole family answers to that one activity and has no
-// milestone of its own: the rewrite milestones carry the outcome.
 [EventSource(Name = "Deckle-Llm")]
 public sealed partial class DeckleLlmSource : DeckleEventSource
 {
@@ -46,7 +42,7 @@ public sealed partial class DeckleLlmSource : DeckleEventSource
     // 7 retired.
     // 8 retired.
     // 9 retired.
-    public const int EvtPsProbeEmpty                = 10;
+    // 10 retired.
     // 11 retired.
     // 12 retired.
     public const int EvtUserFeedbackEmitted         = 13;
@@ -57,7 +53,7 @@ public sealed partial class DeckleLlmSource : DeckleEventSource
     // 18 retired.
     // 19 retired.
     // 20 retired.
-    public const int EvtEndpointSchemeNotAllowed    = 21;
+    // 21 retired.
     public const int EvtEndpointNonLoopbackHost     = 22;
     // 23 retired.
     public const int EvtSettingsLoaded              = 24;
@@ -77,7 +73,7 @@ public sealed partial class DeckleLlmSource : DeckleEventSource
     // 38 retired.
     // 39 retired.
     // 40 retired.
-    public const int EvtEndpointSchemeNotAllowedDetail = 41;
+    // 41 retired.
     public const int EvtEndpointNonLoopbackHostDetail  = 42;
     // 43 retired.
     // 44 retired.
@@ -99,10 +95,10 @@ public sealed partial class DeckleLlmSource : DeckleEventSource
     public const int EvtRewriteAttemptFailed         = 60;
     public const int EvtRewriteRecovered             = 61;
     public const int EvtRewriteSkippedNoProvider     = 62;
-    public const int EvtPsProbeRejectedDetail        = 63;
-    public const int EvtPsProbeBusyDetail            = 64;
-    public const int EvtPsProbeErrorDetail           = 65;
-    public const int EvtPsProbeFaulted               = 66;
+    // 63 retired.
+    // 64 retired.
+    // 65 retired.
+    // 66 retired.
     public const int EvtBatchRewriteFellBack         = 67;
     public const int EvtPageNavigatedToFailed        = 68;
     public const int EvtEndpointRefreshFailed        = 69;

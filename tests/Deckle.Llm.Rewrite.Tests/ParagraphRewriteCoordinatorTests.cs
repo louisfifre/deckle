@@ -6,6 +6,7 @@ using Xunit;
 
 namespace Deckle.Llm.Rewrite.Tests;
 
+[Collection(LlmRewriteObservabilityCollection.Name)]
 [Trait("Category", "unit")]
 public sealed class ParagraphRewriteCoordinatorTests
 {
@@ -69,6 +70,52 @@ public sealed class ParagraphRewriteCoordinatorTests
         Assert.False(offered.IsSet);
     }
 
+    // Option B of the trim plan: a proposal has no time limit. The model here
+    // answers after more than the old 3 s limit and the offer still shows.
+    [Fact]
+    public void ProposalArrivingAfterMoreThanThreeSecondsIsStillOffered()
+    {
+        using var ready = new ManualResetEventSlim();
+        using var service = new DelayedRewriteService("Ça marche.", TimeSpan.FromSeconds(3.5));
+        using var coordinator = new ParagraphRewriteCoordinator(service);
+        ParagraphRewriteOffer? observed = null;
+        coordinator.OfferReady += offer =>
+        {
+            observed = offer;
+            ready.Set();
+        };
+
+        coordinator.Request("Ca marche");
+
+        Assert.True(ready.Wait(TimeSpan.FromSeconds(10), TestContext.Current.CancellationToken));
+        Assert.True(service.Waited >= TimeSpan.FromSeconds(3));
+        Assert.NotNull(observed);
+        Assert.Equal("Ça marche.", observed.Rewritten);
+    }
+
+    // Typing again cancels the request in flight: the service sees its token
+    // cancelled, and the answer it gives afterwards is never offered.
+    [Fact]
+    public void TypingAgainCancelsTheRequestAndNothingIsOffered()
+    {
+        using var listener = new TestEventListener("Deckle-Llm");
+        using var service = new DelayedRewriteService("Ça marche.", TimeSpan.FromSeconds(30));
+        using var coordinator = new ParagraphRewriteCoordinator(service);
+        using var offered = new ManualResetEventSlim();
+        coordinator.OfferReady += _ => offered.Set();
+
+        coordinator.Request("Ca marche");
+        Assert.True(service.Started.Wait(
+            TimeSpan.FromSeconds(1), TestContext.Current.CancellationToken));
+
+        coordinator.Invalidate();
+
+        Assert.True(service.Cancelled.Wait(
+            TimeSpan.FromSeconds(5), TestContext.Current.CancellationToken));
+        AwaitSettled(listener, "cancelled");
+        Assert.False(offered.IsSet);
+    }
+
     static void AwaitSettled(TestEventListener listener, string outcome)
     {
         bool Settled() => listener.Events.Any(e =>
@@ -92,11 +139,41 @@ public sealed class ParagraphRewriteCoordinatorTests
             string paragraph,
             CancellationToken cancellationToken)
             => new(rewritten, 1, 0, 0, 0, 0, 0);
+    }
 
-        public GenerationResult RewriteSentence(
-            string sentence,
-            CancellationToken cancellationToken)
+    // Answers only after a delay, and stops waiting early when its token is
+    // cancelled, as a real engine does: a cancelled call returns no text.
+    private sealed class DelayedRewriteService(string rewritten, TimeSpan delay)
+        : IRewriteService, IDisposable
+    {
+        public ManualResetEventSlim Started { get; } = new();
+        public ManualResetEventSlim Cancelled { get; } = new();
+        public TimeSpan Waited { get; private set; }
+
+        public GenerationResult Rewrite(string text, RewriteProfile profile)
             => throw new NotSupportedException();
+
+        public GenerationResult RewriteParagraph(
+            string paragraph,
+            CancellationToken cancellationToken)
+        {
+            Started.Set();
+            var sw = System.Diagnostics.Stopwatch.StartNew();
+            bool cancelled = cancellationToken.WaitHandle.WaitOne(delay);
+            Waited = sw.Elapsed;
+            if (cancelled)
+            {
+                Cancelled.Set();
+                return default;
+            }
+            return new(rewritten, 1, 0, 0, 0, 0, 0);
+        }
+
+        public void Dispose()
+        {
+            Started.Dispose();
+            Cancelled.Dispose();
+        }
     }
 
     private sealed class BlockingRewriteService(
@@ -116,11 +193,6 @@ public sealed class ParagraphRewriteCoordinatorTests
             release.Wait(TimeSpan.FromSeconds(2), TestContext.Current.CancellationToken);
             return new(rewritten, 1, 0, 0, 0, 0, 0);
         }
-
-        public GenerationResult RewriteSentence(
-            string sentence,
-            CancellationToken cancellationToken)
-            => throw new NotSupportedException();
 
         public void Dispose() => Started.Dispose();
     }

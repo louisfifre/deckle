@@ -10,12 +10,13 @@ namespace Deckle.App;
 // into <UserDataRoot>\diagnostics\interface-captures\<date>_<time>\ with an
 // index.json, so a review agent can judge the interface from files without
 // driving it. Started from Settings > General > Developer > Capture the
-// interface, or from the developer tray menu; both exist only while Developer
-// mode is on.
+// interface, or from the developer tray menu; both doors pass through
+// InterfaceCaptureGate, which checks Developer mode at each start. The
+// self-check takes its own images through App.SelfCheck.cs, in its own data
+// root, and does not pass through the gate.
 //
 // The App is the one place that knows which window is which, so it names them:
-// the Log window "log", each window a contributed module carries by its own name (none in the
-// published Deckle today), the HUD "hud". Any other
+// the Log window "log", the HUD "hud". Any other
 // visible window of this process (the transcript panel, a rewrite offer, the
 // setup wizard, a taskbar cover) is captured too, named after its title. The
 // Settings window is captured once per page, by its own walk, rather than as
@@ -27,17 +28,23 @@ namespace Deckle.App;
 // while it shows (a script trigger would make that practical; none exists yet).
 public partial class App
 {
-    private bool _interfaceCaptureRunning;
+    // The one gate both doors pass through; it holds the "running" flag.
+    private InterfaceCaptureGate? _interfaceCaptureGate;
+
+    private InterfaceCaptureGate InterfaceCapture => _interfaceCaptureGate ??= new InterfaceCaptureGate(
+        () => DeveloperModeEnabled,
+        RunInterfaceCaptureAsync,
+        () => ShowSettingsWindowLazy(),
+        folder => System.Diagnostics.Process.Start(new System.Diagnostics.ProcessStartInfo
+        {
+            FileName = folder,
+            UseShellExecute = true,
+        }));
 
     // Never throws: a failure of the run is logged as its end, and the outcome
-    // says what was written. Null when developer mode is off, or when a capture
-    // is already running.
-    private async Task<InterfaceCaptureOutcome?> CaptureInterfaceAsync()
+    // says what was written. Reached only through InterfaceCaptureGate.
+    private async Task<InterfaceCaptureOutcome> RunInterfaceCaptureAsync()
     {
-        if (!SettingsService.Instance.Current.Developer.DeveloperMode || _interfaceCaptureRunning)
-            return null;
-
-        _interfaceCaptureRunning = true;
         InterfaceCaptureRun? run = null;
         try
         {
@@ -46,7 +53,6 @@ public partial class App
         catch (Exception)
         {
             // Begin logged the cause and closed the run.
-            _interfaceCaptureRunning = false;
             return new InterfaceCaptureOutcome(InterfaceCaptureRun.CapturesDirectory, 0, 1);
         }
 
@@ -76,10 +82,6 @@ public partial class App
         {
             run.Stop(step, ex);
         }
-        finally
-        {
-            _interfaceCaptureRunning = false;
-        }
 
         return new InterfaceCaptureOutcome(run.Directory, run.Captured, run.Failed);
     }
@@ -92,14 +94,7 @@ public partial class App
     {
         try
         {
-            ShowSettingsWindowLazy();
-            InterfaceCaptureOutcome? outcome = await CaptureInterfaceAsync();
-            if (outcome is not { Captured: > 0 }) return;
-            System.Diagnostics.Process.Start(new System.Diagnostics.ProcessStartInfo
-            {
-                FileName = outcome.Folder,
-                UseShellExecute = true,
-            });
+            await InterfaceCapture.FromTrayAsync();
         }
         catch (Exception ex)
         {
@@ -117,9 +112,6 @@ public partial class App
             if (window is not null) names[WindowNative.GetWindowHandle(window)] = name;
         }
         Add(_logWindow, "log");
-        foreach ((string name, Microsoft.UI.Xaml.Window window) in
-                 _publishedHost?.OpenNamedWindows.Select(w => (w.Key, w.Value)) ?? [])
-            Add(window, name);
         Add(_hudWindow, "hud");
         return names;
     }

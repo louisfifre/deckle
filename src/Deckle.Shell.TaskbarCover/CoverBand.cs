@@ -1,27 +1,24 @@
-using System.Runtime.InteropServices;
 using Deckle.Core;
-using Deckle.Diagnostics;
 
 namespace Deckle.Shell.TaskbarCover;
 
-// One band: the opaque black topmost window laid over one taskbar, and the
-// state that belongs to that taskbar alone — its rect and edge, its monitor
-// and DPI, its approach zone, its opacity, its visibility and its fullscreen
-// suppression. The host owns the thread, the hooks and the gates every band
-// shares (sleep, lock, layout known) and drives each band through the
-// methods here. Worker thread only, like the host's own state.
+// One band: the state that belongs to one taskbar alone — its window, rect
+// and edge, its monitor and DPI, its approach zone, its cover level, the
+// alpha its taskbar was last given and its fullscreen suppression. The band
+// draws nothing: it fades its taskbar (TaskbarFade). The host owns the
+// thread, the hooks and the gates every band shares (sleep, lock, layout
+// known) and drives each band through the members here. Worker thread only,
+// like the host's own state.
 internal sealed class CoverBand
 {
     // Ordinal in the host's list, the identifier the log carries: 0 is the
     // primary taskbar's band, the others follow the desktop top to bottom,
     // left to right.
     public int Index { get; }
-    public IntPtr Hwnd { get; }
 
-    public CoverBand(int index, IntPtr hwnd)
+    public CoverBand(int index)
     {
         Index = index;
-        Hwnd = hwnd;
     }
 
     // ── Placement ─────────────────────────────────────────────────────────
@@ -42,9 +39,12 @@ internal sealed class CoverBand
 
     // The approach distance and the monitor's DPI are part of the placement:
     // a new distance, or a scale change under the same rect, rebuilds the zone
-    // and re-reads the alpha like a moved taskbar does.
+    // and re-reads the level like a moved taskbar does. So is the taskbar
+    // window: Explorer re-creates it on a restart, at the same rect, and the
+    // new window has never been faded.
     public bool PlacementDiffers(TaskbarPlacement p, int approachDip)
         => !Placed
+        || p.Taskbar != Taskbar
         || p.Edge != Edge || approachDip != ApproachDip || p.DpiScale != DpiScale
         || p.Rect.left != Rect.left || p.Rect.top != Rect.top
         || p.Rect.right != Rect.right || p.Rect.bottom != Rect.bottom
@@ -64,78 +64,56 @@ internal sealed class CoverBand
         // Converted with this band's own monitor scale: each taskbar may sit
         // on a screen with its own DPI, and capped at half that monitor.
         Zone     = CoverGeometry.ApproachZone(Rect, Edge, approachDip, DpiScale, MonitorRect);
-
-        bool ok = NativeMethods.SetWindowPos(Hwnd, NativeMethods.HWND_TOPMOST,
-            Rect.left, Rect.top, Rect.right - Rect.left, Rect.bottom - Rect.top,
-            NativeMethods.SWP_NOACTIVATE);
-        // Read right after the call, before any other API overwrites it. Every
-        // outcome is reported, success included, so a refusal that stops
-        // closes its incident.
-        WindowingProbe.ReportPlacement(
-            "taskbar-cover", "setwindowpos_place", ok, ok ? 0 : Marshal.GetLastWin32Error());
     }
 
-    // ── Opacity ───────────────────────────────────────────────────────────
+    // ── Level ─────────────────────────────────────────────────────────────
 
-    // 0 = taskbar revealed, the pessimistic boot value, corrected from the
-    // real cursor once the band is placed; 255 = fully covered.
-    public byte Alpha { get; private set; }
+    // How far the cursor asks the taskbar to fade: 0 = taskbar whole, the
+    // pessimistic boot value, corrected from the real cursor once the band is
+    // placed; 255 = faded to the floor.
+    public byte Level { get; private set; }
 
-    public byte AlphaAt(POINT p) =>
+    public byte LevelAt(POINT p) =>
         (byte)Math.Round(CoverGeometry.Opacity(Rect, Edge, p, ApproachDip, DpiScale, MonitorRect) * 255);
 
-    // At 0 the window is hidden by the host instead, so no click lands on an
-    // invisible band.
-    public void ApplyAlpha(byte alpha)
-    {
-        Alpha = alpha;
-        if (alpha > 0)
-            NativeMethods.SetLayeredWindowAttributes(Hwnd, 0, alpha, NativeMethods.LWA_ALPHA);
-    }
+    public void SetLevel(byte level) => Level = level;
 
-    // ── Visibility — the band's only ShowWindow sites ─────────────────────
+    // ── Gates ─────────────────────────────────────────────────────────────
 
-    public bool Visible { get; private set; }
     // A fullscreen/presentation app is foreground on this band's monitor.
     public bool AppSuppressed { get; set; }
     // This band's own taskbar is the foreground window (Windows + T, the
-    // Windows key setting): the band is out of its way until focus moves on.
+    // Windows key setting): it stays whole until focus moves on.
     public bool TaskbarFocused { get; set; }
 
-    public void Show(string reason)
-    {
-        Visible = true;
-        NativeMethods.ShowWindow(Hwnd, NativeMethods.SW_SHOWNOACTIVATE);
-        ReassertTopmost();
-        // Z-order witness: ShowWindow and the topmost assert can both succeed
-        // while the band still sits below its taskbar window. CoverShown only
-        // proves the ShowWindow call; this records what occludes the band
-        // right after the assert, and the foreground at that instant.
-        WindowingProbe.EmitWindowZOrderState(Hwnd, "taskbar-cover", "after_show_topmost");
-        DeckleShellTaskbarCoverSource.Log.CoverShown(Index, reason);
-    }
+    // The strip under the taskbar while an app is maximized on its monitor;
+    // created the first time one is (TaskbarCoverHost.Underlay).
+    public TaskbarUnderlay? Underlay { get; set; }
 
-    public void Hide(string reason)
-    {
-        Visible = false;
-        NativeMethods.ShowWindow(Hwnd, NativeMethods.SW_HIDE);
-        DeckleShellTaskbarCoverSource.Log.CoverHidden(Index, reason);
-    }
+    // ── The taskbar's alpha — the band's only writes to Explorer's window ──
 
-    // The taskbar is topmost too and among topmost windows the most recently
-    // positioned wins, so the band re-asserts its place on show and, while
-    // visible, on every foreground change, every layout message (even with an
-    // unchanged rect), every return to full opacity, and whenever the desktop
-    // reorders its taskbar above it.
-    //
-    // It runs on every one of those triggers, so the outcome goes through the
-    // probe's incident: one Warning when the assert starts failing, one line
-    // when it recovers, not one per foreground change.
-    public void ReassertTopmost()
+    // The alpha the taskbar was last given; Opaque while the band leaves it
+    // as Explorer made it. The host gives a taskbar back whole before the band
+    // moves to another window, so the value always describes Taskbar.
+    public byte TaskbarAlpha { get; private set; } = TaskbarFade.Opaque;
+
+    public bool Faded => TaskbarAlpha != TaskbarFade.Opaque;
+
+    // Returns 0, or the Win32 error of the call that failed; a failed write
+    // leaves TaskbarAlpha as it was, so the next trigger tries again.
+    public int ApplyTaskbarAlpha(byte alpha)
     {
-        bool ok = NativeMethods.SetWindowPos(Hwnd, NativeMethods.HWND_TOPMOST, 0, 0, 0, 0,
-            NativeMethods.SWP_NOMOVE | NativeMethods.SWP_NOSIZE | NativeMethods.SWP_NOACTIVATE);
-        WindowingProbe.ReportShow(
-            "taskbar-cover", "setwindowpos_topmost", ok, ok ? 0 : Marshal.GetLastWin32Error());
+        if (alpha == TaskbarAlpha) return 0;
+
+        if (alpha == TaskbarFade.Opaque)
+        {
+            TaskbarFade.Restore(Taskbar);
+            TaskbarAlpha = alpha;
+            return 0;
+        }
+
+        int error = TaskbarFade.Apply(Taskbar, alpha);
+        if (error == 0) TaskbarAlpha = alpha;
+        return error;
     }
 }

@@ -14,14 +14,23 @@ namespace Deckle.Folders.Views;
 // somewhere; the window owns the place and the history.
 internal sealed partial class AddressBar : UserControl
 {
+    // The field's forms (boards 24/11, C1, F1). Short is the rest state;
+    // Home has its own look and only ever shows Short or Text.
+    private enum AddressMode { Short, Full, Text }
+
     private FolderPlace? _place;
+    private AddressShortForm? _short;
+    private AddressMode _mode = AddressMode.Short;
+    private bool _atHome;
+    private bool _showsCurrentOnly;
     private bool _dialogOpen;
+    private bool _chevronListOpen;
     private int _suggestionRequest;
 
     public AddressBar()
     {
         InitializeComponent();
-        Placeholder.Text = FoldersText.Get("Address_None");
+        HomeLabel.Text = FoldersText.Get("Nav_Home");
         AutomationProperties.SetName(PathBox, FoldersText.Get("Address_Label"));
     }
 
@@ -29,22 +38,58 @@ internal sealed partial class AddressBar : UserControl
 
     public event Action<FolderPlace>? NavigateRequested;
 
-    public bool IsEditing => PathBox.Visibility == Visibility.Visible;
+    public bool IsEditing => _mode == AddressMode.Text;
 
-    // No folder added yet (12.11): the bar says so and takes no click.
-    public void ShowNone()
+    public bool IsFull => _mode == AddressMode.Full;
+
+    public static readonly DependencyProperty TrailingContentProperty = DependencyProperty.Register(
+        nameof(TrailingContent), typeof(UIElement), typeof(AddressBar),
+        new PropertyMetadata(null, (d, e) => ((AddressBar)d).TrailingHost.Content = e.NewValue));
+
+    // What sits at the field's right end in every mode: the search button, kept
+    // by the window with its flyout and its handlers.
+    public UIElement? TrailingContent
+    {
+        get => (UIElement?)GetValue(TrailingContentProperty);
+        set => SetValue(TrailingContentProperty, value);
+    }
+
+    // The compact form for narrow windows: at rest the field keeps the icon
+    // and the current name, with no drive, no ellipsis and no separator.
+    public bool ShowsCurrentOnly
+    {
+        get => _showsCurrentOnly;
+        set
+        {
+            if (_showsCurrentOnly == value) return;
+            _showsCurrentOnly = value;
+            ApplyMode();
+        }
+    }
+
+    // Home (boards 24/11, A2): the Home glyph in the icon's slot, with
+    // nothing to click, and one segment, "Home", with no chevron and no click.
+    // A click on the bar's empty part, or Ctrl+L, still opens the text field,
+    // empty, to type a path from nowhere.
+    public void ShowHome()
     {
         _place = null;
-        LeaveTextMode();
+        _short = null;
+        _atHome = true;
         Crumbs.ItemsSource = null;
-        Crumbs.Visibility = Visibility.Collapsed;
-        IconButton.Visibility = Visibility.Collapsed;
-        Placeholder.Visibility = Visibility.Visible;
+        SetMode(AddressMode.Short);
     }
 
     public async Task ShowAsync(FolderPlace place)
     {
         _place = place;
+        _atHome = false;
+        _short = AddressShortForm.Of(place);
+        DriveLabel.Text = _short.DriveLabel ?? "";
+        CurrentName.Text = _short.CurrentName;
+        ShowIcon(place.Root);
+        // A new place always shows at rest, whatever form the last one was in.
+        SetMode(AddressMode.Short);
         IReadOnlyList<PathSegment> segments = place.Segments;
         // Whether each segment has folders inside decides its chevron; that
         // reads the disk, so off the UI thread.
@@ -54,17 +99,78 @@ internal sealed partial class AddressBar : UserControl
         Crumbs.ItemsSource = segments
             .Select((s, i) => new AddressCrumb(s, new FolderPlace(place.Root, s.Path), hasSubfolders[i]))
             .ToList();
-        Crumbs.Visibility = Visibility.Visible;
         FitSegmentNames();
-        ShowIcon(place.Root);
-        IconButton.Visibility = Visibility.Visible;
-        Placeholder.Visibility = Visibility.Collapsed;
     }
+
+    // Which parts of the field show in each form. One place decides it, so no
+    // form leaves a part of another behind.
+    private void SetMode(AddressMode mode)
+    {
+        _mode = mode;
+        bool text = mode == AddressMode.Text;
+        PathBox.Visibility = text ? Visibility.Visible : Visibility.Collapsed;
+        SegmentsMode.Visibility = text ? Visibility.Collapsed : Visibility.Visible;
+        ApplyMode();
+    }
+
+    private void ApplyMode()
+    {
+        bool folder = !_atHome && _short is not null;
+        bool full = _mode == AddressMode.Full;
+        bool compact = _showsCurrentOnly && !full;
+        IconButton.Visibility = Show(folder);
+        HomeIcon.Visibility = Show(_atHome);
+        HomeLabel.Visibility = Show(_atHome);
+        DrivePrefix.Visibility = Show(folder && _short!.DriveLabel is not null && !compact);
+        Crumbs.Visibility = Show(folder && full);
+        ShortTail.Visibility = Show(folder && !full);
+        bool hides = folder && _short!.HidesSegments && !compact;
+        HiddenSegments.Visibility = Show(hides);
+        HiddenSeparator.Visibility = Show(hides);
+        // Keyboard focus rests on the field in its full form, so the field
+        // hears it leave; at rest it is no tab stop of its own.
+        IsTabStop = full;
+        FitSegmentNames();
+    }
+
+    private static Visibility Show(bool visible) => visible ? Visibility.Visible : Visibility.Collapsed;
 
     // Ctrl+L, Alt+D: straight to the text mode, as in File Explorer.
     public void EditAddress()
     {
-        if (_place is not null) EnterTextMode();
+        if (_place is not null || _atHome) EnterTextMode();
+    }
+
+    // The click that opens the full form, as a person makes it.
+    public void OpenFull()
+    {
+        if (_place is null || _mode == AddressMode.Text) return;
+        SetMode(AddressMode.Full);
+        Focus(FocusState.Programmatic);
+    }
+
+    // What the self-check drives: the list a chevron opens, for the segment at
+    // this index of the path. False when that chevron is not there.
+    public bool OpenChevronListForReview(int segmentIndex)
+    {
+        if (_place is null || segmentIndex >= _place.Segments.Count) return false;
+        string path = _place.Segments[segmentIndex].Path;
+        Button? button = FindChevron(Crumbs, path);
+        if (button is null) return false;
+        OnChevronClick(button, new RoutedEventArgs());
+        return _chevronListOpen;
+    }
+
+    private static Button? FindChevron(DependencyObject root, string path)
+    {
+        int count = VisualTreeHelper.GetChildrenCount(root);
+        for (int i = 0; i < count; i++)
+        {
+            DependencyObject child = VisualTreeHelper.GetChild(root, i);
+            if (child is Button { Tag: AddressCrumb crumb } b && FolderPaths.Comparer.Equals(crumb.Place.Path, path)) return b;
+            if (FindChevron(child, path) is { } found) return found;
+        }
+        return null;
     }
 
     private void OnCrumbClicked(BreadcrumbBar sender, BreadcrumbBarItemClickedEventArgs args)
@@ -81,7 +187,7 @@ internal sealed partial class AddressBar : UserControl
 
         PathSegment? onPath = _place.Segments.FirstOrDefault(s =>
             FolderPaths.Comparer.Equals(System.IO.Path.GetDirectoryName(s.Path), crumb.Place.Path));
-        var flyout = new MenuFlyout { Placement = FlyoutPlacementMode.BottomEdgeAlignedLeft };
+        var flyout = new MenuFlyout { Placement = FlyoutPlacementMode.BottomEdgeAlignedLeft, ShouldConstrainToRootBounds = true };
         foreach (FolderEntry folder in FolderListing.Subfolders(crumb.Place.Path))
         {
             bool current = onPath is not null && FolderPaths.Comparer.Equals(onPath.Path, folder.Path);
@@ -95,32 +201,61 @@ internal sealed partial class AddressBar : UserControl
             item.Click += (_, _) => NavigateRequested?.Invoke(target);
             flyout.Items.Add(item);
         }
-        if (flyout.Items.Count > 0) flyout.ShowAt(button);
+        if (flyout.Items.Count == 0) return;
+        // The list takes keyboard focus out of the field, which must not read
+        // as the person leaving it.
+        flyout.Closed += (_, _) => _chevronListOpen = false;
+        _chevronListOpen = true;
+        flyout.ShowAt(button);
     }
 
-    // Only the empty part of the bar turns it into a text field; a segment or
-    // a chevron keeps its own click.
+    // At rest, a click anywhere but the icon opens the full form. In the full
+    // form (and at Home) only the empty part turns the field into a text
+    // field; a segment or a chevron keeps its own click.
     private void OnSegmentsModeTapped(object sender, TappedRoutedEventArgs e)
     {
-        if (ReferenceEquals(e.OriginalSource, SegmentsMode) && _place is not null) EnterTextMode();
+        if (_place is null && !_atHome) return;
+        var source = e.OriginalSource as DependencyObject;
+        if (_atHome)
+        {
+            if (!ReferenceEquals(source, SegmentsMode) && !IsInside(source, HomeLabel) && !IsInside(source, HomeIcon)) return;
+            EnterTextMode();
+        }
+        else if (_mode == AddressMode.Short)
+        {
+            if (IsInside(source, IconButton)) return;
+            OpenFull();
+        }
+        else if (_mode == AddressMode.Full && (ReferenceEquals(source, SegmentsMode) || IsInside(source, DrivePrefix)))
+        {
+            EnterTextMode();
+        }
     }
+
+    // Keyboard focus leaving the field in its full form brings it back to rest.
+    private void OnFieldLostFocus(object sender, RoutedEventArgs e)
+    {
+        if (_mode != AddressMode.Full || _chevronListOpen) return;
+        if (FocusManager.GetFocusedElement(XamlRoot) is DependencyObject focused && IsInside(focused, this)) return;
+        SetMode(AddressMode.Short);
+    }
+
+    private void OnCurrentNameTrimmedChanged(TextBlock sender, IsTextTrimmedChangedEventArgs args) =>
+        ToolTipService.SetToolTip(sender, sender.IsTextTrimmed ? sender.Text : null);
 
     private void EnterTextMode()
     {
-        PathBox.Text = _place!.Path;
+        // From Home there is no path to start from.
+        PathBox.Text = _place?.Path ?? "";
         PathBox.ItemsSource = null;
-        SegmentsMode.Visibility = Visibility.Collapsed;
-        PathBox.Visibility = Visibility.Visible;
+        SetMode(AddressMode.Text);
         PathBox.Focus(FocusState.Programmatic);
         // File Explorer selects the whole path, so typing replaces it.
         DispatcherQueue.TryEnqueue(() => FindDescendant<TextBox>(PathBox)?.SelectAll());
     }
 
-    private void LeaveTextMode()
-    {
-        PathBox.Visibility = Visibility.Collapsed;
-        SegmentsMode.Visibility = Visibility.Visible;
-    }
+    // Back to rest, from the text field or the full form.
+    private void LeaveTextMode() => SetMode(AddressMode.Short);
 
     private async void OnPathTextChanged(AutoSuggestBox sender, AutoSuggestBoxTextChangedEventArgs args)
     {
@@ -179,6 +314,15 @@ internal sealed partial class AddressBar : UserControl
         e.Handled = true;
     }
 
+    // Escape in the full form returns to rest as well.
+    protected override void OnKeyDown(KeyRoutedEventArgs e)
+    {
+        base.OnKeyDown(e);
+        if (e.Handled || e.Key != VirtualKey.Escape || _mode != AddressMode.Full) return;
+        SetMode(AddressMode.Short);
+        e.Handled = true;
+    }
+
     private void OnPathLostFocus(object sender, RoutedEventArgs e)
     {
         if (_dialogOpen) return;
@@ -187,7 +331,7 @@ internal sealed partial class AddressBar : UserControl
         LeaveTextMode();
     }
 
-    private static bool IsInside(DependencyObject element, DependencyObject container)
+    private static bool IsInside(DependencyObject? element, DependencyObject container)
     {
         for (DependencyObject? d = element; d is not null; d = VisualTreeHelper.GetParent(d))
             if (ReferenceEquals(d, container)) return true;

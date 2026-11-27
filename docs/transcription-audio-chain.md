@@ -153,7 +153,7 @@ sequenceDiagram
     C->>WB: TranscribeAsync utterance 2
     HK->>HK: Press 2 - state Recording to Stopping
     HK->>HUD: SwitchToTranscribing at once
-    HK->>W: Cancel the capture token
+    HK->>W: Cancel the capture token at the press, no delay
     W->>W: Drain - read what is ready, then stop the stream
     W->>C: Flush emits the open utterance, channel completed
     WB-->>C: Text 2
@@ -262,7 +262,7 @@ What Parakeet does with a call, from the code (`src/Deckle.Transcription.Parakee
 | `Preprocessing.TargetRmsDbfs`, `MaxMakeupGainDb` | same | `-20`, `24` | `preprocessing` | Not exposed |
 | `Preprocessing.LimiterEnabled`, `LimiterCeilingDbfs`, `LimiterReleaseMs` | same | `true`, `-1`, `50` | `preprocessing` | Not exposed |
 
-The pre-processing has 18 fixed fields after `Enabled`: four stage switches and fourteen values. `PreprocessingSettings.cs` says they are "an engineer's starting point, NOT measured optima". No Settings card and no Playground page edits them.
+The pre-processing has 18 fixed fields after `Enabled`: four stage switches and fourteen values. `PreprocessingSettings.cs` says they are "an engineer's starting point, NOT measured optima". No Settings card edits them.
 
 The HUD outline's level window is no longer a setting of its own: `src/Deckle.Audio/AudioLevelMapper.cs` anchors it on the voice level, dark at the level and full 20 dB above it, through a square-root curve. The former `LevelWindow` section and its auto-calibration were removed on 2026-11-06, since they had never been persisted (the class used public fields, which System.Text.Json ignores by default; see `docs/research/research--seuils-voix--2026-11-06.md` in git history).
 
@@ -319,7 +319,7 @@ These are fixed by the code. They are not measured; they are the minimum or the 
 | Device period | set by the device; the code comment gives 10 ms on a shared WASAPI stream. The stream's input latency is reported by PortAudio and logged at the start of the take | `src/Deckle.Audio/Internal/PortAudioEndpointProvider.cs` (`SuggestedLatency`, `InputLatency`), `src/Deckle.Audio/Internal/CaptureLoop.cs` (header comment) |
 | Capture poll | `Available()` is asked, and the loop sleeps 4 ms when nothing is ready; the real wake can be later, since `Thread.Sleep` rounds up to the system timer | `CaptureLoop.PollIntervalMs` in `src/Deckle.Audio/Internal/CaptureLoop.cs` |
 | Lag threshold | 60 ms of audio found waiting at one wake counts as the loop having fallen behind | `CaptureLoop.LagThresholdMs` in `src/Deckle.Audio/Internal/CaptureLoop.cs` |
-| Drain after Stop | no fixed delay: the loop reads what is ready, then stops the stream; the duration is measured, not set | `src/Deckle.Audio/Internal/CaptureLoop.cs` → `Pump` |
+| Drain after Stop | no fixed delay: the press cancels the token at once, the loop reads what is ready, then stops the stream; the duration is measured, not set | `src/Deckle.Audio/Internal/CaptureLoop.cs` → `Pump` |
 | Margin | 150 ms of silence kept after the last voiced frame | `EnergySegmenterSettings.MarginMs` |
 | Hangover | 1 s to 5 s of silence before a cut, depending on how long the utterance already is | `EnergySegmenterSettings.HangoverMinMs`, `HangoverMaxMs` |
 | Heartbeat log | once per second (every 20 frames), only when verbose logging is on | `OnFrame` in `src/Deckle.Transcription/Engine/TranscriptionEngine.StreamingPipeline.cs` |
@@ -463,9 +463,9 @@ Every utterance except the last one of a take is cut on a silence, because Flush
 
 ### Stop
 
-On a user Stop, the capture drains its last buffers, then `Complete` runs (`src/Deckle.Transcription/Streaming/SegmentedTranscriptionSession.cs`):
+On a user Stop, the recording ends at the press: `RequestToggle` cancels the capture token in the same call that moves the state out of Recording, with no delay, and nothing said after the press is kept. The capture then drains the buffers it already holds (one device period), then `Complete` runs (`src/Deckle.Transcription/Streaming/SegmentedTranscriptionSession.cs`):
 
-1. `Flush` emits the open utterance, if any, with the same margin rule: voiced extent + margin, limited to the frames held, so a Stop in the middle of a word still keeps the word. `EndedOnSilence` is false. The blip floor still applies.
+1. `Flush` emits the open utterance, if any, with the same margin rule: voiced extent + margin, limited to the frames held at the press, so a Stop in the middle of a word keeps what was said up to the press and nothing after it. `EndedOnSilence` is false. The blip floor still applies.
 2. The channel is marked complete. No more utterances can be written.
 3. The consumer keeps reading until the channel is empty, then returns the assembled text.
 

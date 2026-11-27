@@ -2,7 +2,7 @@ namespace Deckle.Mail.Tests;
 
 /// <summary>
 /// Synthetic mailboxes and mails for the suite. No real mail and no personal
-/// data: addresses use exemple.fr and example.com, and the sentences reuse
+/// data: addresses use example.com and example.com, and the sentences reuse
 /// the spec's own examples.
 /// </summary>
 internal static class SyntheticMail
@@ -12,18 +12,18 @@ internal static class SyntheticMail
 
     public static readonly DateOnly Today = new(2026, 11, 10);
 
-    public static readonly Mailbox Perso = new("perso", "moi@exemple.fr", "Perso")
+    public static readonly Mailbox Perso = new("perso", "moi@example.com", "Perso")
     {
-        Aliases = [new MailAlias("shop@exemple.fr"), new MailAlias("facture@exemple.fr")],
+        Aliases = [new MailAlias("shop@example.com"), new MailAlias("facture@example.com")],
     };
 
-    public static readonly Mailbox Maison = new("maison", "maison@exemple.fr");
+    public static readonly Mailbox Maison = new("maison", "maison@example.com");
 
     private static int s_sequence;
 
     /// <summary>A mail to Perso's main address, received <paramref name="minutesAgo"/> before <see cref="Now"/>.</summary>
     public static Mail To(
-        string deliveredTo = "moi@exemple.fr",
+        string deliveredTo = "moi@example.com",
         string from = "service@example.com",
         int minutesAgo = 60,
         string mailboxId = "perso",

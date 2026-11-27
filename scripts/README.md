@@ -50,6 +50,7 @@ What the menu offers today, level by level. A row reads as its action followed b
 |  |  | log, trace | [`read-log.ps1`](read-log.ps1) | |
 |  | Update prod | | [`deploy-prod.ps1`](deploy-prod.ps1) | |
 |  | Roll back prod | | [`deploy-prod.ps1`](deploy-prod.ps1) `-Rollback` | |
+|  | README pulse | update | [`update-readme-stats.ps1`](update-readme-stats.ps1) `-Commit` | |
 |  | Statistics | repository | [`stats.ps1`](stats.ps1) | |
 |  |  | context | [`inspect-context.ps1`](inspect-context.ps1) | |
 | **Setup** | Scaffold | preview, apply | [`setup/scaffold.ps1`](setup/scaffold.ps1) | yes |
@@ -70,6 +71,7 @@ What the menu offers today, level by level. A row reads as its action followed b
 |  |  | AI sessions | [`maintenance/reset-agent-state.ps1`](maintenance/reset-agent-state.ps1) `-Apply` | yes |
 |  | Switch | Anytype backend | [`maintenance/switch-anytype-backend.ps1`](maintenance/switch-anytype-backend.ps1) `-Apply` | |
 | **Release** | App release | prepare, publish | [`release/publish-app.ps1`](release/publish-app.ps1) | |
+|  | Folders release, Mail release | prepare, publish draft | [`release/publish-app.ps1`](release/publish-app.ps1) `-App folders`, `-App mail` | |
 |  | Anytype backend | build | [`release/build-anytype-backend.ps1`](release/build-anytype-backend.ps1) | |
 | **Settings** | Deckle Scripts | check updates, update | [`settings/update.ps1`](settings/update.ps1) | yes |
 |  | Scripts | check | [`settings/check-scripts.ps1`](settings/check-scripts.ps1) | yes |
@@ -108,6 +110,7 @@ Each script is callable directly from a terminal; the menu is purely additive. C
 | [`inspect-processes.ps1`](inspect-processes.ps1) | Read-only: the running Deckle instances with the folder each runs from (prod copy, worktree, self-check), the dotnet builds and tests in progress with project and age, the `build-locked.ps1` runs waiting for a slot, test hosts, and the .NET build servers left behind. | none |
 | [`read-log.ps1`](read-log.ps1) | Read-only: the latest entries of `<UserDataRoot>\diagnostics\log.jsonl` (or `trace.jsonl` with `-Trace`), one line each, filtered by level, age and text. Shares the file with the running app. | `-Trace`, `-Last <n>`, `-Level Warning`, `-SinceMinutes <n>`, `-Match <regex>`, `-Payload`, `-DataRoot <path>` |
 | [`deploy-prod.ps1`](deploy-prod.ps1) | Build `main` (or `-Ref`) in Release in the reserved `prod-build` worktree, self-check it, and stage it in the prod copy without stopping the running Deckle; see *Prod copy*. Its summary's `Anytype` line compares the Anytype backend the deployed commit pins with the one `active.json` activates on this machine, and names the switch when they differ; it downloads nothing. Agents may run it. | `-Ref <ref>`, `-Root <path>`, `-Rollback`, `-Force`, `-SkipSelfCheck` |
+| [`update-readme-stats.ps1`](update-readme-stats.ps1) | Regenerate the README `Development pulse` section from local Git history. `-Commit` creates a local README-only commit and refuses unrelated tracked changes; it never pushes. | `-Target <worktree>`, `-ReadmePath <path>`, `-Commit` |
 | [`maintenance/switch-anytype-backend.ps1`](maintenance/switch-anytype-backend.ps1) | Point the Anytype backend at the version `BackendInstallation.CurrentBundle` pins, once it is staged under `versions\<version>` in the provider folder. The supervisor spawns what `active.json` names and never reads the pin, and only the setup wizard provisions it, so a new pin reaches a machine that already runs a backend through this gesture. Refuses while Deckle, the bot (which outlives Deckle) or Anytype Desktop runs; then copies `%APPDATA%\anytype\data` and `%USERPROFILE%\.anytype` to dated backups beside them, backs up `active.json` and rewrites it atomically. Without `-Apply` it only shows the plan. Downloads nothing, stops and starts nothing. | `-Apply`, `-Version X.Y.Z`, `-ProviderDirectory <path>` |
 | [`stats.ps1`](stats.ps1) | Walk every `.csproj` under `src/`, build a per-file inventory, highlight C# files over 400 / 600 effective LOC and other text files over 500 / 1000 raw lines, summarize modules by source LOC, list tracked repository file types dynamically, and print the per-file module table. Git defines the repository boundary, so ignored workspace data is excluded and tracked links are counted without traversal. Generated module files are also excluded. | `-Target <worktree>`, `-Json <path>`; `-PassThru` for structured output |
 | [`inspect-context.ps1`](inspect-context.ps1) | Inventory tracked Markdown documents by loading mode, Git modification date, additions over 1/7/30 days, heading count, exact size and line count, plus a model-independent token estimate. Separates automatically scoped instructions from references that must be opened explicitly. | `-Target <worktree>`, `-RelativePath <path>`, `-LoadingMode <name[]>`, `-DocumentType <name[]>`, `-SkipActivity`, `-Json <path>`; `-PassThru` includes documents |
@@ -115,7 +118,7 @@ Each script is callable directly from a terminal; the menu is purely additive. C
 | [`maintenance/validate-resources.ps1`](maintenance/validate-resources.ps1) | Audit every module `Resources.resw` against static `x:Uid`, `Loc.Get*`, descriptor literals, and the explicit dynamic-key allowlist ([`resource-validation.allowlist.json`](resource-validation.allowlist.json)). Reports missing keys, required-mirror divergences, and potentially unused copies without modifying resources. | `-Target <worktree>`, `-Allowlist <path>`, `-Json <path>`, `-FailOnFindings` |
 | [`setup/setup-assets.ps1`](setup/setup-assets.ps1) | Populate `<UserDataRoot>\models\` with the Parakeet speech model (FP32) and the Silero VAD model, each checked against the SHA-256 pinned in the C# catalogs. Idempotent. | `-DataRoot <path>`, `-Force` |
 | [`setup/bootstrap-dev-env.ps1`](setup/bootstrap-dev-env.ps1) | Provision a fresh Windows 11 machine: winget (VS 2026, .NET 10, git, gh), optional scoop Tier 2 (CMake, Ninja, Vulkan SDK, MinGW for the Anytype backend, Ollama). Probes existing state, builds a plan, asks for confirmation, then executes. Runtime assets are left to the app's first-run wizard unless explicitly requested. | `-DryRun`, `-Full`, `-Yes`, `-IncludeAssets`, `-AssetsRelease X.Y.Z` |
-| [`release/publish-app.ps1`](release/publish-app.ps1) | Prepare or publish the app release at the version the git tag on HEAD names: build the installer stub and the self-contained app ZIP with its sha256 sidecar. Without `-Publish` both are built locally for inspection; with `-Publish` they are also uploaded as a GitHub Release under the version tag via `gh`, then the release mark is created and the changelog regenerated (see *Versions and changelog*). | `-Target <worktree>`, `-OutDir <path>`, `-Publish`, `-Notes <file>` |
+| [`release/publish-app.ps1`](release/publish-app.ps1) | Prepare or publish the app release at the version the git tag on HEAD names: build the installer stub and the self-contained app ZIP with its sha256 sidecar. Without `-Publish` both are built locally for inspection; with `-Publish` they are also uploaded as a GitHub Release under the version tag via `gh`, then the release mark is created and the changelog regenerated (see *Versions and changelog*). With `-App folders` or `-App mail` it builds instead the portable ZIP of Deckle Folders or Deckle Mail (self-contained, no installer) with its sha256, through `build-locked.ps1`; with `-Publish` that ZIP is uploaded as a private **draft** release under `folders-vX.Y.Z` or `mail-vX.Y.Z`, a tag the installer never reads, and nothing is made public, marked or written to the changelog. No variant stops a running Deckle: the one you run is the prod copy, apart from every build output. | `-App deckle\|folders\|mail`, `-Target <worktree>`, `-OutDir <path>`, `-Publish`, `-Notes <file>` |
 | [`release/build-anytype-backend.ps1`](release/build-anytype-backend.ps1) | **Fallback only since the pin went back to the official asset (0.5.2).** Rebuild one `anytype-cli` release tag from source for Windows, UCRT-linked, with the tantivy-go cross-allocator free patched in a private module copy, then package it in the official asset layout with a sha256 sidecar and a build report under `artifacts/anytype-backend-vX.Y.Z/`. The patch applies nothing once no site matches and refuses a partial match. See the script's own comments for the why (anyproto/tantivy-go#25, anyproto/anytype-cli#63). | `-Version X.Y.Z`, `-OutDir <path>`, `-Force` |
 
 Three scripts carry no Header and stay out of the menu on purpose; the self-check, an agent's check after its build, is also offered in the menu:
@@ -179,6 +182,7 @@ Nothing under `lib/` is a user command. Most of it is installed (see *Installed 
 | [`lib/resource-inventory.psm1`](lib/resource-inventory.psm1) | Static, read-only inventory of WinUI resource references and `.resw` maps. |
 | [`lib/anytype-backend.psm1`](lib/anytype-backend.psm1) | The Anytype backend as the app pins it and as this machine activates it: the pin read from `BackendInstallation.cs`, the `active.json` activation, the status line `deploy-prod.ps1` prints, and the switch `maintenance/switch-anytype-backend.ps1` runs. |
 | [`lib/release-validation.psm1`](lib/release-validation.psm1) | Release publication invariants shared by `publish-app.ps1` and its tests, including the release marks; every assertion fails closed. |
+| [`lib/standalone-app-release.psm1`](lib/standalone-app-release.psm1) | The release shape of the standalone apps (Folders, Mail) shared by `publish-app.ps1` and its tests: names, tag, publish arguments and the draft upload. |
 
 ## Tests — `tests/`
 
@@ -213,6 +217,17 @@ pwsh scripts/git/changelog.ps1 -Apply   # write CHANGELOG.md
 ```
 
 The bump rules, the categories and the release-notes path are the `deckle-versioning` skill's.
+
+## Generated docs automation
+
+The root README carries a small generated `Development pulse` section bounded by invisible HTML comments. Regenerate it from a terminal or through the menu (*README pulse › update*, which commits the README alone):
+
+```powershell
+pwsh scripts/update-readme-stats.ps1          # write the section, no commit
+pwsh scripts/update-readme-stats.ps1 -Commit  # write it and commit README.md locally
+```
+
+Nothing runs it on its own: no GitHub Action refreshes it, so it changes only when the maintainer asks.
 
 ## Runtime assets
 

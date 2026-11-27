@@ -341,7 +341,7 @@
     <value>Turn Trackpad on or off</value>
   </data>
   <data name="GeneralHotkeyTaskbarCoverCard.Header" xml:space="preserve">
-    <value>Turn Taskbar cover on or off</value>
+    <value>Turn Taskbar fade on or off</value>
   </data>
   <data name="GeneralHotkeyAutocorrectCard.Header" xml:space="preserve">
     <value>Turn Autocorrect on or off</value>
@@ -422,12 +422,6 @@
   </data>
   <data name="GeneralPageUpdatesSection.Title" xml:space="preserve">
     <value>Updates</value>
-  </data>
-  <data name="GeneralPerformanceModeCard.Header" xml:space="preserve">
-    <value>Performance mode</value>
-  </data>
-  <data name="GeneralPerformanceModeCard.Description" xml:space="preserve">
-    <value>Ambient lighting follows the screen less closely.</value>
   </data>
   <data name="GeneralUpdateAutoCheckCard.Header" xml:space="preserve">
     <value>Check for updates automatically</value>

@@ -94,12 +94,9 @@ public sealed partial class SubjectRowView : UserControl
     private async void OnTrashClick(object sender, RoutedEventArgs e)
     {
         if (!_session.AcceptsClick(Row.Id)) return;
-        if (!_session.IsTrashNoticeAccepted)
-        {
-            if (!await TrashNotice.AskAsync(XamlRoot, _session, Row.Subject)) return;
-            _session.AcceptTrashNotice();
-        }
-        bool applied = _session.MoveToTrash(Row.Id);
+        TrashOutcome outcome = await _session.MoveToTrashAsync(Row.Id, () => TrashNotice.AskAsync(XamlRoot, _session, Row.Subject));
+        if (outcome == TrashOutcome.Declined) return;
+        bool applied = outcome == TrashOutcome.Applied;
         DeckleMailHubSource.Log.GestureApplied("move_to_trash", applied);
         if (applied) FocusUndo();
     }

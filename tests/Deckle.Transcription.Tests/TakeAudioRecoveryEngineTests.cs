@@ -1,3 +1,4 @@
+using System.Diagnostics.Tracing;
 using Deckle.Audio;
 using Deckle.Core;
 using Deckle.Diagnostics;
@@ -43,8 +44,7 @@ public sealed class TakeAudioRecoveryEngineTests : IDisposable
             backend,
             new ScriptedMicrophoneCapture(utteranceCount: 3),
             new RecordingClipboardWriter(),
-            takeAudio: store,
-            captureTail: TestCaptureTail);
+            takeAudio: store);
 
         Assert.Equal(ToggleResult.Started, engine.RequestToggle());
         await backend.AllCallsCompleted.Task.WaitAsync(TimeSpan.FromSeconds(5), testCancellation);
@@ -76,8 +76,7 @@ public sealed class TakeAudioRecoveryEngineTests : IDisposable
             backend,
             new ScriptedMicrophoneCapture(utteranceCount: 2),
             new RecordingClipboardWriter(),
-            takeAudio: store,
-            captureTail: TestCaptureTail);
+            takeAudio: store);
 
         await RunOneTakeAsync(engine, backend, testCancellation);
 
@@ -94,8 +93,7 @@ public sealed class TakeAudioRecoveryEngineTests : IDisposable
             new SequencedBackend([TestInference]),
             new ScriptedMicrophoneCapture(utteranceCount: 0),
             new RecordingClipboardWriter(),
-            takeAudio: store,
-            captureTail: TestCaptureTail);
+            takeAudio: store);
 
         TranscriptionOutcome outcome = await RunTakeAsync(engine, calls: null, testCancellation);
 
@@ -116,8 +114,7 @@ public sealed class TakeAudioRecoveryEngineTests : IDisposable
             backend,
             new ScriptedMicrophoneCapture(utteranceCount: 2, CaptureOutcome.MicError),
             clipboard,
-            takeAudio: store,
-            captureTail: TestCaptureTail);
+            takeAudio: store);
 
         TranscriptionOutcome outcome = await RunTakeAsync(engine, backend.AllCallsCompleted.Task, testCancellation);
 
@@ -133,32 +130,88 @@ public sealed class TakeAudioRecoveryEngineTests : IDisposable
         Assert.Equal(0f, read.Samples[6 * 800]);
     }
 
-    [Fact]
+    // The model loads while the capture runs, and a failed load makes the engine
+    // end the take by itself. The person's Stop can land on either side of that
+    // failure: before it, the press stops the take; after it, the take is
+    // already ending and the press is ignored as busy. Either way the take fails
+    // as "model not loaded" and keeps its audio. The doubles hold the load and
+    // the end of the capture, so each order is played on purpose: left to the
+    // threads, the merge gate once saw the press land after the failure.
+    [Theory]
+    [InlineData(true)]
+    [InlineData(false)]
     [Trait("Category", "regression")]
-    public async Task ATakeWhoseModelNeverLoadsKeepsItsAudio()
+    public async Task ATakeWhoseModelNeverLoadsKeepsItsAudio(bool stopBeforeTheLoadFails)
     {
         CancellationToken testCancellation = TestContext.Current.CancellationToken;
+        TimeSpan timeout = TimeSpan.FromSeconds(5);
+        using var listener = new TestEventListener("Deckle-Whisp");
         TakeAudioRecoveryStore store = NewStore();
+        using var releaseLoad = new ManualResetEventSlim(false);
+        using var releaseCapture = new ManualResetEventSlim(false);
+        var backend = new SequencedBackend([], modelLoaded: false, loadFails: true)
+        {
+            HoldLoad = releaseLoad,
+        };
+        var capture = new ScriptedMicrophoneCapture(utteranceCount: 2)
+        {
+            HoldAfterStop = releaseCapture,
+        };
         using var engine = new TranscriptionEngine(
             new StreamingHost(),
-            new SequencedBackend([], modelLoaded: false, loadFails: true),
-            new ScriptedMicrophoneCapture(utteranceCount: 2),
+            backend,
+            capture,
             new RecordingClipboardWriter(),
-            takeAudio: store,
-            captureTail: TestCaptureTail);
+            takeAudio: store);
+        var finished = new TaskCompletionSource<TranscriptionOutcome>(
+            TaskCreationOptions.RunContinuationsAsynchronously);
+        var ready = new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously);
+        engine.TranscriptionFinished += result => finished.TrySetResult(result);
+        engine.StatusChanged += status =>
+        {
+            if (status == Loc.Get("Status_Ready")) ready.TrySetResult();
+        };
         try
         {
-            TranscriptionOutcome outcome = await RunTakeAsync(engine, calls: null, testCancellation);
+            Assert.Equal(ToggleResult.Started, engine.RequestToggle());
+            await backend.LoadEntered.Task.WaitAsync(timeout, testCancellation);
+
+            if (stopBeforeTheLoadFails)
+            {
+                Assert.Equal(ToggleResult.Stopped, engine.RequestToggle());
+                releaseLoad.Set();
+            }
+            else
+            {
+                releaseLoad.Set();
+                // The engine stops the capture on its own; held there, the take
+                // is still ending when the press lands.
+                await capture.StopObserved.Task.WaitAsync(timeout, testCancellation);
+                Assert.Equal(ToggleResult.IgnoredBusy, engine.RequestToggle());
+            }
+            releaseCapture.Set();
+
+            TranscriptionOutcome outcome = await finished.Task.WaitAsync(timeout, testCancellation);
+            await ready.Task.WaitAsync(timeout, testCancellation);
 
             Assert.Equal(TranscriptionOutcome.None, outcome);
+            EventWrittenEventArgs ended = Assert.Single(
+                listener.Events, e => e.EventName == nameof(DeckleWhispSource.TakeEnded));
+            Assert.Equal(TakeOutcomes.Failed, PayloadOf(ended, "outcome"));
+            Assert.Equal(TakeEndReasons.ModelNotLoaded, PayloadOf(ended, "reason"));
             Assert.Equal(2 * SamplesPerUtterance, store.TryRead().Samples.Length);
         }
         finally
         {
+            releaseLoad.Set();
+            releaseCapture.Set();
             // The failed load opened a process-wide incident.
             UserIncidentRegistry.Instance.Close(UserIncidents.SpeechModel);
         }
     }
+
+    private static string? PayloadOf(EventWrittenEventArgs e, string name)
+        => Convert.ToString(e.Payload![e.PayloadNames!.IndexOf(name)]);
 
     // The per-take test inference fails twice: the engine stops the take by
     // itself and says so. What was said before that is the only copy, so the
@@ -176,8 +229,7 @@ public sealed class TakeAudioRecoveryEngineTests : IDisposable
             new SequencedBackend([]),
             new ScriptedMicrophoneCapture(utteranceCount: 2),
             clipboard,
-            takeAudio: store,
-            captureTail: TestCaptureTail);
+            takeAudio: store);
         var finished = new TaskCompletionSource<TranscriptionOutcome>(
             TaskCreationOptions.RunContinuationsAsynchronously);
         engine.TranscriptionFinished += result => finished.TrySetResult(result);
@@ -210,8 +262,7 @@ public sealed class TakeAudioRecoveryEngineTests : IDisposable
             new SequencedBackend([TestInference]),
             new ScriptedMicrophoneCapture(utteranceCount: 2),
             clipboard,
-            takeAudio: store,
-            captureTail: TestCaptureTail);
+            takeAudio: store);
 
         TranscriptionOutcome outcome = await RunTakeAsync(engine, calls: null, testCancellation);
 
@@ -243,8 +294,7 @@ public sealed class TakeAudioRecoveryEngineTests : IDisposable
             new SequencedBackend([TestInference, "bonjour"]),
             new ScriptedMicrophoneCapture(utteranceCount: 2),
             clipboard,
-            takeAudio: store,
-            captureTail: TestCaptureTail);
+            takeAudio: store);
 
         TranscriptionOutcome outcome = await RunTakeAsync(engine, calls: null, testCancellation);
 
@@ -266,8 +316,7 @@ public sealed class TakeAudioRecoveryEngineTests : IDisposable
             backend,
             new ScriptedMicrophoneCapture(utteranceCount: 2),
             new RecordingClipboardWriter(),
-            takeAudio: store,
-            captureTail: TestCaptureTail);
+            takeAudio: store);
 
         Assert.Equal(ToggleResult.Started, engine.RequestToggle());
         await backend.AllCallsCompleted.Task.WaitAsync(TimeSpan.FromSeconds(5), testCancellation);
@@ -291,8 +340,7 @@ public sealed class TakeAudioRecoveryEngineTests : IDisposable
             backend,
             new ScriptedMicrophoneCapture(utteranceCount: 0),
             new RecordingClipboardWriter(),
-            takeAudio: store,
-            captureTail: TestCaptureTail);
+            takeAudio: store);
         var finished = new TaskCompletionSource<TranscriptionOutcome>(
             TaskCreationOptions.RunContinuationsAsynchronously);
         engine.TranscriptionFinished += result => finished.TrySetResult(result);
@@ -351,7 +399,9 @@ public sealed class TakeAudioRecoveryEngineTests : IDisposable
     }
 
     // Starts a take, stops it once the optional calls are done, and returns the
-    // outcome once the worker is back to Ready.
+    // outcome once the worker is back to Ready. Only for a take the engine never
+    // ends by itself: when it can (a failed prime), the Stop press races that
+    // end and may be answered IgnoredBusy.
     private static async Task<TranscriptionOutcome> RunTakeAsync(
         TranscriptionEngine engine, Task? calls, CancellationToken testCancellation)
     {

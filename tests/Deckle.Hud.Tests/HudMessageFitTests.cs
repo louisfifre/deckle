@@ -97,6 +97,18 @@ public sealed partial class HudMessageFitTests
             "These HUD strings are cut on the card:\n" + string.Join("\n", overflows));
     }
 
+    // The two "not set up" titles name the feature with the settings node's own word.
+    [Theory]
+    [InlineData("Feedback_SpeechNotSetUp_Title")]
+    [InlineData("TranscribeRewrite_SpeechNotSetUp_Title")]
+    public void TheNotSetUpTitlesNameDictation(string key)
+    {
+        string resw = Path.Combine(RepoRoot(), "src", "Deckle.App", "Strings", "en-US", "Resources.resw");
+        XElement data = XDocument.Load(resw).Root!.Elements("data").Single(d => (string)d.Attribute("name")! == key);
+
+        Assert.Equal("Dictation isn't set up", (string?)data.Element("value"));
+    }
+
     // Guards the measurement itself: a font fallback would measure another
     // face and pass or fail for the wrong reason.
     [Fact]

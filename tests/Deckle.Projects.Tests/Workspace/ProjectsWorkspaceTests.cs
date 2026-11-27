@@ -201,7 +201,7 @@ public sealed class ProjectsWorkspaceTests : IDisposable
     public async Task AListedMenuBringsThePinsUpToDateAndIsCached()
     {
         ProjectEntry project = AddWithMenu("alpha");
-        _menus.Answer = new ScriptMenuListing.Listed([new ScriptMenuEntry("build-run.1", "Build and run", "build-run2.ps1", "", [])]);
+        _menus.Answer = new ScriptMenuListing.Listed([new ScriptMenuEntry("build-run.1", "Build and run", "build-run.ps1", "", [])]);
 
         ScriptMenuListing first = await _workspace.Menus.GetAsync(project, TestContext.Current.CancellationToken);
         ScriptMenuListing second = await _workspace.Menus.GetAsync(project, TestContext.Current.CancellationToken);
@@ -210,6 +210,22 @@ public sealed class ProjectsWorkspaceTests : IDisposable
         Assert.IsType<ScriptMenuListing.Listed>(second);
         Assert.Equal(1, _menus.Reads);
         Assert.Equal("Build and run", _workspace.Store.Find(project.Id)!.MainAction!.Label);
+    }
+
+    [Fact]
+    public async Task APinWhoseIdentifierNowNamesAnotherScriptIsNotStarted()
+    {
+        ProjectEntry project = AddWithMenu("alpha");
+        _menus.Answer = new ScriptMenuListing.Listed([new ScriptMenuEntry("build-run.1", "Build", "build-run2.ps1", "", [])]);
+        await _workspace.Menus.GetAsync(project, TestContext.Current.CancellationToken);
+
+        StartOutcome main = await _workspace.StartMainActionAsync(project.Id);
+        StartOutcome pinned = await _workspace.StartPinnedActionAsync(project.Id, new ActionRef("build-run.1"));
+
+        Assert.Equal(StartRefusal.NotPinned, main.Refusal);
+        Assert.Equal(StartRefusal.NotPinned, pinned.Refusal);
+        Assert.Empty(_launcher.Commands);
+        Assert.Equal("build-run.ps1", _workspace.Store.Find(project.Id)!.MainAction!.Script);
     }
 
     [Fact]

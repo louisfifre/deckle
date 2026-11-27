@@ -99,21 +99,6 @@ public static partial class NativeMethods
     public static extern IntPtr DefSubclassProc(
         IntPtr hWnd, uint uMsg, IntPtr wParam, IntPtr lParam);
 
-    // ── Resize / move modal loop (WM_ENTERSIZEMOVE … WM_EXITSIZEMOVE) ─────────
-    //
-    // When the user grabs the title bar or a sizing border, Windows runs a modal
-    // move/size loop: WM_ENTERSIZEMOVE once at the start, a burst of WM_SIZE /
-    // WM_SIZING while the pointer moves, then WM_EXITSIZEMOVE once when
-    // DefWindowProc returns. Maximize, snap and programmatic SetWindowPos do NOT
-    // enter this loop — they emit WM_SIZE alone.
-    public const uint WM_SIZE          = 0x0005;
-    public const uint WM_ENTERSIZEMOVE = 0x0231;
-    public const uint WM_EXITSIZEMOVE  = 0x0232;
-
-    // WM_SIZE wParam value when the window was minimized; the reported client
-    // area is then 0×0.
-    public const int SIZE_MINIMIZED    = 1;
-
     // ── Layered Window (global alpha, Mica included) ─────────────────────────
     // WS_EX_LAYERED + SetLayeredWindowAttributes(LWA_ALPHA) applies a 0-255
     // alpha to the whole window, over WinUI 3 composition (Mica included).

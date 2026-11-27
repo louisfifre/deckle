@@ -108,7 +108,7 @@ public partial class App
             .ToList();
 
         // Developer mode's "Capture the interface" (App.InterfaceCapture.cs).
-        Settings.SettingsHost.CaptureInterface = CaptureInterfaceAsync;
+        Settings.SettingsHost.CaptureInterface = InterfaceCapture.FromSettingsAsync;
 
         // Each module page declares its own nav identity in its own assembly; the
         // composition root supplies only the Order, which leaves gaps so a later
@@ -148,23 +148,17 @@ public partial class App
 
         if (context.TranscriptionPresent)
         {
-            // The microphone level, a developer capture, is the Diagnostics
-            // page's own card under Detailed logs, no longer a contribution.
-            RegisterSettingsModule(Audio.Views.RecordingSettingsModule.Describe(order: 50), Audio.Views.SettingsSearch.Entries);
-            // One module, three rail entries: the module's page (General under the
-            // node) then Lexicon and Streaming nested under it, each registered
-            // on its own so the search index resolves page coordinates per page.
-            RegisterSettingsModule(Transcription.Views.TranscriptionSettingsModule.Describe(order: 100), Transcription.Views.SettingsSearch.Entries);
-            RegisterSettingsModule(Transcription.Views.TranscriptionSettingsModule.DescribeLexicon(order: 105), Transcription.Views.SettingsSearch.LexiconEntries);
-            RegisterSettingsModule(Transcription.Views.TranscriptionSettingsModule.DescribeStreaming(order: 110), Transcription.Views.SettingsSearch.StreamingEntries);
+            // The Dictation node and its three pages, General then Microphone
+            // and Lexicon nested under it, each registered on its own so the
+            // search index resolves page coordinates per page. The microphone
+            // level, a developer capture, is the Diagnostics page's own card
+            // under Detailed logs, no longer a contribution.
+            DictationSettingsPages.Register(RegisterSettingsModule);
             ContributeDiagnostics(
                 Transcription.Views.TranscriptionTelemetryViewModel.Contribution(order: 100),
                 "Deckle.Transcription.Views",
                 Transcription.Views.SettingsSearch.TelemetryEntries);
         }
-        // The contributions plant their start hooks, before the pages that
-        // read them are registered.
-        PublishedHost.Compose();
 
         if (context.RewritePresent)
         {
@@ -174,6 +168,13 @@ public partial class App
             Llm.Rewrite.Views.LlmSettingsModule.TranscriptionStreams = () =>
                 transcriptionPresent
                 && TranscriptionSettingsService.Instance.Current.Streaming.Strategy == PipelineStrategyKind.Streaming;
+            // The Ollama provider's card says paragraph correction also uses it
+            // while that is on: both switches belong to the Autocorrect module,
+            // so without it the line never shows.
+            bool autocorrectPresent = context.AutocorrectPresent;
+            Llm.Rewrite.Views.LlmSettingsModule.ParagraphCorrectionOn = () =>
+                autocorrectPresent
+                && Autocorrect.AutocorrectSettingsService.Instance.Current is { Enabled: true, ParagraphCorrection: true };
             RegisterSettingsModule(Llm.Rewrite.Views.LlmSettingsModule.Describe(order: 200), Llm.Rewrite.Views.SettingsSearch.Entries);
         }
         if (context.AutocorrectPresent)
@@ -182,6 +183,27 @@ public partial class App
             // resolves page coordinates per registration, so a child folded into
             // its parent's call would send every hit to the parent's page.
             Autocorrect.Views.AutocorrectSettingsModule.TranscriptionLexiconPresent = context.TranscriptionPresent;
+            // Paragraph correction runs in the Rewrite module, which the page does
+            // not reference: it is told whether that module is there, what the
+            // bar needs to say, and where "Set up Ollama" leads. The monitor is
+            // the one answer the host acts on.
+            Autocorrect.Views.AutocorrectSettingsModule.ParagraphCorrectionPresent = context.RewritePresent;
+            if (context.RewritePresent)
+            {
+                Autocorrect.Views.AutocorrectSettingsModule.ParagraphCorrectionSetup = () =>
+                    Llm.Rewrite.ParagraphRewriteAvailabilityMonitor.Instance.Current switch
+                    {
+                        Llm.Rewrite.ParagraphRewriteAvailability.OllamaUnreachable => Autocorrect.Views.ParagraphCorrectionSetup.OllamaNotRunning,
+                        Llm.Rewrite.ParagraphRewriteAvailability.ModelMissing      => Autocorrect.Views.ParagraphCorrectionSetup.ModelMissing,
+                        Llm.Rewrite.ParagraphRewriteAvailability.ProviderOff       => Autocorrect.Views.ParagraphCorrectionSetup.ProviderOff,
+                        _                                                          => Autocorrect.Views.ParagraphCorrectionSetup.None,
+                    };
+                Autocorrect.Views.AutocorrectSettingsModule.ParagraphCorrectionModel = Llm.Rewrite.ParagraphRewrite.Model;
+                Autocorrect.Views.AutocorrectSettingsModule.ParagraphCorrectionSetupPageTag =
+                    Llm.Rewrite.Views.LlmSettingsModule.PageTag;
+                Llm.Rewrite.ParagraphRewriteAvailabilityMonitor.Instance.Changed +=
+                    Autocorrect.Views.AutocorrectSettingsModule.RaiseParagraphCorrectionSetupChanged;
+            }
             RegisterSettingsModule(
                 Autocorrect.Views.AutocorrectSettingsModule.Describe(order: 300),
                 Autocorrect.Views.SettingsSearch.Entries);

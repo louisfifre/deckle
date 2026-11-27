@@ -13,9 +13,7 @@ namespace Deckle.Lighting.Ambient.Views;
 // any card: the rail carries the module's icon (2026-10-14).
 //
 // The setters are the view model's own properties, so the composed cards keep the
-// contracts of AmbientViewModel exactly: a tuning edit reports itself to the preset
-// family and turns the selection to Custom, a preset pick goes through
-// AmbientSettingsService.Presets.Select.
+// contracts of AmbientViewModel exactly.
 public partial class AmbientViewModel
 {
     // State: the master switch.
@@ -28,17 +26,16 @@ public partial class AmbientViewModel
             defaultValue: () => new AmbientSettings().Enabled),
     ];
 
-    // Behaviour: per-zone colours with their band shape. The two band sliders
-    // share one place and show only the one the chosen band mode reads. The
-    // measure is a dropdown, not radio buttons: two options the eye need not
-    // compare at a glance, and their labels say what each does (Louis,
-    // 2026-10-15).
+    // Behaviour: the band shape of the per-zone colours. Colour per zone is
+    // Ambient's only mode (Louis, 2026-11-25), so the fold has no switch: it
+    // holds the band settings. The two band sliders share one place and show
+    // only the one the chosen band mode reads. The measure is a dropdown, not
+    // radio buttons: two options the eye need not compare at a glance, and
+    // their labels say what each does (Louis, 2026-10-15).
     public IReadOnlyList<SettingDescriptor> BehaviourSettings =>
     [
-        Setting.Group(
+        Setting.Section(
             "AmbientZonesGroup",
-            () => UseMultiLight,
-            value => UseMultiLight = value,
             [
                 Setting.Choice<BorderThicknessMode>(
                     "AmbientBorderModeCard",
@@ -63,21 +60,16 @@ public partial class AmbientViewModel
                     new MagnitudeArgs(4, 24, Integer: true),
                     visibleWhen: () => BorderMode == BorderThicknessMode.Cells,
                     defaultValue: () => new AmbientSettings().BorderCells),
-            ],
-            defaultValue: () => new AmbientSettings().UseMultiLight),
+            ]),
     ];
 
     // Fine tuning: flat cards, the brightness curve first at full width (the
     // value the section is about, so it opens it: Louis, 2026-10-14, reversing
     // the "instrument last" order for this page), then the
     // brightness floor (its switch and its level, drawn on the curve as a guide
-    // while it is on), reaction speed, exposure, saturation. The preset fold
-    // that held them (Game / Vivid / Movie / Ambient / Custom in its header) is
-    // set aside with every preset: the family still runs underneath
-    // (AmbientSettingsService.Presets), so a hand edit still records Custom, but
-    // nothing on the page selects a preset any more. The change threshold, an
-    // engine optimisation nobody tunes, keeps its AmbientSettings default and is
-    // no longer exposed (triage of 2026-10-14).
+    // while it is on), reaction speed, exposure, saturation. The change
+    // threshold, an engine optimisation nobody tunes, is no longer exposed
+    // (triage of 2026-10-14).
     public IReadOnlyList<SettingDescriptor> TuningSettings =>
     [
         Setting.Curve(
@@ -102,7 +94,7 @@ public partial class AmbientViewModel
                 return new CurvePoints(d.BrightnessCurveX1, d.BrightnessCurveY1, d.BrightnessCurveX2, d.BrightnessCurveY2);
             }),
         // The floor is a switch with one level behind it, so it is a fold
-        // governed by its switch, the shape the zones group has above. The level
+        // governed by its switch. The level
         // reads in percent like the curve it is drawn on; the Hue scale (0-254)
         // stays the stored value and the engine's.
         Setting.Group(

@@ -41,17 +41,9 @@ internal static class TaskbarCoverNativeMethods
     [DllImport("kernel32.dll")]
     public static extern uint GetCurrentThreadId();
 
-    // ── Window styles / class resources ──────────────────────────────────────
+    // ── Window styles ────────────────────────────────────────────────────────
 
     public const uint WS_POPUP = 0x80000000;
-
-    // Class background brush for the band — released with DeleteObject after
-    // UnregisterClass (the system does not free class brushes on its own).
-    [DllImport("gdi32.dll")]
-    public static extern IntPtr CreateSolidBrush(uint crColor);
-
-    [DllImport("gdi32.dll")]
-    public static extern bool DeleteObject(IntPtr hObject);
 
     // ── Taskbar windows ──────────────────────────────────────────────────────
     //
@@ -136,27 +128,6 @@ internal static class TaskbarCoverNativeMethods
     [DllImport("user32.dll")]
     public static extern bool UnhookWinEvent(IntPtr hWinEventHook);
 
-    // ── Desktop reorder WinEvent hook ────────────────────────────────────────
-    //
-    // EVENT_OBJECT_REORDER is "sent by a parent window when the Z-order for
-    // the child windows changes" (Microsoft Learn, Event Constants); for
-    // top-level windows that parent is the desktop window, so a REORDER whose
-    // hwnd is GetDesktopWindow() is the signal that the top-level stack
-    // moved. Observed on Windows 11 24H2: the desktop raises it with
-    // idObject = OBJID_CLIENT and idChild = 0, hence the filter on the hwnd
-    // alone. Same hook mechanics as the cursor hook above: out of context,
-    // delivered on the registering thread, which pumps.
-
-    public const uint EVENT_OBJECT_REORDER = 0x8004;
-
-    [DllImport("user32.dll")]
-    public static extern IntPtr GetDesktopWindow();
-
-    // GetWindow command: the window above in the z-order, zero at the top.
-    // Each band climbs from its own window looking for its taskbar, the one
-    // TaskbarLocator placed it over.
-    public const uint GW_HWNDPREV = 3;
-
     // ── Foreground hand-off ──────────────────────────────────────────────────
     //
     // The ForegroundWatcher raises Changed on the UI thread; the host posts
@@ -202,4 +173,184 @@ internal static class TaskbarCoverNativeMethods
 
     [DllImport("wtsapi32.dll")]
     public static extern bool WTSUnRegisterSessionNotification(IntPtr hWnd);
+
+    // ── Underlay: the maximized app under a taskbar ──────────────────────────
+    //
+    // The z-order is walked from the top with GetTopWindow/GetWindow rather
+    // than EnumWindows: no callback, and the first match is the topmost one.
+    // A window on another virtual desktop is visible but cloaked.
+
+    public const int  OBJID_WINDOW  = 0;
+    public const uint GW_HWNDNEXT   = 2;
+    public const int  GWL_EXSTYLE   = -20;
+    public const uint DWMWA_CLOAKED = 14;
+
+    [DllImport("user32.dll")]
+    public static extern IntPtr GetTopWindow(IntPtr hWnd);
+
+    [DllImport("user32.dll")]
+    public static extern IntPtr GetWindow(IntPtr hWnd, uint uCmd);
+
+    [DllImport("user32.dll")]
+    public static extern bool IsZoomed(IntPtr hWnd);
+
+    [DllImport("dwmapi.dll")]
+    public static extern int DwmGetWindowAttribute(IntPtr hwnd, uint dwAttribute, out int pvAttribute, int cbAttribute);
+
+    // The underlay is a plain square strip: Windows 11 would round a popup's
+    // corners otherwise.
+    public const uint DWMWA_WINDOW_CORNER_PREFERENCE = 33;
+    public const uint DWMWCP_DONOTROUND              = 1;
+
+    // An app's system backdrop (Windows 11): 2 Mica, 3 Acrylic, 4 Mica Alt.
+    public const uint DWMWA_SYSTEMBACKDROP_TYPE = 38;
+
+    public const uint GA_ROOT      = 2;
+    public const uint GA_ROOTOWNER = 3;
+
+    [DllImport("user32.dll")]
+    public static extern IntPtr WindowFromPoint(POINT point);
+
+    [DllImport("user32.dll")]
+    public static extern bool IsWindow(IntPtr hWnd);
+
+    [DllImport("user32.dll", CharSet = CharSet.Unicode)]
+    public static extern int GetClassName(IntPtr hWnd, System.Text.StringBuilder lpClassName, int nMaxCount);
+
+    // Task view's window on Windows 11 (build 26100, read on this machine).
+    public const string TaskViewClass = "XamlExplorerHostIslandWindow";
+
+    [DllImport("user32.dll")]
+    public static extern IntPtr GetAncestor(IntPtr hwnd, uint gaFlags);
+
+    // ── Underlay: the blur behind it ─────────────────────────────────────────
+    //
+    // The documented Acrylic (DWMWA_SYSTEMBACKDROP_TYPE) turns solid while its
+    // window is inactive, and the underlay is never active. The accent policy
+    // of SetWindowCompositionAttribute keeps its blur whatever the focus: it
+    // is undocumented, and the Windows taskbar draws its own blur with it.
+    // Where the call fails, the underlay keeps its plain colour.
+
+    public const int WCA_ACCENT_POLICY              = 19;
+    public const int ACCENT_DISABLED                = 0;
+    public const int ACCENT_ENABLE_ACRYLICBLURBEHIND = 4;
+    // GradientColor carries the tint, 0xAABBGGRR.
+    public const int ACCENT_FLAG_GRADIENT_COLOR     = 2;
+
+    [StructLayout(LayoutKind.Sequential)]
+    public struct ACCENT_POLICY
+    {
+        public int  AccentState;
+        public int  AccentFlags;
+        public uint GradientColor;
+        public int  AnimationId;
+    }
+
+    [StructLayout(LayoutKind.Sequential)]
+    public struct WINDOWCOMPOSITIONATTRIBDATA
+    {
+        public int    Attrib;
+        public IntPtr pvData;
+        public int    cbData;
+    }
+
+    [DllImport("user32.dll")]
+    public static extern bool SetWindowCompositionAttribute(IntPtr hwnd, ref WINDOWCOMPOSITIONATTRIBDATA data);
+
+    // ── Underlay: painting ───────────────────────────────────────────────────
+
+    // Under the blur the strip is painted black: GDI black is what the
+    // compositor leaves see-through, so the blur shows.
+    public const int BLACK_BRUSH = 4;
+
+    [DllImport("gdi32.dll")]
+    public static extern IntPtr GetStockObject(int i);
+
+    public const uint WM_ERASEBKGND = 0x0014;
+
+    [DllImport("gdi32.dll")]
+    public static extern IntPtr CreateSolidBrush(uint crColor);
+
+    [DllImport("gdi32.dll")]
+    public static extern bool DeleteObject(IntPtr hObject);
+
+    [DllImport("user32.dll")]
+    public static extern int FillRect(IntPtr hDC, ref NativeMethods.RECT lprc, IntPtr hbr);
+
+    [DllImport("user32.dll")]
+    public static extern bool GetClientRect(IntPtr hWnd, out NativeMethods.RECT lpRect);
+
+    [DllImport("user32.dll")]
+    public static extern bool InvalidateRect(IntPtr hWnd, IntPtr lpRect, bool bErase);
+
+    // ── Underlay: reading the app's edge ─────────────────────────────────────
+    //
+    // One BitBlt of the screen line into a top-down 32-bit DIB section, whose
+    // bits are read in place. No CAPTUREBLT: the line holds the app alone.
+
+    public const uint SRCCOPY = 0x00CC0020;
+
+    [StructLayout(LayoutKind.Sequential)]
+    public struct BITMAPINFOHEADER
+    {
+        public uint   biSize;
+        public int    biWidth;
+        public int    biHeight;
+        public ushort biPlanes;
+        public ushort biBitCount;
+        public uint   biCompression;
+        public uint   biSizeImage;
+        public int    biXPelsPerMeter;
+        public int    biYPelsPerMeter;
+        public uint   biClrUsed;
+        public uint   biClrImportant;
+    }
+
+    [DllImport("user32.dll")]
+    public static extern IntPtr GetDC(IntPtr hWnd);
+
+    [DllImport("user32.dll")]
+    public static extern int ReleaseDC(IntPtr hWnd, IntPtr hDC);
+
+    [DllImport("gdi32.dll")]
+    public static extern IntPtr CreateCompatibleDC(IntPtr hdc);
+
+    [DllImport("gdi32.dll")]
+    public static extern bool DeleteDC(IntPtr hdc);
+
+    [DllImport("gdi32.dll")]
+    public static extern IntPtr CreateDIBSection(
+        IntPtr hdc, ref BITMAPINFOHEADER pbmi, uint usage, out IntPtr ppvBits, IntPtr hSection, uint offset);
+
+    [DllImport("gdi32.dll")]
+    public static extern IntPtr SelectObject(IntPtr hdc, IntPtr h);
+
+    [DllImport("gdi32.dll")]
+    public static extern bool BitBlt(
+        IntPtr hdc, int x, int y, int cx, int cy, IntPtr hdcSrc, int x1, int y1, uint rop);
+
+    [DllImport("gdi32.dll")]
+    public static extern bool GdiFlush();
+
+    // ── Underlay: timers on the anchor ───────────────────────────────────────
+
+    public const uint WM_TIMER = 0x0113;
+
+    [DllImport("user32.dll")]
+    public static extern UIntPtr SetTimer(IntPtr hWnd, UIntPtr nIDEvent, uint uElapse, IntPtr lpTimerFunc);
+
+    [DllImport("user32.dll")]
+    public static extern bool KillTimer(IntPtr hWnd, UIntPtr uIDEvent);
+
+    // ── Underlay: the frame clock of its fades ───────────────────────────────
+    //
+    // A timer ticks on Windows' clock, about 16 ms: half the frames of a
+    // 120 Hz screen (seen as a stiff fade on Louis's screen). DwmFlush
+    // returns once the compositor has shown its next frame, so a thread that
+    // loops on it posts this message once per frame of the display.
+
+    public const uint WM_APP_UNDERLAY_FRAME = 0x8000 + 3;
+
+    [DllImport("dwmapi.dll")]
+    public static extern int DwmFlush();
 }

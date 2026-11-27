@@ -38,8 +38,9 @@ public static class ModulePresence
         return choice is null || choice.Includes(id);
     }
 
-    // Null when no choice is recorded: the selector then defaults to everything
-    // checked. Otherwise the kept ids plus the modules the choice never offered,
+    // Null when no choice is recorded: the selector then starts from DefaultChoice
+    // (the modules flagged DefaultSelected), while IsPresent treats every module as
+    // present. Otherwise the kept ids plus the modules the choice never offered,
     // the same set IsPresent answers from, so the checkboxes show what boots.
     public static IReadOnlySet<string>? Choice =>
         Load()?.Resolve(Catalogue());

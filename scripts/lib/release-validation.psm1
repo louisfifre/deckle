@@ -274,7 +274,10 @@ function Assert-DeckleReleaseArchive {
     [CmdletBinding()]
     param(
         [string]$PublishDir,
-        [Parameter(Mandatory)][string]$ZipPath
+        [Parameter(Mandatory)][string]$ZipPath,
+        # The root files without which the payload cannot start. Deckle's by
+        # default; a standalone app names its own exe and .pri.
+        [string[]]$RequiredEntries = @('Deckle.exe', 'Deckle.pri')
     )
 
     if (-not (Test-Path -LiteralPath $ZipPath -PathType Leaf)) {
@@ -298,7 +301,7 @@ function Assert-DeckleReleaseArchive {
             }
         }
 
-        foreach ($required in @('Deckle.exe', 'Deckle.pri')) {
+        foreach ($required in $RequiredEntries) {
             if (-not $names.Contains($required)) {
                 throw "Release archive is missing required root entry $required"
             }

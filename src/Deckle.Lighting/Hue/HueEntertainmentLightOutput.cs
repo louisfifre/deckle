@@ -22,10 +22,6 @@ internal sealed class HueEntertainmentLightOutput : IMultiLightOutput
     // written back once streaming ends. Null when nothing was read.
     private IReadOnlyDictionary<string, HueLightState>? _statesBeforeStreaming;
 
-    // The same snapshot, kept after the restore: when this start fails and the
-    // factory falls back to REST, the REST output inherits it instead of
-    // reading lights this output has already touched.
-    internal IReadOnlyDictionary<string, HueLightState>? StatesBeforeStreaming { get; private set; }
     private bool _connected;
     private byte _sequence = 1;
     private long _sessionStartedAt;
@@ -90,7 +86,6 @@ internal sealed class HueEntertainmentLightOutput : IMultiLightOutput
             // covers both settings. Dropping the pre-prime instead would bring
             // back Hue's power-on scene during action=start.
             _statesBeforeStreaming = await _restorer.CaptureAsync(_area.Id, BuildDistinctLightIds(), ct).ConfigureAwait(false);
-            StatesBeforeStreaming = _statesBeforeStreaming;
 
             stage = "pre_prime";
             await PrePrimeLightsAsync(ct).ConfigureAwait(false);

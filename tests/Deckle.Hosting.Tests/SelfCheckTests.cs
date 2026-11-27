@@ -214,6 +214,25 @@ public class SelfCheckTests
         Assert.Contains(report.Failures, f => f.StartsWith("settings/ambient"));
     }
 
+    // Projects' P1 threw "The page does not show the highest tag as the
+    // version." and the report called it a navigation that did not complete
+    // (2026-11-24): a step that threw is named by what it threw.
+    [Fact]
+    [Trait("Category", "regression")]
+    public void Verdict_NamesWhatAFailedStepThrewRatherThanANavigationTimeout()
+    {
+        SelfCheckReport report = PassingReport();
+        const string thrown = "InvalidOperationException: The page does not show the highest tag as the version.";
+        report.Surfaces.Add(new SelfCheckSurface("projects", "p1", null, false, 368, null, Technique: "window-capture", Error: thrown));
+
+        report.Judge();
+
+        Assert.Equal("failed", report.Outcome);
+        string failure = Assert.Single(report.Failures, f => f.StartsWith("projects/p1"));
+        Assert.Contains(thrown, failure);
+        Assert.DoesNotContain("navigation", failure);
+    }
+
     [Fact]
     [Trait("Category", "unit")]
     public void Verdict_FailsWhenAPageLoadedButNoImageWasTaken()

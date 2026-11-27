@@ -431,7 +431,7 @@
        Settings page is that page's SettingsModuleNavLabel, so a rename
        cannot leave the message pointing at a page that is gone. -->
   <data name="Feedback_SpeechNotSetUp_Title" xml:space="preserve">
-    <value>Transcription isn't set up</value>
+    <value>Dictation isn't set up</value>
   </data>
   <data name="Feedback_SpeechNotSetUp_Body_Format" xml:space="preserve">
     <value>Set it up in Settings › {0}.</value>
@@ -605,7 +605,7 @@
     <value>Open Rewriting settings</value>
   </data>
   <data name="TranscribeRewrite_SpeechNotSetUp_Title" xml:space="preserve">
-    <value>Transcription isn't set up</value>
+    <value>Dictation isn't set up</value>
   </data>
   <data name="TranscribeRewrite_SpeechNotSetUp_Body" xml:space="preserve">
     <value>Set up transcription in Settings to transcribe a file.</value>
@@ -679,9 +679,6 @@
   <data name="TrayMenu_Settings" xml:space="preserve">
     <value>Settings</value>
   </data>
-  <data name="TrayMenu_Projects" xml:space="preserve">
-    <value>Deckle Projects</value>
-  </data>
   <data name="TrayMenu_CaptureInterface" xml:space="preserve">
     <value>Capture the interface</value>
   </data>
@@ -692,7 +689,7 @@
     <value>Autocorrect</value>
   </data>
   <data name="TrayMenu_TaskbarCover" xml:space="preserve">
-    <value>Taskbar cover</value>
+    <value>Taskbar fade</value>
   </data>
   <data name="TrayMenu_PrecisionScroll" xml:space="preserve">
     <value>Precision scrolling</value>
@@ -717,10 +714,10 @@
     <value>Problem · {0}</value>
   </data>
   <data name="TrayIncident_Module_Recording" xml:space="preserve">
-    <value>Recording</value>
+    <value>Microphone</value>
   </data>
   <data name="TrayIncident_Module_Transcription" xml:space="preserve">
-    <value>Transcription</value>
+    <value>Dictation</value>
   </data>
   <data name="TrayIncident_Module_Notifications" xml:space="preserve">
     <value>Notifications</value>
@@ -1010,7 +1007,7 @@
 
   <!-- TranscriptionPage Reset all dialog -->
   <data name="Settings_ResetTranscriptionDialog_Detail" xml:space="preserve">
-    <value>The Lexicon and Streaming pages keep their own values.</value>
+    <value>Transcribe as you speak stays as you set it. The Lexicon and Microphone pages keep their own values.</value>
   </data>
 
   <!-- DiagnosticsPage Telemetry + whole-page reset dialogs -->
@@ -1283,7 +1280,7 @@
     <comment>{0} is the bridge's IP address. Shown while Deckle searches the local network for the paired bridge.</comment>
   </data>
   <data name="AmbientHue_ListGroups_Relocated_Format" xml:space="preserve">
-    <value>Found the bridge at {0}. Rooms loaded.</value>
+    <value>Found the bridge at {0}. Areas loaded.</value>
     <comment>{0} is the IP address where the paired bridge answered.</comment>
   </data>
   <data name="AmbientHue_ListGroups_NotFound_Format" xml:space="preserve">
@@ -1291,7 +1288,7 @@
     <comment>{0} is the bridge's IP address. "Find bridge" is the HueDiscoverButton label.</comment>
   </data>
   <data name="AmbientHue_ListGroups_Failed" xml:space="preserve">
-    <value>Couldn't load rooms. Try again.</value>
+    <value>Couldn't load the Entertainment areas. Try again.</value>
   </data>
   <data name="AmbientHue_ForgetDialog_Title" xml:space="preserve">
     <value>Forget Hue bridge?</value>
@@ -1313,15 +1310,12 @@
        src/Deckle.Lighting.Ambient.Views/Strings/en-US/Resources.resw, which
        stays the source of truth for wording. -->
   <data name="Settings_ResetAmbientDialog_Detail" xml:space="preserve">
-    <value>Your Hue bridge pairing, the selected light group, the display, the per-light zones and brightness, and whether Ambient Light is on stay as they are.</value>
+    <value>Your Hue bridge pairing, the selected Entertainment area, the display, the per-light zones and brightness, and whether Ambient Light is on stay as they are.</value>
   </data>
 
   <!-- AmbientPreviewCard and LightZonesCard code-behind (Loc.Get) —
        duplicated from src/Deckle.Lighting.Ambient.Views/Strings/en-US/
        Resources.resw, which stays the source of truth for wording. -->
-  <data name="AmbientPreview_GroupSwatch" xml:space="preserve">
-    <value>All lights</value>
-  </data>
   <data name="AmbientPreview_Capture_Format" xml:space="preserve">
     <value>{0} × {1}, {2}</value>
   </data>
@@ -1339,9 +1333,6 @@
   </data>
   <data name="AmbientPreview_Output_Stream" xml:space="preserve">
     <value>Streaming</value>
-  </data>
-  <data name="AmbientPreview_Output_Rest" xml:space="preserve">
-    <value>REST</value>
   </data>
   <!-- The Capture readout before any capture: the display's size, read from Windows. -->
   <data name="AmbientPreview_Display_Format" xml:space="preserve">
@@ -1364,7 +1355,16 @@
     <value>Your display isn't giving the preview any frame. Try again to restart the capture.</value>
   </data>
   <data name="AmbientHue_ListGroups_StoredGone" xml:space="preserve">
-    <value>The room you chose isn't on this bridge any more. Pick another one.</value>
+    <value>Your choice isn't an Entertainment area on this bridge. Pick one in the list.</value>
+  </data>
+  <data name="AmbientHue_ListGroups_NoArea" xml:space="preserve">
+    <value>This bridge has no Entertainment area. Create one in the Hue app, then select Load areas.</value>
+  </data>
+  <data name="AmbientStartFailed_NoArea" xml:space="preserve">
+    <value>Your choice isn't a Hue Entertainment area with lights. Create one in the Hue app, then pick it under Entertainment area.</value>
+  </data>
+  <data name="AmbientStartFailed_NoClientKey" xml:space="preserve">
+    <value>Deckle can't stream to this bridge yet. Pair the bridge again.</value>
   </data>
   <data name="AmbientLights_Zone_None" xml:space="preserve">
     <value>No zone</value>
@@ -1635,12 +1635,6 @@
   <data name="Setup_Module_anytype_Description" xml:space="preserve">
     <value>Hosts the local Anytype backend that AI assistants read and write</value>
   </data>
-  <data name="Setup_Module_projects_Label" xml:space="preserve">
-    <value>Deckle Projects</value>
-  </data>
-  <data name="Setup_Module_projects_Description" xml:space="preserve">
-    <value>One window for your project folders, grouped in categories, with each project's version, its scripts and what an agent reads there</value>
-  </data>
   <data name="Setup_Module_Requires_Format" xml:space="preserve">
     <value>{0}. Requires {1}</value>
   </data>
@@ -1675,14 +1669,5 @@
   </data>
   <data name="LogWindowDroppedSettingsButton.AutomationProperties.HelpText" xml:space="preserve">
     <value>Shows the controls that decide what this window can show.</value>
-  </data>
-  <data name="Settings_ParagraphRewrite_OllamaMissing_Format" xml:space="preserve">
-    <value>It needs Ollama running on this PC with the {0} model. Install Ollama from ollama.com, start it, then run: ollama pull {0}. Rewriting stays off until then.</value>
-  </data>
-  <data name="Settings_ParagraphRewrite_ModelMissing_Format" xml:space="preserve">
-    <value>Ollama is running but does not have the {0} model. Run: ollama pull {0}. Rewriting stays off until then.</value>
-  </data>
-  <data name="Settings_ParagraphRewrite_ProviderOff" xml:space="preserve">
-    <value>It uses the Ollama provider, which is switched off or missing in Providers below. Switch it on; rewriting stays off until then.</value>
   </data>
 </root>

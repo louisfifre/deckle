@@ -73,10 +73,21 @@ public sealed class TaskbarSettingsTests
     [Fact]
     public void TheBackgroundIsWrittenAsItsName()
     {
-        string json = JsonSerializer.Serialize(new TaskbarSettings { Background = TaskbarBackground.Black }, TaskbarSettingsService.JsonOptions);
+        string json = JsonSerializer.Serialize(new TaskbarSettings { Background = TaskbarBackground.Transparent }, TaskbarSettingsService.JsonOptions);
 
-        Assert.Contains("\"background\": \"black\"", json);
-        Assert.Equal(TaskbarBackground.Black, Read("""{ "background": "black" }""").Background);
+        Assert.Contains("\"background\": \"transparent\"", json);
+        Assert.Equal(TaskbarBackground.Transparent, Read("""{ "background": "transparent" }""").Background);
+    }
+
+    // The black background was removed in v0.157: a file that still holds it
+    // keeps its other settings and gets the transparent background.
+    [Fact]
+    public void AFileWithTheRemovedBlackBackgroundReadsAsTransparent()
+    {
+        TaskbarSettings settings = Read("""{ "background": "black", "compactTray": true }""");
+
+        Assert.Equal(TaskbarBackground.Transparent, settings.Background);
+        Assert.True(settings.CompactTray);
     }
 
     // A file written before the pitches could be set (v0.104) has the switches

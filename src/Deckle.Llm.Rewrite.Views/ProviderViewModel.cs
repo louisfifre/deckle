@@ -33,6 +33,7 @@ public partial class ProviderViewModel : ObservableObject
     public partial string Endpoint { get; set; }
 
     [ObservableProperty]
+    [NotifyPropertyChangedFor(nameof(Summary))]
     public partial bool Enabled { get; set; }
 
     // Set by the section from the vault; no setter path to settings.
@@ -71,9 +72,30 @@ public partial class ProviderViewModel : ObservableObject
             string kind = Loc.Get($"LlmProviderKind_{Kind}");
             bool showKind = !string.Equals(kind, Name?.Trim(), StringComparison.OrdinalIgnoreCase);
             string address = ShowsEndpoint ? Endpoint?.Trim() ?? "" : "";
-            if (address.Length == 0) return showKind ? kind : "";
-            return showKind ? $"{kind}  ·  {address}" : address;
+            string summary = address.Length == 0
+                ? (showKind ? kind : "")
+                : (showKind ? $"{kind}  ·  {address}" : address);
+
+            // Paragraph correction sends to one provider, the local Ollama; the
+            // card says so while it is on.
+            if (UsedByParagraphCorrection())
+            {
+                string also = Loc.GetFrom("Deckle.Llm.Rewrite.Views", "LlmProvider_AlsoUsedByParagraphCorrection");
+                summary = summary.Length == 0 ? also : $"{summary}  ·  {also}";
+            }
+            return summary;
         }
+    }
+
+    private bool UsedByParagraphCorrection()
+    {
+        // The host sets it only with the Autocorrect module, which holds the
+        // switch; without one the line never shows.
+        if (LlmSettingsModule.ParagraphCorrectionOn?.Invoke() != true) return false;
+
+        var providers = LlmSettingsService.Instance.Current.Providers;
+        LlmProvider? self = providers.Find(p => p.Id == Id);
+        return self is not null && ProfileUsers.ParagraphCorrectionUses(self, providers, true);
     }
 
     partial void OnNameChanged(string value)     { if (!_isSyncing) PushToSettings(); }

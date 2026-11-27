@@ -72,7 +72,15 @@ _Generated from `git ls-files` — do not edit by hand._
 │   │   ├── board-autocorrect.png
 │   │   ├── board-dictation.png
 │   │   ├── board-hero.png
-│   │   └── board-rewrite.png
+│   │   ├── board-rewrite.png
+│   │   ├── pulse-commits-dark.svg
+│   │   ├── pulse-commits-light.svg
+│   │   ├── pulse-label-end-dark.svg
+│   │   ├── pulse-label-end-light.svg
+│   │   ├── pulse-label-peak-dark.svg
+│   │   ├── pulse-label-peak-light.svg
+│   │   ├── pulse-label-start-dark.svg
+│   │   └── pulse-label-start-light.svg
 │   ├── research/
 │   │   ├── taskbar-briefs-2026-10-18/
 │   │   │   ├── brief-csharp-socle.md
@@ -182,6 +190,7 @@ _Generated from `git ls-files` — do not edit by hand._
 │   │   │   ├── execution.ps1
 │   │   │   ├── flows.ps1
 │   │   │   ├── launcher.ps1
+│   │   │   ├── logo.ps1
 │   │   │   └── logs.ps1
 │   │   ├── script-discovery/
 │   │   │   ├── catalog.ps1
@@ -219,6 +228,7 @@ _Generated from `git ls-files` — do not edit by hand._
 │   │   ├── deckle-process.ps1
 │   │   ├── download-integrity.psm1
 │   │   ├── manifest.ps1
+│   │   ├── merge-gate.psm1
 │   │   ├── native-console.ps1
 │   │   ├── release-validation.psm1
 │   │   ├── repository-inventory.psm1
@@ -226,6 +236,7 @@ _Generated from `git ls-files` — do not edit by hand._
 │   │   ├── script-discovery.psm1
 │   │   ├── script-output.ps1
 │   │   ├── source-metrics.psm1
+│   │   ├── standalone-app-release.psm1
 │   │   ├── terminal-interaction.psm1
 │   │   └── version.ps1
 │   ├── maintenance/
@@ -239,6 +250,7 @@ _Generated from `git ls-files` — do not edit by hand._
 │   │   └── validate-resources.ps1  — Validate WinUI resources Read-only audit of the WinUI resource inventories. Reports missing resource key…
 │   ├── release/
 │   │   ├── build-anytype-backend.ps1  — Build the Anytype backend Rebuilds one anytype-cli release tag from source for Windows with the tantivy-g…
+│   │   ├── draft-release-notes.ps1  — Draft the public release notes Writes a draft of the public release notes of a version to artifacts/release-no…
 │   │   ├── publish-app.ps1  — Prepare or publish the app release Builds the two artifacts a Deckle GitHub Release carries: the installer stub an…
 │   │   └── README.md  — Release Prepare and publish the app.
 │   ├── settings/
@@ -264,11 +276,17 @@ _Generated from `git ls-files` — do not edit by hand._
 │   │   │   ├── build-locked.tests.ps1
 │   │   │   ├── build-server-watchdog.tests.ps1
 │   │   │   ├── BuildServerWatchdogBugNotes.md
+│   │   │   ├── deploy-prod.tests.ps1
+│   │   │   ├── draft-release-notes.tests.ps1
 │   │   │   ├── fetch-autocorrect-data.tests.ps1
 │   │   │   ├── inspect-context.tests.ps1
 │   │   │   ├── InspectContextBugNotes.md
+│   │   │   ├── launch-app.tests.ps1
+│   │   │   ├── merge-branch.tests.ps1
 │   │   │   ├── perf-compare.tests.ps1
-│   │   │   └── read-log.tests.ps1
+│   │   │   ├── read-log.tests.ps1
+│   │   │   ├── self-check.tests.ps1
+│   │   │   └── update-readme-stats.tests.ps1
 │   │   └── lib/
 │   │       ├── agent-skills-layout.tests.ps1
 │   │       ├── anytype-backend.tests.ps1
@@ -280,7 +298,8 @@ _Generated from `git ls-files` — do not edit by hand._
 │   │       ├── resource-inventory.tests.ps1
 │   │       ├── script-inventory.tests.ps1
 │   │       ├── script-layout.tests.ps1
-│   │       └── source-metrics.tests.ps1
+│   │       ├── source-metrics.tests.ps1
+│   │       └── standalone-app-release.tests.ps1
 │   ├── build-locked.ps1
 │   ├── build-run.ps1  — Build the app Build Deckle for the chosen configuration (x64) and, unless told not to, launch…
 │   ├── build-server-watchdog.ps1
@@ -291,11 +310,13 @@ _Generated from `git ls-files` — do not edit by hand._
 │   ├── INVENTORY.md
 │   ├── launch-app.ps1  — Launch the freshest built app Replace the running Deckle instance with the freshest already-built executable…
 │   ├── menu.ps1
+│   ├── merge-branch.ps1  — Merge a branch into main behind the merge gate The one way a branch enters main. Runs the merge gate on the branch's last comm…
 │   ├── read-log.ps1  — Read Deckle's log Prints the latest entries of Deckle's diagnostics log, one line each: time, lev…
 │   ├── README.md  — readme-scripts Dev workflows entry point for Deckle: the menu.ps1 launcher installed from Deck…
 │   ├── resource-validation.allowlist.json
 │   ├── self-check.ps1  — Self-check the built app Runs a built app of the suite once in its self-check mode and judges its report…
 │   ├── stats.ps1  — Repository statistics Walk every project under src\ and build one file inventory per Deckle module, w…
+│   ├── update-readme-stats.ps1  — Update the README pulse Regenerate the small "Development pulse" section in README.md from the local Gi…
 │   ├── verify-branch-server.ps1
 │   └── verify-branch.ps1  — Verify a branch on win-serv Sends a committed branch to the verification machine, win-serv, which builds it…
 ├── specs/
@@ -471,9 +492,6 @@ _Generated from `git ls-files` — do not edit by hand._
 │   │   │   │   └── deckle--state--rewriting.ico
 │   │   │   └── Sounds/
 │   │   │       └── speech.wav
-│   │   ├── Composition/
-│   │   │   ├── PublishedComposition.cs
-│   │   │   └── SelfCheckWalkContext.cs
 │   │   ├── Diagnostics/
 │   │   │   ├── AppDiagnosticsBootstrap.cs
 │   │   │   ├── AppHudFeedbackSink.cs
@@ -521,7 +539,6 @@ _Generated from `git ls-files` — do not edit by hand._
 │   │   ├── App.Anytype.cs
 │   │   ├── App.Autocorrect.cs
 │   │   ├── App.Autocorrect.Lifecycle.cs
-│   │   ├── App.Contributions.cs
 │   │   ├── App.DeveloperAccess.cs
 │   │   ├── App.Hotkeys.Actions.cs
 │   │   ├── App.Hotkeys.cs
@@ -535,16 +552,12 @@ _Generated from `git ls-files` — do not edit by hand._
 │   │   ├── App.ParagraphRewrite.cs
 │   │   ├── App.Paste.cs
 │   │   ├── App.PrecisionScroll.cs
-│   │   ├── App.Projects.cs
 │   │   ├── App.Relocate.cs
+│   │   ├── App.SelfCheck.Autocorrect.cs
 │   │   ├── App.SelfCheck.cs
 │   │   ├── App.SelfCheck.Diagnostics.cs
 │   │   ├── App.SelfCheck.Icons.cs
 │   │   ├── App.SelfCheck.Perf.cs
-│   │   ├── App.SelfCheck.Projects.Category.cs
-│   │   ├── App.SelfCheck.Projects.cs
-│   │   ├── App.SelfCheck.Projects.Home.cs
-│   │   ├── App.SelfCheck.Projects.Project.cs
 │   │   ├── App.SelfCheck.Rewriting.cs
 │   │   ├── App.Startup.CommandLine.cs
 │   │   ├── App.Startup.CrashDumps.cs
@@ -570,15 +583,20 @@ _Generated from `git ls-files` — do not edit by hand._
 │   │   ├── AutocorrectNotifications.cs
 │   │   ├── CrashSupervisor.cs
 │   │   ├── Deckle.App.csproj
+│   │   ├── DictationSettingsPages.cs
 │   │   ├── FileTranscriptionRun.cs
+│   │   ├── HudCompletionMessage.cs
+│   │   ├── InterfaceCaptureGate.cs
 │   │   ├── LogWindow.Chrome.cs
 │   │   ├── LogWindow.Interaction.cs
 │   │   ├── LogWindow.Model.cs
 │   │   ├── LogWindow.Notices.cs
 │   │   ├── LogWindow.xaml
 │   │   ├── LogWindow.xaml.cs
+│   │   ├── OpenFileAutoSave.cs
 │   │   ├── ProdUpdate.cs
 │   │   ├── Program.cs
+│   │   ├── QuitSequence.cs
 │   │   ├── SecondaryWindowPlacement.cs
 │   │   ├── TranscribeRewriteHistory.cs
 │   │   ├── TranscribeRewriteWindow.AutoSave.cs
@@ -650,6 +668,7 @@ _Generated from `git ls-files` — do not edit by hand._
 │   │   ├── MicrophoneLevelFeed.cs
 │   │   ├── MicrophoneLevelFeedFailure.cs
 │   │   ├── ProbeResult.cs
+│   │   ├── RecordingLimit.cs
 │   │   ├── RecordingTailCalculator.cs
 │   │   ├── SpeakerOutput.cs
 │   │   ├── VoiceDetector.cs
@@ -660,7 +679,6 @@ _Generated from `git ls-files` — do not edit by hand._
 │   │   │   └── en-US/
 │   │   │       └── Resources.resw
 │   │   ├── Deckle.Audio.Views.csproj
-│   │   ├── RecordingLimit.cs
 │   │   ├── RecordingPage.xaml
 │   │   ├── RecordingPage.xaml.cs
 │   │   ├── RecordingSettingsModule.cs
@@ -698,13 +716,12 @@ _Generated from `git ls-files` — do not edit by hand._
 │   │   │   ├── IPairDisambiguator.cs
 │   │   │   ├── MistouchFamilyCorrector.cs
 │   │   │   ├── QwertyAdjacency.cs
-│   │   │   ├── RestorerOptions.cs
 │   │   │   ├── TrainerReport.cs
-│   │   │   ├── TypoOptions.cs
 │   │   │   └── WordShape.cs
 │   │   ├── Injection/
 │   │   │   ├── InjectionPlan.cs
 │   │   │   ├── ITextInjector.cs
+│   │   │   ├── ParagraphReplacementPlan.cs
 │   │   │   └── TextInjector.cs
 │   │   ├── Interop/
 │   │   │   └── KeyboardStateInterop.cs
@@ -736,6 +753,7 @@ _Generated from `git ls-files` — do not edit by hand._
 │   │   ├── Surfaces/
 │   │   │   ├── FocusedSurface.cs
 │   │   │   ├── ISurfaceProber.cs
+│   │   │   ├── ParagraphCorrectionGate.cs
 │   │   │   └── SurfaceProber.cs
 │   │   ├── Tracking/
 │   │   │   ├── KeyDecoder.cs
@@ -800,6 +818,7 @@ _Generated from `git ls-files` — do not edit by hand._
 │   │   ├── Deckle.Autocorrect.Views.csproj
 │   │   ├── LexicalDomainsPage.xaml
 │   │   ├── LexicalDomainsPage.xaml.cs
+│   │   ├── ParagraphCorrectionSection.cs
 │   │   └── SettingsSearch.cs
 │   ├── Deckle.Catalog/
 │   │   ├── Composer/
@@ -854,11 +873,6 @@ _Generated from `git ls-files` — do not edit by hand._
 │   │   ├── Deckle.Catalog.Themes.csproj
 │   │   ├── Icons.xaml
 │   │   └── SettingsPageHeaderBrushes.xaml
-│   ├── Deckle.Chrono/
-│   │   ├── ChronoFormatter.cs
-│   │   ├── ChronoTimer.cs
-│   │   ├── Deckle.Chrono.csproj
-│   │   └── DeckleChronoSource.cs
 │   ├── Deckle.Composition/
 │   │   ├── Core/
 │   │   │   ├── HudComposition.Animations.cs
@@ -1036,10 +1050,14 @@ _Generated from `git ls-files` — do not edit by hand._
 │   │   │   ├── AddedFolderReach.cs
 │   │   │   ├── AddedFolderStore.cs
 │   │   │   ├── DeckleFoldersSource.AddedFolders.cs
+│   │   │   ├── FolderGroup.cs
+│   │   │   ├── FolderGrouping.cs
 │   │   │   └── FolderIconRule.cs
 │   │   ├── Browsing/
 │   │   │   ├── AddressResolver.cs
+│   │   │   ├── AddressShortForm.cs
 │   │   │   ├── DeckleFoldersSource.FileRecycling.cs
+│   │   │   ├── Destination.cs
 │   │   │   ├── FolderListing.cs
 │   │   │   └── FolderPlace.cs
 │   │   ├── Formatting/
@@ -1134,11 +1152,13 @@ _Generated from `git ls-files` — do not edit by hand._
 │   │   ├── FoldersSelfCheck.cs
 │   │   ├── FoldersSelfCheck.FileSelection.cs
 │   │   ├── FoldersSelfCheck.FolderIcons.cs
+│   │   ├── FoldersSelfCheck.Groups.cs
 │   │   ├── FoldersSelfCheck.Map.cs
 │   │   ├── FoldersSelfCheck.Photos.cs
 │   │   ├── FoldersSelfCheck.Previews.cs
 │   │   ├── FoldersSelfCheck.Search.cs
 │   │   ├── FoldersSelfCheck.Sizes.cs
+│   │   ├── FoldersSelfCheck.Widths.cs
 │   │   ├── FoldersWalkContext.cs
 │   │   ├── LlmPhotoDescriptionModel.cs
 │   │   └── Program.cs
@@ -1151,6 +1171,9 @@ _Generated from `git ls-files` — do not edit by hand._
 │   │   │   └── AddressCrumb.cs
 │   │   ├── Details/
 │   │   │   └── DetailsSheet.cs
+│   │   ├── Home/
+│   │   │   ├── HomeView.xaml
+│   │   │   └── HomeView.xaml.cs
 │   │   ├── Icons/
 │   │   │   ├── IFileIconProvider.cs
 │   │   │   └── ShellFileIconProvider.cs
@@ -1219,14 +1242,18 @@ _Generated from `git ls-files` — do not edit by hand._
 │   │   │   ├── IFoldersTool.cs
 │   │   │   └── ToolPlaceholderView.cs
 │   │   ├── Deckle.Folders.Views.csproj
+│   │   ├── FolderGroupDialog.cs
 │   │   ├── FoldersGlyphs.cs
 │   │   ├── FoldersText.cs
 │   │   ├── FoldersWindow.External.cs
 │   │   ├── FoldersWindow.FolderIcon.cs
 │   │   ├── FoldersWindow.Folders.cs
+│   │   ├── FoldersWindow.Groups.cs
+│   │   ├── FoldersWindow.Home.cs
 │   │   ├── FoldersWindow.Navigation.cs
 │   │   ├── FoldersWindow.Review.cs
 │   │   ├── FoldersWindow.Tools.cs
+│   │   ├── FoldersWindow.Widths.cs
 │   │   ├── FoldersWindow.xaml
 │   │   └── FoldersWindow.xaml.cs
 │   ├── Deckle.Home/
@@ -1281,6 +1308,7 @@ _Generated from `git ls-files` — do not edit by hand._
 │   │   └── WindowTheme.cs
 │   ├── Deckle.Hud/
 │   │   ├── Chrono/
+│   │   │   ├── ChronoDigits.cs
 │   │   │   ├── GLOSSARY.md  — glossary-deckle-hud-chrono Chrono HUD element vocabulary. It names the face's eight elements and the accen…
 │   │   │   ├── HudChrono.Clock.cs
 │   │   │   ├── HudChrono.Reveal.cs
@@ -1317,6 +1345,7 @@ _Generated from `git ls-files` — do not edit by hand._
 │   │   ├── AnimationGate.cs
 │   │   ├── Deckle.Hud.csproj
 │   │   ├── DeckleHudSource.cs
+│   │   ├── HudFirstFrameProbe.cs
 │   │   ├── HudMessage.xaml
 │   │   ├── HudMessage.xaml.cs
 │   │   └── ProximityRollupAggregator.cs
@@ -1447,7 +1476,6 @@ _Generated from `git ls-files` — do not edit by hand._
 │   │   │   ├── HueBridge.cs
 │   │   │   ├── HueBridgeClient.cs
 │   │   │   ├── HueBridgeClient.Dtos.cs
-│   │   │   ├── HueBridgeClient.EventStream.cs
 │   │   │   ├── HueBridgeClient.Identity.cs
 │   │   │   ├── HueBridgeClient.LightState.cs
 │   │   │   ├── HueBridgeClient.Pairing.cs
@@ -1460,23 +1488,19 @@ _Generated from `git ls-files` — do not edit by hand._
 │   │   │   ├── HueEntertainmentFrameBuilder.cs
 │   │   │   ├── HueEntertainmentLightOutput.cs
 │   │   │   ├── HueEntertainmentTransport.cs
-│   │   │   ├── HueEventStreamEpisode.cs
-│   │   │   ├── HueEventStreamModels.cs
 │   │   │   ├── HueGroup.cs
 │   │   │   ├── HueLight.cs
 │   │   │   ├── HueLightOutputFactory.cs
 │   │   │   ├── HueLightState.cs
 │   │   │   ├── HueLightStateRestorer.cs
 │   │   │   ├── HueLocalDiscovery.cs
-│   │   │   ├── HueLocalDiscovery.Interop.cs
-│   │   │   ├── HueProjectedState.cs
-│   │   │   └── HueRestLightOutput.cs
+│   │   │   └── HueLocalDiscovery.Interop.cs
 │   │   ├── Deckle.Lighting.csproj
 │   │   ├── DeckleLightingSource.cs
 │   │   ├── DeckleLightingSource.Discovery.cs
 │   │   ├── DeckleLightingSource.Entertainment.cs
 │   │   ├── DeckleLightingSource.GroupsAndColor.cs
-│   │   ├── DeckleLightingSource.InventoryAndEventStream.cs
+│   │   ├── DeckleLightingSource.Inventory.cs
 │   │   ├── DeckleLightingSource.Pairing.cs
 │   │   ├── ILightOutput.cs
 │   │   ├── LightColor.cs
@@ -1491,9 +1515,7 @@ _Generated from `git ls-files` — do not edit by hand._
 │   │   │   ├── AmbientEngine.CaptureRate.cs
 │   │   │   ├── AmbientEngine.cs
 │   │   │   ├── AmbientEngine.FirstFrame.cs
-│   │   │   ├── AmbientEngine.GroupPush.cs
 │   │   │   ├── AmbientEngine.Heartbeat.cs
-│   │   │   ├── AmbientEngine.HueEvents.cs
 │   │   │   ├── AmbientEngine.Lifecycle.cs
 │   │   │   ├── AmbientEngine.MultiLightPush.cs
 │   │   │   ├── AmbientEngine.PreviewScan.cs
@@ -1501,26 +1523,24 @@ _Generated from `git ls-files` — do not edit by hand._
 │   │   │   ├── AmbientEngine.PushLoop.cs
 │   │   │   ├── AmbientEngineState.cs
 │   │   │   ├── AmbientHeartbeatWindow.cs
-│   │   │   ├── AmbientHueChangeAttributor.cs
 │   │   │   ├── AmbientPreviewHealth.cs
 │   │   │   ├── AmbientPushCadence.cs
 │   │   │   ├── AmbientPushGate.cs
+│   │   │   ├── AmbientStartFailure.cs
 │   │   │   ├── AmbientZoneSampler.cs
 │   │   │   ├── HueEndpointResolver.cs
 │   │   │   ├── HueGroupSelection.cs
 │   │   │   ├── HuePairingService.cs
 │   │   │   ├── LightPlacementResolver.cs
 │   │   │   ├── LightZone.cs
+│   │   │   ├── LightZoneAssignment.cs
 │   │   │   ├── LightZoneSuggester.cs
 │   │   │   └── SrgbColor.cs
 │   │   ├── AmbientCaptureCap.cs
 │   │   ├── AmbientCaptureTarget.cs
-│   │   ├── AmbientPresets.cs
-│   │   ├── AmbientPresetStore.cs
 │   │   ├── AmbientSettings.cs
 │   │   ├── AmbientSettingsService.cs
 │   │   ├── AmbientStartSettings.cs
-│   │   ├── AmbientTuning.cs
 │   │   ├── Deckle.Lighting.Ambient.csproj
 │   │   ├── DeckleAmbientSource.CaptureAndSampling.cs
 │   │   ├── DeckleAmbientSource.CaptureRate.cs
@@ -1582,7 +1602,6 @@ _Generated from `git ls-files` — do not edit by hand._
 │   │   ├── DeckleLlmSource.Persistence.cs
 │   │   ├── DeckleLlmSource.Providers.cs
 │   │   ├── DeckleLlmSource.Rewrite.cs
-│   │   ├── DeckleLlmSource.RuntimeStatus.cs
 │   │   └── OllamaService.cs
 │   ├── Deckle.Llm.Rewrite/
 │   │   ├── Availability/
@@ -1601,8 +1620,7 @@ _Generated from `git ls-files` — do not edit by hand._
 │   │   ├── Engine/
 │   │   │   ├── ParagraphRewrite.cs
 │   │   │   ├── RewriteFailureMessage.cs
-│   │   │   ├── RewriteService.cs
-│   │   │   └── SentenceRewrite.cs
+│   │   │   └── RewriteService.cs
 │   │   ├── Gate/
 │   │   │   ├── DiffAlignment.cs
 │   │   │   ├── DiffGateVerdict.cs
@@ -1614,6 +1632,7 @@ _Generated from `git ls-files` — do not edit by hand._
 │   │   │   ├── ParagraphRewriteCoordinator.cs
 │   │   │   └── ParagraphRewriteOffer.cs
 │   │   ├── Settings/
+│   │   │   ├── ProfileUsers.cs
 │   │   │   ├── RewriteAvailability.cs
 │   │   │   └── StepTimelineLayout.cs
 │   │   ├── Deckle.Llm.Rewrite.csproj
@@ -1923,11 +1942,6 @@ _Generated from `git ls-files` — do not edit by hand._
 │   │   ├── PasteWindow.Thumbnail.cs
 │   │   ├── PasteWindow.xaml
 │   │   └── PasteWindow.xaml.cs
-│   ├── Deckle.Presets/
-│   │   ├── Deckle.Presets.csproj
-│   │   ├── IPresetStore.cs
-│   │   ├── Preset.cs
-│   │   └── PresetFamily.cs
 │   ├── Deckle.Projects/
 │   │   ├── Formatting/
 │   │   │   ├── ElapsedFormat.cs
@@ -1946,6 +1960,7 @@ _Generated from `git ls-files` — do not edit by hand._
 │   │   │   ├── CardGridCapacity.cs
 │   │   │   ├── CardMeta.cs
 │   │   │   ├── DeckleProjectsSource.Window.cs
+│   │   │   ├── HomeLayout.cs
 │   │   │   └── ProjectsTarget.cs
 │   │   ├── Readouts/
 │   │   │   ├── Manifests/
@@ -2004,6 +2019,22 @@ _Generated from `git ls-files` — do not edit by hand._
 │   │   │   └── ProjectsWorkspace.cs
 │   │   ├── Deckle.Projects.csproj
 │   │   └── DeckleProjectsSource.cs
+│   ├── Deckle.Projects.App/
+│   │   ├── app.manifest
+│   │   ├── App.SelfCheck.cs
+│   │   ├── App.xaml
+│   │   ├── App.xaml.cs
+│   │   ├── Composition.cs
+│   │   ├── Deckle.Projects.App.csproj
+│   │   ├── DeckleProjectsAppSource.cs
+│   │   ├── Program.cs
+│   │   ├── ProjectsContribution.cs
+│   │   ├── ProjectsDataCopy.cs
+│   │   ├── ProjectsSelfCheck.Category.cs
+│   │   ├── ProjectsSelfCheck.cs
+│   │   ├── ProjectsSelfCheck.Home.cs
+│   │   ├── ProjectsSelfCheck.Project.cs
+│   │   └── ProjectsWalkContext.cs
 │   ├── Deckle.Projects.Views/
 │   │   ├── Controls/
 │   │   │   ├── Breadcrumb.cs
@@ -2203,8 +2234,6 @@ _Generated from `git ls-files` — do not edit by hand._
 │   │   ├── HotkeyManager.cs
 │   │   ├── IconAssets.cs
 │   │   ├── MessageOnlyHost.cs
-│   │   ├── ResizeCoalescer.cs
-│   │   ├── ResizeGesture.cs
 │   │   ├── ScreenSaverHotkeyRelay.cs
 │   │   ├── SessionEndSignal.cs
 │   │   ├── SessionEndWatcher.cs
@@ -2305,22 +2334,26 @@ _Generated from `git ls-files` — do not edit by hand._
 │   │   ├── ApproachDistance.cs
 │   │   ├── CoverBand.cs
 │   │   ├── CoverGeometry.cs
-│   │   ├── CoverStacking.cs
 │   │   ├── CoverSuppression.cs
 │   │   ├── Deckle.Shell.TaskbarCover.csproj
 │   │   ├── DeckleShellTaskbarCoverSource.cs
+│   │   ├── EdgeColor.cs
 │   │   ├── SettingsSearch.cs
 │   │   ├── TaskbarCoverHost.Approach.cs
 │   │   ├── TaskbarCoverHost.CallbacksAndMessagePump.cs
 │   │   ├── TaskbarCoverHost.cs
 │   │   ├── TaskbarCoverHost.GeometryAndFullscreen.cs
 │   │   ├── TaskbarCoverHost.LifecycleAndWindow.cs
+│   │   ├── TaskbarCoverHost.Underlay.cs
 │   │   ├── TaskbarCoverHost.Visibility.cs
 │   │   ├── TaskbarCoverSettings.cs
 │   │   ├── TaskbarCoverSettingsModule.cs
 │   │   ├── TaskbarCoverSettingsService.cs
+│   │   ├── TaskbarFade.cs
 │   │   ├── TaskbarLocator.cs
-│   │   └── TaskbarPlacement.cs
+│   │   ├── TaskbarPlacement.cs
+│   │   ├── TaskbarUnderlay.cs
+│   │   └── UnderlayMotion.cs
 │   ├── Deckle.Shell.TrayMenu/
 │   │   ├── Interop/
 │   │   │   └── TrayMenuNativeMethods.cs
@@ -2461,6 +2494,7 @@ _Generated from `git ls-files` — do not edit by hand._
 │   │   │   ├── TranscriptionViewModel.DictationExperience.cs
 │   │   │   ├── TranscriptionViewModel.Engine.cs
 │   │   │   ├── TranscriptionViewModel.Lexicon.cs
+│   │   │   ├── TranscriptionViewModel.RecordingLimit.cs
 │   │   │   ├── TranscriptionViewModel.Settings.cs
 │   │   │   ├── TranscriptionViewModel.SpeechEngine.cs
 │   │   │   └── TranscriptionViewModel.Streaming.cs
@@ -2468,8 +2502,6 @@ _Generated from `git ls-files` — do not edit by hand._
 │   │   ├── LexiconPage.xaml
 │   │   ├── LexiconPage.xaml.cs
 │   │   ├── SettingsSearch.cs
-│   │   ├── StreamingPage.xaml
-│   │   ├── StreamingPage.xaml.cs
 │   │   ├── TranscriptionPage.xaml
 │   │   ├── TranscriptionPage.xaml.cs
 │   │   └── TranscriptionSettingsModule.cs
@@ -2525,6 +2557,7 @@ _Generated from `git ls-files` — do not edit by hand._
 │   │   ├── AnytypeUtilityToolCatalogTests.cs
 │   │   ├── AssemblyInfo.cs
 │   │   ├── Deckle.Anytype.Mcp.Tests.csproj
+│   │   ├── FakeAnytypeSpace.cs
 │   │   ├── FakeSecretVault.cs
 │   │   ├── ManagementToolCatalogTests.cs
 │   │   ├── McpClientTokensBugNotes.md
@@ -2533,6 +2566,7 @@ _Generated from `git ls-files` — do not edit by hand._
 │   │   ├── McpHostBugNotes.md
 │   │   ├── McpHttpHostTests.cs
 │   │   ├── McpObservabilityTests.cs
+│   │   ├── McpRateLimitBugNotes.md
 │   │   ├── McpToolsetTests.cs
 │   │   ├── MessageTemplateDoctrineTests.cs
 │   │   ├── MilestoneClosersTests.cs
@@ -2540,7 +2574,8 @@ _Generated from `git ls-files` — do not edit by hand._
 │   │   ├── ProviderKeywordsTests.cs
 │   │   ├── SchemaAdminToolCatalogTests.cs
 │   │   ├── SpacePlanToolCatalogTests.cs
-│   │   └── ToolCatalogTests.cs
+│   │   ├── ToolCatalogTests.cs
+│   │   └── ToolCatalogWiringTests.cs
 │   ├── Deckle.Anytype.Tests/
 │   │   ├── Fixtures/
 │   │   │   └── Experiences/
@@ -2633,16 +2668,21 @@ _Generated from `git ls-files` — do not edit by hand._
 │   ├── Deckle.App.Tests/
 │   │   ├── Deckle.App.Tests.csproj
 │   │   ├── DictationRecoveryBugNotes.md
+│   │   ├── DictationSettingsPagesTests.cs
 │   │   ├── ExeIconBugNotes.md
 │   │   ├── ExeIconTests.cs
 │   │   ├── FileTranscriptionBugNotes.md
 │   │   ├── FileTranscriptionRunTests.cs
+│   │   ├── HudCompletionTests.cs
 │   │   ├── HudFeedbackSinkTests.cs
+│   │   ├── InterfaceCaptureGateTests.cs
 │   │   ├── MessageTemplateDoctrineTests.cs
 │   │   ├── MilestoneClosersTests.cs
+│   │   ├── OpenFileAutoSaveTests.cs
 │   │   ├── ProdApplyUpdateTests.cs
 │   │   ├── ProdUpdateTests.cs
 │   │   ├── PublishedClosureTests.cs
+│   │   ├── QuitSequenceTests.cs
 │   │   ├── ReswMirrorTests.cs
 │   │   ├── SelfCheckBugNotes.md
 │   │   ├── SelfCheckTests.cs
@@ -2688,7 +2728,7 @@ _Generated from `git ls-files` — do not edit by hand._
 │   │   └── VoiceLevelMeterScaleTests.cs
 │   ├── Deckle.Audio.Views.Tests/
 │   │   ├── Deckle.Audio.Views.Tests.csproj
-│   │   └── RecordingLimitTests.cs
+│   │   └── MicrophonePageTests.cs
 │   ├── Deckle.Autocorrect.Tests/
 │   │   ├── AccentFoldingTests.cs
 │   │   ├── AccentIndexTests.cs
@@ -2731,6 +2771,8 @@ _Generated from `git ls-files` — do not edit by hand._
 │   │   ├── MistouchMiningMaintenanceTests.cs
 │   │   ├── MorphalouReaderTests.cs
 │   │   ├── PairModelTrainerTests.cs
+│   │   ├── ParagraphCorrectionGateTests.cs
+│   │   ├── ParagraphReplacementPlanTests.cs
 │   │   ├── PersonalDictionaryTests.cs
 │   │   ├── PersonalLexiconWithTermsTests.cs
 │   │   ├── PersonalWordAdmissionTests.cs
@@ -2742,6 +2784,9 @@ _Generated from `git ls-files` — do not edit by hand._
 │   │   ├── SurfaceProfileStoreTests.cs
 │   │   ├── TypedWordTrackerTests.cs
 │   │   └── WordBoundariesTests.cs
+│   ├── Deckle.Autocorrect.Views.Tests/
+│   │   ├── Deckle.Autocorrect.Views.Tests.csproj
+│   │   └── ParagraphCorrectionPageTests.cs
 │   ├── Deckle.Catalog.Tests/
 │   │   ├── CubicBezierTests.cs
 │   │   ├── CurveEndpointLimitsTests.cs
@@ -2761,12 +2806,6 @@ _Generated from `git ls-files` — do not edit by hand._
 │   │   ├── SettingFactoryTests.cs
 │   │   ├── SettingsExpanderItemsBugNotes.md
 │   │   └── SettingValueTextTests.cs
-│   ├── Deckle.Chrono.Tests/
-│   │   ├── ChronoFormatterTests.cs
-│   │   ├── ChronoTimerTests.cs
-│   │   ├── Deckle.Chrono.Tests.csproj
-│   │   ├── DeckleChronoSourceTests.cs
-│   │   └── MessageTemplateDoctrineTests.cs
 │   ├── Deckle.Contributions.Tests/
 │   │   ├── Fakes/
 │   │   │   ├── FakeContribution.cs
@@ -2908,11 +2947,14 @@ _Generated from `git ls-files` — do not edit by hand._
 │   │   │   └── SearchRoutingTests.cs
 │   │   ├── AddedFolderStoreTests.cs
 │   │   ├── AddressResolverTests.cs
+│   │   ├── AddressShortFormTests.cs
 │   │   ├── Deckle.Folders.Tests.csproj
 │   │   ├── DeckleFoldersSourceEventIdTests.cs
 │   │   ├── DeckleFoldersSourceTests.cs
 │   │   ├── DenyListing.cs
+│   │   ├── DestinationHistoryTests.cs
 │   │   ├── EntryFormatTests.cs
+│   │   ├── FolderGroupingTests.cs
 │   │   ├── FolderIconRuleTests.cs
 │   │   ├── FolderListingBugNotes.md
 │   │   ├── FolderListingTests.cs
@@ -2966,6 +3008,7 @@ _Generated from `git ls-files` — do not edit by hand._
 │   │   ├── AnimationOfferTests.cs
 │   │   ├── AnimationPreferenceBugNotes.md
 │   │   ├── AnimationPreferenceTests.cs
+│   │   ├── ChronoDigitsTests.cs
 │   │   ├── ConicPaletteTests.cs
 │   │   ├── Deckle.Hud.Tests.csproj
 │   │   ├── DeckleHudSourceTests.cs
@@ -3029,7 +3072,8 @@ _Generated from `git ls-files` — do not edit by hand._
 │   │   ├── TrackpadEnginePressDelayTests.cs
 │   │   ├── TrackpadObservabilityBugNotes.md
 │   │   ├── TrackpadObservabilityCollection.cs
-│   │   └── TrackpadSettingsTests.cs
+│   │   ├── TrackpadSettingsTests.cs
+│   │   └── WindowsGestureNeutralizerTests.cs
 │   ├── Deckle.Install.Tests/
 │   │   ├── Deckle.Install.Tests.csproj
 │   │   ├── FolderSafetyTests.cs
@@ -3048,11 +3092,8 @@ _Generated from `git ls-files` — do not edit by hand._
 │   │   ├── AmbientCaptureStartBugNotes.md
 │   │   ├── AmbientColorSmootherTests.cs
 │   │   ├── AmbientHeartbeatWindowTests.cs
-│   │   ├── AmbientHueChangeAttributorTests.cs
 │   │   ├── AmbientNearBlackTests.cs
 │   │   ├── AmbientObservabilityCollection.cs
-│   │   ├── AmbientPresetSelectionLogTests.cs
-│   │   ├── AmbientPresetsTests.cs
 │   │   ├── AmbientPreviewBugNotes.md
 │   │   ├── AmbientPreviewGeometryTests.cs
 │   │   ├── AmbientPreviewRobustnessTests.cs
@@ -3061,6 +3102,7 @@ _Generated from `git ls-files` — do not edit by hand._
 │   │   ├── AmbientPushGateTests.cs
 │   │   ├── AmbientRunBugNotes.md
 │   │   ├── AmbientRunLogTests.cs
+│   │   ├── AmbientStartFailureTests.cs
 │   │   ├── AmbientStartSettingsTests.cs
 │   │   ├── AmbientTableTemplateTests.cs
 │   │   ├── AmbientUserIncidentTests.cs
@@ -3071,7 +3113,9 @@ _Generated from `git ls-files` — do not edit by hand._
 │   │   ├── FrameProcessingCauseTests.cs
 │   │   ├── HueCredentialPayloadBugNotes.md
 │   │   ├── HueEndpointResolverTests.cs
+│   │   ├── HueGroupSelectionTests.cs
 │   │   ├── LightPlacementResolverTests.cs
+│   │   ├── LightZoneAssignmentTests.cs
 │   │   ├── MessageTemplateDoctrineTests.cs
 │   │   ├── MilestoneClosersTests.cs
 │   │   └── SummaryTagTests.cs
@@ -3080,7 +3124,6 @@ _Generated from `git ls-files` — do not edit by hand._
 │   │   │   └── dns-sd-pending-status-lifetime.json
 │   │   ├── CredentialPayloadTests.cs
 │   │   ├── Deckle.Lighting.Tests.csproj
-│   │   ├── DeckleLightingSourceTests.cs
 │   │   ├── HueBridgeClientIdentityTests.cs
 │   │   ├── HueBridgeClientNoAnswerRegressionTests.cs
 │   │   ├── HueCredentialPayloadBugNotes.md
@@ -3089,13 +3132,9 @@ _Generated from `git ls-files` — do not edit by hand._
 │   │   ├── HueEntertainmentFrameBuilderTests.cs
 │   │   ├── HueEntertainmentLightOutputTests.cs
 │   │   ├── HueEntertainmentRestoreRegressionTests.cs
-│   │   ├── HueEventStreamBugNotes.md
-│   │   ├── HueEventStreamEpisodeTests.cs
-│   │   ├── HueEventStreamUserIncidentTests.cs
 │   │   ├── HueLightOutputFactoryTests.cs
 │   │   ├── HueLocalDiscoveryRegressionTests.cs
 │   │   ├── HueLocalDiscoveryTests.cs
-│   │   ├── HueRestRestoreRegressionTests.cs
 │   │   ├── LightingCancellationLogTests.cs
 │   │   ├── LightingObservabilityCollection.cs
 │   │   ├── MessageTemplateDoctrineTests.cs
@@ -3104,8 +3143,9 @@ _Generated from `git ls-files` — do not edit by hand._
 │   │   ├── Deckle.Llm.Rewrite.Tests.csproj
 │   │   ├── DictationBatcherTests.cs
 │   │   ├── DictationBatchRewriterTests.cs
-│   │   ├── DictationStepsMigrationTests.cs
+│   │   ├── DictationStepsNormalizerTests.cs
 │   │   ├── LlmResetDefaultsTests.cs
+│   │   ├── LlmRewriteObservabilityCollection.cs
 │   │   ├── LlmSettingsBugNotes.md
 │   │   ├── LlmSettingsFileTests.cs
 │   │   ├── LlmSettingsFixtures.cs
@@ -3116,6 +3156,7 @@ _Generated from `git ls-files` — do not edit by hand._
 │   │   ├── ParagraphRewriteCoordinatorTests.cs
 │   │   ├── ProfileReasoningTests.cs
 │   │   ├── ProfilesSectionBugNotes.md
+│   │   ├── ProfileUsersTests.cs
 │   │   ├── RewriteDiffGateTests.cs
 │   │   ├── RewriteFailureMessageTests.cs
 │   │   ├── RewriteLogTests.cs
@@ -3123,7 +3164,6 @@ _Generated from `git ls-files` — do not edit by hand._
 │   │   ├── RewriteServiceCacheTests.cs
 │   │   ├── RewriteServiceFeedbackTests.cs
 │   │   ├── SentenceBoundaryTests.cs
-│   │   ├── SentenceRewriteTests.cs
 │   │   └── StepTimelineLayoutTests.cs
 │   ├── Deckle.Llm.Tests/
 │   │   ├── ClaudePromptCacheTests.cs
@@ -3131,6 +3171,8 @@ _Generated from `git ls-files` — do not edit by hand._
 │   │   ├── Deckle.Llm.Tests.csproj
 │   │   ├── ImageRequestTests.cs
 │   │   ├── LlmUsageLogTests.cs
+│   │   ├── OllamaServiceEndpointTests.cs
+│   │   ├── PromptTemplateFamilyTests.cs
 │   │   └── ReasoningOnTheWireTests.cs
 │   ├── Deckle.Mail.App.Tests/
 │   │   ├── Deckle.Mail.App.Tests.csproj
@@ -3142,6 +3184,7 @@ _Generated from `git ls-files` — do not edit by hand._
 │   │   ├── NavigationTests.cs
 │   │   ├── SampleAndSearchTests.cs
 │   │   ├── TaskDayTests.cs
+│   │   ├── TrashNoticeTests.cs
 │   │   ├── TriageGestureTests.cs
 │   │   └── TypesetTests.cs
 │   ├── Deckle.Mail.Tests/
@@ -3196,6 +3239,8 @@ _Generated from `git ls-files` — do not edit by hand._
 │   │   ├── ExecutableLocatorTests.cs
 │   │   ├── Fixture.cs
 │   │   ├── ForegroundChangeMappingTests.cs
+│   │   ├── HdrRuleEffectTests.cs
+│   │   ├── IsolatedDataRoot.cs
 │   │   ├── KeyValuesReaderTests.cs
 │   │   ├── MessageTemplateDoctrineTests.cs
 │   │   ├── MilestoneClosersTests.cs
@@ -3204,6 +3249,7 @@ _Generated from `git ls-files` — do not edit by hand._
 │   │   ├── OrchestrationIncidentTests.cs
 │   │   ├── OrchestrationObservabilityCollection.cs
 │   │   ├── ProfileTransactionTests.cs
+│   │   ├── RuntimeRulesTests.cs
 │   │   ├── ScanOnDiskTests.cs
 │   │   ├── SteamLibraryScanEdgeCaseTests.cs
 │   │   └── SteamLibraryTests.cs
@@ -3220,9 +3266,11 @@ _Generated from `git ls-files` — do not edit by hand._
 │   │   ├── PasteWindowDragBugNotes.md
 │   │   ├── ScratchFolder.cs
 │   │   └── WindowDragGestureTests.cs
-│   ├── Deckle.Presets.Tests/
-│   │   ├── Deckle.Presets.Tests.csproj
-│   │   └── PresetFamilyTests.cs
+│   ├── Deckle.Projects.App.Tests/
+│   │   ├── Deckle.Projects.App.Tests.csproj
+│   │   ├── DeckleProjectsAppSourceTests.cs
+│   │   ├── ProjectsAppIdentityTests.cs
+│   │   └── ProjectsDataCopyTests.cs
 │   ├── Deckle.Projects.Tests/
 │   │   ├── Formatting/
 │   │   │   └── FormattingTests.cs
@@ -3230,6 +3278,8 @@ _Generated from `git ls-files` — do not edit by hand._
 │   │   │   └── ProjectOpenerTests.cs
 │   │   ├── Presentation/
 │   │   │   ├── ActionStatesTests.cs
+│   │   │   ├── HomeLayoutBugNotes.md
+│   │   │   ├── HomeLayoutTests.cs
 │   │   │   └── PresentationTests.cs
 │   │   ├── Readouts/
 │   │   │   ├── AgentReadingTests.cs
@@ -3248,8 +3298,10 @@ _Generated from `git ls-files` — do not edit by hand._
 │   │   │   ├── RunWrapperBehaviourTests.cs
 │   │   │   └── RunWrapperTests.cs
 │   │   ├── Sample/
-│   │   │   └── ProjectsSampleWorldTests.cs
+│   │   │   ├── ProjectsSampleWorldTests.cs
+│   │   │   └── SampleGitIsolationTests.cs
 │   │   ├── ScriptMenu/
+│   │   │   ├── ScriptMenuEntryTests.cs
 │   │   │   ├── ScriptMenuParserTests.cs
 │   │   │   └── ScriptMenuReaderTests.cs
 │   │   ├── Store/
@@ -3278,7 +3330,7 @@ _Generated from `git ls-files` — do not edit by hand._
 │   │   ├── MessageTemplateDoctrineTests.cs
 │   │   ├── MilestoneClosersTests.cs
 │   │   ├── PageOpenedEventTests.cs
-│   │   ├── PerformanceSettingsTests.cs
+│   │   ├── RetiredPerformanceModeTests.cs
 │   │   ├── SettingsBackupBugNotes.md
 │   │   └── SettingsBackupRoundTripTests.cs
 │   ├── Deckle.Setup.Tests/
@@ -3352,15 +3404,17 @@ _Generated from `git ls-files` — do not edit by hand._
 │   │   └── TraySnapshotStoreTests.cs
 │   ├── Deckle.Shell.TaskbarCover.Tests/
 │   │   ├── CoverGeometryTests.cs
-│   │   ├── CoverStackingTests.cs
 │   │   ├── CoverSuppressionTests.cs
 │   │   ├── Deckle.Shell.TaskbarCover.Tests.csproj
+│   │   ├── EdgeColorTests.cs
 │   │   ├── MessageTemplateDoctrineTests.cs
 │   │   ├── MilestoneClosersTests.cs
 │   │   ├── TaskbarCoverBugNotes.md
 │   │   ├── TaskbarCoverSettingsModuleTests.cs
 │   │   ├── TaskbarCoverSettingsTests.cs
-│   │   └── TaskbarPlacementTests.cs
+│   │   ├── TaskbarFadeTests.cs
+│   │   ├── TaskbarPlacementTests.cs
+│   │   └── UnderlayMotionTests.cs
 │   ├── Deckle.Shell.Tests/
 │   │   ├── Deckle.Shell.Tests.csproj
 │   │   ├── DispatcherQueueExtensionsTests.cs
@@ -3370,7 +3424,6 @@ _Generated from `git ls-files` — do not edit by hand._
 │   │   ├── HotkeyDesktopPolicyTests.cs
 │   │   ├── MessageTemplateDoctrineTests.cs
 │   │   ├── MilestoneClosersTests.cs
-│   │   ├── ResizeGestureTests.cs
 │   │   ├── SessionEndSignalTests.cs
 │   │   ├── ShellObservabilityCollection.cs
 │   │   ├── TrayIconBugNotes.md
@@ -3430,10 +3483,8 @@ _Generated from `git ls-files` — do not edit by hand._
 │   │   │   └── LexiconTermsTests.cs
 │   │   ├── CorpusRecordSkippedTests.cs
 │   │   ├── Deckle.Transcription.Tests.csproj
-│   │   ├── DeckleLlmSourceTests.cs
 │   │   ├── DeckleWhispSourceEventIdTests.cs
 │   │   ├── DeckleWhispSourceTests.cs
-│   │   ├── DictationEndCaptureBugNotes.md
 │   │   ├── DictationRecoveryBugNotes.md
 │   │   ├── DictationRecoveryStoreTests.cs
 │   │   ├── DictationTableTemplateTests.cs
@@ -3477,6 +3528,10 @@ _Generated from `git ls-files` — do not edit by hand._
 │   │   ├── WhispEventIdBugNotes.md
 │   │   ├── WhispModelLifecycleBugNotes.md
 │   │   └── WhispModelLifecycleTests.cs
+│   ├── Deckle.Transcription.Views.Tests/
+│   │   ├── Deckle.Transcription.Views.Tests.csproj
+│   │   ├── DictationGeneralPageTests.cs
+│   │   └── RecordingLimitTests.cs
 │   ├── Deckle.Vad.Tests/
 │   │   ├── Deckle.Vad.Tests.csproj
 │   │   ├── MessageTemplateDoctrineTests.cs
@@ -3485,7 +3540,7 @@ _Generated from `git ls-files` — do not edit by hand._
 │   │   ├── VadBugNotes.md
 │   │   ├── VadObservabilityCollection.cs
 │   │   ├── VadPathRedactionTests.cs
-│   │   └── VadServiceDownloadRetryTests.cs
+│   │   └── VadServiceSingleDownloadTests.cs
 │   ├── Deckle.Vision.Tests/
 │   │   ├── CaptureIncidentsBugNotes.md
 │   │   ├── CaptureIncidentsTests.cs

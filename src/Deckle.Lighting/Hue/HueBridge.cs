@@ -20,7 +20,7 @@ public sealed record HueBridge(
 // from the Hue app.
 //
 // `ClientKey` is the PSK for the Entertainment v2 DTLS handshake; the
-// REST path never uses it. A true secret: never logged, stored only in
+// CLIP calls never use it. A true secret: never logged, stored only in
 // the DPAPI vault (HueCredentialVault), never in settings.json.
 public sealed record HueCredentials(string Username, string ClientKey)
 {

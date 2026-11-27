@@ -87,15 +87,6 @@ public sealed partial class DeckleLightingSource
         if (IsEnabled()) WriteEvent(EvtLightOutputSelected, output, reason);
     }
 
-    [Event(EvtEntertainmentRestFallback,
-           Level = EventLevel.Warning,
-           Keywords = (EventKeywords)Keywords.Pipeline,
-           Message = "Hue Entertainment is unavailable, using the REST fallback\nreason={0} | ex_type={1} | ex_message={2}")]
-    public void EntertainmentRestFallback(string reason, string ex_type, string ex_message)
-    {
-        if (IsEnabled()) WriteEvent(EvtEntertainmentRestFallback, reason, ex_type, ex_message);
-    }
-
     [Event(EvtEntertainmentPrePrimeStarting,
            Level = EventLevel.Informational,
            Keywords = (EventKeywords)Keywords.Pipeline,

@@ -26,13 +26,22 @@ internal enum AmbientPushDecision
 //   - A change at or above the threshold goes out.
 //   - A smaller change is held on a continuous output (Hue Entertainment
 //     streams a full frame on every tick, so the previous colour is sent
-//     again) and dropped on a persistent one (Hue REST keeps its state).
+//     again) and dropped on a persistent one, which keeps its state on its
+//     own. Ambient drives Hue Entertainment only today; the persistent case
+//     stays for a driver that keeps state, such as a future Home Assistant
+//     one.
 //
 // A lamp that stops following while the screen is still is this gate
 // dropping unchanged pushes (the heartbeat's dropped count), not a capture
 // fault.
 internal static class AmbientPushGate
 {
+    /// <summary>The sum-of-absolute-channel-deltas threshold, on the 0-765
+    /// scale: a change under it is held or dropped, a change at or above it
+    /// goes out. It is fixed in code; no setting changes it. On a slow fade
+    /// it shows as small steps.</summary>
+    public const int ChangeThreshold = 8;
+
     public static AmbientPushDecision Decide(
         LightColor target,
         (int R, int G, int B) previous,

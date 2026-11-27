@@ -21,7 +21,7 @@ public sealed class TaskbarCustomizationTests
     [Fact]
     public void EachPartAloneCustomizesTheProcessItLivesIn()
     {
-        Assert.True(From(new TaskbarSettings { Background = TaskbarBackground.Black }, true).CustomizesExplorer);
+        Assert.True(From(new TaskbarSettings { Background = TaskbarBackground.Transparent }, true).CustomizesExplorer);
         Assert.True(From(new TaskbarSettings { CompactClock = true }, true).CustomizesExplorer);
         Assert.True(From(new TaskbarSettings { CompactTray = true }, true).CustomizesExplorer);
         Assert.True(From(new TaskbarSettings { CompactTaskButtons = true }, true).CustomizesExplorer);

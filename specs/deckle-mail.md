@@ -81,7 +81,7 @@ The frames are on canvas pages 15, 18 and 19; sizes, colours and wording are kep
 1. The navigation lists Triage and Activity first, then the mailboxes, then Settings at the foot.
 2. While there is no activity at all, neither by the user nor by the sorting, Activity is absent from the navigation. It shows from the first line.
 3. A mailbox that has aliases is a group header: it folds and unfolds, and opens no page. Its first child is Inbox, the page of the whole mailbox; its aliases follow. The children stand one step in from the header, as Windows draws a group. A mailbox with no alias is a single item that opens its page.
-4. A mailbox shows the name given when it was added, or its address when it was given none. Example: a mailbox named Perso shows « Perso »; maison@exemple.fr, added without a name, shows « maison@exemple.fr ».
+4. A mailbox shows the name given when it was added, or its address when it was given none. Example: a mailbox named Perso shows « Perso »; maison@example.com, added without a name, shows « maison@example.com ».
 5. Inbox stands for the main address of the mailbox. It is not renamed.
 6. By default each alias is named by the part of its address before the @, with a capital. Example: facture@ is named « Facture », shop@ « Shop ». The user can rename an alias by hand.
 7. A mailbox is marked by its initial alone, drawn as a glyph like the other icons of the navigation, with no circle around it.
@@ -284,7 +284,7 @@ Each question gives its options, what the spec holds today, and what depends on 
 21. **The result of a task that has no day.** Options: « Task, no day » or « Task added ». The spec words only « Task for » and a day. Falls if No day yet goes (Open 42).
 22. **A gesture that waits: in words or by a sign.** Options: the result followed by the caution dot, or words such as « Waiting… », in place of the result or after it. Whatever the form, it never moves the row. Reviewers asked for a word. Today: the dot.
 23. **What the problems button's list says.** Not said: since when the content of a failed mailbox is shown and how many gestures wait for it; how many mails wait while the sorting cannot run; whether the list offers to try the sorting again, and whether it names what stops it; and, with a mailbox that cannot connect while the sorting cannot run, whether the list gives two entries, the one that offers a command first, or one entry that says both.
-24. **What a search shows.** Its form is a menu under the field. Not said: what a line of the menu shows (the sender, the sentence, the date, where the mail stands: in Triage, treated or set aside), whether a subject still waiting keeps its two gestures there, and what choosing a line opens. The model is the search of Deckle and its playground.
+24. **What a search shows.** Its form is a menu under the field. Not said: what a line of the menu shows (the sender, the sentence, the date, where the mail stands: in Triage, treated or set aside), whether a subject still waiting keeps its two gestures there, and what choosing a line opens. The model is the search of Deckle's Settings window.
 25. **A sign on Settings when Anytype cannot connect.** Options: the caution dot on the Settings item, or none. Today: the dot is for mailboxes only.
 26. **The search field before any mailbox exists.** Options: shown as everywhere, or hidden until there is mail to search.
 27. **The default button when removing a mailbox.** Options: Remove, since the mail stays on the server and the mailbox can be added again, or Cancel, as for emptying a trash.

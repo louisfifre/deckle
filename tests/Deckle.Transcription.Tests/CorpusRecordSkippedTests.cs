@@ -39,8 +39,7 @@ public sealed class CorpusRecordSkippedTests : IDisposable
             host,
             backend,
             new ScriptedMicrophoneCapture(utteranceCount: 1),
-            new RecordingClipboardWriter(),
-            captureTail: TestCaptureTail);
+            new RecordingClipboardWriter());
         var finished = new TaskCompletionSource<TranscriptionOutcome>(
             TaskCreationOptions.RunContinuationsAsynchronously);
         var ready = new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously);
@@ -97,8 +96,7 @@ public sealed class CorpusRecordSkippedTests : IDisposable
             host,
             backend,
             new ScriptedMicrophoneCapture(utteranceCount: 0),
-            new RecordingClipboardWriter(),
-            captureTail: TestCaptureTail);
+            new RecordingClipboardWriter());
         var finished = new TaskCompletionSource<TranscriptionOutcome>(
             TaskCreationOptions.RunContinuationsAsynchronously);
         engine.TranscriptionFinished += result => finished.TrySetResult(result);

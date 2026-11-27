@@ -10,7 +10,7 @@ namespace Deckle.Transcription.Views;
 
 // The dictation lexicon (TranscriptionSettings.Lexicon): the person's own
 // words, added one at a time, and the switch of the decoder boost that favors
-// them. Shown on its own page, Transcription > Lexicon (LexiconPage).
+// them. Shown on its own page, Dictation > Lexicon (LexiconPage).
 //
 // The words are the person's data, not a setting: they have no default and no
 // reset, so nothing but their own remove gesture takes one away. The

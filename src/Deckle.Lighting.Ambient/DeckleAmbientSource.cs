@@ -52,11 +52,11 @@ public sealed partial class DeckleAmbientSource : DeckleEventSource
     public const int EvtSettingsLoadError             = 25;
     // 26 retired.
     // 27 retired.
-    public const int EvtExternalChangeStopped         = 28;
+    // 28 retired.
     // 29 retired.
     public const int EvtPipelinePerLightConfig        = 30;
-    public const int EvtExternalChangeStoppedDetail   = 31;
-    public const int EvtEchoIgnored                   = 32;
+    // 31 retired.
+    // 32 retired.
     public const int EvtSamplerRebuilt                = 33;
     // 34 retired.
 
@@ -75,7 +75,7 @@ public sealed partial class DeckleAmbientSource : DeckleEventSource
     // 46 retired.
     public const int EvtSamplerRebuiltDetail            = 47;
     // 48 retired.
-    public const int EvtExternalChangeDecisionDetail    = 49;
+    // 49 retired.
     public const int EvtPipelineStarting                = 50;
     public const int EvtPipelineStopping                = 51;
     // 52 retired.
@@ -94,15 +94,15 @@ public sealed partial class DeckleAmbientSource : DeckleEventSource
 
     // ── AmbientViewModel setters ─────────────────────────────────────────
     public const int EvtTuningChanged                   = 65;
-    public const int EvtPipelineModeChanged             = 66;
-    public const int EvtPipelineModeChangedDetail       = 67;
+    // 66 retired.
+    // 67 retired.
 
     // ── Per-light placement ──────────────────────────────────────────────
     // 68 retired.
     // 69 retired.
     public const int EvtLightsResolved                  = 70;
-    public const int EvtEntertainmentAreaUsed           = 71;
-    public const int EvtEntertainmentAreaUsedDetail     = 72;
+    // 71 retired.
+    // 72 retired.
     public const int EvtEntertainmentAreaMatched        = 73;
     public const int EvtZoneSuggested                   = 74;
     public const int EvtLightZoneUpdated                = 75;
@@ -116,12 +116,12 @@ public sealed partial class DeckleAmbientSource : DeckleEventSource
     // 81: retired ID, never reused. Its pushed / dropped totals moved onto PipelineStopped.
     public const int EvtPushLoopCrashed                 = 82;
     public const int EvtStateChangedSubscriberThrew     = 83;
-    public const int EvtMultiLightFallback              = 84;
+    // 84 retired.
     public const int EvtHeartbeat                       = 85;
     public const int EvtBridgeAutoRestoreFailed         = 86;
     public const int EvtAmbientPagePairFailed           = 87;
     public const int EvtAmbientPageListGroupsFailed     = 88;
-    public const int EvtEventStreamSetupFailed          = 89;
+    // 89 retired.
     public const int EvtSamplerRebuildFailed            = 90;
     public const int EvtPushIncidentOpened              = 91;
     public const int EvtPushRejected                    = 92;
@@ -138,7 +138,6 @@ public sealed partial class DeckleAmbientSource : DeckleEventSource
     public const int EvtCaptureLost                     = 103;
     public const int EvtPipelineIncidentAbandoned       = 104;
     public const int EvtPipelineAbortIgnoredDetail      = 105;
-    public const int EvtPresetSelectionReplaced         = 106;
 
     // ── Preview scan ─────────────────────────────────────────────────────
     public const int EvtPreviewScanStarting             = 107;

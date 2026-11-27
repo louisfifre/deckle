@@ -1,5 +1,4 @@
 using Deckle.Catalog;
-using Deckle.Contributions;
 using Deckle.Modules;
 
 namespace Deckle.App;
@@ -74,20 +73,5 @@ internal static class AppModules
             Glyph = Glyphs.List,
             Order = 600,
         });
-
-        ModuleRegistry.Register(new ModuleDescriptor
-        {
-            Id = ModuleIds.Projects,
-            Glyph = Glyphs.Folder,
-            Order = 710,
-        });
-
-        // The descriptors of the contributed modules travel with them
-        // (PublishedComposition); a contribution that is not a module has none.
-        foreach (IContribution contribution in PublishedComposition.All)
-        {
-            if (contribution.Descriptor is { } descriptor)
-                ModuleRegistry.Register(descriptor);
-        }
     }
 }
