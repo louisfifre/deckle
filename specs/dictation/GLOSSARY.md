@@ -2,7 +2,7 @@
 
 ### Change of subject
 
-The moment the user moves from one subject to another, marked automatically or by one gesture of theirs. The text keeps the subjects apart.
+The moment the user moves from one subject to another.
 
 ### Dictation
 
@@ -34,7 +34,7 @@ What the user talks about, in a dictation.
 
 ### Utterance
 
-A stretch of the user's voice between two silences, which the product transcribes in one piece. An utterance ends on a silence; the listening goes on.
+A stretch of the user's voice between two silences.
 
 ### Voice
 

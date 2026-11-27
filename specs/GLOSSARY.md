@@ -10,7 +10,7 @@ A program the user works in, such as an editor, a browser or a mail client. Avoi
 
 ### Gesture
 
-What the user does with their body to start an action, such as pressing keys or touching the screen. The same gesture starts and stops a dictation; another marks a change of subject. Avoid: action, for what the user does.
+What the user does with their body to start an action, such as pressing keys or touching the screen. Avoid: action, for what the user does.
 
 ### Microphone
 
