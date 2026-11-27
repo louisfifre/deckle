@@ -326,6 +326,8 @@ _Generated from `git ls-files` — do not edit by hand._
 │   ├── dictation/
 │   │   ├── deckle-dictation.md
 │   │   └── GLOSSARY.md
+│   ├── folders/
+│   │   └── deckle-folders.md
 │   ├── home-inventory/
 │   │   ├── deckle-home-inventory.md
 │   │   └── GLOSSARY.md
@@ -346,7 +348,6 @@ _Generated from `git ls-files` — do not edit by hand._
 │   │   └── GLOSSARY.md
 │   ├── deckle.md
 │   ├── deckle.rules.md
-│   ├── folders.md
 │   └── GLOSSARY.md
 ├── src/
 │   ├── Deckle.Anytype/
