@@ -320,6 +320,9 @@ _Generated from `git ls-files` — do not edit by hand._
 │   ├── verify-branch-server.ps1
 │   └── verify-branch.ps1  — Verify a branch on win-serv Sends a committed branch to the verification machine, win-serv, which builds it…
 ├── specs/
+│   ├── ambient-lighting/
+│   │   ├── deckle-ambient-lighting.md
+│   │   └── GLOSSARY.md
 │   ├── dictation/
 │   │   ├── deckle-dictation.md
 │   │   └── GLOSSARY.md
