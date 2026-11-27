@@ -24,14 +24,17 @@ public sealed partial class TaskbarCoverHost
     // fullscreen verdict (the band's suppression), which also catches what
     // the walk leaves out, such as an always-on-top game.
     //
-    // One strip per taskbar, made once, on every virtual desktop like the
-    // taskbar: a switch of desktop leaves it under the taskbar, and it
-    // fades to the next desktop's app or away (TaskbarUnderlay).
+    // A strip whose app goes to a desktop not shown stays there, for the
+    // switch that returns (TaskbarUnderlay).
     //
-    // Task view takes the strip away: it reads as the desktop. Windows
-    // describes it as it describes Alt+Tab's switcher (same class, same
-    // styles, measured 2026-11-27), and only the title tells them apart. It
-    // is the one rule that leans on a title, which Windows translates.
+    // Task view takes the strip away: it reads as the desktop. It covers the
+    // screen from the moment it takes the foreground until Windows hides it,
+    // some 370 ms after the app chosen in it took the foreground back
+    // (measured 2026-11-27). The strip follows its window, not the
+    // foreground: a strip that came back with the foreground had faded in
+    // under Task view, and showed whole at once when Task view went. While
+    // Task view shows, the look runs every UnderlaySoonMs, so that its going
+    // is seen within a frame (TaskbarUnderlay.FindTaskView).
     //
     // Which colour: the app's own edge, read from the frames the app draws
     // (WindowEdgeReader), never from the screen. The screen shows whatever is
@@ -61,6 +64,8 @@ public sealed partial class TaskbarCoverHost
     private const uint UnderlaySoonMs = 16;
 
     private bool _underlaySoonPending;
+    // Task view's window while it shows, zero otherwise.
+    private IntPtr _taskView;
     private bool _underlayFailureLogged;
     // The frame clock's generation: a clock thread runs while its number is
     // the current one, so stopping it is a bump and a new one never meets
@@ -97,9 +102,11 @@ public sealed partial class TaskbarCoverHost
 
     private void RefreshUnderlays(string reason)
     {
-        bool taskView = TaskbarUnderlay.TaskViewShown();
+        _taskView = TaskbarUnderlay.FindTaskView(_taskView);
+        bool taskView = _taskView != IntPtr.Zero;
         foreach (var band in _bands) RefreshUnderlay(band, reason, taskView);
         KeepUnderlayMotion();
+        if (taskView) ScheduleUnderlayRefresh();
     }
 
     // Runs the frame clock while a strip fades, and only then.
@@ -143,35 +150,34 @@ public sealed partial class TaskbarCoverHost
     {
         bool possible = _layoutKnown && !_systemSuspended && !band.AppSuppressed && !taskView;
         IntPtr app = possible ? TaskbarUnderlay.FindMaximizedApp(band.Monitor, band.MonitorRect) : IntPtr.Zero;
-        bool animate = possible && _animationsEnabled();
+        bool animate = (possible || taskView) && _animationsEnabled();
 
         if (app == IntPtr.Zero)
         {
             StopEdgeReader(band);
-            if (band.Underlay is { Visible: true } shown)
-            {
-                shown.Hide(animate);
-                DeckleShellTaskbarCoverSource.Log.UnderlayHidden(band.Index, reason);
-            }
+            if (band.Underlay is not { } underlay) return;
+            bool wasVisible = underlay.Visible;
+            UpdateUnderlay(band, underlay, IntPtr.Zero, underlay.Color, false, animate, !taskView);
+            if (wasVisible) DeckleShellTaskbarCoverSource.Log.UnderlayHidden(band.Index, reason);
             return;
         }
 
-        var underlay = band.Underlay ??= new TaskbarUnderlay(ClassName, _hInstance);
-        bool wasVisible = underlay.Visible;
+        var shown = band.Underlay ??= new TaskbarUnderlay(ClassName, _hInstance);
+        bool visible = shown.Visible;
         if (app != band.EdgeReaderApp) StartEdgeReader(band, app);
 
         // A strip that appears starts from the theme's base, and one that
         // passes to another app keeps its colour: either way the first frame
         // read takes it to the app's edge.
-        uint color = wasVisible ? underlay.Color : TaskbarUnderlay.ThemeBase();
-        bool blur = wasVisible && underlay.EdgeVaried && TaskbarUnderlay.ShowsBackdrop(app);
-        ShowUnderlay(band, underlay, app, color, blur, animate);
-        if (!wasVisible && underlay.Visible) DeckleShellTaskbarCoverSource.Log.UnderlayShown(band.Index, reason);
+        uint color = visible ? shown.Color : TaskbarUnderlay.ThemeBase();
+        bool blur = visible && shown.EdgeVaried && TaskbarUnderlay.ShowsBackdrop(app);
+        UpdateUnderlay(band, shown, app, color, blur, animate, desktopsShown: true);
+        if (!visible && shown.Visible) DeckleShellTaskbarCoverSource.Log.UnderlayShown(band.Index, reason);
     }
 
-    private void ShowUnderlay(CoverBand band, TaskbarUnderlay underlay, IntPtr app, uint color, bool blur, bool animate)
+    private void UpdateUnderlay(CoverBand band, TaskbarUnderlay underlay, IntPtr app, uint color, bool blur, bool animate, bool desktopsShown)
     {
-        int error = underlay.Show(app, band.Rect, color, blur, animate);
+        int error = underlay.Update(app, band.Rect, color, blur, animate, desktopsShown);
         if (error != 0)
         {
             if (!_underlayFailureLogged)
@@ -253,7 +259,7 @@ public sealed partial class TaskbarCoverHost
         // for Mica, type 2, and draws black), and a blur beside a plain edge
         // shows the wallpaper the app hides.
         bool blur = underlay.EdgeVaried && TaskbarUnderlay.ShowsBackdrop(underlay.App);
-        ShowUnderlay(band, underlay, underlay.App, color, blur, _animationsEnabled());
+        UpdateUnderlay(band, underlay, underlay.App, color, blur, _animationsEnabled(), desktopsShown: true);
         KeepUnderlayMotion();
     }
 
@@ -267,7 +273,7 @@ public sealed partial class TaskbarCoverHost
         foreach (var band in _bands)
         {
             if (band.Underlay is not { Visible: true } underlay) continue;
-            ShowUnderlay(band, underlay, underlay.App, color, blur: false, _animationsEnabled());
+            UpdateUnderlay(band, underlay, underlay.App, color, blur: false, _animationsEnabled(), desktopsShown: true);
             StartEdgeReader(band, underlay.App);
         }
         KeepUnderlayMotion();
