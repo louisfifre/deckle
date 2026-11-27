@@ -62,6 +62,7 @@ public sealed class DeckleShellTaskbarCoverSource : DeckleEventSource
     public const int EvtUnderlayHidden          = 43;
     public const int EvtUnderlayFailed          = 44;
     public const int EvtUnderlayRecovered       = 45;
+    public const int EvtUnderlayEdgeReadFailed  = 46;
 
     // ── Host lifecycle ────────────────────────────────────────────────────────
 
@@ -252,6 +253,16 @@ public sealed class DeckleShellTaskbarCoverSource : DeckleEventSource
     public void UnderlayRecovered()
     {
         if (IsEnabled()) WriteEvent(EvtUnderlayRecovered);
+    }
+
+    // The strip keeps the colour it shows until the app changes.
+    [Event(EvtUnderlayEdgeReadFailed,
+           Level = EventLevel.Warning,
+           Keywords = (EventKeywords)Keywords.Windowing,
+           Message = "Windows refused to let Deckle read the app's edge — the strip under the taskbar keeps its colour until another app is maximized\nband={0} | error={1}")]
+    public void UnderlayEdgeReadFailed(int band, string error)
+    {
+        if (IsEnabled()) WriteEvent(EvtUnderlayEdgeReadFailed, band, error);
     }
 
     // ── Gates ─────────────────────────────────────────────────────────────────

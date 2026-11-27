@@ -179,6 +179,16 @@ public sealed partial class TaskbarCoverHost
                 $"SetWinEventHook(EVENT_OBJECT_LOCATIONCHANGE) failed (Win32 err {Marshal.GetLastWin32Error()})");
         }
 
+        // Without it a switch of virtual desktop would leave the strips as
+        // they were until another window moves: not fatal.
+        _cloakHook = SetWinEventHook(
+            EVENT_OBJECT_CLOAKED, EVENT_OBJECT_UNCLOAKED,
+            IntPtr.Zero, _cursorHookDelegate, 0, 0, WINEVENT_OUTOFCONTEXT);
+
+        // The strips read their apps' edges by window capture; Windows draws
+        // a yellow border round a captured window unless this was granted.
+        _ = Deckle.Vision.WindowEdgeReader.RequestBorderlessAsync();
+
         if (!WTSRegisterSessionNotification(_hwnd, NOTIFY_FOR_THIS_SESSION))
             DeckleShellTaskbarCoverSource.Log.SessionNotifyFailed(Marshal.GetLastWin32Error());
 

@@ -34,6 +34,16 @@ public class UnderlayMotionTests
         Assert.Equal(255, UnderlayMotion.FadeAlpha(halfway, 255, UnderlayMotion.FadeMs));
     }
 
+    // Windows' Fast Out, Slow In, cubic-bezier(0, 0, 0, 1): at x = 0.125 the
+    // curve's parameter is 0.5, where its y is exactly 0.5.
+    [Fact]
+    public void TheCurveIsWindowsFastOutSlowIn()
+    {
+        Assert.Equal(0.5, UnderlayMotion.FastOutSlowIn(0.125), 9);
+        Assert.Equal(0, UnderlayMotion.FastOutSlowIn(0));
+        Assert.Equal(1, UnderlayMotion.FastOutSlowIn(1), 9);
+    }
+
     [Fact]
     public void AFadeChangesFastestAtItsStart()
     {
