@@ -12,6 +12,12 @@ A program the user works in, such as an editor, a browser or a mail client.
 
 Avoid: [product](#product), [system](#system).
 
+### Closed navigation
+
+A navigation that shows only the icon of each of its places, beside the page.
+
+Avoid: [open navigation](#open-navigation).
+
 ### Dictation
 
 What the user says between the gesture that starts it and the gesture that stops it, and the text it gives back.
@@ -31,6 +37,12 @@ The device that picks up sound for the computer or the phone.
 The list of the places of a window, through which the user goes from one place to another.
 
 Avoid: [page](#page).
+
+### Open navigation
+
+A navigation that shows the icon and the name of each of its places, beside the page.
+
+Avoid: [closed navigation](#closed-navigation).
 
 ### Page
 
