@@ -154,3 +154,11 @@ The autocorrect module (`Deckle.Autocorrect`) ships compact derived lexicons und
 - Repository : https://github.com/snakers4/silero-vad
 - License : MIT — Copyright (c) 2020-present Silero Team.
 - Used as : the `silero_vad.onnx` v6.2 model, downloaded on demand to the models directory and run by `Deckle.Inference.Onnx` for external voice activity detection. Not redistributed in this repository.
+
+## Downloaded at run time
+
+### anytype-cli
+
+- Repository : https://github.com/anyproto/anytype-cli
+- License : MIT — Copyright (c) 2023 Any Association. Read from the upstream `LICENSE.md`. The binary embeds anytype-heart as its server, whose own license was not checked.
+- Used as : the headless Anytype backend that the Anytype gateway supervises. The official Windows release asset is downloaded on demand from the GitHub release pinned in `src/Deckle.Anytype/Backend/BackendInstallation.cs` and run unchanged. Not redistributed in this repository or in Deckle's release.
