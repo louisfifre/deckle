@@ -47,7 +47,7 @@
 When it goes well:
 
 1. The first time a [window](../GLOSSARY.md#window) opens, its [navigation](../GLOSSARY.md#navigation) is [open](../GLOSSARY.md#open-navigation), unless that window's own spec says it starts [closed](../GLOSSARY.md#closed-navigation).
-2. While the [product](../GLOSSARY.md#product) runs, a window that opens again shows its navigation as the [user](../GLOSSARY.md#user) last left it.
+2. A window that opens again, after the [product](../GLOSSARY.md#product) restarts too, shows its navigation as the [user](../GLOSSARY.md#user) last left it.
 
 Otherwise:
 
