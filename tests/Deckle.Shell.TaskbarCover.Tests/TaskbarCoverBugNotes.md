@@ -53,3 +53,21 @@
 - **Violated invariant:** No strip shows on a monitor whose band a fullscreen app suppresses. See the `possible` gate in `RefreshUnderlay` and the comment above the Task view paragraph of `TaskbarCoverHost.Underlay.cs`.
 - **Recurrence cue:** A new reason to show or keep the strip that is not gated by `band.AppSuppressed`; or a fullscreen detection that stops reading a borderless zoomed window as fullscreen.
 - **Regression coverage:** None. The decision runs inside the cover thread against real windows, and no existing seam reproduces it. The probe of 2026-11-27 (maximized, then fullscreen, then back: strips 1, 0, 1 after the fix; 1, 1, 1 before) is the check to rerun.
+
+## Strip under the taskbar removed during Alt+Tab
+
+- **Trigger:** Alt+Tab held between maximized apps, on build 0.158.0, with the taskbar faded.
+- **Observed symptom:** Louis saw the strip vanish while the switcher was open and come back late. Measured on 2026-11-27: at the press of Tab the foreground became a `XamlExplorerHostIslandWindow` covering the monitor; the strip was removed at once and returned 645 ms after the switcher closed.
+- **Cause:** The strip followed the foreground. Alt+Tab's switcher has the class and styles of Task view (measured: same class, `ex=0x00200088`, topmost and tool window), so the rule that takes the strip away in Task view took it away under Alt+Tab too; then a hold and a settle wait delayed its return.
+- **Violated invariant:** The strip follows the topmost maximized app on its monitor, not the foreground; a topmost shell window over the app changes nothing. See the header of `TaskbarCoverHost.Underlay.cs` and `TaskbarUnderlay.FindMaximizedApp`.
+- **Recurrence cue:** A strip decision that reads `GetForegroundWindow` for anything but Task view, or a wait, hold or threshold added before the strip changes.
+- **Regression coverage:** None automatic: the rule walks the live z-order, with no seam a test can drive without real windows. Seen in Louis's trial of 2026-11-27 on the branch `feat/taskbar-strip-alttab`. Task view is still told from the switcher by its English title only (`TaskbarUnderlay.TaskViewShown`).
+
+## Restored window sent behind the maximized app under it
+
+- **Trigger:** A maximized app (T3 Code) behind, a second window (Explorer) maximized over it, then restored to its normal size.
+- **Observed symptom:** Louis saw the restored Explorer go behind T3 Code (trial of 2026-11-27). Reproduced the same day with two test windows: the restored window was above the other before its restore and below it after, with only Louis's Deckle running.
+- **Cause:** Each strip is owned by its app, and Windows keeps an owner under the windows it owns. On the restore the strip passes to the app behind; `TaskbarUnderlay.Place` put that app's new strip just under the strip of the window above, and Windows raised its owner, the app behind, with it.
+- **Violated invariant:** A strip is placed only against a strip of the same app; Deckle never changes the order of the person's windows. See the comment on `TaskbarUnderlay.Place`.
+- **Recurrence cue:** A `SetWindowPos` with an insert-after window on a strip whose owner differs from that window's owner; any new owned window placed relative to another app's window.
+- **Regression coverage:** None automatic: it takes real owned windows and the window manager. Measured after the fix, the restored window stayed above, but with Louis's older Deckle running in parallel, so the proof is not clean; his own trial confirmed it.

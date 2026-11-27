@@ -123,7 +123,7 @@ public static class WindowSnapshot
     // leaves the border on screen while the capture runs.
     // Both calls exist from Windows 10 21H1 (build 20348) on; before it, the
     // border is always drawn.
-    private static async Task RequestBorderlessOnceAsync()
+    internal static async Task RequestBorderlessOnceAsync()
     {
         if (_borderlessRequested || !OperatingSystem.IsWindowsVersionAtLeast(10, 0, 20348)) return;
         _borderlessRequested = true;

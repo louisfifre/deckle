@@ -15,7 +15,6 @@ public sealed partial class TaskbarCoverHost
     private void BootstrapState()
     {
         RebuildLayout("boot");
-        StartUnderlayPeriod();
     }
 
     private void RunPump()
@@ -34,6 +33,11 @@ public sealed partial class TaskbarCoverHost
             // Must run on the thread that called SetWinEventHook — we are on it.
             UnhookWinEvent(_cursorHook);
             _cursorHook = IntPtr.Zero;
+        }
+        if (_cloakHook != IntPtr.Zero)
+        {
+            UnhookWinEvent(_cloakHook);
+            _cloakHook = IntPtr.Zero;
         }
         RestoreAll("host_stopped");
         StopUnderlayMotion();
@@ -60,7 +64,6 @@ public sealed partial class TaskbarCoverHost
         _fadeFailureLogged   = false;
         _underlayFailureLogged = false;
         _underlaySoonPending = false;
-        _underlaySettleReadsLeft = 0;
     }
 
     private IntPtr WndProc(IntPtr hWnd, uint msg, IntPtr wParam, IntPtr lParam)
@@ -103,11 +106,17 @@ public sealed partial class TaskbarCoverHost
                 OnUnderlayFrame();
                 return IntPtr.Zero;
 
+            case WM_APP_UNDERLAY_EDGE:
+                OnUnderlayEdge(wParam, lParam);
+                return IntPtr.Zero;
+
             case WM_TIMER:
                 OnUnderlayTimer((UIntPtr)(ulong)wParam);
                 return IntPtr.Zero;
 
             case WM_SETTINGCHANGE:
+                // "ImmersiveColorSet": the light or dark theme changed.
+                if (lParam != IntPtr.Zero && Marshal.PtrToStringUni(lParam) == "ImmersiveColorSet") OnThemeChanged();
                 RebuildLayout("setting_change");
                 return IntPtr.Zero;
 

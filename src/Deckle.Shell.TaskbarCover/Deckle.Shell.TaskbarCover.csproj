@@ -21,6 +21,9 @@
     <ProjectReference Include="..\Deckle.Catalog\Deckle.Catalog.csproj" />
     <ProjectReference Include="..\Deckle.Diagnostics\Deckle.Diagnostics.csproj" />
     <ProjectReference Include="..\Deckle.Shell.Foreground\Deckle.Shell.Foreground.csproj" />
+    <!-- WindowEdgeReader: the strip under the taskbar reads its app's edge
+         from the frames the app draws. -->
+    <ProjectReference Include="..\Deckle.Vision\Deckle.Vision.csproj" />
   </ItemGroup>
 
   <ItemGroup>

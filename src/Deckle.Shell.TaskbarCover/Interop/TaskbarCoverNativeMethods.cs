@@ -194,13 +194,43 @@ internal static class TaskbarCoverNativeMethods
     [DllImport("user32.dll")]
     public static extern bool IsZoomed(IntPtr hWnd);
 
+    [DllImport("user32.dll")]
+    public static extern bool IsIconic(IntPtr hWnd);
+
+    // The shell cloaked the window: it sits on a virtual desktop not shown.
+    public const int DWM_CLOAKED_SHELL = 0x2;
+
+    public const int SW_HIDE   = 0;
+    public const int SW_SHOWNA = 8;
+
+    [DllImport("user32.dll")]
+    public static extern bool ShowWindow(IntPtr hWnd, int nCmdShow);
+
     [DllImport("dwmapi.dll")]
     public static extern int DwmGetWindowAttribute(IntPtr hwnd, uint dwAttribute, out int pvAttribute, int cbAttribute);
+
+    // The rectangle Windows draws the window in, without the invisible
+    // resize borders GetWindowRect includes.
+    public const uint DWMWA_EXTENDED_FRAME_BOUNDS = 9;
+
+    [DllImport("dwmapi.dll")]
+    public static extern int DwmGetWindowAttribute(IntPtr hwnd, uint dwAttribute, out NativeMethods.RECT pvAttribute, int cbAttribute);
+
+    // A window that appears, disappears or changes place on a switch of
+    // virtual desktop: Windows cloaks the old desktop's windows and uncloaks
+    // the new one's, and no location change is sent for them.
+    public const uint EVENT_OBJECT_CLOAKED   = 0x8017;
+    public const uint EVENT_OBJECT_UNCLOAKED = 0x8018;
 
     // The underlay is a plain square strip: Windows 11 would round a popup's
     // corners otherwise.
     public const uint DWMWA_WINDOW_CORNER_PREFERENCE = 33;
     public const uint DWMWCP_DONOTROUND              = 1;
+
+    // Turns off the open and close animations Windows plays on a top-level
+    // window that is shown or destroyed: on a strip they read as the strip
+    // growing out of, or shrinking into, one side.
+    public const uint DWMWA_TRANSITIONS_FORCEDISABLED = 3;
 
     // An app's system backdrop (Windows 11): 2 Mica, 3 Acrylic, 4 Mica Alt.
     public const uint DWMWA_SYSTEMBACKDROP_TYPE = 38;
@@ -209,16 +239,22 @@ internal static class TaskbarCoverNativeMethods
     public const uint GA_ROOTOWNER = 3;
 
     [DllImport("user32.dll")]
-    public static extern IntPtr WindowFromPoint(POINT point);
-
-    [DllImport("user32.dll")]
     public static extern bool IsWindow(IntPtr hWnd);
 
     [DllImport("user32.dll", CharSet = CharSet.Unicode)]
     public static extern int GetClassName(IntPtr hWnd, System.Text.StringBuilder lpClassName, int nMaxCount);
 
     // Task view's window on Windows 11 (build 26100, read on this machine).
+    // Alt+Tab's switcher is a window of the same class, style and size (the
+    // whole screen), told apart by its title only: "Task Switching", against
+    // "Task View" (read 2026-11-27). The title follows the display language:
+    // in another language Alt+Tab reads as Task view, and the strip leaves
+    // while the switcher shows.
     public const string TaskViewClass = "XamlExplorerHostIslandWindow";
+    public const string TaskSwitcherTitle = "Task Switching";
+
+    [DllImport("user32.dll", CharSet = CharSet.Unicode)]
+    public static extern int GetWindowText(IntPtr hWnd, System.Text.StringBuilder lpString, int nMaxCount);
 
     [DllImport("user32.dll")]
     public static extern IntPtr GetAncestor(IntPtr hwnd, uint gaFlags);
@@ -283,55 +319,6 @@ internal static class TaskbarCoverNativeMethods
     [DllImport("user32.dll")]
     public static extern bool InvalidateRect(IntPtr hWnd, IntPtr lpRect, bool bErase);
 
-    // ── Underlay: reading the app's edge ─────────────────────────────────────
-    //
-    // One BitBlt of the screen line into a top-down 32-bit DIB section, whose
-    // bits are read in place. No CAPTUREBLT: the line holds the app alone.
-
-    public const uint SRCCOPY = 0x00CC0020;
-
-    [StructLayout(LayoutKind.Sequential)]
-    public struct BITMAPINFOHEADER
-    {
-        public uint   biSize;
-        public int    biWidth;
-        public int    biHeight;
-        public ushort biPlanes;
-        public ushort biBitCount;
-        public uint   biCompression;
-        public uint   biSizeImage;
-        public int    biXPelsPerMeter;
-        public int    biYPelsPerMeter;
-        public uint   biClrUsed;
-        public uint   biClrImportant;
-    }
-
-    [DllImport("user32.dll")]
-    public static extern IntPtr GetDC(IntPtr hWnd);
-
-    [DllImport("user32.dll")]
-    public static extern int ReleaseDC(IntPtr hWnd, IntPtr hDC);
-
-    [DllImport("gdi32.dll")]
-    public static extern IntPtr CreateCompatibleDC(IntPtr hdc);
-
-    [DllImport("gdi32.dll")]
-    public static extern bool DeleteDC(IntPtr hdc);
-
-    [DllImport("gdi32.dll")]
-    public static extern IntPtr CreateDIBSection(
-        IntPtr hdc, ref BITMAPINFOHEADER pbmi, uint usage, out IntPtr ppvBits, IntPtr hSection, uint offset);
-
-    [DllImport("gdi32.dll")]
-    public static extern IntPtr SelectObject(IntPtr hdc, IntPtr h);
-
-    [DllImport("gdi32.dll")]
-    public static extern bool BitBlt(
-        IntPtr hdc, int x, int y, int cx, int cy, IntPtr hdcSrc, int x1, int y1, uint rop);
-
-    [DllImport("gdi32.dll")]
-    public static extern bool GdiFlush();
-
     // ── Underlay: timers on the anchor ───────────────────────────────────────
 
     public const uint WM_TIMER = 0x0113;
@@ -350,6 +337,11 @@ internal static class TaskbarCoverNativeMethods
     // loops on it posts this message once per frame of the display.
 
     public const uint WM_APP_UNDERLAY_FRAME = 0x8000 + 3;
+
+    // An edge reader saw the app's edge change colour: wParam the COLORREF,
+    // with bit 24 set when the edge shows more than one colour; lParam the
+    // band's index in the high word and the reader's generation in the low.
+    public const uint WM_APP_UNDERLAY_EDGE = 0x8000 + 4;
 
     [DllImport("dwmapi.dll")]
     public static extern int DwmFlush();

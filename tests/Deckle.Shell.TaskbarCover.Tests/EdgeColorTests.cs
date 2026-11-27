@@ -1,4 +1,3 @@
-using Deckle.Core;
 using Deckle.Shell.TaskbarCover;
 using Xunit;
 
@@ -9,25 +8,6 @@ namespace Deckle.Shell.TaskbarCover.Tests;
 [Trait("Category", "unit")]
 public class EdgeColorTests
 {
-    private static readonly NativeMethods.RECT LeftBar = new() { left = 0, top = 0, right = 32, bottom = 1080 };
-
-    [Fact]
-    public void ALeftTaskbarReadsTheAppsFirstColumn()
-    {
-        var line = EdgeColor.SampleLine(LeftBar, TaskbarEdge.Left);
-
-        Assert.Equal((32, 0, 33, 1080), (line.left, line.top, line.right, line.bottom));
-    }
-
-    [Fact]
-    public void ABottomTaskbarReadsTheAppsLastRow()
-    {
-        var bar = new NativeMethods.RECT { left = 0, top = 1032, right = 1920, bottom = 1080 };
-
-        var line = EdgeColor.SampleLine(bar, TaskbarEdge.Bottom);
-
-        Assert.Equal((0, 1031, 1920, 1032), (line.left, line.top, line.right, line.bottom));
-    }
 
     [Fact]
     public void APlainEdgeGivesItsOwnColour()
@@ -54,22 +34,6 @@ public class EdgeColorTests
         uint[] pixels = [0xFFE0A080u, 0xFFE2A282u, 0xFFE4A484u, 0xFF101010u];
 
         Assert.Equal(0x0082A2E2u, EdgeColor.Dominant(pixels));
-    }
-
-    [Fact]
-    public void TheSameEdgeReadTwiceIsCloseAndAnotherColourIsNot()
-    {
-        Assert.True(EdgeColor.Close(0x00272757u, 0x002B2B5Au));
-        Assert.False(EdgeColor.Close(0x00272757u, 0x0097572Bu));
-    }
-
-    // Measured 2026-11-26: T3 Code's edge went from #232325 to #323232 as it
-    // lost the focus under a window being maximized over it.
-    [Fact]
-    public void AnEdgeDimmingAsItLosesTheFocusIsNotFarAndAnotherWindowsEdgeIs()
-    {
-        Assert.False(EdgeColor.Far(0x00252323u, 0x00323232u));
-        Assert.True(EdgeColor.Far(0x00252323u, 0x00F0F0F0u));
     }
 
     [Fact]
