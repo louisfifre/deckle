@@ -24,7 +24,7 @@ Draft, not confirmed
 - See what your mail asks of you and settle it fast, with the rest put away by itself: `deckle-mail.md`.
 - Know where you stand in your folders, and sort, clean and picture them in one familiar place: `folders.md`.
 - Find any of your projects and reach its folders, its version and its scripts from one place: `deckle-projects.md`.
-- Save what you copied as a file in a folder, with one paste: `deckle-paste-to-folder.md`.
+- Save what you copied as a file in a folder, with one paste: `paste-to-folder/deckle-paste-to-folder.md`.
 - Ambient lighting, in progress: its goal is not written yet, and it has no spec.
 - The inventory of a home, kept in Anytype: its goal is not written yet, and it has no spec.
 
