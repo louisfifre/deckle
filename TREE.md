@@ -327,7 +327,8 @@ _Generated from `git ls-files` — do not edit by hand._
 │   │   ├── deckle-dictation.md
 │   │   └── GLOSSARY.md
 │   ├── folders/
-│   │   └── deckle-folders.md
+│   │   ├── deckle-folders.md
+│   │   └── GLOSSARY.md
 │   ├── home-inventory/
 │   │   ├── deckle-home-inventory.md
 │   │   └── GLOSSARY.md
