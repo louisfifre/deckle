@@ -10,11 +10,11 @@
 
 ### User need
 
-1. The [user](../GLOSSARY.md#user) needs to turn what they copied into a file in a folder they chose, with one [paste](GLOSSARY.md#paste), in order to keep it without opening an [application](../GLOSSARY.md#application), naming a file or going through a save step.
+1. The [user](../GLOSSARY.md#user) needs to turn what they copied into a file in a folder they chose, with one [paste](../GLOSSARY.md#paste), in order to keep it without opening an [application](../GLOSSARY.md#application), naming a file or going through a save step.
 
 ### Intended outcome
 
-1. What they copied becomes a file in their folder with one [paste](GLOSSARY.md#paste).
+1. What they copied becomes a file in their folder with one [paste](../GLOSSARY.md#paste).
 2. They see at once whether it worked, and why when it did not.
 3. They know where it goes before they paste.
 4. Nothing they already had is overwritten.
@@ -25,7 +25,7 @@
 
 | The user wants to | The product must |
 | --- | --- |
-| keep something they copied | take a [paste](GLOSSARY.md#paste) on its [window](../GLOSSARY.md#window) and save what they copied into the [chosen folder](GLOSSARY.md#chosen-folder) at once |
+| keep something they copied | take a [paste](../GLOSSARY.md#paste) on its [window](../GLOSSARY.md#window) and save what they copied into the [chosen folder](GLOSSARY.md#chosen-folder) at once |
 | know where it goes | show the chosen folder before any paste, and let them choose another |
 | know it worked | show what each paste saved as soon as it is saved, or say that it was not saved and why |
 | go on working | stay small and above their other windows, and move wherever they drag it |
@@ -45,7 +45,7 @@
 When it goes well:
 
 1. The [user](../GLOSSARY.md#user) opens the [window](../GLOSSARY.md#window) from the [product](../GLOSSARY.md#product), wherever they are working. There is only one: opening it again brings it to the front.
-2. Before any [paste](GLOSSARY.md#paste), the window shows the [chosen folder](GLOSSARY.md#chosen-folder), the one they chose last time, after the product restarts too.
+2. Before any [paste](../GLOSSARY.md#paste), the window shows the [chosen folder](GLOSSARY.md#chosen-folder), the one they chose last time, after the product restarts too.
 
 Otherwise:
 
@@ -68,7 +68,7 @@ Otherwise:
 
 When it goes well:
 
-1. A click anywhere in the [window](../GLOSSARY.md#window) makes the next [paste](GLOSSARY.md#paste) go to it.
+1. A click anywhere in the [window](../GLOSSARY.md#window) makes the next [paste](../GLOSSARY.md#paste) go to it.
 2. A paste saves what they copied into the [chosen folder](GLOSSARY.md#chosen-folder) at once: there is no step between the paste and the file.
 3. Files and folders they copied are copied into the folder, each under its own name; a folder is copied whole.
 4. Otherwise, an image they copied is saved as an image file, and otherwise a text as a text file. Each is named for the moment of the paste.
@@ -87,7 +87,7 @@ Otherwise:
 
 When it goes well:
 
-1. Each [paste](GLOSSARY.md#paste) shows what it saved, newest first: each file by its name, with the image itself for an image, the beginning of the text for a text, and the kind of each file or folder they copied.
+1. Each [paste](../GLOSSARY.md#paste) shows what it saved, newest first: each file by its name, with the image itself for an image, the beginning of the text for a text, and the kind of each file or folder they copied.
 2. The [window](../GLOSSARY.md#window) shows what was pasted since it opened, and nothing older.
 3. A name too long for the window can still be read whole.
 4. What the window shows is read, not used: nothing in it opens, selects or changes a file.
@@ -112,7 +112,7 @@ When it goes well:
 
 ### 1.3.1 What they copied becomes a file in their folder
 
-1. On a [paste](GLOSSARY.md#paste), the [product](../GLOSSARY.md#product) looks in what the [user](../GLOSSARY.md#user) copied for files first, then for an image, then for a text, and saves the first it finds.
+1. On a [paste](../GLOSSARY.md#paste), the [product](../GLOSSARY.md#product) looks in what the [user](../GLOSSARY.md#user) copied for files first, then for an image, then for a text, and saves the first it finds.
 2. It writes straight into the [chosen folder](GLOSSARY.md#chosen-folder): an image or a text under a name made from the moment of the paste, files and folders under their own names.
 3. It shows what it saved only once the file is written whole; a write that fails part way removes the incomplete file.
 

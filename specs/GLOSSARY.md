@@ -38,6 +38,10 @@ What a window shows of the place the user is in.
 
 Avoid: [place](#place).
 
+### Paste
+
+The gesture by which the user gives an application what they copied, the same across the system.
+
 ### Person
 
 A human being, whether they interact with the product or not, such as someone who speaks near the user.
