@@ -30,4 +30,4 @@ Draft, not confirmed
 
 What every window rests on:
 
-- Move between the places of any Deckle window through a navigation you keep open or closed as you choose: `deckle-navigation-pane.md`.
+- Move between the places of any Deckle window through a navigation you keep open or closed as you choose: `navigation-pane/deckle-navigation-pane.md`.

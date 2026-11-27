@@ -6,7 +6,7 @@ namespace Deckle.Shell.WindowChrome;
 // ─── Navigation pane ──────────────────────────────────────────────────────────
 //
 // One behaviour for the navigation of every Deckle window, as
-// specs/deckle-navigation-pane.md writes it: in a window wide enough for the
+// specs/navigation-pane/deckle-navigation-pane.md writes it: in a window wide enough for the
 // rail, the navigation sits beside the page, as the rail or open, and the user's
 // choice stays; in a narrow window, nothing shows and the navigation button
 // opens it over the page.

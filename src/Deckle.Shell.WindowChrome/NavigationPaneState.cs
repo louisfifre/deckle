@@ -2,7 +2,7 @@ namespace Deckle.Shell.WindowChrome;
 
 // ─── Navigation pane state ────────────────────────────────────────────────────
 //
-// What specs/deckle-navigation-pane.md asks of every window's navigation, kept
+// What specs/navigation-pane/deckle-navigation-pane.md asks of every window's navigation, kept
 // apart from the control so it can be tested without a window. Two facts make
 // the whole state: whether the window has room for the rail beside the page
 // (Docked), and what the user chose for such a window (OpenByChoice). A narrow

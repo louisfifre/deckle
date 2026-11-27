@@ -3,7 +3,7 @@ using Xunit;
 
 namespace Deckle.Shell.WindowChrome.Tests;
 
-// Behaviour of NavigationPaneState against specs/deckle-navigation-pane.md: in a
+// Behaviour of NavigationPaneState against specs/navigation-pane/deckle-navigation-pane.md: in a
 // window wide enough for the rail, the button changes the user's choice and the
 // choice stays; in a narrow window, the navigation opens over the page and never
 // touches that choice.

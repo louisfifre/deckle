@@ -56,7 +56,7 @@ The screens are drawn in mockup v4; the wording is in the module's strings.
 
 ### The window
 
-1. The title bar reads "Deckle Projects" and carries a button that opens and closes a side pane. The pane follows `deckle-navigation-pane.md`: it never opens by itself.
+1. The title bar reads "Deckle Projects" and carries a button that opens and closes a side pane. The pane follows `navigation-pane/deckle-navigation-pane.md`: it never opens by itself.
 2. The window opens on Home each time. The first time, the pane is its rail; after that, it is as the user left it.
 3. Opened, the pane lists "All projects", then each category as a node holding its projects, then "Without a category" as a node. "All projects" shows Home, a category shows its page, a project shows its page.
 4. On a category page and on a project page, the title bar also carries a back button, which returns to the screen the user came from.
