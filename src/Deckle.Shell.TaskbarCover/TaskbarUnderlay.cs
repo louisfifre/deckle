@@ -83,7 +83,7 @@ internal sealed class TaskbarUnderlay : IDisposable
             {
                 var next = Strip.Create(_className, _hInstance, app, color, blur, 255, out int error);
                 if (next is null) return error;
-                next.Place(_rect, _current?.Hwnd ?? IntPtr.Zero);
+                next.Place(_rect, SameOwner(_current, next) ? _current!.Hwnd : IntPtr.Zero);
                 _current?.Destroy();
                 _current = next;
             }
@@ -167,13 +167,19 @@ internal sealed class TaskbarUnderlay : IDisposable
         }
     }
 
-    // Puts the strips under the taskbar, the fading one over the new one,
-    // both above the app.
+    // Puts the strips under the taskbar, each above its own app, and the
+    // fading one over the new one when both continue the same app. A strip
+    // is never placed against another app's strip: Windows keeps an owner
+    // under the windows it owns, so placing it under the strip of the app
+    // above raised its app over that app (Louis, trial of 2026-11-27: an
+    // Explorer restored over a maximized T3 Code went behind it).
     private void Place()
     {
         _leaving?.Place(_rect, IntPtr.Zero);
-        _current?.Place(_rect, _leaving?.Hwnd ?? IntPtr.Zero);
+        _current?.Place(_rect, SameOwner(_leaving, _current) ? _leaving!.Hwnd : IntPtr.Zero);
     }
+
+    private static bool SameOwner(Strip? a, Strip? b) => a is not null && b is not null && a.Owner == b.Owner;
 
     private void DestroyStrips()
     {
@@ -237,6 +243,11 @@ internal sealed class TaskbarUnderlay : IDisposable
 
             uint corner = DWMWCP_DONOTROUND;
             NativeMethods.DwmSetWindowAttribute(hwnd, DWMWA_WINDOW_CORNER_PREFERENCE, ref corner, sizeof(uint));
+            // The strip's only motion is its own fade (Louis, trial of
+            // 2026-11-27: a strip that grew from one side on maximize and
+            // restore, while every other change faded).
+            uint noTransitions = 1;
+            NativeMethods.DwmSetWindowAttribute(hwnd, DWMWA_TRANSITIONS_FORCEDISABLED, ref noTransitions, sizeof(uint));
             var strip = new Strip { Hwnd = hwnd, Owner = owner };
             // A layered window shows nothing until its alpha is set.
             strip.SetAlpha(alpha);

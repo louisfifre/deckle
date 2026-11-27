@@ -215,6 +215,11 @@ internal static class TaskbarCoverNativeMethods
     public const uint DWMWA_WINDOW_CORNER_PREFERENCE = 33;
     public const uint DWMWCP_DONOTROUND              = 1;
 
+    // Turns off the open and close animations Windows plays on a top-level
+    // window that is shown or destroyed: on a strip they read as the strip
+    // growing out of, or shrinking into, one side.
+    public const uint DWMWA_TRANSITIONS_FORCEDISABLED = 3;
+
     // An app's system backdrop (Windows 11): 2 Mica, 3 Acrylic, 4 Mica Alt.
     public const uint DWMWA_SYSTEMBACKDROP_TYPE = 38;
 
