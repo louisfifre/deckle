@@ -26,7 +26,7 @@ Draft, not confirmed
 - Find any of your projects and reach its folders, its version and its scripts from one place: `projects/deckle-projects.md`.
 - Save what you copied as a file in a folder, with one paste: `paste-to-folder/deckle-paste-to-folder.md`.
 - Light the room with what your screen shows, vivid or realistic, fast or slow: `ambient-lighting/deckle-ambient-lighting.md`.
-- The inventory of a home, kept in Anytype: its goal is not written yet, and it has no spec.
+- Tell what your home holds in your own words, and keep its whole inventory in your own space: `home-inventory/deckle-home-inventory.md`.
 
 What every window rests on:
 
