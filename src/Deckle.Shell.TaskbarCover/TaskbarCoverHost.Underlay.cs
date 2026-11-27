@@ -24,8 +24,9 @@ public sealed partial class TaskbarCoverHost
     // fullscreen verdict (the band's suppression), which also catches what
     // the walk leaves out, such as an always-on-top game.
     //
-    // A strip whose app goes to a desktop not shown stays there, for the
-    // switch that returns (TaskbarUnderlay's parked strips).
+    // One strip per taskbar, made once, on every virtual desktop like the
+    // taskbar: a switch of desktop leaves it under the taskbar, and it
+    // fades to the next desktop's app or away (TaskbarUnderlay).
     //
     // Task view takes the strip away: it reads as the desktop. Windows
     // describes it as it describes Alt+Tab's switcher (same class, same
@@ -143,7 +144,6 @@ public sealed partial class TaskbarCoverHost
         bool possible = _layoutKnown && !_systemSuspended && !band.AppSuppressed && !taskView;
         IntPtr app = possible ? TaskbarUnderlay.FindMaximizedApp(band.Monitor, band.MonitorRect) : IntPtr.Zero;
         bool animate = possible && _animationsEnabled();
-        band.Underlay?.ShowParked(!taskView);
 
         if (app == IntPtr.Zero)
         {
