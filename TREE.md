@@ -309,7 +309,8 @@ _Generated from `git ls-files` — do not edit by hand._
 │   ├── deckle-transcribe-and-rewrite.md
 │   ├── deckle.md
 │   ├── deckle.rules.md
-│   └── folders.md
+│   ├── folders.md
+│   └── GLOSSARY.md
 ├── src/
 │   ├── Deckle.Anytype/
 │   │   ├── Api/
