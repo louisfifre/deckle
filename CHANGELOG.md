@@ -7,6 +7,276 @@ the project adheres to [Semantic Versioning](https://semver.org/).
 
 This file is generated from the Conventional Commits history by `scripts/git/changelog.ps1`; do not edit it by hand.
 
+## [0.159.3](https://github.com/louisfifre/deckle/compare/v0.135.1...v0.159.3) — 2026-11-27
+
+### Added
+
+- **window-chrome:** Add one navigation pane behaviour for every window
+- **app:** Give Settings, Mail, Projects and Folders the shared navigation pane
+- **self-check:** Photograph the icon each window and Deckle.exe give the taskbar
+- **parakeet:** Add the empty Parakeet backend module with its model folder layout
+- **inference-onnx:** Choose CPU or DirectML at creation and read typed, named tensors
+- **parakeet:** Split long audio into encoder-sized chunks at the quietest pause
+- **parakeet:** Build transcription segments from decoded tokens
+- **parakeet:** Add the vocabulary and detokenizer that turn token ids into text
+- **parakeet:** Add the TDT greedy decoding loop over an abstract decoder_joint step
+- **onnx:** Accept int32 input tensors and read int32 outputs as long
+- **transcription:** Add a hidden engine choice, Whisper staying the default
+- **parakeet:** Assemble ParakeetBackend from the tokenizer, decoder, segment and chunking pieces
+- **app:** Compose ParakeetBackend when the hidden engine choice asks for it
+- **catalog:** Add two rows of sorting icons to the icon picker
+- **atelier:** Give each added folder a menu under "..." and on right-click
+- **rewrite:** Ship no default rewrite profile
+- **settings:** Let the Transcription page ask what a Parakeet model folder holds
+- **transcription:** Choose the speech engine, Whisper or Parakeet, on the Transcription page
+- **transcription:** Hide the Whisper-only decoding settings while Parakeet is chosen
+- **self-check:** Report startup, process footprint and an opt-in dictation take for the perf bench
+- **windowing:** Write a window's first-open cost to log.jsonl as a Summary record
+- **scripts:** Add the perf bench, a measurement pass of the self-check instance and a comparison of two passes
+- **contributions:** A contribution contract and the host runner that turns a composition into lazy windows, tray entries and walks, not wired yet
+- **contributions:** The host lists open windows by name, offers developer-only ones for closing, and lists a developer-only tray line for the developer menu
+- **core:** An app identity decides its data root, its log folder and its resident mutex name, so a second executable of the suite touches none of the published Deckle's files
+- **mail:** Mail leaves the published Deckle and runs as its own app, DeckleMail.exe
+- **atelier:** The Atelier leaves the published Deckle and runs as its own app, DeckleAtelier.exe
+- **scripts:** Self-check, build-run and launch-app take -App for the separate Mail and Atelier apps, deploy-prod refuses a build that holds their files, and the resource inventory reads their own maps
+- **transcription:** Add the dictation lexicon setting and its casing pass
+- **parakeet:** Favor the lexicon terms in the TDT decoder
+- **autocorrect:** Treat declared lexicon words as adopted
+- **app:** Share the lexicon between dictation and autocorrect
+- **transcription:** Edit the dictation lexicon in Settings
+- **transcription:** Give the lexicon its own settings page
+- **transcription:** Add lexicon words one at a time and cut the page text
+- **setup:** Provision the Parakeet Ultra model instead of Whisper
+- **install:** Add folder safety rules for picked install and data folders
+- **settings:** Name the folder buttons, the radio group and the capture ring for screen readers
+- **setup:** Pre-check only dictation, rewriting and autocorrect for a new person
+- **autocorrect:** Start enabled only when Windows is in French
+- **transcription:** Start the paragraph rewrite host only when Ollama holds the pinned model
+- **rewrite:** Advise on the Rewriting page when paragraph rewriting cannot run
+- **installer:** Refuse ARM64, CPUs without AVX2 and Windows 10 before installing
+- **catalog:** Show the current value at the trailing edge of a closed fold
+- **anytype:** Build a space plan in the language of a terms file
+- **home:** Ship the Home space plan in English, with English Home terms
+- **folders:** Sizes shows the icon Windows gives each folder and file
+- **folders:** One top bar with Photos, Sizes and Map, and the content in a card
+- **folders:** Home first in the pane, a Home page of folder tiles, and the app opens there
+- **folders:** The address field shows a short path at rest and the whole path on a click
+- **folders:** The window holds from 640 wide, tools as icons below 1008 and a narrow layout below 641
+- **release:** Let the archive check name the root files a payload requires
+- **projects:** Run Deckle Projects as its own app, DeckleProjects.exe
+- **scripts:** Build and run Deckle Projects with build-run.ps1 -App projects
+- **release:** Name the release of a standalone app
+- **folders:** Each added folder opens in the tool it was left in
+- **release:** Package Folders and Mail for a private draft release
+- **folders:** Keep folder groups in the added-folders file
+- **folders:** Folder groups in the pane, on Home and in the menus
+- **projects:** Projects leaves the published Deckle and lives only in DeckleProjects.exe
+- **scripts:** Restore the README development pulse script
+- **hud:** Add the HudFirstFramePresented event and its once-per-change probe
+- **hud:** Write HudFirstFramePresented when a shortcut press reaches the screen
+- **readme:** Draw commits per week as a small chart in the pulse
+- **release:** Refresh the README pulse once a release is public
+- **readme:** Draw the pulse as a smooth curve that stretches
+- **release:** Draft the public release notes from the merge messages of main
+- **readme:** Keep the pulse chart's height and text size at any width
+- **developer:** Add the gate in front of the interface capture
+- **scripts:** Merge a branch only behind the merge gate
+- **ambient:** Offer Entertainment areas only and say why a start fails
+- **ambient:** Keep the colour per screen edge as the only mode, lights placed from the Entertainment area
+- **autocorrect:** A paragraph-correction switch and the gate that decides when it acts
+- **app:** Paragraph correction acts where Autocorrect says, not where Rewriting says
+- **autocorrect:** Paragraph correction gets its switch and its bar on the Autocorrect page
+- **settings:** The Dictation node gathers streaming, recording length and microphone
+- **llm-rewrite:** The Rewriting page says who uses each profile and what else uses Ollama
+- **autocorrect:** Paragraph card under the switch, one setup message per cause, Lexicon first
+- **autocorrect:** Say what the paragraph and Lexicon cards do, give the page its one-line description
+- **settings:** Say what Off means for the recording limit, describe the Microphone page, name Dictation in the not-set-up titles
+- **taskbar-cover:** Fade the taskbar itself instead of covering it
+- **taskbar-cover:** Fill a faded taskbar's place with a maximized app's edge colour
+- **taskbar-cover:** Name the feature Taskbar fade where a person reads it
+- **taskbar-cover:** Blur the strip under the taskbar for an app that shows Mica or Acrylic
+- **taskbar:** Remove the black taskbar background
+- **taskbar-cover:** Slide the strip under the taskbar in and out with its app, and fade its changes
+- **taskbar-cover:** Dissolve the strip under the taskbar on the display's frames, and change it as soon as a new app arrives
+- **vision:** Read one edge of a window from the frames it draws
+- **taskbar-cover:** Leave the strip under the taskbar on the desktop its app stays on
+
+### Changed
+
+- **transcription:** Move the silence and noise fold from Streaming to Decoding
+- **logo:** Draw the four-blade form only, and give windows the tray's mark
+- **speech:** Remove the dormant Speech module that nothing calls
+- **logging:** Drop the touchpad FrameRollup and the DLL's Verbose relay from the log
+- **telemetry:** Remove the microphone level datasets and their setting, consent dialog and search entry
+- **autocorrect:** Remove the typed-text, typing-stream and decision datasets with their settings and consent dialogs
+- **projects:** Deckle.Projects no longer references the Atelier engine
+- **app:** Mail and the Atelier reach the host through a contribution each, so the host wiring no longer names them
+- **hosting:** Deckle.Hosting carries the resident guard, diagnostics boot, window helpers and self-check harness that Deckle.App owned, so a separate app can be built on the same kit
+- **hosting:** The self-check's window capture, its refusal exit and the version display move into the host kit, so another app takes the same images
+- **folders:** Drop the Atelier code name from the modules, tests and solution
+- **scripts:** The app launchers, self-check and deploy guard name Deckle Folders
+- **trackpad:** Remove the Bluetooth connection repair card and its script
+- **transcription:** Read only the person's words for dictation, at a fixed strength
+- **transcription:** Name the speech model incident and its message after the model, not an engine
+- **transcription:** Make Parakeet the only speech engine and delete the Whisper engine
+- **transcription:** Fold the Decoding page into Streaming and drop what only Whisper used
+- **transcription:** Name the settings page, view model and strings after the module
+- **autocorrect:** Cut the page subtitle, the master and exclude card captions and the empty list line
+- **autocorrect:** Cut the page subtitles, the domain description and the indications line, shorten the apps captions
+- **settings:** Cut the descriptions of General, Shortcuts and Home
+- **diagnostics:** Cut the descriptions of the Diagnostics page
+- **transcription:** Cut the General page's descriptions and the dead encoder advisory
+- **taskbar:** Cut the page subtitle and the descriptions the cards already show
+- **taskbar-cover:** Cut the page subtitle and the approach description
+- **trackpad:** Cut the page subtitle and trim the pick-up descriptions
+- **settings:** Cut the Streaming and Recording page text and fold the Silero trim into Segmentation
+- **precision-scroll:** Cut the page subtitle and the distance description
+- **orchestration:** Cut the page subtitle, the section captions and the add card description
+- **ambient:** Cut the descriptions the Ambient page controls already show
+- **rewriting:** Cut the captions, notes and placeholders the controls already say
+- **diagnostics:** Cut the corpus descriptions and rename two options
+- **catalog:** Drop the cubic-bezier readout and name the curve fields
+- **ambient:** Hide unpaired Hue cards, load rooms after pairing and name the controls
+- **taskbar:** Drop the stale compact clock description and the repeated section title
+- **taskbar-cover:** Label the switch with its effect
+- **orchestration:** Drop the empty-list line, shorten the folder rule and name the row controls for screen readers
+- **rewriting:** Trim provider rows, hide Models when Ollama is down, name the row controls
+- **catalog:** Cut the cubic-bezier readout under the curve fields
+- **anytype:** Name the project-management space from per-language terms files
+- **home:** Read the Home terms through the shared SpaceTerms loader
+- **anytype:** One terms table names the project-management space and its plan
+- **mail:** Move the first-trash decision from the two views into TriageSession
+- **autocorrect:** Move the paragraph replacement keystroke plan out of TextInjector
+- **trackpad:** Let the gesture act take its registry key and backup file
+- **ambient:** Remove the presets and their plumbing
+- **ambient:** Make the change threshold a constant
+- **llm:** Remove the Ollama /api/ps probe
+- **llm:** Remove SentenceRewrite
+- **llm:** Drop the settings migrations of 11 and 12 November
+- **presets:** Remove the Deckle.Presets project and its tests
+- **shell:** Remove ResizeCoalescer and ResizeGesture
+- **vad:** Try the Silero download once per session
+- **diagnostics:** Remove the resize events nobody raises
+- **autocorrect:** Drop the paragraph length refusal that never fires
+- **autocorrect:** Enroll no app by default
+- **autocorrect:** Make the restorer's thresholds private constants
+- **autocorrect:** Make the typo corrector's thresholds private constants
+- **app:** Remove the contributions plumbing from Deckle.App
+- **settings:** Run the settings search on each key
+- **hud:** The HUD clock uses Stopwatch and splits its digits itself
+- Remove the Deckle.Chrono project and its tests; the HUD owns its clock
+- **mail-hub:** Use example.com in the sample data
+- **ambient:** Fix the capture rate at 60 frames a second
+- **settings:** Remove the Performance mode setting
+- **app:** The quit sequence is a small unit a test can perform
+- **ambient:** Drive the lights through the Hue Entertainment stream only
+- **ambient:** List the lights of the Entertainment area, not of a REST group
+- **ambient:** Stop watching the Hue event stream while streaming
+- **lighting:** Remove the Hue event stream client nothing reads any more
+- **ambient:** Drop the REST push cadence and the comments that described the REST path
+- **audio:** The recording-length rules live in Deckle.Audio
+- **taskbar-cover:** One rule for the strip under the taskbar, its colour read from the app
+
+### Fixed
+
+- **transcription:** Load Whisper on the CPU when the GPU memory cannot hold the model
+- **shell:** Take the hotkeys over the screen saver and close it on a press
+- **foreground:** Stop reading a busy session as a fullscreen foreground
+- **settings:** Write magnitude values as a person does, 0.1 and not 0.10
+- **app:** Embed the Deckle mark in Deckle.exe so the taskbar shows it
+- **transcription:** Persist the engine and encoder precision choices by name
+- **atelier:** Write the Deckle Folders wording in English
+- **atelier:** Format sizes and dates in the user's region and mark a photo to keep with K
+- **catalog:** Soften the four folder icon tints in light and dark theme
+- **parakeet:** Run onnx-asr's mel graph instead of the model repository's
+- **parakeet:** Encode up to 120 s in one pass and chunk only beyond
+- **setup:** Import a model through a temporary file, verify its hash there, then move it over the destination
+- **scripts:** Check every setup-assets download against the SHA-256 pinned in the C# code
+- **taskbar:** Keep the pipe server loop alive through a failed pipe creation or a throwing handler
+- **prod:** Retry the apply-update rollback and report a missing current honestly
+- **scripts:** Verify the autocorrect data by SHA-256 over https and drop the personal address from the repo
+- **app:** Treat a failed resident mutex creation as a rejected launch
+- **trackpad:** Verify the repair script's SHA-256 before running it elevated
+- **taskbar:** Check the native DLL copy's SHA-256 before loading it, and replace one that differs
+- **transcription:** Keep the audio file name out of the default log, in a Verbose detail only
+- **trackpad:** Keep the elevated driver backup in a folder that is provably admin-only
+- **anytype:** Validate object ids and escape ids in every REST path
+- **anytype:** Hide the API key when AnytypeCredentials is printed
+- **diagnostics:** Space the retries of a failed roll and read compressed archives as generations
+- **app:** A full self-check run requires every window it lists and the microphone probe again
+- **scripts:** A wrong -App value ends the run with its own message instead of the summary trap's
+- **folders:** Report a failed module-folder rename after the data root moved instead of calling it a full failure
+- **folders:** Move the data kept in the suite's modules\atelier from before the separate app
+- **autocorrect:** Let the mistouch repair see declared lexicon words
+- **transcription:** Drop one-letter lexicon terms
+- **transcription:** Judge the speech model on the files the loader opens and the pinned sizes
+- **app:** Leave the missing speech model to the incident instead of opening setup at every start
+- **app:** Never leave an update closed and ask before fetching the speech model
+- **build:** Stay silent when the build-server watchdog script or pwsh is missing
+- **taskbar:** Follow the system language and 12/24 h on the compact clock
+- **anytype:** Mount the Home surface only when the home space alias exists
+- **orchestration:** Say when apps are noticed only at the foreground
+- **transcription:** Restart a take on the CPU when the GPU fails during it
+- **installer:** Say plainly when Windows blocks Setup or GitHub has no release
+- **folders:** Stop promising a search of descriptions and a settings page that do not exist
+- **folders:** Write the date taken in the culture's own date and time patterns
+- **folders:** Read non-UTF-8 text previews in the system ANSI code page
+- **autocorrect:** Keep the maintainer's own words out of the shipped English list
+- **settings:** Say why Start elevated stayed off or points to an old folder
+- **projects:** Run the script menu under Windows PowerShell 5.1 without a script policy block
+- **projects:** Read the version as unknown and say so when git is not installed
+- **taskbar:** Say a one-time symbol download is needed when offline
+- **core:** End a silent model download with a readable message instead of hanging
+- **setup:** Keep install and uninstall out of other files in a shared folder
+- **anytype:** Back off and log once when the approval pipe cannot listen
+- **anytype:** Start no gateway nor approval pipe when Anytype is not installed
+- **rewriting:** State what Reset all and removing a profile really do
+- **hud:** Show warnings and errors even while the HUD is switched off
+- **settings:** Show the text corpus folder in the consent dialog
+- **precision-scroll:** Follow the Windows scroll direction while the wheel is intercepted
+- **ambient:** Stop writing light zones when the lights card opens
+- **ambient:** Keep the switch on when the engine fails to start
+- **autocorrect:** Name each control for screen readers and drop the lone domain tab
+- **autocorrect:** Seed the first-run default when the settings service starts
+- **taskbar:** Refuse Windows 10 and ARM64, leaving the engine off and the page controls disabled
+- **taskbar:** Keep Show all tray icons changeable where the native engine is refused
+- **trackpad:** Hide the Windows integration section when the gestures are already off
+- **rewriting:** Keep the step remove button in view while rewriting as you speak
+- **transcription:** Name each lexicon remove button and the word field for assistive technology
+- **audio:** Give the recording page's bare buttons, slider and link card explicit accessible names
+- **anytype:** Let update empty a date by sending null instead of an empty string
+- **scripts:** Launch-app names the missing build instead of ScriptHalted
+- **scripts:** Build-run shows its real error instead of ScriptHalted
+- **anytype-mcp:** Over-budget requests wait in a bounded queue instead of being refused
+- **projects:** Show the projects in no category on Home when there is no category, not in a closed fold
+- **projects:** Build the self-check's sample repositories apart from the machine's git setup
+- **self-check:** Name what a failed step threw instead of a navigation timeout
+- **llm:** Show a mistyped Ollama address instead of using localhost
+- **app:** Tray and windows leave Recording at the stop press
+- **transcription:** Stop the microphone at the stop shortcut
+- **scripts:** Publishing no longer stops the running Deckle
+- **readme:** Compare the README in UTF-8 whatever the console encoding
+- **projects:** Keep a pin on its own script when the menu shifts
+- **projects:** Never start a pin whose identifier now names another script
+- **developer:** Pass both capture doors through the gate
+- **readme:** Draw the pulse labels as fixed-size pictures and the curve alone as the stretching one
+- **folders:** Self-check types the group name once the dialog's field is loaded
+- **rewrite:** Offer the paragraph proposal whenever it is ready
+- **diagnostics:** Drop log lines instead of freezing writers when the disk blocks
+- **app:** Quit closes as soon as the dictation text is copied
+- **llm-rewrite:** Read the new card strings from the Views resource library
+- **settings:** The microphone cards sit untitled under the page header
+- **transcription:** The Dictation General texts name Dictation and the developer-only section
+- **taskbar-cover:** Keep a flyout's colour off the strip under the taskbar
+- **taskbar-cover:** Keep the strip under the taskbar on its app's desktop and out of Task view
+- **taskbar-cover:** Fade the strip under the taskbar from one maximized app to the next
+- **taskbar-cover:** Hide the strip under the taskbar while an app is fullscreen
+- **taskbar-cover:** Keep the strip under the taskbar through Alt+Tab, and dissolve it on Windows' entrance curve
+- **taskbar-cover:** Keep the windows' order and drop Windows' own animation on the strip under the taskbar
+- **taskbar-cover:** One strip window per taskbar that only ever fades
+- **taskbar-cover:** Keep a strip per app that Windows never hides, and follow Task view's window
+- **taskbar-cover:** Look at the foreground again for 250 ms after it changes, so Task view is never missed
+
 ## [0.135.1](https://github.com/louisfifre/deckle/compare/v0.120.1...v0.135.1) — 2026-11-18
 
 ### Added
