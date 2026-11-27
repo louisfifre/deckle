@@ -246,15 +246,16 @@ internal static class TaskbarCoverNativeMethods
 
     // Task view's window on Windows 11 (build 26100, read on this machine).
     // Alt+Tab's switcher is a window of the same class, style and size (the
-    // whole screen), told apart by its title only: "Task Switching", against
-    // "Task View" (read 2026-11-27). The title follows the display language:
-    // in another language Alt+Tab reads as Task view, and the strip leaves
-    // while the switcher shows.
+    // whole screen); TaskbarUnderlay.FindTaskView tells them apart.
     public const string TaskViewClass = "XamlExplorerHostIslandWindow";
-    public const string TaskSwitcherTitle = "Task Switching";
+    // The z-order band of Alt+Tab's switcher (ZBID_SYSTEM_TOOLS). The bands
+    // and GetWindowBand are undocumented; see TaskbarUnderlay.FindTaskView.
+    public const uint ZBID_SYSTEM_TOOLS = 16;
 
-    [DllImport("user32.dll", CharSet = CharSet.Unicode)]
-    public static extern int GetWindowText(IntPtr hWnd, System.Text.StringBuilder lpString, int nMaxCount);
+    [DllImport("user32.dll")]
+    public static extern bool GetWindowBand(IntPtr hWnd, out uint pdwBand);
+
+    public const uint WM_SHOWWINDOW = 0x0018;
 
     [DllImport("user32.dll")]
     public static extern IntPtr GetAncestor(IntPtr hwnd, uint gaFlags);

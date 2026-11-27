@@ -61,7 +61,7 @@
 - **Cause:** The strip followed the foreground. Alt+Tab's switcher has the class and styles of Task view (measured: same class, `ex=0x00200088`, topmost and tool window), so the rule that takes the strip away in Task view took it away under Alt+Tab too; then a hold and a settle wait delayed its return.
 - **Violated invariant:** The strip follows the topmost maximized app on its monitor, not the foreground; a topmost shell window over the app changes nothing. See the header of `TaskbarCoverHost.Underlay.cs` and `TaskbarUnderlay.FindMaximizedApp`.
 - **Recurrence cue:** A strip decision that reads `GetForegroundWindow` for anything but Task view, or a wait, hold or threshold added before the strip changes.
-- **Regression coverage:** None automatic: the rule walks the live z-order, with no seam a test can drive without real windows. Seen in Louis's trial of 2026-11-27 on the branch `feat/taskbar-strip-alttab`. Task view is still told from the switcher by its English title only (`TaskbarUnderlay.TaskViewShown`).
+- **Regression coverage:** None automatic: the rule walks the live z-order, with no seam a test can drive without real windows. Seen in Louis's trial of 2026-11-27 on the branch `feat/taskbar-strip-alttab`. Task view was then told from the switcher by its English title; since the branch `fix/taskbar-strip-one-motion` it is told by its window band (`TaskbarUnderlay.FindTaskView`).
 
 ## Restored window sent behind the maximized app under it
 
@@ -71,3 +71,21 @@
 - **Violated invariant:** A strip is placed only against a strip of the same app; Deckle never changes the order of the person's windows. See the comment on `TaskbarUnderlay.Place`.
 - **Recurrence cue:** A `SetWindowPos` with an insert-after window on a strip whose owner differs from that window's owner; any new owned window placed relative to another app's window.
 - **Regression coverage:** None automatic: it takes real owned windows and the window manager. Measured after the fix, the restored window stayed above, but with Louis's older Deckle running in parallel, so the proof is not clean; his own trial confirmed it.
+
+## Strip under the taskbar gone at once when its app is minimized
+
+- **Trigger:** A maximized app minimized, taskbar faded, build 0.159.0.
+- **Observed symptom:** Louis saw the strip vanish without its fade. Measured on 2026-11-27 by a probe filming the taskbar's area with Windows.Graphics.Capture: the strip went from whole to absent between two frames (1.00 to 0.09, the area's own baseline), while its alpha was still 255.
+- **Cause:** The strip is a window owned by its app, and Windows hides an owned window itself when its owner is minimized (`WM_SHOWWINDOW` with `lParam = SW_PARENTCLOSING`), and when another window is maximized (`SW_OTHERZOOM`). The strip's fade never ran on what was no longer shown.
+- **Violated invariant:** A strip leaves only through its own fade; Windows is never let show or hide it. See the comment on `WM_SHOWWINDOW` in `TaskbarCoverHost.CallbacksAndMessagePump.cs` and the header of `TaskbarUnderlay.cs`.
+- **Recurrence cue:** A strip window whose procedure stops refusing `WM_SHOWWINDOW` with a non-zero `lParam`; a strip hidden or destroyed while its alpha is above 0; a new owned window that must fade.
+- **Regression coverage:** None automatic: it takes a real owner window and the window manager. The probe `artifacts/probes/StripProbe` (not tracked) measured it before and after the fix on 2026-11-27: after, the strip fades over 333 ms like every other path.
+
+## Strip under the taskbar shown whole at once as Task view closes
+
+- **Trigger:** Task view opened (Win+Tab) over a maximized app, then closed by choosing an app or by Escape, taskbar faded.
+- **Observed symptom:** Louis saw the strip appear at once on entering an app from Task view. Measured on 2026-11-27, frame by frame: during Task view's closing animation the area shows no strip for about 280 ms, then the strip whole in one frame. Its alpha had stayed 255 all through Task view: it had never faded away.
+- **Cause:** Two, both measured. Windows draws no strip during Task view's closing animation and then draws it as it is, so a strip left whole under Task view pops in. And the strip missed Task view: the foreground event for Task view was read while a shell staging window (`ForegroundStaging`) still held the foreground, some 60 ms before Task view, and no further event came; the strip stayed whole. Which of the two Louis saw on 0.159.0 is inferred, not measured: the probe saw the miss on both 0.159.0 and the branch, on enter and on cancel alike, depending on the run.
+- **Violated invariant:** The strip is at alpha 0 under Task view and fades back in only once Task view's window is hidden; a foreground change is looked at again for `UnderlaySettleMs`. See the Task view paragraph and `_underlaySettleUntil` in `TaskbarCoverHost.Underlay.cs`.
+- **Recurrence cue:** A strip decision taken once per foreground event with no look after it; Task view detected from the foreground alone, or by a title, which Windows translates.
+- **Regression coverage:** None automatic: the race lives between Explorer and the window manager. The probe ran it twice after the fix (2026-11-27, 19 h 48): enter and cancel both fade the strip out under Task view and back in over 333 ms.
