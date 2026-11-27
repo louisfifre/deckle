@@ -2546,6 +2546,7 @@ _Generated from `git ls-files` — do not edit by hand._
 │       ├── ScreenCaptureService.Lifecycle.cs
 │       ├── ScreenCaptureService.Loop.cs
 │       ├── ScreenCaptureService.Recovery.cs
+│       ├── WindowEdgeReader.cs
 │       ├── WindowSnapshot.cs
 │       └── WindowSnapshotInterop.cs
 ├── tests/
