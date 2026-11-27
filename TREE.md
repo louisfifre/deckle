@@ -330,7 +330,8 @@ _Generated from `git ls-files` — do not edit by hand._
 │   │   ├── deckle-paste-to-folder.md
 │   │   └── GLOSSARY.md
 │   ├── projects/
-│   │   └── deckle-projects.md
+│   │   ├── deckle-projects.md
+│   │   └── GLOSSARY.md
 │   ├── transcribe-and-rewrite/
 │   │   ├── deckle-transcribe-and-rewrite.md
 │   │   └── GLOSSARY.md
