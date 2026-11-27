@@ -6,6 +6,10 @@ What the product does once something starts it, a gesture of the user or the pro
 
 Avoid: [gesture](#gesture).
 
+### Agent
+
+A program driven by a language model that works in a project for the user, in sessions they start.
+
 ### Application
 
 A program the user works in, such as an editor, a browser or a mail client.
@@ -17,6 +21,10 @@ Avoid: [product](#product), [system](#system).
 A navigation that shows only the icon of each of its places, beside the page.
 
 Avoid: [open navigation](#open-navigation).
+
+### Context
+
+What an agent reads of a project at the start of every session, before the user asks anything.
 
 ### Dictation
 
@@ -81,6 +89,10 @@ A way of rewriting a text, which the user writes and names.
 To change the words of a transcribed text in the way the user chose; a translation is a rewrite.
 
 Avoid: [smooth](#smooth), [transcribe](#transcribe).
+
+### Script
+
+A file of a project that does one job of that project when it runs, such as building or publishing it.
 
 ### Smooth
 

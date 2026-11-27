@@ -6,20 +6,20 @@
 
 ### Context of use
 
-1. The [user](../GLOSSARY.md#user) works alone at their computer on several [projects](GLOSSARY.md#project) that they build and publish. They run the [scripts](GLOSSARY.md#script) of each project from its [script menu](GLOSSARY.md#script-menu), in a [terminal](GLOSSARY.md#terminal) they keep open for it. They want to go on running their scripts themselves, without an [agent](GLOSSARY.md#agent).
+1. The [user](../GLOSSARY.md#user) works alone at their computer on several [projects](GLOSSARY.md#project) that they build and publish. They run the [scripts](../GLOSSARY.md#script) of each project from its [script menu](GLOSSARY.md#script-menu), in a [terminal](GLOSSARY.md#terminal) they keep open for it. They want to go on running their scripts themselves, without an [agent](../GLOSSARY.md#agent).
 
 ### User need
 
-1. The [user](../GLOSSARY.md#user) needs to find a [project](GLOSSARY.md#project) fast and reach, from one [window](../GLOSSARY.md#window), its folder, its [version](GLOSSARY.md#version) and the [scripts](GLOSSARY.md#script) they run often, in order to build and publish all their projects.
+1. The [user](../GLOSSARY.md#user) needs to find a [project](GLOSSARY.md#project) fast and reach, from one [window](../GLOSSARY.md#window), its folder, its [version](GLOSSARY.md#version) and the [scripts](../GLOSSARY.md#script) they run often, in order to build and publish all their projects.
 
 ### Intended outcome
 
 1. They group their [projects](GLOSSARY.md#project) into [categories](GLOSSARY.md#category) of their own, sort them, and find one fast.
 2. They see a project's version, and whether it holds [uncommitted changes](GLOSSARY.md#uncommitted-change), without digging.
 3. They reach a project's folder, and the other tools that serve it, in one [gesture](../GLOSSARY.md#gesture).
-4. They run a project's [main script](GLOSSARY.md#main-script), and any other of its [scripts](GLOSSARY.md#script), without an [agent](GLOSSARY.md#agent) and without a terminal kept open for it.
+4. They run a project's [main script](GLOSSARY.md#main-script), and any other of its [scripts](../GLOSSARY.md#script), without an [agent](../GLOSSARY.md#agent) and without a terminal kept open for it.
 5. No script runs unless they start it.
-6. They see when the [context](GLOSSARY.md#context) of a project grows too big.
+6. They see when the [context](../GLOSSARY.md#context) of a project grows too big.
 7. Adding a project is simple, and removing one leaves its folder exactly as it was.
 8. Few things show, and there is nothing to manage.
 
@@ -32,7 +32,7 @@
 | find a project and open it | show each project's name and [version](GLOSSARY.md#version), by category, and show its [page](../GLOSSARY.md#page) on one [gesture](../GLOSSARY.md#gesture) |
 | run the [main script](GLOSSARY.md#main-script) without opening the project | run it from where the project shows among the others |
 | go and work on it | open it where the [product](../GLOSSARY.md#product) shows folders, in the file browser of the [system](../GLOSSARY.md#system), in a [terminal](GLOSSARY.md#terminal), or on the site that keeps it online |
-| run any other [script](GLOSSARY.md#script) | open the project's [script menu](GLOSSARY.md#script-menu) as it is, so that nothing needs updating when its scripts change |
+| run any other [script](../GLOSSARY.md#script) | open the project's [script menu](GLOSSARY.md#script-menu) as it is, so that nothing needs updating when its scripts change |
 | know where a run stands | say whether it runs, succeeded or failed, and bring its terminal to the front |
 | stop following a project | remove it, and leave its folder exactly as it was |
 
@@ -41,9 +41,9 @@
 1. [What the product shows is its real state.](../deckle.rules.md)
 2. [Everything the product tells the user reaches them with animations off as well.](../deckle.rules.md)
 3. [Everything the product tells the user reaches them with colours off as well.](../deckle.rules.md)
-4. The [product](../GLOSSARY.md#product) never starts a [script](GLOSSARY.md#script) by itself: every run starts with a [gesture](../GLOSSARY.md#gesture) of the [user](../GLOSSARY.md#user).
+4. The [product](../GLOSSARY.md#product) never starts a [script](../GLOSSARY.md#script) by itself: every run starts with a [gesture](../GLOSSARY.md#gesture) of the [user](../GLOSSARY.md#user).
 5. Nothing the user does to a [project](GLOSSARY.md#project) in the product changes its folder; only the scripts they run do.
-6. Besides what the user chose, everything the product shows of a project is read from its folder each time, without an [agent](GLOSSARY.md#agent).
+6. Besides what the user chose, everything the product shows of a project is read from its folder each time, without an [agent](../GLOSSARY.md#agent).
 7. The product gives no meaning of its own to a script: building or publishing a project is whatever its scripts do.
 
 ## Workflow
@@ -102,9 +102,9 @@ Otherwise:
 
 When it goes well:
 
-1. The [page](../GLOSSARY.md#page) of a [project](GLOSSARY.md#project) shows its name, its category and the path of its folder; then its [version](GLOSSARY.md#version), how many files hold [uncommitted changes](GLOSSARY.md#uncommitted-change), and how much its [context](GLOSSARY.md#context) holds; then the tools that open it; then its [pinned scripts](GLOSSARY.md#pinned-script).
+1. The [page](../GLOSSARY.md#page) of a [project](GLOSSARY.md#project) shows its name, its category and the path of its folder; then its [version](GLOSSARY.md#version), how many files hold [uncommitted changes](GLOSSARY.md#uncommitted-change), and how much its [context](../GLOSSARY.md#context) holds; then the tools that open it; then its [pinned scripts](GLOSSARY.md#pinned-script).
 2. The tools that open it come before its scripts.
-3. What the page shows is read again when the [user](../GLOSSARY.md#user) opens it, comes back to the [window](../GLOSSARY.md#window) or asks for it, and when a [script](GLOSSARY.md#script) of the project ends.
+3. What the page shows is read again when the [user](../GLOSSARY.md#user) opens it, comes back to the [window](../GLOSSARY.md#window) or asks for it, and when a [script](../GLOSSARY.md#script) of the project ends.
 
 Otherwise:
 
@@ -129,7 +129,7 @@ Otherwise:
 
 When it goes well:
 
-1. Among the [scripts](GLOSSARY.md#script) that the [script menu](GLOSSARY.md#script-menu) of a [project](GLOSSARY.md#project) gives, the [user](../GLOSSARY.md#user) chooses the ones they keep at hand, and one of them as the [main script](GLOSSARY.md#main-script). A script the menu offers in several ways is kept in one of them.
+1. Among the [scripts](../GLOSSARY.md#script) that the [script menu](GLOSSARY.md#script-menu) of a [project](GLOSSARY.md#project) gives, the [user](../GLOSSARY.md#user) chooses the ones they keep at hand, and one of them as the [main script](GLOSSARY.md#main-script). A script the menu offers in several ways is kept in one of them.
 2. The [page](../GLOSSARY.md#page) of the project shows its main script once, at its head, and its other [pinned scripts](GLOSSARY.md#pinned-script) below. Everything else is reached by opening the whole script menu.
 3. Each pinned script shows its name in the menu, its file, and where its last run stands.
 
@@ -145,7 +145,7 @@ Otherwise:
 When it goes well:
 
 1. One [gesture](../GLOSSARY.md#gesture) on a [pinned script](GLOSSARY.md#pinned-script), or on the [main script](GLOSSARY.md#main-script) from the [page](../GLOSSARY.md#page) of the [project](GLOSSARY.md#project) or from where it shows among the others, runs it in a [terminal](GLOSSARY.md#terminal), in the project's folder. One gesture opens the whole [script menu](GLOSSARY.md#script-menu) in a terminal too.
-2. The [product](../GLOSSARY.md#product) asks nothing before a [script](GLOSSARY.md#script) runs: what the script asks, it asks in its terminal.
+2. The [product](../GLOSSARY.md#product) asks nothing before a [script](../GLOSSARY.md#script) runs: what the script asks, it asks in its terminal.
 3. One script runs at a time in a project; the other projects stay free.
 4. While a script runs, the product shows that it runs and for how long, and one gesture brings its terminal to the front.
 5. While a script runs, the other scripts of the project say that they wait for it, by its name, and cannot be started. The script menu and the tools that open the project stay usable.
@@ -175,7 +175,7 @@ When it goes well:
 
 Otherwise:
 
-2. A [script](GLOSSARY.md#script) of the project runs: the project cannot be removed until it ends.
+2. A [script](../GLOSSARY.md#script) of the project runs: the project cannot be removed until it ends.
 
 ## How Deckle answers, a sample on two lines
 
@@ -188,6 +188,6 @@ Otherwise:
 
 ### 1.3.4 Without a terminal kept open for it
 
-1. On the [user](../GLOSSARY.md#user)'s [gesture](../GLOSSARY.md#gesture), the [product](../GLOSSARY.md#product) opens a [terminal](GLOSSARY.md#terminal) in the [project](GLOSSARY.md#project)'s folder and asks the [script menu](GLOSSARY.md#script-menu) to run the chosen [script](GLOSSARY.md#script) at once, so that the user goes through no menu.
+1. On the [user](../GLOSSARY.md#user)'s [gesture](../GLOSSARY.md#gesture), the [product](../GLOSSARY.md#product) opens a [terminal](GLOSSARY.md#terminal) in the [project](GLOSSARY.md#project)'s folder and asks the [script menu](GLOSSARY.md#script-menu) to run the chosen [script](../GLOSSARY.md#script) at once, so that the user goes through no menu.
 2. It follows what it started, to know while the script runs and, at its end, whether it succeeded and with which exit code.
 3. Once the script ends, the terminal waits for the user before it closes, so that they can read what the script wrote.
