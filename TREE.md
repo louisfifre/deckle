@@ -326,8 +326,9 @@ _Generated from `git ls-files` — do not edit by hand._
 │   ├── navigation-pane/
 │   │   ├── deckle-navigation-pane.md
 │   │   └── GLOSSARY.md
+│   ├── paste-to-folder/
+│   │   └── deckle-paste-to-folder.md
 │   ├── deckle-mail.md
-│   ├── deckle-paste-to-folder.md
 │   ├── deckle-projects.md
 │   ├── deckle-transcribe-and-rewrite.md
 │   ├── deckle.md
