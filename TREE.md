@@ -329,9 +329,10 @@ _Generated from `git ls-files` — do not edit by hand._
 │   ├── paste-to-folder/
 │   │   ├── deckle-paste-to-folder.md
 │   │   └── GLOSSARY.md
+│   ├── transcribe-and-rewrite/
+│   │   └── deckle-transcribe-and-rewrite.md
 │   ├── deckle-mail.md
 │   ├── deckle-projects.md
-│   ├── deckle-transcribe-and-rewrite.md
 │   ├── deckle.md
 │   ├── deckle.rules.md
 │   ├── folders.md
