@@ -57,7 +57,7 @@ Smaller touches outside the module list: a **taskbar fade** that fades the taskb
 
 | First commit | Commits | Active days | Lines added | Lines touched | Current tracked lines |
 |---:|---:|---:|---:|---:|---:|
-| 2026-04-01 | 5,444 | 146 | 760,303 | 1,154,111 | 367,143 |
+| 2026-04-01 | 5,602 | 148 | 770,360 | 1,172,069 | 369,276 |
 
 <picture>
   <source media="(prefers-color-scheme: dark)" srcset="docs/media/pulse-label-peak-dark.svg">
@@ -68,21 +68,21 @@ Smaller touches outside the module list: a **taskbar fade** that fades the taskb
 <picture>
   <source media="(prefers-color-scheme: dark)" srcset="docs/media/pulse-commits-dark.svg">
   <source media="(prefers-color-scheme: light)" srcset="docs/media/pulse-commits-light.svg">
-  <img alt="Commits per day, smoothed over 7 days, over the last 26 weeks: 4,577 in total, the busiest stretch averaged 118.6 a day." src="docs/media/pulse-commits-light.svg" width="100%" height="40">
+  <img alt="Commits per day, smoothed over 7 days, over the last 26 weeks: 4,714 in total, the busiest stretch averaged 118.6 a day." src="docs/media/pulse-commits-light.svg" width="100%" height="40">
 </picture>
 <picture>
   <source media="(prefers-color-scheme: dark)" srcset="docs/media/pulse-label-start-dark.svg">
   <source media="(prefers-color-scheme: light)" srcset="docs/media/pulse-label-start-light.svg">
-  <img alt="From 28 May 2026" src="docs/media/pulse-label-start-light.svg" width="97" height="16" align="left">
+  <img alt="From 30 May 2026" src="docs/media/pulse-label-start-light.svg" width="97" height="16" align="left">
 </picture>
 <picture>
   <source media="(prefers-color-scheme: dark)" srcset="docs/media/pulse-label-end-dark.svg">
   <source media="(prefers-color-scheme: light)" srcset="docs/media/pulse-label-end-light.svg">
-  <img alt="To 25 Nov 2026" src="docs/media/pulse-label-end-light.svg" width="97" height="16" align="right">
+  <img alt="To 27 Nov 2026" src="docs/media/pulse-label-end-light.svg" width="97" height="16" align="right">
 </picture>
 <br clear="all">
 
-<sub>Generated from Git history on 2026-11-25. Counts include tracked text files only for the current line total.</sub>
+<sub>Generated from Git history on 2026-11-27. Counts include tracked text files only for the current line total.</sub>
 <!-- deckle-stats:end -->
 
 ## Privacy and network use
