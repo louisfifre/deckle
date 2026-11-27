@@ -10,11 +10,15 @@ What the user says between the gesture that starts it and the gesture that stops
 
 ### Hesitation
 
-A short stop or a filler sound inside a sentence, while the user looks for their words. Avoid: pause, for a stop inside a sentence.
+A short stop or a filler sound inside a sentence, while the user looks for their words.
+
+Avoid: [pause](#pause).
 
 ### Listening
 
-The time during which the product takes in the user's voice, from the gesture that starts a dictation to the gesture that stops it. Avoid: dictation, for that time alone.
+The time during which the product takes in the user's voice, from the gesture that starts a dictation to the gesture that stops it.
+
+Avoid: [dictation](#dictation).
 
 ### Noise
 
@@ -22,7 +26,9 @@ Any sound that is not the user's voice, such as a rub on the microphone or a sou
 
 ### Pause
 
-A time when the user stops speaking, then speaks again. Avoid: silence, which says only that no voice is heard.
+A time when the user stops speaking, then speaks again.
+
+Avoid: [silence](#silence).
 
 ### Silence
 
@@ -38,4 +44,6 @@ A stretch of the user's voice between two silences.
 
 ### Voice
 
-The sound of the user speaking, as the product hears it through the microphone. Avoid: noise.
+The sound of the user speaking, as the product hears it through the microphone.
+
+Avoid: [noise](#noise).
