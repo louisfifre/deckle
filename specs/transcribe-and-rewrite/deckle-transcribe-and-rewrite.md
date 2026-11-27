@@ -1,120 +1,172 @@
 # Turn a text or recordings into the text you want, one at a time or many at once
 
+> Not reviewed.
+
 ## Need
 
-Draft, not confirmed
+### Context of use
 
-**Context of use.** The user, on their own computer, has a text to rework or a recording to turn into text, outside a dictation. Sometimes it is one text they want to shape and use; sometimes they only want transcripts, of many recordings at once.
+1. The [user](../GLOSSARY.md#user), at their computer, has a text to rework or a [recording](GLOSSARY.md#recording) to turn into text, outside a [dictation](../GLOSSARY.md#dictation). Sometimes it is one text they want to shape and use; sometimes they only want the texts of many recordings at once.
 
-**User need.** The user needs to turn a text or a recording into the text that suits them, trying ways of rewriting it as far as they like, and to turn many recordings into text files in one pass, in order to use the result without handling a file in between.
+### User need
 
-**Intended outcome.**
+1. The [user](../GLOSSARY.md#user) needs to turn a text or a [recording](GLOSSARY.md#recording) into the text that suits them, trying ways of [rewriting](../GLOSSARY.md#rewrite) it as far as they like, and to turn many recordings into text files in one pass, in order to use the result without handling a file in between.
 
-- A text or a recording can be brought in from one place that is always at hand.
-- They try several ways of rewriting and stop at the one that suits them; every earlier version comes back.
-- Their own corrections are kept when the text is rewritten.
-- A long text, hours of speech, stays whole and readable.
-- Many recordings become text files in one pass, each kept as soon as it is ready, and they know where the files go before and while it runs.
-- They can read and correct any of those texts, and the correction is kept without a step of theirs.
-- A failure never takes away what they had.
-- The work goes on while they do something else.
+### Intended outcome
+
+1. A text or a [recording](GLOSSARY.md#recording) can be brought in from one place that is always at hand.
+2. They try several ways of [rewriting](../GLOSSARY.md#rewrite) and stop at the one that suits them; every earlier text comes back.
+3. Their own corrections are kept when the text is rewritten.
+4. A long text, hours of speech, stays whole and readable.
+5. Many recordings become text files in one pass, each kept as soon as it is ready, and they know where the files go before and while it runs.
+6. They can read and correct any of those texts, and the correction is kept without a step of theirs.
+7. A failure never takes away what they had.
+8. The work goes on while they do something else.
 
 ## Journey
 
 | The user wants to | The product must |
 | --- | --- |
-| bring a text or a recording in | take a pasted text, or transcribe a recording as it goes, with their usual transcription settings |
-| shape the text | rewrite all of it with the profile they pick, from the text as it stands now, hand edits included |
-| compare and go back | keep every version as a step they can undo and redo |
-| take the result | copy it, or save it as a text file named after the recording |
-| produce many transcripts | start at once on all the recordings chosen, save each text next to its recording as soon as it comes, and say so before and while it runs |
-| check and correct one of them | show it whole, and keep every change on its file without asking |
-| rewrite them all | rewrite each saved text with one profile and write it over its file |
+| bring a text or a recording in | take a [pasted](../GLOSSARY.md#paste) text, or [transcribe](../GLOSSARY.md#transcribe) a [recording](GLOSSARY.md#recording) as it goes, the way they set their transcriptions |
+| shape the text | [rewrite](../GLOSSARY.md#rewrite) all of it with the [profile](../GLOSSARY.md#profile) they pick, from the text as it stands now, their corrections included |
+| compare and go back | keep each earlier text, for them to go back to it and forward again |
+| take the result | have it ready for them to put where they want, or save it as a text file named after its recording |
+| get the texts of many recordings | start at once on all the recordings chosen, save each text beside its recording as soon as it comes, and say so before and while it runs |
+| check and correct one of them | show it whole, and keep every change in its file without asking |
+| rewrite them all | rewrite each saved text with one profile and save it over its file |
+| do something else meanwhile | go on with the work when they close the [window](../GLOSSARY.md#window), and show how far it is when they come back |
 
-When it goes another way:
+## Rules
 
-- No provider is configured for rewriting: the user is told one is needed, and where to set it.
-- A transcription or a rewrite fails: the text is left as it was before it started.
-- In a batch, one file fails: only that file stops. A rewrite that does not come back keeps the transcript.
-- The user stops a batch: the file in progress finishes and is saved, the rest is not transcribed.
-- The user closes the window while it works: the work goes on, and the window comes back with its progress.
+1. [What the product shows is its real state.](../deckle.rules.md)
+2. [Everything the product tells the user reaches them with animations off as well.](../deckle.rules.md)
+3. [Everything the product tells the user reaches them with colours off as well.](../deckle.rules.md)
+4. A [transcription](../GLOSSARY.md#transcribe) or a [rewrite](../GLOSSARY.md#rewrite) that fails leaves the text as it was before it started.
+5. A rewrite starts from the text as it stands, the [user](../GLOSSARY.md#user)'s corrections included.
+6. What the [product](../GLOSSARY.md#product) saves by itself never goes over a file that was there before.
 
-## Answer
+## Workflow
 
-Words a reader needs:
+### Opening
 
-- A **profile** rewrites a text in its own way, lighter or heavier. The profiles are those of the Rewriting page.
-- The **field** is the text field at the centre of the window, which holds one text.
-- The **list** takes the field's place when several audio files are chosen: one line per file.
-- A **batch** is the run that transcribes the files of the list in turn.
+When it goes well:
 
-### The way in: the tray menu
+1. One place, always at hand, opens the [window](../GLOSSARY.md#window), for a text and for [recordings](GLOSSARY.md#recording) alike.
+2. The window opens at the size and place the [user](../GLOSSARY.md#user) left it.
+3. Before anything, the [product](../GLOSSARY.md#product) says that a text can be [pasted](../GLOSSARY.md#paste) or a recording [transcribed](../GLOSSARY.md#transcribe).
 
-1. The tray's left-click menu holds "Transcribe and rewrite…", which opens the window, in the actions group after Record. It is the one entry for a text and for audio files.
-2. The left-click menu ends on Settings and Quit. With Developer mode on, the right-click menu holds Logs and Restart at its bottom.
+### Bringing in a text
 
-### The window
+When it goes well:
 
-1. Top row, left: "Transcribe audio files…". Top row, right: Undo, Redo, Copy, Save.
-2. Under it, the field, which takes all the space the window leaves it. It can be edited at every moment except while a transcription or a rewrite writes into it.
-3. Bottom row, left: the Rewrite button with the profile drop-down next to it, read as one phrase ("Rewrite · Mail pro"). Bottom row, right: a gear alone, with a tooltip, which opens Settings on the Rewriting page.
-4. The window has no transcription setting of its own: the transcription follows the pipeline set in Settings (model, language, preprocessing).
-5. The window opens small the first time, then at the size and place the user left it. Maximised, it keeps the same rows: the field grows, and the controls stay at their corners.
+1. The [user](../GLOSSARY.md#user) [pastes](../GLOSSARY.md#paste) a text: it becomes the text they work on.
+2. They correct the text at any moment, except while a [transcription](../GLOSSARY.md#transcribe) or a [rewrite](../GLOSSARY.md#rewrite) writes it.
 
-### One text in the field
+### Transcribing one recording
 
-1. Before anything: the field is empty and its placeholder says that a text can be pasted or a file transcribed. Copy, Save and Rewrite are disabled while the field is empty.
-2. Before any choice, the tooltip of "Transcribe audio files…" says where the texts go: one file opens its text in the field; several are transcribed in a batch, each text saved next to its audio file.
-3. Choosing files starts the transcription at once; there is no step between the choice and the work. One file, with no list open, goes into the field.
-4. While a transcription or a rewrite runs: the field wears the HUD's animated outline, and Rewrite and "Transcribe audio files…" are disabled.
-5. During a transcription, each utterance appears at the end of the field as soon as it is transcribed, whatever the dictation's streaming setting: a file is always transcribed utterance by utterance.
-6. With a long text, three hours of a podcast for example, the field scrolls with its scroll bar; nothing is hidden behind "show more", and the display keeps up without stutter.
-7. Rewrite rewrites the whole text of the field with the profile shown, starting from the field as it is now, hand edits included. A rewrite of a pasted text comes back whole; it is not shown progressively.
-8. Changing the profile does nothing by itself; only Rewrite applies it.
-9. Every replacement of the field's text, by a transcription, a rewrite or a paste, is one step of Undo and Redo. Example: transcribe, then rewrite with Mail pro, then with Formal: Undo twice brings back the transcript.
-10. Copy puts the field's text on the clipboard.
-11. Save, or Ctrl+S, opens "Save as" with a .txt name: the audio's name in its folder when the text came from a file, a neutral name otherwise.
-12. With no provider configured for rewriting, Rewrite stays visible, and its click says that a provider is needed, with a way to the Rewriting page.
-13. A failed transcription or rewrite leaves the field as it was before it started, with the usual failure message.
+When it goes well:
 
-### Several files: the list
+1. Before they choose, the [product](../GLOSSARY.md#product) says where the texts go: one [recording](GLOSSARY.md#recording) gives its text to work on; several give each a text file beside its recording.
+2. Choosing a recording starts its [transcription](../GLOSSARY.md#transcribe) at once: there is no step between the choice and the work.
+3. The recording is transcribed the way the [user](../GLOSSARY.md#user) set their transcriptions; the [window](../GLOSSARY.md#window) has no setting of its own.
+4. The text appears as it is transcribed, one part after another.
+5. While it runs, the product shows that it works, and no other transcription or [rewrite](../GLOSSARY.md#rewrite) can start.
+6. A long text, hours of speech, stays whole: they move through all of it, nothing of it is hidden, and it keeps up without stutter.
 
-1. Several files chosen make the list, which takes the field's place, and the transcription starts at once. The top and bottom rows stay where they are.
-2. Once a list exists, the top-left button reads "Add audio files…", and every choice joins the list, one file or several. A file already in the list that failed or was stopped goes back to waiting when it is chosen again; a file already saved or waiting is left as it is. During a batch, the new files are taken in turn by the batch already running.
-3. Each file is saved as a .txt beside its audio, under the audio's name, as soon as its transcript comes, before anything else happens to it. A name already taken gets " (2)", as Explorer names a copy.
-4. Above the list, one line says how far the batch is ("3 of 5 saved · 1 failed · 1 not transcribed"; a count of zero is not shown), and a caption under it says that each text is saved next to its audio file, with an "Open folder" link that shows the first file's text in its folder.
-5. Each line of the list shows a status mark in a slot of its own (a ring while the file works, a check once saved, a warning when the rewrite did not come back, an error mark when it failed), the file's name on two lines at most, a caption with its state when it is not simply saved (Waiting, Transcribing…, Rewriting…, Rewritten, Couldn't rewrite, transcript kept, Not transcribed, or the failure) followed by its duration, and, once it holds a text, the opening of that text on two lines at most with a chevron on the right.
-6. While a batch runs, a Stop button sits beside the top-left button. The file in progress finishes and is saved; the files still waiting are marked "Not transcribed" and nothing is written for them. Stop belongs to the list: it is not shown in the field.
-7. A right-click on a line offers "Show in folder", which selects the file's .txt in Explorer.
-8. On the list, Undo, Redo, Copy and Save are hidden: each file is already saved.
-9. A file that fails stops only itself.
+Otherwise:
 
-### One file of the list, opened in the field
+7. The transcription fails: the text is as it was before it started, and the product tells them.
 
-1. A click on a line that holds a text opens the whole text in the field, which scrolls for a long text, as one step like any replacement.
-2. Above the field, a breadcrumb reads "All files › the file's name", with the caption "Changes are saved automatically". Save is not shown. "All files" goes back to the list.
-3. Every change to the text, a typed correction, a rewrite or an Undo, is written over the file's .txt a moment after it stops, and again when the field leaves the file: back to the list, to another file, or the window closed. A change that cannot be written is said so, and Copy keeps the text.
-4. A text opened only to be read is never written back: its .txt stays untouched.
-5. Undo, Redo and the field's history belong to the file opened: opening another file never brings back the text of the previous one.
+### Rewriting
 
-### Rewriting every file
+When it goes well:
 
-1. Rewrite and its profile list are hidden on the list until one file holds a text. The button then reads "Rewrite all", and its tooltip says it rewrites every saved text and writes it over its .txt.
-2. It rewrites each saved file in turn with the profile shown. Stop ends it after the file in progress.
-3. A rewrite that does not come back keeps the file's text, on disk and on screen, and its line says so.
+1. The [user](../GLOSSARY.md#user) picks one of their [profiles](../GLOSSARY.md#profile); picking it changes nothing by itself.
+2. They ask for a [rewrite](../GLOSSARY.md#rewrite): the whole text is rewritten with that profile, from the text as it stands, their corrections included.
+3. The rewritten text comes back whole, at once.
+4. From the [window](../GLOSSARY.md#window), one [gesture](../GLOSSARY.md#gesture) leads to where they set their profiles.
+
+Otherwise:
+
+5. Nothing can rewrite yet: the [product](../GLOSSARY.md#product) tells them what is missing and leads them to where they set it.
+6. The rewrite fails: the text is as it was before it started, and the product tells them.
+
+### Going back and forward
+
+When it goes well:
+
+1. Each time the text is replaced whole, by a [transcription](../GLOSSARY.md#transcribe), a [rewrite](../GLOSSARY.md#rewrite) or a [paste](../GLOSSARY.md#paste), the text before it is kept.
+2. The [user](../GLOSSARY.md#user) goes back to any earlier text, and forward again, one step at a time.
+
+### Taking the result
+
+When it goes well:
+
+1. On one [gesture](../GLOSSARY.md#gesture), the text is ready for the [user](../GLOSSARY.md#user) to put where they want.
+2. They save it as a text file, where they choose and under the name they choose; when the text came from a [recording](GLOSSARY.md#recording), the [product](../GLOSSARY.md#product) proposes the recording's name and folder.
+3. While the text is empty, there is nothing to take, to save or to [rewrite](../GLOSSARY.md#rewrite).
+
+### Transcribing many recordings
+
+When it goes well:
+
+1. Choosing several [recordings](GLOSSARY.md#recording) starts their [transcription](../GLOSSARY.md#transcribe) at once, one after another.
+2. Each text is saved as a text file beside its recording, under its name, as soon as it comes, before anything else happens to it.
+3. A name already taken gets the next free number, the way the [system](../GLOSSARY.md#system) names a copy, and the file already there is left as it is.
+4. The [product](../GLOSSARY.md#product) shows how far it is: how many texts are saved, how many failed and how many were not transcribed. It says that each text is saved beside its recording, and one [gesture](../GLOSSARY.md#gesture) shows the folder of the texts.
+5. For each recording, the product shows its name, its state, its length, and the beginning of its text once it has one.
+6. The [user](../GLOSSARY.md#user) adds recordings at any moment, one or several; while the transcription runs, they join it in turn. A recording chosen again that failed or was stopped waits again; one saved or waiting stays as it is.
+7. From each recording, one gesture shows its text file in its folder.
+8. Over many recordings, nothing asks to be saved and there is no going back: each text is already saved.
+
+Otherwise:
+
+9. A recording fails: only it stops, and the others go on.
+10. They stop the transcription: the recording in progress finishes and is saved; the ones still waiting are marked as not transcribed, and nothing is written for them.
+
+### Reading and correcting one text of many
+
+When it goes well:
+
+1. The [user](../GLOSSARY.md#user) opens the text of any [recording](GLOSSARY.md#recording) that has one: it is shown whole.
+2. They see which recording the text belongs to and that their changes are saved by themselves, and one [gesture](../GLOSSARY.md#gesture) takes them back to all the recordings.
+3. Every change to the text, a correction, a [rewrite](../GLOSSARY.md#rewrite) or a step back, is saved over its file a moment after it stops, and again when they leave the text or close the [window](../GLOSSARY.md#window).
+4. A text opened only to be read is never written back: its file stays as it was.
+5. Going back and forward belongs to the text opened: opening another never brings back the text of the one before.
+
+Otherwise:
+
+6. A change cannot be saved: the [product](../GLOSSARY.md#product) says so, and the text stays ready for them to put where they want.
+
+### Rewriting every text
+
+When it goes well:
+
+1. Once one [recording](GLOSSARY.md#recording) has a text, the [user](../GLOSSARY.md#user) can [rewrite](../GLOSSARY.md#rewrite) every saved text with one [profile](../GLOSSARY.md#profile), and the [product](../GLOSSARY.md#product) says that each is saved over its file.
+2. Each saved text is rewritten in turn with that profile and saved over its file.
+3. They stop it: it ends after the text in progress.
+
+Otherwise:
+
+4. A rewrite does not come back: the text stays as it was, in its file and on the screen, and the product says so for that recording.
 
 ### Closing the window
 
-1. Closing the window while it works, or while a batch runs, hides it; the work goes on, and the tray entry brings it back with its progress.
-2. A file open in the field is saved before the window hides or closes.
+When it goes well:
 
-## Limits
+1. Closing the [window](../GLOSSARY.md#window) while it works hides it: the work goes on, and the place that opened it brings it back with how far the work is.
+2. A text opened from many [recordings](GLOSSARY.md#recording) is saved before the window hides or closes.
 
-- The window rewrites with the profiles of the Rewriting page; it creates no profile and edits none.
-- Sending the result by mail is not covered here: it belongs to Deckle Mail, later.
+## How Deckle answers, a sample on two lines
 
-## Open
+### 1.3.3 Their own corrections are kept when the text is rewritten
 
-1. **Dropping files on the window.** Audio files dropped on the window show a drop zone over the whole window. A single target seems enough: one file into the field, several into the list, as "Transcribe audio files…" does. To confirm with the user. Depends on it: whether the window has one drop target or several.
-2. **The width of the text's lines when maximised.** Capped when the window is very wide, as Word does, or left to run the full width? To judge on a capture. Built today: not said.
-3. **"Show in Deckle Folders" on the list's lines**, once Deckle Folders exists. Built today: "Show in folder" only.
+1. When the [user](../GLOSSARY.md#user) asks for a [rewrite](../GLOSSARY.md#rewrite), the [product](../GLOSSARY.md#product) takes the text as it stands at that moment, with every correction they made, and rewrites that text.
+2. While the rewrite runs, the text cannot be changed, so no correction is made on a text about to be replaced.
+3. The rewritten text replaces the text in one step, and the text before it is kept, for them to go back to.
+
+### 1.3.5 Many recordings become text files in one pass, each kept as soon as it is ready
+
+1. The [product](../GLOSSARY.md#product) [transcribes](../GLOSSARY.md#transcribe) the [recordings](GLOSSARY.md#recording) one after another.
+2. As soon as the text of one recording is complete, the product writes it as a text file beside the recording, before it [rewrites](../GLOSSARY.md#rewrite) it or does anything else with it, so that a later failure cannot take it away.
+3. Before it writes, it takes a name that no file holds yet, so a file already there is never replaced; it counts what is saved, what failed and what was not transcribed as it goes.
