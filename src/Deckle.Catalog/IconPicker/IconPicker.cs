@@ -6,7 +6,7 @@ using Microsoft.UI.Xaml.Controls.Primitives;
 
 namespace Deckle.Catalog;
 
-// The icon picker Deckle's apps share (specs/folders.md, Window: the
+// The icon picker Deckle's apps share (specs/folders/deckle-folders.md: the
 // Folders gives it to an added folder, Deckle Mail will give it to a
 // mailbox). It edits one IconChoice and knows nothing of what carries it: the
 // host opens it under the icon it changes, as a flyout (CreateFlyout), and

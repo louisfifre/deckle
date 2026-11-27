@@ -1,7 +1,7 @@
 namespace Deckle.Core;
 
 // The colours an IconChoice can take: five tiles, Windows' accent colour first
-// (specs/folders.md, Open 13, as drawn). The four others are taken from the
+// (as drawn for specs/folders/deckle-folders.md, not settled). The four others are taken from the
 // accent swatches Windows Settings offers; their values, one per theme, sit
 // in Deckle.Catalog's IconTintPalette.
 //

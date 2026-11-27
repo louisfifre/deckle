@@ -7,7 +7,7 @@ using Microsoft.UI.Xaml.Controls;
 namespace Deckle.Catalog;
 
 // Draws one IconChoice: the symbol in its tint, or, with the background on,
-// the symbol on a square of its tint (specs/folders.md, Window: the
+// the symbol on a square of its tint (as drawn for specs/folders/deckle-folders.md: the
 // background is always a square). Wherever a chosen icon shows, the pane of
 // added folders, the address bar, the picker's own tiles, it is this view,
 // so all of them draw it alike.
