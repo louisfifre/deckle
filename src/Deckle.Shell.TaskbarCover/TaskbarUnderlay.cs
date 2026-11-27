@@ -38,12 +38,6 @@ internal sealed class TaskbarUnderlay : IDisposable
     // out included.
     public IntPtr App { get; private set; }
     public bool Visible => App != IntPtr.Zero;
-    // A maximized app found but not shown yet, and since when (TickCount64):
-    // the host waits out Windows' maximize animation before reading it.
-    public IntPtr PendingApp { get; set; }
-    public long PendingSince { get; set; }
-    // What the edge showed when the app was found, before it reached it.
-    public uint? PendingBefore { get; set; }
     // The COLORREF last asked for.
     public uint Color => _current?.Color ?? uint.MaxValue;
     // The last read edge showed more than one colour (EdgeColor.PlainShare).
@@ -106,6 +100,21 @@ internal sealed class TaskbarUnderlay : IDisposable
             _leaving = null;
             _current.FadeTo(255);
             Place();
+            return 0;
+        }
+
+        // A new colour for the same app while a fade is under way (the strip
+        // rising, or the old look still fading out over it) repaints the
+        // strip: the fade under way carries the change. A window just
+        // maximized shows black for one frame, then its colour (measured 25
+        // ms apart); a fade started for each pushed the strip that had just
+        // come in, black at full strength, out over the next one, and the
+        // taskbar flashed dark (seen in the trial of 2026-11-27).
+        if (_current is { } rising && rising.Owner == app && rising.Blur == blur && rising.Color != color
+            && (rising.Fading || _leaving is not null))
+        {
+            rising.SetLook(color, blur);
+            if (moved) Place();
             return 0;
         }
 
@@ -328,23 +337,37 @@ internal sealed class TaskbarUnderlay : IDisposable
         }
     }
 
-    // ── Reading the screen ────────────────────────────────────────────────
+    // ── Reading the windows ───────────────────────────────────────────────
 
     // The topmost maximized app on monitor, on the current virtual desktop;
-    // zero when there is none. Always-on-top windows are left out: the
-    // underlay placed under one would become always-on-top itself.
-    public static IntPtr FindMaximizedApp(IntPtr monitor)
+    // zero when there is none, or when a window in front of it covers the
+    // whole monitor (a video or a game fullscreen: no taskbar beside it to
+    // continue). Measured against the frame Windows draws
+    // (DWMWA_EXTENDED_FRAME_BOUNDS), since a maximized window's rectangle
+    // overhangs the monitor by its resize borders. Always-on-top windows are
+    // left out: the underlay placed under one would become always-on-top
+    // itself. Tool windows and windows that take no focus are left out of
+    // the fullscreen test: such a window covering the monitor is an overlay,
+    // not an app.
+    public static IntPtr FindMaximizedApp(IntPtr monitor, NativeMethods.RECT monitorRect)
     {
         for (IntPtr w = GetTopWindow(IntPtr.Zero); w != IntPtr.Zero; w = GetWindow(w, GW_HWNDNEXT))
         {
-            if (!IsZoomed(w) || !IsWindowVisible(w)) continue;
-            if ((NativeMethods.GetWindowLongPtr(w, GWL_EXSTYLE).ToInt64() & NativeMethods.WS_EX_TOPMOST) != 0) continue;
+            if (!IsWindowVisible(w)) continue;
+            long ex = NativeMethods.GetWindowLongPtr(w, GWL_EXSTYLE).ToInt64();
+            if ((ex & NativeMethods.WS_EX_TOPMOST) != 0) continue;
             if (DwmGetWindowAttribute(w, DWMWA_CLOAKED, out int cloaked, sizeof(int)) == 0 && cloaked != 0) continue;
             if (MonitorFromWindow(w, MONITOR_DEFAULTTONEAREST) != monitor) continue;
-            return w;
+            if (IsZoomed(w)) return CoversMonitor(w, monitorRect) ? IntPtr.Zero : w;
+            if ((ex & (NativeMethods.WS_EX_TOOLWINDOW | NativeMethods.WS_EX_NOACTIVATE)) == 0 && CoversMonitor(w, monitorRect))
+                return IntPtr.Zero;
         }
         return IntPtr.Zero;
     }
+
+    private static bool CoversMonitor(IntPtr w, NativeMethods.RECT m)
+        => DwmGetWindowAttribute(w, DWMWA_EXTENDED_FRAME_BOUNDS, out NativeMethods.RECT r, Marshal.SizeOf<NativeMethods.RECT>()) == 0
+           && r.left <= m.left && r.top <= m.top && r.right >= m.right && r.bottom >= m.bottom;
 
     // The app shows a see-through backdrop right now: it asked Windows for
     // Mica or Acrylic, and it holds the focus — Windows draws an inactive
@@ -357,80 +380,30 @@ internal sealed class TaskbarUnderlay : IDisposable
         return foreground != IntPtr.Zero && GetAncestor(foreground, GA_ROOTOWNER) == app;
     }
 
-    // The app itself is what the screen shows along the line: no flyout
-    // (notification centre, Start, search) or other window lies over its edge.
-    // Checked at both ends and the middle.
-    public static bool AppOwnsLine(IntPtr app, NativeMethods.RECT line)
-    {
-        int length = line.bottom - line.top;
-        bool vertical = line.right - line.left == 1;
-        if (!vertical) length = line.right - line.left;
-        foreach (int at in (ReadOnlySpan<int>)[length / 10, length / 2, length * 9 / 10])
-        {
-            var p = vertical
-                ? new POINT { X = line.left, Y = line.top + at }
-                : new POINT { X = line.left + at, Y = line.top };
-            if (GetAncestor(WindowFromPoint(p), GA_ROOT) != app) return false;
-        }
-        return true;
-    }
-
-    // Which of the shell's full-screen views holds the foreground: Task
-    // view, whose desktop previews would show the strip as a bar beside the
-    // app with no taskbar over it, or Alt+Tab's switcher, which leaves the
-    // desktop as it is under its list.
-    public enum ShellView { None, TaskView, TaskSwitcher }
-
-    public static ShellView ForegroundShellView()
+    // Task view holds the foreground: its desktop previews would show the
+    // strip as a bar beside the app with no taskbar over it. Alt+Tab's
+    // switcher is a window of the same class with the same styles (measured
+    // 2026-11-27); only its title, which Windows translates, tells it apart.
+    public static bool TaskViewShown()
     {
         IntPtr foreground = NativeMethods.GetForegroundWindow();
         var text = new System.Text.StringBuilder(64);
         if (foreground == IntPtr.Zero || GetClassName(foreground, text, text.Capacity) == 0
             || text.ToString() != TaskViewClass)
-            return ShellView.None;
+            return false;
         text.Clear();
         GetWindowText(foreground, text, text.Capacity);
-        return text.ToString() == TaskSwitcherTitle ? ShellView.TaskSwitcher : ShellView.TaskView;
+        return text.ToString() != TaskSwitcherTitle;
     }
 
-    // The dominant colour of the screen line and the share of the line it
-    // covers, or null when GDI refused.
-    public static (uint Color, double Share)? ReadColor(NativeMethods.RECT line)
+    // The colour a strip starts from before the app's first frame is read:
+    // the base of Windows 11 apps in the apps' theme, #202020 dark and
+    // #F3F3F3 light (WinUI's SolidBackgroundFillColorBase), as a COLORREF.
+    public static uint ThemeBase()
     {
-        int width = line.right - line.left, height = line.bottom - line.top;
-        if (width <= 0 || height <= 0) return null;
-
-        var header = new BITMAPINFOHEADER
-        {
-            biSize     = (uint)Marshal.SizeOf<BITMAPINFOHEADER>(),
-            biWidth    = width,
-            biHeight   = -height, // top-down
-            biPlanes   = 1,
-            biBitCount = 32,
-        };
-
-        IntPtr screen = GetDC(IntPtr.Zero);
-        IntPtr memory = CreateCompatibleDC(screen);
-        IntPtr bitmap = CreateDIBSection(screen, ref header, 0, out IntPtr bits, IntPtr.Zero, 0);
-        try
-        {
-            if (screen == IntPtr.Zero || memory == IntPtr.Zero || bitmap == IntPtr.Zero) return null;
-            IntPtr previous = SelectObject(memory, bitmap);
-            bool copied = BitBlt(memory, 0, 0, width, height, screen, line.left, line.top, SRCCOPY);
-            SelectObject(memory, previous);
-            if (!copied) return null;
-            GdiFlush();
-
-            var pixels = new int[width * height];
-            Marshal.Copy(bits, pixels, 0, pixels.Length);
-            uint color = EdgeColor.Dominant(MemoryMarshal.Cast<int, uint>(pixels), out double share);
-            return (color, share);
-        }
-        finally
-        {
-            if (bitmap != IntPtr.Zero) DeleteObject(bitmap);
-            if (memory != IntPtr.Zero) DeleteDC(memory);
-            if (screen != IntPtr.Zero) ReleaseDC(IntPtr.Zero, screen);
-        }
+        using var key = Microsoft.Win32.Registry.CurrentUser.OpenSubKey(
+            @"Software\Microsoft\Windows\CurrentVersion\Themes\Personalize");
+        bool light = key?.GetValue("AppsUseLightTheme") is int v && v != 0;
+        return light ? 0x00F3F3F3u : 0x00202020u;
     }
 }

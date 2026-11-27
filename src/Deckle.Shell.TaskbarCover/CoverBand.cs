@@ -90,6 +90,13 @@ internal sealed class CoverBand
     // created the first time one is (TaskbarCoverHost.Underlay).
     public TaskbarUnderlay? Underlay { get; set; }
 
+    // What reads the edge of the app the underlay continues, the app it
+    // reads (zero when none) and the reader's number, which tells its posts
+    // from a replaced reader's.
+    public Deckle.Vision.WindowEdgeReader? EdgeReader { get; set; }
+    public IntPtr EdgeReaderApp { get; set; }
+    public int EdgeReaderGeneration { get; set; }
+
     // ── The taskbar's alpha — the band's only writes to Explorer's window ──
 
     // The alpha the taskbar was last given; Opaque while the band leaves it

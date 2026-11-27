@@ -56,6 +56,9 @@ public sealed partial class TaskbarCoverHost : IDisposable
     private ushort _classAtom;
     private IntPtr _hInstance;
     private IntPtr _cursorHook;
+    // Cloak and uncloak of top-level windows: a switch of virtual desktop,
+    // which moves no window. Same callback as the location hook.
+    private IntPtr _cloakHook;
     private uint _wmTaskbarCreated;
 
     // Rooted for the GC while native code holds their function pointers.
