@@ -15,9 +15,9 @@
 ### Intended outcome
 
 1. They group their [projects](GLOSSARY.md#project) into [categories](GLOSSARY.md#category) of their own, sort them, and find one fast.
-2. They see a project's [version](GLOSSARY.md#version), and whether it holds [uncommitted changes](GLOSSARY.md#uncommitted-change), without digging.
+2. They see a project's version, and whether it holds [uncommitted changes](GLOSSARY.md#uncommitted-change), without digging.
 3. They reach a project's folder, and the other tools that serve it, in one [gesture](../GLOSSARY.md#gesture).
-4. They run a project's [main script](GLOSSARY.md#main-script), and any other of its [scripts](GLOSSARY.md#script), without an [agent](GLOSSARY.md#agent) and without a [terminal](GLOSSARY.md#terminal) kept open for it.
+4. They run a project's [main script](GLOSSARY.md#main-script), and any other of its [scripts](GLOSSARY.md#script), without an [agent](GLOSSARY.md#agent) and without a terminal kept open for it.
 5. No script runs unless they start it.
 6. They see when the [context](GLOSSARY.md#context) of a project grows too big.
 7. Adding a project is simple, and removing one leaves its folder exactly as it was.
@@ -179,14 +179,14 @@ Otherwise:
 
 ## How Deckle answers, a sample on two lines
 
-### 1.3.2 They see a project's version without digging
+### 1.3.2 They see a project's version
 
 1. The [product](../GLOSSARY.md#product) takes as the [version](GLOSSARY.md#version) of a [project](GLOSSARY.md#project) the highest version marked in the project's history, and reads too the version that each part of the project declares in its own files.
 2. A version written with a leading "v" or without one is the same version; when the versions it found differ, the product keeps each one with the file it came from.
 3. It counts the files that hold [uncommitted changes](GLOSSARY.md#uncommitted-change).
 4. It reads all of this again from the folder whenever the [user](../GLOSSARY.md#user) looks: nothing of it is kept from one time to the next.
 
-### 1.3.4 They run a project's scripts without a terminal kept open for it
+### 1.3.4 Without a terminal kept open for it
 
 1. On the [user](../GLOSSARY.md#user)'s [gesture](../GLOSSARY.md#gesture), the [product](../GLOSSARY.md#product) opens a [terminal](GLOSSARY.md#terminal) in the [project](GLOSSARY.md#project)'s folder and asks the [script menu](GLOSSARY.md#script-menu) to run the chosen [script](GLOSSARY.md#script) at once, so that the user goes through no menu.
 2. It follows what it started, to know while the script runs and, at its end, whether it succeeded and with which exit code.
