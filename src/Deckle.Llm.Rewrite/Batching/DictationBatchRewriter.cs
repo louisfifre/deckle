@@ -12,7 +12,7 @@ namespace Deckle.Llm.Rewrite;
 // wait for at Stop.
 //
 // Before Use, blocks close and nothing leaves: the document reads raw. Each
-// Use is a step taking over (specs/deckle-dictation-rewriting.md, Behaviours):
+// Use is a step taking over (specs/dictation/deckle-dictation.md):
 // it opens a generation with the step's profile and block size, cuts the text
 // already closed into blocks of that size (DictationDocument.Regroup), and
 // sends them all again, from their raw text: a dictation is always rewritten

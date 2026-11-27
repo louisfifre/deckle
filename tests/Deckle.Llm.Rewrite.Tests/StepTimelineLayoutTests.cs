@@ -2,9 +2,9 @@ using Xunit;
 
 namespace Deckle.Llm.Rewrite.Tests;
 
-// What the timeline of the dictation steps draws (Page 9 to 12 of
-// specs/deckle-dictation-rewriting.md), with the example settings of the
-// spec: Affinage from 1,000 in blocks of 600, Lissage from
+// What the timeline of the dictation steps draws
+// (specs/dictation/deckle-dictation.md), with example settings: Affinage
+// from 1,000 in blocks of 600, Lissage from
 // 4,000 in blocks of 2,000, Arrangement from 12,000 in blocks of 6,000.
 [Trait("Category", "unit")]
 public sealed class StepTimelineLayoutTests

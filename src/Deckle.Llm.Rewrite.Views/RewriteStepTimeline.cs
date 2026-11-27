@@ -12,8 +12,8 @@ namespace Deckle.Llm.Rewrite.Views;
 
 // ── RewriteStepTimeline ───────────────────────────────────────────────────────
 //
-// The dictation steps on one axis (specs/deckle-dictation-rewriting.md,
-// Page 9 to 12): one thin row per step with its name, then a scale of lengths
+// The dictation steps on one axis (specs/dictation/deckle-dictation.md):
+// one thin row per step with its name, then a scale of lengths
 // with their approximate speaking time, then, while "Rewrite while I speak"
 // is on, one caption for the pale blocks. It shows and never writes: the
 // values are the step cards' fields under it, the settings-ux rule for a
