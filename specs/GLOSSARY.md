@@ -12,6 +12,10 @@ A program the user works in, such as an editor, a browser or a mail client.
 
 Avoid: [product](#product), [system](#system).
 
+### Dictation
+
+What the user says between the gesture that starts it and the gesture that stops it, and the text it gives back.
+
 ### Gesture
 
 What the user does with their body to start an action, such as pressing keys or touching the screen.
