@@ -326,6 +326,9 @@ _Generated from `git ls-files` — do not edit by hand._
 │   ├── dictation/
 │   │   ├── deckle-dictation.md
 │   │   └── GLOSSARY.md
+│   ├── home-inventory/
+│   │   ├── deckle-home-inventory.md
+│   │   └── GLOSSARY.md
 │   ├── mail/
 │   │   ├── deckle-mail.md
 │   │   └── GLOSSARY.md
