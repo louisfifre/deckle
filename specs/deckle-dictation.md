@@ -37,11 +37,11 @@ Thinking aloud, finding the thread and changing subject happen together, while t
 
 ## Rules
 
-1. Whatever stops a [dictation](deckle-dictation.glossary.md#dictation), what was said in it is found again, and the [product](deckle-dictation.glossary.md#product) says so when it gives it back, and when only part of it came back.
-2. [Smoothed](deckle-dictation.glossary.md#smooth) or not, the [transcription](deckle-dictation.glossary.md#transcribe) keeps what the [user](deckle-dictation.glossary.md#user) said and what they meant.
-3. [What the product shows is its real state.](deckle.rules.md)
-4. [Everything the product tells the user reaches them with animations off as well.](deckle.rules.md)
-5. [Everything the product tells the user reaches them with colours off as well.](deckle.rules.md)
+1. [What the product shows is its real state.](deckle.rules.md)
+2. [Everything the product tells the user reaches them with animations off as well.](deckle.rules.md)
+3. [Everything the product tells the user reaches them with colours off as well.](deckle.rules.md)
+4. Whatever stops a [dictation](deckle-dictation.glossary.md#dictation), what was said in it is found again, and the [product](deckle-dictation.glossary.md#product) says so when it gives it back, and when only part of it came back.
+5. [Smoothed](deckle-dictation.glossary.md#smooth) or not, the [transcription](deckle-dictation.glossary.md#transcribe) keeps what the [user](deckle-dictation.glossary.md#user) said and what they meant.
 
 ## Workflow
 
