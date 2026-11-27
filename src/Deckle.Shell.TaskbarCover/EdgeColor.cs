@@ -65,6 +65,15 @@ public static class EdgeColor
         return true;
     }
 
+    // Two COLORREFs one channel of which differs by more than a window's
+    // own change as it loses the focus: another window's edge.
+    public static bool Far(uint a, uint b)
+    {
+        for (int shift = 0; shift < 24; shift += 8)
+            if (Math.Abs((int)((a >> shift) & 0xFF) - (int)((b >> shift) & 0xFF)) > 48) return true;
+        return false;
+    }
+
     private static int Bucket(uint p)
         => (int)(((p >> 20) & 0xF) << 8 | ((p >> 12) & 0xF) << 4 | ((p >> 4) & 0xF));
 }

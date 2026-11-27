@@ -63,6 +63,15 @@ public class EdgeColorTests
         Assert.False(EdgeColor.Close(0x00272757u, 0x0097572Bu));
     }
 
+    // Measured 2026-11-26: T3 Code's edge went from #232325 to #323232 as it
+    // lost the focus under a window being maximized over it.
+    [Fact]
+    public void AnEdgeDimmingAsItLosesTheFocusIsNotFarAndAnotherWindowsEdgeIs()
+    {
+        Assert.False(EdgeColor.Far(0x00252323u, 0x00323232u));
+        Assert.True(EdgeColor.Far(0x00252323u, 0x00F0F0F0u));
+    }
+
     [Fact]
     public void APlainEdgeCoversTheWholeLineAndAVariedOneDoesNot()
     {

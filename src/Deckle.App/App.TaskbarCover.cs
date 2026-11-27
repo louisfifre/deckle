@@ -10,7 +10,10 @@ public partial class App
     {
         // The watcher is already started, on this same UI thread; the cover
         // only subscribes to it.
-        _taskbarCover = new TaskbarCoverHost(_foregroundWatcher!);
+        // The strip under the taskbar moves with Deckle's animations
+        // (ADR-0009): AnimationsEnabled is thread-safe.
+        _taskbarCover = new TaskbarCoverHost(_foregroundWatcher!,
+            () => Deckle.Hud.AnimationPreference.Instance.AnimationsEnabled);
 
         // The cover fades Explorer's own taskbar window, and a Deckle killed
         // from outside left it faded. Started off, nothing else would give

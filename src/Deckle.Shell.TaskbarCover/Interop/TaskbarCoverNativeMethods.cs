@@ -341,4 +341,16 @@ internal static class TaskbarCoverNativeMethods
 
     [DllImport("user32.dll")]
     public static extern bool KillTimer(IntPtr hWnd, UIntPtr uIDEvent);
+
+    // ── Underlay: the frame clock of its fades ───────────────────────────────
+    //
+    // A timer ticks on Windows' clock, about 16 ms: half the frames of a
+    // 120 Hz screen (seen as a stiff fade on Louis's screen). DwmFlush
+    // returns once the compositor has shown its next frame, so a thread that
+    // loops on it posts this message once per frame of the display.
+
+    public const uint WM_APP_UNDERLAY_FRAME = 0x8000 + 3;
+
+    [DllImport("dwmapi.dll")]
+    public static extern int DwmFlush();
 }

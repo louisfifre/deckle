@@ -36,6 +36,7 @@ public sealed partial class TaskbarCoverHost
             _cursorHook = IntPtr.Zero;
         }
         RestoreAll("host_stopped");
+        StopUnderlayMotion();
         foreach (var band in _bands) DisposeUnderlay(band);
         _bands.Clear();
         _fadedTaskbars = [];
@@ -96,6 +97,10 @@ public sealed partial class TaskbarCoverHost
                 // distance costs nothing. The zones are rebuilt through the
                 // layout path, the one place that computes them.
                 if (_requestedApproachDip != _approachDip) RebuildLayout("approach_change");
+                return IntPtr.Zero;
+
+            case WM_APP_UNDERLAY_FRAME:
+                OnUnderlayFrame();
                 return IntPtr.Zero;
 
             case WM_TIMER:
