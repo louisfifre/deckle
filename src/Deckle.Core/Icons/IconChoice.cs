@@ -1,8 +1,8 @@
 namespace Deckle.Core;
 
 // The icon a person gives a place of their own: an added folder in the
-// Folders, later a mailbox in Mail (specs/folders.md, Window; specs/
-// deckle-mail.md, Open 53). A symbol from a small fixed set, a tint, and
+// Folders, later a mailbox in Mail (specs/folders.md, Window; specs/mail/
+// deckle-mail.md). A symbol from a small fixed set, a tint, and
 // whether the tint fills a square behind the symbol. Without the background
 // the symbol itself takes the tint; there are no shapes to choose.
 //
