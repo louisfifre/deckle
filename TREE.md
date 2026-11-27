@@ -323,8 +323,9 @@ _Generated from `git ls-files` — do not edit by hand._
 │   ├── dictation/
 │   │   ├── deckle-dictation.md
 │   │   └── GLOSSARY.md
+│   ├── navigation-pane/
+│   │   └── deckle-navigation-pane.md
 │   ├── deckle-mail.md
-│   ├── deckle-navigation-pane.md
 │   ├── deckle-paste-to-folder.md
 │   ├── deckle-projects.md
 │   ├── deckle-transcribe-and-rewrite.md
@@ -2550,6 +2551,7 @@ _Generated from `git ls-files` — do not edit by hand._
 │       ├── ScreenCaptureService.Lifecycle.cs
 │       ├── ScreenCaptureService.Loop.cs
 │       ├── ScreenCaptureService.Recovery.cs
+│       ├── WindowEdgeReader.cs
 │       ├── WindowSnapshot.cs
 │       └── WindowSnapshotInterop.cs
 ├── tests/
