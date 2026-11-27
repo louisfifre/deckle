@@ -38,7 +38,6 @@
 3. [Everything the product tells the user reaches them with colours off as well.](../deckle.rules.md)
 4. Every [window](../GLOSSARY.md#window) with a [navigation](../GLOSSARY.md#navigation) opens, closes and keeps it in the same way; only its [places](../GLOSSARY.md#place) differ.
 5. A window whose places are steps in one order shows them all, with their names, at all times.
-6. The [user](../GLOSSARY.md#user) does not change the width of the navigation.
 
 ## Workflow
 
