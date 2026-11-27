@@ -2915,6 +2915,7 @@ _Generated from `git ls-files` — do not edit by hand._
 │   ├── Deckle.FolderMap.Tests/
 │   │   ├── Deckle.FolderMap.Tests.csproj
 │   │   ├── DeckleFolderMapSourceEventIdTests.cs
+│   │   ├── FolderMapProviderCollection.cs
 │   │   ├── MapEventsTests.cs
 │   │   ├── MapGraphLayoutTests.cs
 │   │   ├── MapInventoryTests.cs

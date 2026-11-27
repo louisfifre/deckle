@@ -4,7 +4,7 @@ namespace Deckle.FolderMap.Tests;
 
 // The map of a folder: what it finds, what an agent always reads, the links
 // both ways, and how it behaves on an empty, missing or huge folder.
-[Collection("folders provider singleton")]
+[Collection(FolderMapProviderCollection.Name)]
 [Trait("Category", "integration")]
 public sealed class MapInventoryTests
 {
