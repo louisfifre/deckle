@@ -176,6 +176,26 @@ try {
         Assert-DeckleReleaseArchive -ZipPath $zip -RequiredEntries @('DeckleFolders.exe', 'DeckleFolders.pri')
     } 'missing required root entry DeckleFolders.exe'
 
+    # vswhere is found where Visual Studio installs it, for this process only.
+    $savedPath = $env:PATH
+    try {
+        $vsInstaller = Join-Path $root 'vs-installer'
+        $null = New-Item -ItemType Directory -Path $vsInstaller
+        $env:PATH = (@($env:PATH -split ';' | Where-Object {
+            $_ -and -not (Test-Path -LiteralPath (Join-Path $_ 'vswhere.exe'))
+        }) -join ';')
+        Assert-Throws { Add-VsWhereToProcessPath -InstallerDir $vsInstaller } 'vswhere.exe is not on PATH'
+        Copy-Item -LiteralPath (Get-Command 'cmd.exe').Source -Destination (Join-Path $vsInstaller 'vswhere.exe')
+        $resolved = Add-VsWhereToProcessPath -InstallerDir $vsInstaller
+        if ($resolved -ne (Join-Path $vsInstaller 'vswhere.exe')) { throw "vswhere resolved to '$resolved'" }
+        if ((Get-Command 'vswhere.exe').Source -ne (Join-Path $vsInstaller 'vswhere.exe')) { throw 'vswhere is not on the process PATH' }
+        $before = $env:PATH
+        $null = Add-VsWhereToProcessPath -InstallerDir $vsInstaller
+        if ($env:PATH -ne $before) { throw 'A second call changed PATH although vswhere was found' }
+    } finally {
+        $env:PATH = $savedPath
+    }
+
     Write-Host 'release-validation.tests.ps1 passed' -ForegroundColor Green
 } finally {
     if (Test-Path $root) { Remove-Item -LiteralPath $root -Recurse -Force }

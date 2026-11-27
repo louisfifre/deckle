@@ -533,6 +533,8 @@ Write-WorkflowMessage -Output $WorkflowOutput -Message "$ShaName written"
 # WinAppSDK RID quirk the app build dodges with RuntimeIdentifierOverride.
 Write-WorkflowStep -Output $WorkflowOutput -Message 'dotnet publish installer (Release, win-x64, NativeAOT)'
 if (-not (Test-Path $InstallerCsproj)) { throw "Installer csproj not found at $InstallerCsproj" }
+$VsWhere = Add-VsWhereToProcessPath
+Write-WorkflowMessage -Output $WorkflowOutput -Message "vswhere: $VsWhere"
 $installerExitCode = Invoke-CapturedProcess -FilePath 'dotnet' -ArgumentList @(
     'publish', $InstallerCsproj,
     '-c:Release',
