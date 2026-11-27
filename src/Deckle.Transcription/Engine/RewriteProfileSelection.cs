@@ -2,7 +2,7 @@ using Deckle.Llm.Rewrite;
 
 namespace Deckle.Transcription;
 
-// The steps one take is rewritten by (specs/deckle-dictation-rewriting.md),
+// The steps one take is rewritten by (specs/dictation/deckle-dictation.md),
 // read from the settings once, when the take starts, so a change made in
 // Settings during the recording cannot send part of the take to a profile it
 // was never meant for.

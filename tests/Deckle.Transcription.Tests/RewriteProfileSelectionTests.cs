@@ -3,8 +3,8 @@ using Xunit;
 
 namespace Deckle.Transcription.Tests;
 
-// The step plan of a take (specs/deckle-dictation-rewriting.md), with the
-// example settings of the spec, the first step from 0 unless a test says:
+// The step plan of a take (specs/dictation/deckle-dictation.md), with
+// example settings, the first step from 0 unless a test says:
 // Affinage in blocks of 600, Lissage from
 // 4,000 in blocks of 2,000, Arrangement from 12,000 in blocks of 6,000.
 [Trait("Category", "unit")]

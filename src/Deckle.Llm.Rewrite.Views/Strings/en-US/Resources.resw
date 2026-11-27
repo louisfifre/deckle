@@ -367,8 +367,8 @@
     <value>Keys</value>
   </data>
   <!-- LlmDictationSection: the dictation steps and their timeline. The
-       section carries only these words (specs/deckle-dictation-rewriting.md,
-       Page 13); the names below them are for assistive technology only. -->
+       section carries only these words (specs/dictation/deckle-dictation.md);
+       the names below them are for assistive technology only. -->
   <data name="LlmDictationBlock.Title" xml:space="preserve">
     <value>Dictation</value>
   </data>

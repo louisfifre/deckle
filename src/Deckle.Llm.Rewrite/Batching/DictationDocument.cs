@@ -14,7 +14,7 @@ namespace Deckle.Llm.Rewrite;
 // whole blocks of the step before. Grouping whole blocks, never cutting one,
 // is what lets a block keep showing its earlier reading until the new one of
 // its group arrives: the group shows its children until it has a reading of
-// its own (specs/deckle-dictation-rewriting.md, Panel 3).
+// its own (specs/dictation/deckle-dictation.md).
 //
 // Four guarantees, the reason it exists apart from the rewriter:
 //   - the raw text of a block never changes, and every rewrite starts from

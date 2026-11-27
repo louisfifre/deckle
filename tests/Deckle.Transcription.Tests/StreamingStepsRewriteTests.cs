@@ -8,8 +8,8 @@ using Deckle.Localization;
 
 namespace Deckle.Transcription.Tests;
 
-// A live take against the dictation steps (specs/deckle-dictation-rewriting.md,
-// groups Panel and Stop). The engine is driven through the seams it already
+// A live take against the dictation steps (specs/dictation/deckle-dictation.md,
+// Speaking and Stopping). The engine is driven through the seams it already
 // has: a scripted microphone and a scripted backend stand in for the model, so
 // each scripted utterance reaches the engine's UtteranceTranscribed path
 // exactly as a spoken one does, and a rewrite service that tags each answer
