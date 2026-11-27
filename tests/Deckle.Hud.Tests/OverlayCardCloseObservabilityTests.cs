@@ -8,7 +8,7 @@ namespace Deckle.Hud.Tests;
 
 // A card that cannot be closed stays on screen with nothing tracking it; the
 // log has to say so without any verbosity control being raised.
-[Collection("Hud operational observability")]
+[Collection(HudObservabilityCollection.Name)]
 [Trait("Category", "observability")]
 public sealed class OverlayCardCloseObservabilityTests
 {

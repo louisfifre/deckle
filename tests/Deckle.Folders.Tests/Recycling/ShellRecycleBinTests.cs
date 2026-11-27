@@ -9,7 +9,7 @@ namespace Deckle.Folders.Tests;
 //
 // Not covered: a drive without a bin or a file too large for it, where the
 // guard must refuse; no such drive can be made from a test.
-[Collection("folders provider singleton")]
+[Collection(FoldersProviderCollection.Name)]
 [Trait("Category", "integration")]
 public sealed class ShellRecycleBinTests
 {

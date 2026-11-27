@@ -5,7 +5,7 @@ namespace Deckle.Projects.Tests;
 // The reader against a real repository made by the git command line in a
 // scratch folder (the integration category: a local partner the test stands up
 // itself). Each test skips with its reason on a machine without git.
-[Collection("projects provider singleton")]
+[Collection(ProjectsProviderCollection.Name)]
 [Trait("Category", "integration")]
 public sealed class ProjectReaderGitTests
 {

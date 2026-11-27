@@ -4,7 +4,7 @@ namespace Deckle.Folders.Tests;
 
 // Which report the sizes tool shows without reading the disk, on scans of
 // folders made for each test.
-[Collection("folders provider singleton")]
+[Collection(FoldersProviderCollection.Name)]
 [Trait("Category", "integration")]
 public sealed class SizeReportReuseTests
 {
@@ -43,7 +43,7 @@ public sealed class SizeReportReuseTests
 
 // Refresh on a stopped analysis served the last complete report of the same
 // place instead of measuring (SizesBugNotes.md).
-[Collection("folders provider singleton")]
+[Collection(FoldersProviderCollection.Name)]
 [Trait("Category", "regression")]
 public sealed class SizeRefreshRegressionTests
 {

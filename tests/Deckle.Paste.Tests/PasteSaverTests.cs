@@ -6,7 +6,7 @@ namespace Deckle.Paste.Tests;
 // A paste becomes files in the chosen folder, never overwrites one, and a
 // paste that cannot be saved says why instead of throwing. The saver emits on
 // the provider singleton, so the suites that call it share one collection.
-[Collection("paste provider singleton")]
+[Collection(PasteProviderCollection.Name)]
 [Trait("Category", "integration")]
 public sealed class PasteSaverTests
 {

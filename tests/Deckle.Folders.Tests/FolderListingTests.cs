@@ -3,7 +3,7 @@ using Xunit;
 namespace Deckle.Folders.Tests;
 
 // A folder lists as File Explorer lists it by default.
-[Collection("folders provider singleton")]
+[Collection(FoldersProviderCollection.Name)]
 [Trait("Category", "integration")]
 public sealed class FolderListingTests
 {

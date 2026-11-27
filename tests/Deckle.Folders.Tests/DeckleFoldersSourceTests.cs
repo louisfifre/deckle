@@ -8,7 +8,7 @@ namespace Deckle.Folders.Tests;
 // without ever carrying a path. Each test subscribes its own listener; the
 // listing and the store emit on the same singleton, so the suites that call
 // them share this collection.
-[Collection("folders provider singleton")]
+[Collection(FoldersProviderCollection.Name)]
 [Trait("Category", "observability")]
 public sealed class DeckleFoldersSourceTests
 {
