@@ -22,7 +22,7 @@ Draft, not confirmed
 - Speak as long as you want, over everything, and get back a well-framed text: `dictation/deckle-dictation.md`.
 - Turn a text or recordings into the text you want, one at a time or many at once: `transcribe-and-rewrite/deckle-transcribe-and-rewrite.md`.
 - See what your mail asks of you and settle it fast, with the rest put away by itself: `mail/deckle-mail.md`.
-- Know where you stand in your folders, and sort, clean and picture them in one familiar place: `folders.md`.
+- Know where you stand in your folders, and sort, clean and picture them in one familiar place: `folders/deckle-folders.md`.
 - Find any of your projects and reach its folders, its version and its scripts from one place: `projects/deckle-projects.md`.
 - Save what you copied as a file in a folder, with one paste: `paste-to-folder/deckle-paste-to-folder.md`.
 - Light the room with what your screen shows, vivid or realistic, fast or slow: `ambient-lighting/deckle-ambient-lighting.md`.
