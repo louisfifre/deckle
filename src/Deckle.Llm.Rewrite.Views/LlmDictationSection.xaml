@@ -6,7 +6,7 @@
     xmlns:llm="using:Deckle.Llm.Rewrite.Views"
     xmlns:catalog="using:Deckle.Catalog">
 
-    <!-- The dictation steps (specs/deckle-dictation-rewriting.md, Page): the
+    <!-- The dictation steps (specs/dictation/deckle-dictation.md): the
          switch alone, then, while it is on, "Rewrite while I speak" (on
          streaming transcription only), the timeline, one card per step and
          "Add a step". No caption and no step card description: the section

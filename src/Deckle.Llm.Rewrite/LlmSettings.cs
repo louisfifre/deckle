@@ -46,7 +46,7 @@ public sealed class RewriteProfile
     public bool HasActiveHotkey => HotkeyEnabled && Hotkey is { IsComplete: true };
 }
 
-// One step of the dictation timeline (specs/deckle-dictation-rewriting.md):
+// One step of the dictation timeline (specs/dictation/deckle-dictation.md):
 // from FromChars characters of raw transcript, the dictation belongs to
 // ProfileId. While the person speaks (DictationRewriteSettings.
 // RewriteWhileSpeaking), the profile rewrites in blocks of BlockChars; with

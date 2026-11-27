@@ -7,7 +7,7 @@ namespace Deckle.Transcription;
 public sealed partial class TranscriptionEngine
 {
     // What the take delivers once its raw text is on the clipboard
-    // (specs/deckle-dictation-rewriting.md, group Stop):
+    // (specs/dictation/deckle-dictation.md, Stopping):
     //   - a profile's own shortcut rewrites the whole raw text with it;
     //   - else the highest step the raw text reaches decides: with "Rewrite
     //     while I speak", the take is its blocks, already sent during the

@@ -11,7 +11,7 @@ namespace Deckle.Llm.Rewrite.Views;
 
 // ─── Dictation section of LlmPage: the dictation steps ─────────────────────
 //
-// specs/deckle-dictation-rewriting.md, group Page. "Rewrite dictations" alone;
+// specs/dictation/deckle-dictation.md. "Rewrite dictations" alone;
 // while it is on, "Rewrite while I speak" (one switch for every step, on
 // streaming transcription only), the timeline (RewriteStepTimeline, which
 // shows and never writes), one card per step (LlmSettings.Dictation.Steps),

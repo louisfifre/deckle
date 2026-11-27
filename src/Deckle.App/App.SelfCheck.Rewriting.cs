@@ -9,10 +9,11 @@ namespace Deckle.App;
 //
 // A fresh data root has "Rewrite dictations" off, and the page then shows
 // that one switch: the steps, the timeline and "Rewrite while I speak" would
-// never be seen by a review pass. So the run writes the example settings of
-// specs/deckle-dictation-rewriting.md into its own root before the walk, with
-// "Rewrite while I speak" on, which the walk photographs; then it switches
-// the mode off and photographs the page again (settings-llm-at-stop). Only
+// never be seen by a review pass. So the run writes example settings of the
+// dictation steps (specs/dictation/deckle-dictation.md) into its own root
+// before the walk, with "Rewrite while I speak" on, which the walk
+// photographs; then it switches the mode off and photographs the page again
+// (settings-llm-at-stop). Only
 // this run's root is written, never the maintainer's.
 public partial class App
 {
