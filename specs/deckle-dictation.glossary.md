@@ -1,35 +1,24 @@
 # Words of the dictation
 
-A word marked shared is used by other specs of Deckle too.
-
 ## Common words
 
-1. **Application**: a program the user works in, such as an editor, a browser or a mail client.
-2. **Clipboard** (shared): the place where copied text waits until it is pasted.
-3. **Hesitation**: a short stop or a filler sound inside a sentence, while the user looks for their words.
+1. **Action**: what the product does once something starts it, a gesture of the user or the product itself. The gesture is the user's; the action it starts is the product's. Avoid: gesture, for what the product does.
+2. **Application**: a program the user works in, such as an editor, a browser or a mail client. Avoid: system, for one program.
+3. **Hesitation**: a short stop or a filler sound inside a sentence, while the user looks for their words. Avoid: pause, for a stop inside a sentence.
 4. **Microphone**: the device that picks up sound for the computer or the phone.
 5. **Noise**: any sound that is not the user's voice, such as a rub on the microphone or a sound around them.
-6. **Paste** (shared): to put the text that waits in the clipboard where the user wants it.
-7. **Pause**: a time when the user stops speaking, then speaks again.
-8. **Shortcut**: a combination of keys that runs one action from any application.
-9. **Silence**: a time when no voice is heard.
-10. **Transcribe** (shared): to turn speech into written text.
-11. **Tray** (shared): on the computer, the area at the end of the taskbar that holds the icons of running programs.
+6. **Pause**: a time when the user stops speaking, then speaks again. Avoid: silence, which says only that no voice is heard.
+7. **Rewrite**: to change the words of a transcribed text, as the user chose, while it keeps saying what they said; a translation is a rewrite. Avoid: transcribe, for a change of the words.
+8. **Silence**: a time when no voice is heard.
+9. **Subject**: what the user talks about for a stretch of a dictation, until they move to another.
+10. **System**: the operating system of the user's computer or phone, with every application that runs on it. Avoid: application, for the whole.
+11. **Transcribe**: to turn speech into written text.
 
 ## Deckle's words
 
-1. **Change of subject**: the moment the user moves from one subject to another, which the text keeps apart.
-2. **Dictation** (shared): what the user says between the gesture that starts it and the gesture that stops it, and the text it gives back.
-3. **Gesture** (shared): one action of the user, whatever form it takes. The same gesture starts and stops a dictation; another marks a change of subject.
-4. **Listening**: the time during which the product takes in the user's voice, from the gesture that starts a dictation to the gesture that stops it.
-5. **Voice**: the sound of the user speaking, as the product hears it through the microphone. A noise is not voice.
-
-## Set aside
-
-1. **Product or system**: is "the product" the word for Deckle as the user meets it, on the computer and on the phone? Proposed because "system" also names the operating system, and "application" already names the programs the user works in.
-2. **Rewrite**: the dictation applies the rewrite the user chose once, and the Rewrite glossary says a rewrite is never applied silently. Does a choice made once count as asking?
-3. **Pause and paragraph**: Deckle today starts a new paragraph at each pause, and the spec says a pause never splits a sentence. Does a pause end a paragraph, or only a change of subject?
-4. **Utterance and segment**: the spec uses neither. Does this glossary need a word for the piece of audio between two silences?
-5. **Audio pre-processing**: proposed in place of transcription pre-processing, for the change made to the audio before it is transcribed. The spec does not use it: does it wait for a technical part?
-6. **Framed text**: does "a well-framed text" mean only that subjects are kept apart, or also the rewrite?
-7. **HUD, transcript panel, Record, Rewriting page**: these names of today will change. Do they stay only in the Surfaces section?
+1. **Change of subject**: the moment the user moves from one subject to another, marked automatically or by one gesture of theirs. The text keeps the subjects apart.
+2. **Dictation**: what the user says between the gesture that starts it and the gesture that stops it, and the text it gives back.
+3. **Gesture**: what the user does with their body to start an action, such as pressing keys or touching the screen. The same gesture starts and stops a dictation; another marks a change of subject. Avoid: action, for what the user does.
+4. **Listening**: the time during which the product takes in the user's voice, from the gesture that starts a dictation to the gesture that stops it. Avoid: dictation, for that time alone.
+5. **Utterance**: a stretch of the user's voice between two silences, which the product transcribes in one piece. An utterance ends on a silence; the listening goes on.
+6. **Voice**: the sound of the user speaking, as the product hears it through the microphone. Avoid: noise.
