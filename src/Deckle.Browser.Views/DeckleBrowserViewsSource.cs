@@ -26,6 +26,8 @@ public sealed class DeckleBrowserViewsSource : DeckleEventSource
     public const int EvtAdblockEngineBuilt = 8;
     public const int EvtAdblockListFailed = 9;
     public const int EvtAdblockBuildFailed = 10;
+    public const int EvtUboResourcesConverted = 11;
+    public const int EvtUboResourcesFailed = 12;
 
     [Event(EvtSessionSaveFailed,
            Level = EventLevel.Warning,
@@ -130,5 +132,27 @@ public sealed class DeckleBrowserViewsSource : DeckleEventSource
     {
         if (IsEnabled(EventLevel.Error, (EventKeywords)Keywords.Lifecycle))
             WriteEvent(EvtAdblockBuildFailed, ex_type);
+    }
+
+    // uBlock Origin's scriptlets were converted to the engine's resources: two numbers.
+    [Event(EvtUboResourcesConverted,
+           Level = EventLevel.Informational,
+           Keywords = (EventKeywords)Keywords.Lifecycle,
+           Message = "resource_count={0} | duration_ms={1}")]
+    public void UboResourcesConverted(int resource_count, long duration_ms)
+    {
+        if (IsEnabled(EventLevel.Informational, (EventKeywords)Keywords.Lifecycle))
+            WriteEvent(EvtUboResourcesConverted, resource_count, duration_ms);
+    }
+
+    // The scriptlets could not be fetched or converted: fixed words, never an address.
+    [Event(EvtUboResourcesFailed,
+           Level = EventLevel.Warning,
+           Keywords = (EventKeywords)Keywords.Lifecycle,
+           Message = "uBlock Origin's scriptlets could not be prepared\nstage={0} | reason={1}")]
+    public void UboResourcesFailed(string stage, string reason)
+    {
+        if (IsEnabled(EventLevel.Warning, (EventKeywords)Keywords.Lifecycle))
+            WriteEvent(EvtUboResourcesFailed, stage, reason);
     }
 }

@@ -107,6 +107,7 @@ public sealed partial class BrowserWindow : Window
         if (icoPath is not null) AppWindow.SetIcon(icoPath);
 
         // The ad blocker's engine is built on a background thread, once.
+        BrowserAdblock.Converter = ConvertUboResourcesAsync;
         BrowserAdblock.Start();
 
         _pane = NavigationPane.Attach(Nav, WindowKey);
@@ -141,6 +142,7 @@ public sealed partial class BrowserWindow : Window
         };
         Closed += (_, _) =>
         {
+            if (BrowserAdblock.Converter is { } mine && ReferenceEquals(mine.Target, this)) BrowserAdblock.Converter = null;
             _saveTimer.Stop();
             SaveSession();
             DetachEnvironment();

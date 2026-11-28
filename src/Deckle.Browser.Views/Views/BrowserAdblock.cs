@@ -12,6 +12,13 @@ namespace Deckle.Browser.Views;
 // visits), written atomically, and the engine is built again. While there is
 // no engine, nothing is blocked.
 //
+// uBlock Origin's scriptlets come with it: its modules, fetched once at the pinned
+// release tag, are converted to the engine's resources by a window's hidden web
+// view (BrowserWindow.ConvertUboResourcesAsync, registered here as the Converter),
+// and the result is kept in the Filters folder under the tag's name. They are put
+// before Brave's resources, which give way on a name; uBlock Origin's own lists
+// are the trusted ones that may inject the scriptlets that require trust.
+//
 // What is logged is a rule count, a duration and, when a list cannot be
 // fetched, the list's name: no address of a page, ever.
 public static class BrowserAdblock
@@ -32,6 +39,10 @@ public static class BrowserAdblock
     /// <summary>The rule count and the duration in milliseconds of the last build of the
     /// engine from the lists (0 before any): the figures the log line carries.</summary>
     public static (int Rules, long Milliseconds) LastBuild { get; private set; }
+
+    /// <summary>What turns the modules in a folder into the engine's resources (JSON), or null.
+    /// A window sets it; while none does, the conversion waits for the next start.</summary>
+    public static Func<string, Task<string?>>? Converter { get; set; }
 
     /// <summary>The folder the lists are kept in.</summary>
     public static string FiltersDirectory => Path.Combine(AppPaths.GetModuleDirectory("browser"), "Filters");
@@ -79,6 +90,7 @@ public static class BrowserAdblock
             Build(folder);
 
             bool allFresh = true;
+            bool convertedNew = false;
             using var http = new HttpClient { Timeout = TimeSpan.FromSeconds(90) };
             bool fetchedAny = false;
             DateTimeOffset now = DateTimeOffset.UtcNow;
@@ -92,7 +104,13 @@ public static class BrowserAdblock
                 else if (!present) allFresh = false;
             }
 
-            if (fetchedAny) Build(folder);
+            try { convertedNew = await EnsureUboResourcesAsync(http, folder, token); }
+            catch (Exception ex) when (ex is not OperationCanceledException)
+            {
+                DeckleBrowserViewsSource.Log.UboResourcesFailed("prepare", ex.GetType().Name);
+            }
+
+            if (fetchedAny || convertedNew) Build(folder);
             Settled.TrySetResult(allFresh);
         }
         catch (OperationCanceledException)
@@ -112,22 +130,27 @@ public static class BrowserAdblock
     {
         var clock = Stopwatch.StartNew();
         var text = new System.Text.StringBuilder();
+        var trusted = new System.Text.StringBuilder();
         int rules = 0;
         foreach (FilterLists.Source list in FilterLists.Lists)
         {
             string path = Path.Combine(folder, list.FileName);
             if (!File.Exists(path)) continue;
+            System.Text.StringBuilder into = list.Trusted ? trusted : text;
             foreach (string line in File.ReadLines(path))
             {
-                text.Append(line).Append('\n');
+                into.Append(line).Append('\n');
                 if (line.Length > 0 && line[0] != '!' && line[0] != '[') rules++;
             }
         }
         if (rules == 0) return false;
 
-        AdblockEngine engine = AdblockEngine.Create(text.ToString());
-        string resources = Path.Combine(folder, FilterLists.Resources.FileName);
-        if (File.Exists(resources)) engine.UseResources(File.ReadAllText(resources));
+        AdblockEngine engine = AdblockEngine.Create(text.ToString(), trusted.ToString());
+        string brave = Path.Combine(folder, FilterLists.Resources.FileName);
+        string ubo = Path.Combine(folder, FilterLists.UboConvertedFileName());
+        string braveJson = File.Exists(brave) ? File.ReadAllText(brave) : "[]";
+        string uboJson = File.Exists(ubo) ? File.ReadAllText(ubo) : "[]";
+        if (File.Exists(brave) || File.Exists(ubo)) engine.UseResources(ResourceMerge.Merge(uboJson, braveJson));
 
         AdblockEngine? old;
         lock (Gate)
@@ -143,6 +166,46 @@ public static class BrowserAdblock
         old?.Dispose();
         LastBuild = (rules, clock.ElapsedMilliseconds);
         DeckleBrowserViewsSource.Log.AdblockEngineBuilt(rules, clock.ElapsedMilliseconds);
+        return true;
+    }
+
+    // uBlock Origin's modules at the pinned tag, fetched when the folder does not hold that
+    // tag (the tag's name is written last, so a half fetch is fetched again), then converted
+    // when the tag has no converted file yet. True when a conversion was made now.
+    private static async Task<bool> EnsureUboResourcesAsync(HttpClient http, string folder, CancellationToken token)
+    {
+        string converted = Path.Combine(folder, FilterLists.UboConvertedFileName());
+        if (File.Exists(converted) && new FileInfo(converted).Length > 2) return false;
+
+        string modules = Path.Combine(folder, FilterLists.UboFolderName);
+        string marker = Path.Combine(modules, "TAG");
+        bool have = File.Exists(marker) && File.ReadAllText(marker).Trim() == FilterLists.UboTag
+            && FilterLists.UboFiles.All(f => File.Exists(Path.Combine(modules, f)));
+        if (!have)
+        {
+            if (Directory.Exists(modules)) Directory.Delete(modules, recursive: true);
+            Directory.CreateDirectory(modules);
+            foreach (string file in FilterLists.UboFiles)
+            {
+                token.ThrowIfCancellationRequested();
+                string path = Path.Combine(modules, file);
+                Directory.CreateDirectory(Path.GetDirectoryName(path)!);
+                var source = new FilterLists.Source("uBlock scriptlets", FilterLists.UboAddress(file), file);
+                if (!await FetchAsync(http, source, path, token)) return false;
+            }
+            await File.WriteAllTextAsync(marker, FilterLists.UboTag, token);
+        }
+
+        Func<string, Task<string?>>? convert = Converter;
+        if (convert is null) return false;
+        string? json = await convert(modules);
+        if (json is null) return false;
+
+        string temporary = converted + ".tmp";
+        await File.WriteAllTextAsync(temporary, json, token);
+        File.Move(temporary, converted, overwrite: true);
+        foreach (string old in Directory.EnumerateFiles(folder, "ubo-resources-*.json"))
+            if (!string.Equals(old, converted, StringComparison.OrdinalIgnoreCase)) File.Delete(old);
         return true;
     }
 

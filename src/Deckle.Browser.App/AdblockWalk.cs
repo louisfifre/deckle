@@ -15,7 +15,11 @@ namespace Deckle.Browser.App;
 //   1. the rule blocks the image: the shown page's count reads 1, the image did
 //      not load, and the style sheet did (the page reads it);
 //   2. the shield's tooltip says "1 blocked on this page";
-//   3. the window is photographed (slug "adblock").
+//   3. the window is photographed (slug "adblock");
+//   4. the converter of uBlock Origin's scriptlets runs on a tiny local module
+//      written here in place of scriptlets.js: it must give back both entries
+//      in the engine's resource shape, the one that requires trust with its
+//      permission bit, and say how many (the figure goes in measures.txt).
 internal static class AdblockWalk
 {
     public const string LocalRule = "||ads.browser.test^\n";
@@ -68,7 +72,48 @@ internal static class AdblockWalk
         }
         context.Step("browser/adblock done");
 
+        await ConvertFakeModuleAsync(context, browser, Note, failures);
+
         if (failures.Count > 0) throw new InvalidOperationException(string.Join("; ", failures));
+    }
+
+    private const string FakeModule = """
+        export const builtinScriptlets = [
+          { name: 'fake-trusted.js', aliases: ['ft.js'], fn: function fakeTrusted(a) { window.__fake = fakeHelper(a); }, dependencies: ['fake-helper.fn'], requiresTrust: true },
+          { name: 'fake-helper.fn', fn: function fakeHelper(a) { return a; } },
+        ];
+        """;
+
+    private static async Task ConvertFakeModuleAsync(BrowserWalkContext context, BrowserWindow browser, Func<string, Task> note, List<string> failures)
+    {
+        string folder = Path.Combine(context.OutputFolder, "ubo-fake");
+        Directory.CreateDirectory(Path.Combine(folder, "js", "resources"));
+        await File.WriteAllTextAsync(Path.Combine(folder, "js", "resources", "scriptlets.js"), FakeModule);
+
+        string? json = await browser.ConvertUboResourcesAsync(folder);
+        int count = 0;
+        bool shaped = false;
+        if (json is not null)
+        {
+            using System.Text.Json.JsonDocument document = System.Text.Json.JsonDocument.Parse(json);
+            System.Text.Json.JsonElement array = document.RootElement;
+            count = array.GetArrayLength();
+            if (count == 2)
+            {
+                System.Text.Json.JsonElement trusted = array[0];
+                System.Text.Json.JsonElement helper = array[1];
+                string body = System.Text.Encoding.UTF8.GetString(Convert.FromBase64String(trusted.GetProperty("content").GetString()!));
+                shaped = trusted.GetProperty("name").GetString() == "fake-trusted.js"
+                    && trusted.GetProperty("permission").GetInt32() == 1
+                    && trusted.GetProperty("dependencies")[0].GetString() == "fake-helper.fn"
+                    && trusted.GetProperty("kind").GetProperty("mime").GetString() == "application/javascript"
+                    && body.Contains("fakeTrusted", StringComparison.Ordinal)
+                    && !helper.TryGetProperty("permission", out _);
+            }
+        }
+        (int _, long milliseconds) = browser.LastUboConversion;
+        await note($"the converter turned a local scriptlets.js into {count} resources in {milliseconds} ms (expected 2): {(count == 2 && shaped ? "pass" : "FAIL")}");
+        if (count != 2 || !shaped) failures.Add($"the converter gave {count} resources, or not in the engine's shape");
     }
 
     /// <summary>The engine of the walk: the local rule alone.</summary>

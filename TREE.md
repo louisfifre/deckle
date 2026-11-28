@@ -895,10 +895,12 @@ _Generated from `git ls-files` — do not edit by hand._
 │   │   │   ├── BrowserText.cs
 │   │   │   ├── BrowserWindow.Adblock.cs
 │   │   │   ├── BrowserWindow.Security.cs
+│   │   │   ├── BrowserWindow.Ubo.cs
 │   │   │   ├── BrowserWindow.xaml
 │   │   │   ├── BrowserWindow.xaml.cs
 │   │   │   ├── PanelItem.cs
 │   │   │   ├── RoundedClip.cs
+│   │   │   ├── ubo-converter.js
 │   │   │   └── WebViewSettings.cs
 │   │   ├── Deckle.Browser.Views.csproj
 │   │   └── DeckleBrowserViewsSource.cs

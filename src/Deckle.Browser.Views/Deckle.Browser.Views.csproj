@@ -19,6 +19,11 @@
   </ItemGroup>
 
   <ItemGroup>
+    <!-- The fixed script the hidden converter web view runs (UboConverter). -->
+    <EmbeddedResource Include="Views/ubo-converter.js" LogicalName="Deckle.Browser.Views.ubo-converter.js" />
+  </ItemGroup>
+
+  <ItemGroup>
     <ProjectReference Include="..\Deckle.Browser\Deckle.Browser.csproj" />
     <ProjectReference Include="..\Deckle.Browser.Adblock\Deckle.Browser.Adblock.csproj" />
     <ProjectReference Include="..\Deckle.Catalog\Deckle.Catalog.csproj" />
