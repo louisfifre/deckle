@@ -29,6 +29,7 @@ Deckle Browser downloads these at run time into its own data folder (`FilterList
 - adblock-resources, https://github.com/brave/adblock-resources, MPL-2.0 (its `LICENSE`), Brave Software. The scriptlets and redirect resources (`resources.json`) the engine runs for `##+js(...)` rules.
 - EasyList and EasyPrivacy, https://easylist.to, dual licensed under GPL-3.0-or-later and Creative Commons Attribution-ShareAlike 3.0 Unported (https://easylist.to/pages/licence.html), the EasyList authors.
 - uBlock Origin's uAssets lists (`filters`, `quick-fixes`, `privacy`), https://github.com/uBlockOrigin/uAssets, GPL-3.0 (its `LICENSE`), Raymond Hill and contributors.
+- uBlock Origin's scriptlets, https://github.com/gorhill/uBlock (`src/js/resources`, at the release tag named in `FilterLists`), GPL-3.0 (its `LICENSE.txt`), Raymond Hill. Downloaded at run time like the lists, converted to the engine's resources by the browser's own web view and kept in its data folder; not shipped in the repository or a build.
 
 ## Referenced implementations
 
