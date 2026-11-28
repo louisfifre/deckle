@@ -43,6 +43,7 @@ public enum BrowserGesture
     MediaPictureInPicture,
     MediaClose,
     MediaSelect,
+    Print,
 }
 
 // ─── What the window observes of itself ──────────────────────────────────────

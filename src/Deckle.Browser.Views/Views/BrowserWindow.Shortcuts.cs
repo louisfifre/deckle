@@ -1,4 +1,5 @@
 using Microsoft.UI.Input;
+using Microsoft.Web.WebView2.Core;
 using Microsoft.UI.Xaml;
 using Microsoft.UI.Xaml.Input;
 using Windows.System;
@@ -52,7 +53,20 @@ public sealed partial class BrowserWindow
             case ShortcutCommand.NextTab: CycleTab(+1); break;
             case ShortcutCommand.PreviousTab: CycleTab(-1); break;
             case ShortcutCommand.PrivateWindow: OpenPrivateWindow(); break;
+            case ShortcutCommand.Print: PrintShown(); break;
         }
+    }
+
+    // Ctrl+P: the engine's own print dialog, the browser's kind.
+    private void PrintShown()
+    {
+        using var gesture = new GestureScope(BrowserGesture.Print);
+        if (ShownCore is not { } core)
+        {
+            gesture.Outcome = "refused";
+            return;
+        }
+        core.ShowPrintUI(CoreWebView2PrintDialogKind.Browser);
     }
 
     private void ReopenClosedTab()

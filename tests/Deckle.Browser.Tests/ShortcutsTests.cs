@@ -36,6 +36,10 @@ public sealed class ShortcutsTests
         Assert.Equal(expected, Shortcuts.Find(new KeyGesture(key, ctrl, shift, alt)));
 
     [Fact]
+    public void PrintHasItsGesture() =>
+        Assert.Equal(ShortcutCommand.Print, Shortcuts.Find(new KeyGesture("P", Ctrl: true)));
+
+    [Fact]
     public void AKeyThatIsNotAShortcutFindsNothing()
     {
         Assert.Null(Shortcuts.Find(new KeyGesture("T")));

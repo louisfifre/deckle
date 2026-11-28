@@ -14,6 +14,7 @@ public enum ShortcutCommand
     NextTab,
     PreviousTab,
     PrivateWindow,
+    Print,
 }
 
 /// <summary>A key with its modifiers. <see cref="Key"/> is the name of the key as the framework names a virtual key
@@ -44,6 +45,7 @@ public static class Shortcuts
         (new KeyGesture("Tab", Ctrl: true), ShortcutCommand.NextTab),
         (new KeyGesture("Tab", Ctrl: true, Shift: true), ShortcutCommand.PreviousTab),
         (new KeyGesture("N", Ctrl: true, Shift: true), ShortcutCommand.PrivateWindow),
+        (new KeyGesture("P", Ctrl: true), ShortcutCommand.Print),
     ];
 
     /// <summary>The command a gesture runs, none when it is not a shortcut.</summary>
