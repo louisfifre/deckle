@@ -9,7 +9,7 @@ namespace Deckle.Folders.Tests;
 // running the tests, so that path is left to the self-check's eyes and to the
 // person: what can be checked here is that a missing item opens nothing,
 // says so, and logs it without its name or its path.
-[Collection("folders provider singleton")]
+[Collection(FoldersProviderCollection.Name)]
 [Trait("Category", "observability")]
 public sealed class ShellFileLauncherTests
 {

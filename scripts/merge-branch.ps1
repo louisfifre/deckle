@@ -276,6 +276,9 @@ if ($red -or $unstable.Count -gt 0) {
     $why = if ($red) { "$red is red" } else { 'a check is unstable: a flaky test blocks every merge until it is fixed' }
     Write-Host "REFUSED  $Branch at $short ($why; $minutes min)" -ForegroundColor Red
     $details | ForEach-Object { Write-Host $_ }
+    if ($unstable.Count -gt 0) {
+        Write-Host '         A test that counts events may race: read tests/process-wide-events.md'
+    }
     Write-Host "         Logs: $runDir"
     exit 1
 }

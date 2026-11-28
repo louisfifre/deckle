@@ -5,7 +5,7 @@ namespace Deckle.Projects.Tests;
 
 // The store writes a file under a scratch folder, so the whole class stands on
 // the temporary file system: integration, not unit.
-[Collection("projects provider singleton")]
+[Collection(ProjectsProviderCollection.Name)]
 [Trait("Category", "integration")]
 public sealed class ProjectStoreTests
 {

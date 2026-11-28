@@ -35,7 +35,7 @@ public sealed class PhotoRenameRuleTests
         Assert.Equal("2026-06-14_154207_DSC_0217-2.NEF", PhotoRenameRule.WithCounter("2026-06-14_154207_DSC_0217.NEF", 2));
 }
 
-[Collection("folders provider singleton")]
+[Collection(FoldersProviderCollection.Name)]
 [Trait("Category", "integration")]
 public sealed class PhotoRenamerTests
 {

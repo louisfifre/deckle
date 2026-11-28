@@ -4,7 +4,7 @@ namespace Deckle.Projects.Tests;
 
 // The reader against a stub menu.ps1 written in a scratch project and run by the
 // real PowerShell, hidden. Each test skips with its reason without pwsh.
-[Collection("projects provider singleton")]
+[Collection(ProjectsProviderCollection.Name)]
 [Trait("Category", "integration")]
 public sealed class ScriptMenuReaderTests
 {

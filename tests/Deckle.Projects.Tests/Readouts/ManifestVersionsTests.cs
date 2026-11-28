@@ -3,7 +3,7 @@ using Xunit;
 namespace Deckle.Projects.Tests;
 
 // Which manifests are looked at and how many are listed, on a scratch folder.
-[Collection("projects provider singleton")]
+[Collection(ProjectsProviderCollection.Name)]
 [Trait("Category", "integration")]
 public sealed class ManifestVersionsTests
 {

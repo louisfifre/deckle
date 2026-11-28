@@ -7,7 +7,7 @@ namespace Deckle.Folders.Tests;
 // already described, counts "n of total", can be stopped and counts a photo
 // that failed without stopping. A photo asked alone waits in the same line
 // and goes before the run's next photo.
-[Collection("folders provider singleton")]
+[Collection(FoldersProviderCollection.Name)]
 [Trait("Category", "integration")]
 public sealed class PhotoDescriptionQueueTests
 {

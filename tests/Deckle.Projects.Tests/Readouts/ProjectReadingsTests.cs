@@ -4,7 +4,7 @@ namespace Deckle.Projects.Tests;
 
 // The cache keeps the previous reading while a refresh runs, reads at most
 // three projects at a time and says when each one finished.
-[Collection("projects provider singleton")]
+[Collection(ProjectsProviderCollection.Name)]
 [Trait("Category", "unit")]
 public sealed class ProjectReadingsTests
 {

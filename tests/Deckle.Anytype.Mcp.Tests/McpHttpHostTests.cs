@@ -587,6 +587,39 @@ public class McpHttpHostTests
         }
     }
 
+    // The case of 24 November: ten agents of one session share one client
+    // token and call together, well past the burst. Each must finish every
+    // call without a failure, by waiting for its turn.
+    [Fact]
+    [Trait("Category", "regression")]
+    public async Task TenAgentsOfOneSessionCallingTogetherAllFinishWithoutAFailure()
+    {
+        const int agents = 10;
+        const int callsPerAgent = 3;
+        var requestLimit = new McpRequestRateLimit(
+            permitLimit: 5, window: TimeSpan.FromMilliseconds(500), queueLimit: 30);
+        Assert.True(agents * callsPerAgent > requestLimit.PermitLimit);
+        await using var harness = Harness.Start(StructuredClient, requestLimit);
+
+        CallToolResult[][] results = await Task.WhenAll(
+            Enumerable.Range(0, agents).Select(async _ =>
+            {
+                await using McpClient agent = await ConnectAsync(
+                    harness, StructuredClient.Id, ModernProtocol);
+                var calls = new List<CallToolResult>();
+                for (int call = 0; call < callsPerAgent; call++)
+                {
+                    calls.Add(await agent.CallToolAsync(
+                        "inspect", new Dictionary<string, object?>(), cancellationToken: Ct));
+                }
+                return calls.ToArray();
+            }));
+
+        Assert.Equal(agents * callsPerAgent, results.Sum(calls => calls.Length));
+        Assert.All(results.SelectMany(calls => calls), result =>
+            Assert.NotEqual(true, result.IsError));
+    }
+
     // The wait is bounded: past the queue a runaway client is still refused, at
     // once, with a delay to retry after and a body that says why.
     [Fact]
@@ -621,7 +654,10 @@ public class McpHttpHostTests
         Assert.NotNull(refused.Headers.RetryAfter?.Delta);
         Assert.True(refused.Headers.RetryAfter!.Delta > TimeSpan.Zero);
         string body = await refused.Content.ReadAsStringAsync(Ct);
-        Assert.Contains("retry", body, StringComparison.OrdinalIgnoreCase);
+        Assert.Contains("busy", body, StringComparison.OrdinalIgnoreCase);
+        Assert.Contains(
+            $"Retry in {refused.Headers.RetryAfter.Delta!.Value.TotalSeconds:0} s",
+            body, StringComparison.Ordinal);
 
         Task<HttpResponseMessage> queued = overBudget.Single(task => task != answered);
         Assert.False(queued.IsCompleted);

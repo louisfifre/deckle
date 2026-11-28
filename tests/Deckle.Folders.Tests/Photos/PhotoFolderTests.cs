@@ -27,7 +27,7 @@ public sealed class PhotoFormatsTests
 }
 
 // The photo tool lists the photos of the folder it is in, nothing else.
-[Collection("folders provider singleton")]
+[Collection(FoldersProviderCollection.Name)]
 [Trait("Category", "integration")]
 public sealed class PhotoFolderTests
 {

@@ -8,6 +8,9 @@ namespace Deckle.Notifications.Tests;
 // Unit: the catalogue is a boot-time index keyed by descriptor Id. It is the
 // fail-fast guard that a duplicate Id never silently overwrites another, and
 // the source of truth the dispatcher consults before routing.
+// Registering emits the catalogue audit on the process-wide source, which the
+// source tests count, so this class shares their collection.
+[Collection(NotificationDispatcherCollection.Name)]
 [Trait("Category", "unit")]
 public class NotificationCatalogTests
 {
