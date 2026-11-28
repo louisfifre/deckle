@@ -861,6 +861,7 @@ _Generated from `git ls-files` — do not edit by hand._
 │   │   ├── HttpsFirst.cs
 │   │   ├── RegistrableDomain.cs
 │   │   ├── RequestKind.cs
+│   │   ├── ResourceMerge.cs
 │   │   ├── SessionStore.cs
 │   │   ├── SiteName.cs
 │   │   ├── SitePermissions.cs
@@ -2887,6 +2888,7 @@ _Generated from `git ls-files` — do not edit by hand._
 │   │   ├── HttpsFirstTests.cs
 │   │   ├── RegistrableDomainTests.cs
 │   │   ├── RequestKindTests.cs
+│   │   ├── ResourceMergeTests.cs
 │   │   ├── SessionStoreTests.cs
 │   │   ├── SiteNameTests.cs
 │   │   ├── SitePermissionsTests.cs

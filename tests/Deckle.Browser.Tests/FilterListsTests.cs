@@ -42,4 +42,23 @@ public sealed class FilterListsTests
         Assert.Equal("https://easylist.to/easylist/easylist.txt", FilterLists.Lists[0].Address.ToString());
         Assert.Equal("https://raw.githubusercontent.com/brave/adblock-resources/master/dist/resources.json", FilterLists.Resources.Address.ToString());
     }
+
+    [Fact]
+    public void OnlyUBlocksOwnListsAreTrusted()
+    {
+        Assert.Equal(
+            ["uBlock filters", "uBlock quick fixes", "uBlock privacy"],
+            FilterLists.Lists.Where(l => l.Trusted).Select(l => l.Name));
+    }
+
+    [Fact]
+    public void TheScriptletModulesAreFetchedAtThePinnedTagAndIncludeTheEntry()
+    {
+        Assert.Contains(FilterLists.UboEntry, FilterLists.UboFiles);
+        Assert.Equal(FilterLists.UboFiles.Count, FilterLists.UboFiles.Distinct().Count());
+        Assert.Equal(
+            $"https://raw.githubusercontent.com/gorhill/uBlock/{FilterLists.UboTag}/src/js/resources/scriptlets.js",
+            FilterLists.UboAddress(FilterLists.UboEntry).ToString());
+        Assert.Contains(FilterLists.UboTag, FilterLists.UboConvertedFileName());
+    }
 }
