@@ -42,6 +42,7 @@ public sealed partial class BrowserWindow : Window
     private const string WindowKey = "browser";
     private const string ModuleKey = "browser";
 
+    private readonly bool _isPrivate;
     private readonly IntPtr _hwnd;
     private readonly NavigationPane _pane;
     private readonly BrowserSession _session;
@@ -60,8 +61,20 @@ public sealed partial class BrowserWindow : Window
     // own user data folder.
     private static Task<CoreWebView2Environment>? _environmentTask;
 
-    public BrowserWindow()
+    // Bumped each time the environment is made again after the browser process
+    // failed: a web view of an older generation is dead.
+    private static int _environmentGeneration = 1;
+
+    public BrowserWindow() : this(false)
     {
+    }
+
+    /// <summary>A private window (Ctrl+Shift+N): its web views run in the
+    /// engine's in-private mode, it has no pinned sites, and it loads and saves
+    /// no session.</summary>
+    public BrowserWindow(bool isPrivate)
+    {
+        _isPrivate = isPrivate;
         InitializeComponent();
         _hwnd = WindowNative.GetWindowHandle(this);
 
@@ -100,7 +113,13 @@ public sealed partial class BrowserWindow : Window
         ApplyPaneState();
 
         // The session: what was kept, or one empty tab.
-        _session = SessionStore.Load(_sessionPath);
+        _session = _isPrivate ? new BrowserSession() : SessionStore.Load(_sessionPath);
+        if (_isPrivate)
+        {
+            PrivateLabel.Visibility = Visibility.Visible;
+            PinnedGrid.Visibility = Visibility.Collapsed;
+        }
+        _permissions = _isPrivate ? new SitePermissions() : SitePermissions.Load(PermissionsPath);
         if (_session.Pinned.Count == 0 && _session.Tabs.Count == 0) _session.OpenTab("about:blank");
         foreach (BrowserItem item in _session.Pinned) _pinnedItems.Add(Register(item));
         foreach (BrowserItem item in _session.Tabs) _tabItems.Add(Register(item));
@@ -121,6 +140,7 @@ public sealed partial class BrowserWindow : Window
         {
             _saveTimer.Stop();
             SaveSession();
+            DetachEnvironment();
         };
 
         ApplySelection();
@@ -136,10 +156,13 @@ public sealed partial class BrowserWindow : Window
     private void ApplyPaneState()
     {
         bool open = _pane.IsOpen;
-        AddressBox.Visibility = open ? Visibility.Visible : Visibility.Collapsed;
+        AddressRow.Visibility = open ? Visibility.Visible : Visibility.Collapsed;
+        PrivateLabel.Visibility = _isPrivate && open ? Visibility.Visible : Visibility.Collapsed;
+        PanelFoot.Orientation = open ? Orientation.Horizontal : Orientation.Vertical;
         ButtonStack.Orientation = open ? Orientation.Horizontal : Orientation.Vertical;
         NarrowToggleButton.Visibility = _pane.IsOverPage && !open ? Visibility.Visible : Visibility.Collapsed;
         PinnedLayout.MinItemWidth = open ? 64 : 36;
+        if (_isPrivate) PinnedGrid.Visibility = Visibility.Collapsed;
         PinnedGrid.Margin = open ? new Thickness(8, 0, 8, 8) : new Thickness(4, 0, 4, 8);
         NewTabButton.Margin = open ? new Thickness(8, 0, 8, 4) : new Thickness(4, 0, 4, 4);
     }
@@ -305,6 +328,24 @@ public sealed partial class BrowserWindow : Window
 
     private static Task<CoreWebView2Environment> EnvironmentAsync() => _environmentTask ??= CreateEnvironmentAsync();
 
+    // The core of a view, in the window's mode: a private window's views are
+    // made with the engine's in-private option.
+    private async Task EnsureCoreAsync(WebView2 view)
+    {
+        _environment = await EnvironmentAsync();
+        OnEnvironmentReady(_environment);
+        if (_isPrivate)
+        {
+            CoreWebView2ControllerOptions options = _environment.CreateCoreWebView2ControllerOptions();
+            options.IsInPrivateModeEnabled = true;
+            await view.EnsureCoreWebView2Async(_environment, options);
+        }
+        else
+        {
+            await view.EnsureCoreWebView2Async(_environment);
+        }
+    }
+
     private static async Task<CoreWebView2Environment> CreateEnvironmentAsync()
     {
         string userData = Path.Combine(AppPaths.GetModuleDirectory(ModuleKey), "WebView2");
@@ -316,9 +357,9 @@ public sealed partial class BrowserWindow : Window
         var clock = Stopwatch.StartNew();
         try
         {
-            _environment = await EnvironmentAsync();
             WebView2 view = panel.View!;
-            await view.EnsureCoreWebView2Async(_environment);
+            await EnsureCoreAsync(view);
+            panel.Generation = _environmentGeneration;
             Wire(panel, view.CoreWebView2);
             view.CoreWebView2.Navigate(panel.Item.Url.Length > 0 ? panel.Item.Url : "about:blank");
             DeckleBrowserViewsSource.Log.WebViewReady(clock.ElapsedMilliseconds);
@@ -332,6 +373,7 @@ public sealed partial class BrowserWindow : Window
 
     private void Wire(PanelItem panel, CoreWebView2 core)
     {
+        SecurityWire(panel, core);
         core.DocumentTitleChanged += (_, _) =>
         {
             panel.Item.Title = core.DocumentTitle;
@@ -351,6 +393,7 @@ public sealed partial class BrowserWindow : Window
         };
         core.NavigationCompleted += (_, args) =>
         {
+            OnNavigationCompleted(panel, args);
             if (_shown == panel) UpdateHistoryButtons();
             panel.Loaded.TrySetResult();
             panel.Navigation?.TrySetResult(args.IsSuccess);
@@ -396,8 +439,8 @@ public sealed partial class BrowserWindow : Window
         {
             int at = opener.Item.IsPinned ? 0 : IndexOfTab(opener.Item) + 1;
             PanelItem tab = AddTab("about:blank", at, adopt: true);
-            _environment = await EnvironmentAsync();
-            await tab.View!.EnsureCoreWebView2Async(_environment);
+            await EnsureCoreAsync(tab.View!);
+            tab.Generation = _environmentGeneration;
             Wire(tab, tab.View.CoreWebView2);
             args.NewWindow = tab.View.CoreWebView2;
             args.Handled = true;
@@ -427,6 +470,7 @@ public sealed partial class BrowserWindow : Window
     // before its page is awake.
     private void LoadCachedIcon(PanelItem panel)
     {
+        if (_isPrivate) return;
         if (FaviconPath(panel.Item.Url) is not { } path || !File.Exists(path)) return;
         try { _ = ShowIconAsync(panel, File.ReadAllBytes(path)); }
         catch (IOException) { /* the icon is only a convenience */ }
@@ -444,7 +488,7 @@ public sealed partial class BrowserWindow : Window
             reader.ReadBytes(bytes);
 
             await ShowIconAsync(panel, bytes);
-            if (FaviconPath(core.Source) is { } path)
+            if (!_isPrivate && FaviconPath(core.Source) is { } path)
             {
                 Directory.CreateDirectory(FaviconDirectory);
                 await File.WriteAllBytesAsync(path, bytes);
@@ -507,7 +551,7 @@ public sealed partial class BrowserWindow : Window
     private void NewTab()
     {
         AddTab("about:blank");
-        if (AddressBox.Visibility == Visibility.Visible) AddressBox.Focus(FocusState.Programmatic);
+        if (AddressRow.Visibility == Visibility.Visible) AddressBox.Focus(FocusState.Programmatic);
     }
 
     private void OnPinClick(object sender, RoutedEventArgs e)
@@ -555,7 +599,9 @@ public sealed partial class BrowserWindow : Window
     {
         _current = _shown is not null && Uri.TryCreate(_shown.Item.Url, UriKind.Absolute, out Uri? uri) ? uri : null;
         if (AddressBox.FocusState == FocusState.Unfocused)
-            AddressBox.Text = SiteName.Display(_current);
+            AddressBox.Text = AddressText();
+        SiteSettingsButton.IsEnabled = SiteName.Display(_current).Length > 0;
+        UpdateNotice();
         UpdateHistoryButtons();
     }
 
@@ -575,7 +621,11 @@ public sealed partial class BrowserWindow : Window
         if (ShownCore?.CanGoForward == true) ShownCore.GoForward();
     }
 
-    private void OnReloadClick(object sender, RoutedEventArgs e) => ShownCore?.Reload();
+    private void OnReloadClick(object sender, RoutedEventArgs e)
+    {
+        if (_shown is { Notice: PageNotice.Crashed } crashed) ReloadAfterCrash(crashed);
+        else ShownCore?.Reload();
+    }
 
     // ── Address field ────────────────────────────────────────────────────────
 
@@ -585,7 +635,16 @@ public sealed partial class BrowserWindow : Window
         AddressBox.SelectAll();
     }
 
-    private void OnAddressLostFocus(object sender, RoutedEventArgs e) => AddressBox.Text = SiteName.Display(_current);
+    private void OnAddressLostFocus(object sender, RoutedEventArgs e) => AddressBox.Text = AddressText();
+
+    // The registrable domain alone; a page over plain http says so in words.
+    private string AddressText()
+    {
+        string domain = SiteName.Display(_current);
+        return domain.Length > 0 && SiteName.IsNotSecure(_current)
+            ? $"{BrowserText.Get("Not_Secure")} \u00b7 {domain}"
+            : domain;
+    }
 
     private void OnAddressKeyDown(object sender, KeyRoutedEventArgs e)
     {
@@ -612,6 +671,7 @@ public sealed partial class BrowserWindow : Window
     /// <summary>Writes the session now, as the debounce and the close do.</summary>
     public void SaveSession()
     {
+        if (_isPrivate) return;
         try { SessionStore.Save(_session, _sessionPath); }
         catch (Exception ex) when (ex is IOException or UnauthorizedAccessException)
         {

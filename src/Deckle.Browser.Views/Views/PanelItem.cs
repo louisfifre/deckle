@@ -27,6 +27,18 @@ public sealed class PanelItem(BrowserItem item) : INotifyPropertyChanged
     /// again.</summary>
     public bool Started { get; set; }
 
+    /// <summary>What the page's card says above the page, if anything.</summary>
+    public PageNotice Notice { get; set; }
+
+    /// <summary>The http address that was upgraded to https, while that
+    /// navigation may still fail: what "Continue anyway" allows over http.
+    /// Kept in memory for the window only; never logged.</summary>
+    public Uri? UpgradedFrom { get; set; }
+
+    /// <summary>The environment generation the item's web view was made in: a
+    /// browser process failure invalidates the whole generation.</summary>
+    public int Generation { get; set; }
+
     /// <summary>Completes at the first completed navigation of the view (or
     /// when a page-opened window is handed over).</summary>
     public TaskCompletionSource Loaded { get; } = new(TaskCreationOptions.RunContinuationsAsynchronously);
@@ -109,4 +121,12 @@ public sealed class PanelItem(BrowserItem item) : INotifyPropertyChanged
     }
 
     private void Raise(string name) => PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(name));
+}
+
+/// <summary>What a page's card says above the page.</summary>
+public enum PageNotice
+{
+    None,
+    NoSecureConnection,
+    Crashed,
 }

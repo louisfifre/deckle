@@ -124,4 +124,141 @@
   <data name="BrowserSettingsButton.AutomationProperties.Name" xml:space="preserve">
     <value>Settings</value>
   </data>
+
+  <!-- Security: permissions, downloads, other apps, the web engine -->
+  <data name="BrowserPrivateLabel.Text" xml:space="preserve">
+    <value>Private</value>
+  </data>
+  <data name="BrowserSiteSettingsButton.ToolTipService.ToolTip" xml:space="preserve">
+    <value>Site settings</value>
+  </data>
+  <data name="BrowserSiteSettingsButton.AutomationProperties.Name" xml:space="preserve">
+    <value>Site settings</value>
+  </data>
+  <data name="BrowserDownloadsButton.ToolTipService.ToolTip" xml:space="preserve">
+    <value>Downloads</value>
+  </data>
+  <data name="BrowserDownloadsButton.AutomationProperties.Name" xml:space="preserve">
+    <value>Downloads</value>
+  </data>
+  <data name="Not_Secure" xml:space="preserve">
+    <value>Not secure</value>
+  </data>
+  <data name="Notice_NoHttps" xml:space="preserve">
+    <value>This site does not offer a secure connection.</value>
+  </data>
+  <data name="Notice_ContinueAnyway" xml:space="preserve">
+    <value>Continue anyway</value>
+  </data>
+  <data name="Notice_Crashed" xml:space="preserve">
+    <value>This page stopped working.</value>
+  </data>
+  <data name="Notice_Reload" xml:space="preserve">
+    <value>Reload</value>
+  </data>
+  <data name="Engine_OutOfDate" xml:space="preserve">
+    <value>The web engine is out of date.</value>
+  </data>
+  <data name="Engine_Newer" xml:space="preserve">
+    <value>A newer web engine is installed. Restart Deckle Browser to use it.</value>
+  </data>
+  <data name="Permission_Title" xml:space="preserve">
+    <value>Permission request</value>
+  </data>
+  <data name="Permission_Question" xml:space="preserve">
+    <value>{0} wants to {1}.</value>
+  </data>
+  <data name="Permission_Do_Camera" xml:space="preserve">
+    <value>use your camera</value>
+  </data>
+  <data name="Permission_Do_Microphone" xml:space="preserve">
+    <value>use your microphone</value>
+  </data>
+  <data name="Permission_Do_Geolocation" xml:space="preserve">
+    <value>know your location</value>
+  </data>
+  <data name="Permission_Do_Notifications" xml:space="preserve">
+    <value>send you notifications</value>
+  </data>
+  <data name="Permission_Do_ClipboardRead" xml:space="preserve">
+    <value>read your clipboard</value>
+  </data>
+  <data name="Permission_Do_Other" xml:space="preserve">
+    <value>use a feature of your browser</value>
+  </data>
+  <data name="Permission_Name_Camera" xml:space="preserve">
+    <value>Camera</value>
+  </data>
+  <data name="Permission_Name_Microphone" xml:space="preserve">
+    <value>Microphone</value>
+  </data>
+  <data name="Permission_Name_Geolocation" xml:space="preserve">
+    <value>Location</value>
+  </data>
+  <data name="Permission_Name_Notifications" xml:space="preserve">
+    <value>Notifications</value>
+  </data>
+  <data name="Permission_Name_ClipboardRead" xml:space="preserve">
+    <value>Clipboard</value>
+  </data>
+  <data name="Permission_Name_Other" xml:space="preserve">
+    <value>Other</value>
+  </data>
+  <data name="Permission_Allow" xml:space="preserve">
+    <value>Allow</value>
+  </data>
+  <data name="Permission_Block" xml:space="preserve">
+    <value>Block</value>
+  </data>
+  <data name="Permission_Allowed" xml:space="preserve">
+    <value>Allowed</value>
+  </data>
+  <data name="Permission_Blocked" xml:space="preserve">
+    <value>Blocked</value>
+  </data>
+  <data name="Permission_Remove" xml:space="preserve">
+    <value>Remove</value>
+  </data>
+  <data name="SiteSettings_Empty" xml:space="preserve">
+    <value>No saved choices for this site.</value>
+  </data>
+  <data name="Download_ExecutableTitle" xml:space="preserve">
+    <value>Download this file?</value>
+  </data>
+  <data name="Download_ExecutableBody" xml:space="preserve">
+    <value>This file can run programs on your computer. Download it?</value>
+  </data>
+  <data name="Download_Confirm" xml:space="preserve">
+    <value>Download</value>
+  </data>
+  <data name="Download_Cancel" xml:space="preserve">
+    <value>Cancel</value>
+  </data>
+  <data name="Download_AllFiles" xml:space="preserve">
+    <value>All files</value>
+  </data>
+  <data name="Download_InProgress" xml:space="preserve">
+    <value>Downloading</value>
+  </data>
+  <data name="Download_Completed" xml:space="preserve">
+    <value>Done</value>
+  </data>
+  <data name="Download_Failed" xml:space="preserve">
+    <value>Failed</value>
+  </data>
+  <data name="Download_OpenFolder" xml:space="preserve">
+    <value>Open folder</value>
+  </data>
+  <data name="Downloads_Empty" xml:space="preserve">
+    <value>No downloads yet.</value>
+  </data>
+  <data name="External_Question" xml:space="preserve">
+    <value>Open this link in {0}?</value>
+  </data>
+  <data name="External_Open" xml:space="preserve">
+    <value>Open</value>
+  </data>
+  <data name="External_Cancel" xml:space="preserve">
+    <value>Cancel</value>
+  </data>
 </root>

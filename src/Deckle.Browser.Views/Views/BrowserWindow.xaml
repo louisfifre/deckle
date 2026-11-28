@@ -9,6 +9,7 @@
         <Grid.KeyboardAccelerators>
             <KeyboardAccelerator Key="T" Modifiers="Control" Invoked="OnNewTabAccelerator" />
             <KeyboardAccelerator Key="W" Modifiers="Control" Invoked="OnCloseTabAccelerator" />
+            <KeyboardAccelerator Key="N" Modifiers="Control,Shift" Invoked="OnPrivateWindowAccelerator" />
         </Grid.KeyboardAccelerators>
 
         <!-- No title bar of its own: the panel's button row stands in for it
@@ -99,19 +100,43 @@
                                     Click="OnReloadClick">
                                 <FontIcon Glyph="{StaticResource Icon.Refresh}" FontSize="16" />
                             </Button>
+                            <TextBlock x:Name="PrivateLabel"
+                                       x:Uid="BrowserPrivateLabel"
+                                       Visibility="Collapsed"
+                                       VerticalAlignment="Center"
+                                       Margin="8,0,0,0"
+                                       Style="{StaticResource BodyStrongTextBlockStyle}" />
                         </StackPanel>
                     </Grid>
 
                     <!-- The address field: the site alone while a page shows,
                          the whole address once it has the focus. Collapsed in
                          the rail. -->
-                    <TextBox x:Name="AddressBox"
-                             Grid.Row="1"
-                             x:Uid="BrowserAddressBox"
-                             Margin="8,4,8,8"
-                             GotFocus="OnAddressGotFocus"
-                             LostFocus="OnAddressLostFocus"
-                             KeyDown="OnAddressKeyDown" />
+                    <Grid x:Name="AddressRow" Grid.Row="1" Margin="8,4,8,8" ColumnSpacing="4">
+                        <Grid.ColumnDefinitions>
+                            <ColumnDefinition Width="*" />
+                            <ColumnDefinition Width="Auto" />
+                        </Grid.ColumnDefinitions>
+                        <TextBox x:Name="AddressBox"
+                                 x:Uid="BrowserAddressBox"
+                                 GotFocus="OnAddressGotFocus"
+                                 LostFocus="OnAddressLostFocus"
+                                 KeyDown="OnAddressKeyDown" />
+                        <!-- Site settings: the answers kept for the page's
+                             site, each with a Remove. -->
+                        <Button x:Name="SiteSettingsButton"
+                                Grid.Column="1"
+                                x:Uid="BrowserSiteSettingsButton"
+                                Style="{StaticResource SubtleButtonStyle}"
+                                Width="32" Height="32" Padding="0">
+                            <FontIcon Glyph="&#xE72E;" FontSize="14" />
+                            <Button.Flyout>
+                                <Flyout x:Name="SiteSettingsFlyout" Placement="Bottom" Opening="OnSiteSettingsOpening">
+                                    <StackPanel x:Name="SiteSettingsPanel" Width="280" Spacing="8" />
+                                </Flyout>
+                            </Button.Flyout>
+                        </Button>
+                    </Grid>
 
                     <!-- The pinned sites: icon tiles, as many columns as the
                          pane's width holds (min 64, stretched). A tile shows
@@ -259,12 +284,23 @@
 
                     <!-- The foot, the last row of the panel: the tabs' list
                          above it takes the height left. -->
-                    <StackPanel x:Name="PanelFoot" Grid.Row="5" Margin="4,4,4,8">
+                    <StackPanel x:Name="PanelFoot" Grid.Row="5" Margin="4,4,4,8"
+                                Orientation="Horizontal" Spacing="2">
+                        <Button x:Name="DownloadsButton"
+                                x:Uid="BrowserDownloadsButton"
+                                Style="{StaticResource SubtleButtonStyle}"
+                                Width="40" Height="32" Padding="0">
+                            <FontIcon Glyph="&#xE896;" FontSize="16" />
+                            <Button.Flyout>
+                                <Flyout x:Name="DownloadsFlyout" Placement="Top" Opening="OnDownloadsOpening">
+                                    <StackPanel x:Name="DownloadsPanel" Width="300" Spacing="8" />
+                                </Flyout>
+                            </Button.Flyout>
+                        </Button>
                         <Button x:Name="SettingsButton"
                                 x:Uid="BrowserSettingsButton"
                                 Style="{StaticResource SubtleButtonStyle}"
                                 Width="40" Height="32" Padding="0"
-                                HorizontalAlignment="Left"
                                 IsEnabled="False">
                             <FontIcon Glyph="{StaticResource Icon.Settings}" FontSize="16" />
                         </Button>
@@ -278,6 +314,7 @@
             <Grid x:Name="PageArea">
                 <Grid.RowDefinitions>
                     <RowDefinition Height="32" />
+                    <RowDefinition Height="Auto" />
                     <RowDefinition Height="*" />
                 </Grid.RowDefinitions>
                 <!-- A narrow window hides the panel: this button, drawn where
@@ -292,14 +329,39 @@
                         Click="OnPaneToggleClick">
                     <FontIcon Glyph="{StaticResource Icon.Browser.Pane}" FontSize="16" />
                 </Button>
+                <!-- The web engine's state: out of date at startup, or a newer
+                     one installed. -->
+                <InfoBar x:Name="EngineBar"
+                         Grid.Row="1"
+                         Margin="0,0,8,8"
+                         Severity="Warning"
+                         Visibility="Collapsed"
+                         IsOpen="False"
+                         Closed="OnEngineBarClosed" />
                 <Border x:Name="PageCard"
-                        Grid.Row="1"
+                        Grid.Row="2"
                         Margin="0,0,8,8"
                         CornerRadius="{ThemeResource OverlayCornerRadius}"
                         BorderBrush="{ThemeResource CardStrokeColorDefaultBrush}"
                         BorderThickness="1"
                         Background="{ThemeResource LayerFillColorDefaultBrush}">
-                    <Grid x:Name="PageHost" />
+                    <Grid>
+                        <Grid.RowDefinitions>
+                            <RowDefinition Height="Auto" />
+                            <RowDefinition Height="*" />
+                        </Grid.RowDefinitions>
+                        <!-- What the shown page needs said: no secure
+                             connection, or a page that stopped working. -->
+                        <InfoBar x:Name="NoticeBar"
+                                 Severity="Warning"
+                                 IsClosable="False"
+                                 IsOpen="False">
+                            <InfoBar.ActionButton>
+                                <Button x:Name="PageNoticeButton" Click="OnPageNoticeAction" />
+                            </InfoBar.ActionButton>
+                        </InfoBar>
+                        <Grid x:Name="PageHost" Grid.Row="1" />
+                    </Grid>
                 </Border>
             </Grid>
         </NavigationView>

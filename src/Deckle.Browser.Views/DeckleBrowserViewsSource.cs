@@ -20,6 +20,9 @@ public sealed class DeckleBrowserViewsSource : DeckleEventSource
     public const int EvtWebViewFailed = 2;
     public const int EvtSessionSaveFailed = 3;
     public const int EvtPageSuspended = 4;
+    public const int EvtEngineVersion = 5;
+    public const int EvtTrackingPreventionFailed = 6;
+    public const int EvtProcessFailed = 7;
 
     [Event(EvtSessionSaveFailed,
            Level = EventLevel.Warning,
@@ -60,5 +63,37 @@ public sealed class DeckleBrowserViewsSource : DeckleEventSource
     {
         if (IsEnabled(EventLevel.Error, (EventKeywords)Keywords.Lifecycle))
             WriteEvent(EvtWebViewFailed, ex_type, ex_message);
+    }
+
+    // The web engine's own version: a machine fact, not something visited.
+    [Event(EvtEngineVersion,
+           Level = EventLevel.Informational,
+           Keywords = (EventKeywords)Keywords.Lifecycle,
+           Message = "engine_version={0}")]
+    public void EngineVersion(string engine_version)
+    {
+        if (IsEnabled(EventLevel.Informational, (EventKeywords)Keywords.Lifecycle))
+            WriteEvent(EvtEngineVersion, engine_version);
+    }
+
+    [Event(EvtTrackingPreventionFailed,
+           Level = EventLevel.Warning,
+           Keywords = (EventKeywords)Keywords.Lifecycle,
+           Message = "Strict tracking prevention could not be applied\nex_type={0}")]
+    public void TrackingPreventionFailed(string ex_type)
+    {
+        if (IsEnabled(EventLevel.Warning, (EventKeywords)Keywords.Lifecycle))
+            WriteEvent(EvtTrackingPreventionFailed, ex_type);
+    }
+
+    // A web view process ended badly: which kind of process, never which page.
+    [Event(EvtProcessFailed,
+           Level = EventLevel.Warning,
+           Keywords = (EventKeywords)Keywords.Lifecycle,
+           Message = "A web view process failed\nprocess_kind={0}")]
+    public void ProcessFailed(string process_kind)
+    {
+        if (IsEnabled(EventLevel.Warning, (EventKeywords)Keywords.Lifecycle))
+            WriteEvent(EvtProcessFailed, process_kind);
     }
 }

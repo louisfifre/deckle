@@ -874,10 +874,12 @@ _Generated from `git ls-files` — do not edit by hand._
 │   │   │       └── Resources.resw
 │   │   ├── Views/
 │   │   │   ├── BrowserText.cs
+│   │   │   ├── BrowserWindow.Security.cs
 │   │   │   ├── BrowserWindow.xaml
 │   │   │   ├── BrowserWindow.xaml.cs
 │   │   │   ├── PanelItem.cs
-│   │   │   └── RoundedClip.cs
+│   │   │   ├── RoundedClip.cs
+│   │   │   └── WebViewSettings.cs
 │   │   ├── Deckle.Browser.Views.csproj
 │   │   └── DeckleBrowserViewsSource.cs
 │   ├── Deckle.Catalog/
