@@ -46,6 +46,36 @@ public sealed class AdblockEngineTests
         Assert.Contains("hello", script);
     }
 
+    // The shape the browser's converter gives a uBlock Origin scriptlet: a helper kept as
+    // fn/javascript, a scriptlet that depends on it, one that requires trust (permission 1).
+    private static string UboShapedResources()
+    {
+        static string B64(string s) => Convert.ToBase64String(Encoding.UTF8.GetBytes(s));
+        return "[" +
+            "{\"name\":\"dep-helper.fn\",\"aliases\":[],\"kind\":{\"mime\":\"fn/javascript\"},\"content\":\"" + B64("function depHelper(v){ return 'helped-' + v; }") + "\"}," +
+            "{\"name\":\"trusted-marker.js\",\"aliases\":[\"tm.js\"],\"kind\":{\"mime\":\"application/javascript\"},\"content\":\"" + B64("function trustedMarker(a){ window.__trusted = depHelper(a); }") + "\",\"dependencies\":[\"dep-helper.fn\"],\"permission\":1}" +
+            "]";
+    }
+
+    [Fact]
+    public void ATrustedListInjectsAScriptletThatRequiresTrustWithItsDependency()
+    {
+        using var engine = AdblockEngine.Create("", "browser.test##+js(trusted-marker, hello)\n");
+        Assert.True(engine.UseResources(UboShapedResources()));
+        string script = engine.Cosmetic("https://browser.test/page").InjectedScript;
+        Assert.Contains("trustedMarker", script);
+        Assert.Contains("depHelper", script);
+        Assert.Contains("hello", script);
+    }
+
+    [Fact]
+    public void AnUntrustedListInjectsNothingFromAScriptletThatRequiresTrust()
+    {
+        using var engine = AdblockEngine.Create("browser.test##+js(trusted-marker, hello)\n", "");
+        Assert.True(engine.UseResources(UboShapedResources()));
+        Assert.Equal("", engine.Cosmetic("https://browser.test/page").InjectedScript);
+    }
+
     [Fact]
     public void ResourcesThatAreNotTheJsonAreRefused()
     {

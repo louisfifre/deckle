@@ -44,6 +44,21 @@ public sealed class AdblockEngine : IDisposable
         return new AdblockEngine(engine);
     }
 
+    /// <summary>Builds an engine from two texts of rules: the second is trusted, so its rules may
+    /// inject the scriptlets that require trust (uBlock Origin's own lists); the first may not.</summary>
+    public static unsafe AdblockEngine Create(string rules, string trustedRules)
+    {
+        ArgumentNullException.ThrowIfNull(rules);
+        ArgumentNullException.ThrowIfNull(trustedRules);
+        byte[] bytes = Encoding.UTF8.GetBytes(rules);
+        byte[] trusted = Encoding.UTF8.GetBytes(trustedRules);
+        nint engine;
+        fixed (byte* p = bytes) fixed (byte* t = trusted)
+            engine = NativeAdblock.EngineNewTrusted(p, (nuint)bytes.Length, t, (nuint)trusted.Length);
+        if (engine == 0) throw new InvalidOperationException("The ad blocking engine could not be built from the rules.");
+        return new AdblockEngine(engine);
+    }
+
     /// <summary>Loads the scriptlets and redirect resources (the crate's Resource JSON array).
     /// False when the JSON is not that.</summary>
     public unsafe bool UseResources(string json)

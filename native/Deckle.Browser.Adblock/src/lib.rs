@@ -11,6 +11,8 @@
 //!   not valid UTF-8 make the call fail softly (null, 0 or "do not block"), never panic.
 //! - `adblock_engine_new` returns an engine the caller owns and releases once with
 //!   `adblock_engine_free`. A null engine is accepted everywhere and means "no blocking".
+//! - `adblock_engine_new_trusted` takes a second text of rules whose lists are trusted
+//!   (permission bit 1, what uBlock Origin's `requiresTrust` scriptlets ask for).
 //! - `adblock_cosmetic` returns a buffer allocated here (JSON of the page's hide
 //!   selectors and injected script) and its length in `out_len`; the caller releases it
 //!   with `adblock_string_free(ptr, len)`, with that same length, and never otherwise.
@@ -22,7 +24,7 @@
 
 use adblock::lists::{FilterSet, ParseOptions};
 use adblock::request::Request;
-use adblock::resources::Resource;
+use adblock::resources::{PermissionMask, Resource};
 use adblock::Engine;
 
 unsafe fn text<'a>(p: *const u8, len: usize) -> Option<&'a str> {
@@ -39,6 +41,32 @@ pub unsafe extern "C" fn adblock_engine_new(rules_ptr: *const u8, rules_len: usi
     };
     let mut set = FilterSet::new(false);
     set.add_filter_list(rules.to_string(), ParseOptions::default());
+    Box::into_raw(Box::new(Engine::new_with_filter_set(set)))
+}
+
+/// The permission bit uBlock Origin's own lists carry: a resource converted from a
+/// uBO scriptlet that `requiresTrust` is given the same bit (`permission: 1`), so only
+/// the lists passed as trusted may inject it.
+const UBO_TRUST: PermissionMask = PermissionMask::from_bits(1);
+
+/// Like `adblock_engine_new`, with a second text of rules that is trusted: its rules
+/// may inject the scriptlets that require trust. The first text is not.
+#[unsafe(no_mangle)]
+pub unsafe extern "C" fn adblock_engine_new_trusted(
+    rules_ptr: *const u8,
+    rules_len: usize,
+    trusted_ptr: *const u8,
+    trusted_len: usize,
+) -> *mut Engine {
+    let (Some(rules), Some(trusted)) = (unsafe { (text(rules_ptr, rules_len), text(trusted_ptr, trusted_len)) }) else {
+        return std::ptr::null_mut();
+    };
+    let mut set = FilterSet::new(false);
+    set.add_filter_list(rules.to_string(), ParseOptions::default());
+    set.add_filter_list(
+        trusted.to_string(),
+        ParseOptions { permissions: UBO_TRUST, ..Default::default() },
+    );
     Box::into_raw(Box::new(Engine::new_with_filter_set(set)))
 }
 

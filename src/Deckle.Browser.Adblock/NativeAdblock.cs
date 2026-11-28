@@ -13,6 +13,9 @@ internal static unsafe partial class NativeAdblock
     [LibraryImport(Dll, EntryPoint = "adblock_engine_new")]
     internal static partial nint EngineNew(byte* rules, nuint rulesLength);
 
+    [LibraryImport(Dll, EntryPoint = "adblock_engine_new_trusted")]
+    internal static partial nint EngineNewTrusted(byte* rules, nuint rulesLength, byte* trusted, nuint trustedLength);
+
     [LibraryImport(Dll, EntryPoint = "adblock_engine_free")]
     internal static partial void EngineFree(nint engine);
 
