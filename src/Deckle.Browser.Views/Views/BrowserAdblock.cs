@@ -29,6 +29,10 @@ public static class BrowserAdblock
         get { lock (Gate) return _engine; }
     }
 
+    /// <summary>The rule count and the duration in milliseconds of the last build of the
+    /// engine from the lists (0 before any): the figures the log line carries.</summary>
+    public static (int Rules, long Milliseconds) LastBuild { get; private set; }
+
     /// <summary>The folder the lists are kept in.</summary>
     public static string FiltersDirectory => Path.Combine(AppPaths.GetModuleDirectory("browser"), "Filters");
 
@@ -137,6 +141,7 @@ public static class BrowserAdblock
             _engine = engine;
         }
         old?.Dispose();
+        LastBuild = (rules, clock.ElapsedMilliseconds);
         DeckleBrowserViewsSource.Log.AdblockEngineBuilt(rules, clock.ElapsedMilliseconds);
         return true;
     }

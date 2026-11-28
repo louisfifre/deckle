@@ -29,6 +29,15 @@ internal static class AdblockProbe
         Task<bool> ready = Deckle.Browser.Views.BrowserAdblock.Ready;
         bool completed = await Task.WhenAny(ready, Task.Delay(TimeSpan.FromMinutes(3))) == ready;
         await Note($"lists ready after {wait.Elapsed.TotalSeconds:0.0} s (completed={completed}, all fresh or fetched={(completed && ready.Result)})");
+        (int rules, long buildMs) = BrowserAdblock.LastBuild;
+        await Note($"engine built from the lists: {rules} rules in {buildMs} ms (last build)");
+        foreach (string file in Directory.EnumerateFiles(BrowserAdblock.FiltersDirectory))
+            await Note($"  {Path.GetFileName(file)}: {new FileInfo(file).Length} bytes");
+        if (BrowserAdblock.Engine is { } engine)
+        {
+            Deckle.Browser.Adblock.CosmeticResources cosmetic = engine.Cosmetic(url);
+            await Note($"cosmetic answer for the address: {cosmetic.HideSelectors.Count} selectors, injected script {cosmetic.InjectedScript.Length} characters");
+        }
         await Note($"probe address: {url}");
 
         bool navigated = await browser.NavigateAsync(new Uri(url));
