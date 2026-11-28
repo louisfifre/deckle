@@ -1,0 +1,9 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <!-- The suite stays on the shared Windows test setup of tests/Directory.Build.props
+       (Windows target framework, Deckle.TestSupport): every suite runs on this
+       Windows machine anyway, and the portability that matters, the library's
+       own, is enforced by Deckle.Browser building against plain net10.0. -->
+  <ItemGroup>
+    <ProjectReference Include="..\..\src\Deckle.Browser\Deckle.Browser.csproj" />
+  </ItemGroup>
+</Project>

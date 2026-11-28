@@ -841,6 +841,10 @@ _Generated from `git ls-files` — do not edit by hand._
 │   │   ├── LexicalDomainsPage.xaml.cs
 │   │   ├── ParagraphCorrectionSection.cs
 │   │   └── SettingsSearch.cs
+│   ├── Deckle.Browser/
+│   │   ├── AddressInput.cs
+│   │   ├── Deckle.Browser.csproj
+│   │   └── SiteName.cs
 │   ├── Deckle.Catalog/
 │   │   ├── Composer/
 │   │   │   ├── AxisTicks.cs
@@ -2809,6 +2813,10 @@ _Generated from `git ls-files` — do not edit by hand._
 │   ├── Deckle.Autocorrect.Views.Tests/
 │   │   ├── Deckle.Autocorrect.Views.Tests.csproj
 │   │   └── ParagraphCorrectionPageTests.cs
+│   ├── Deckle.Browser.Tests/
+│   │   ├── AddressInputTests.cs
+│   │   ├── Deckle.Browser.Tests.csproj
+│   │   └── SiteNameTests.cs
 │   ├── Deckle.Catalog.Tests/
 │   │   ├── CubicBezierTests.cs
 │   │   ├── CurveEndpointLimitsTests.cs
