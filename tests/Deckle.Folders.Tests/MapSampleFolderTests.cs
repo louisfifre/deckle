@@ -6,7 +6,7 @@ namespace Deckle.Folders.Tests;
 // The project the self-check photographs the map on holds what its images
 // need: every kind, items always read, and a skill with more neighbours than
 // the panel's graph draws.
-[Collection("folders provider singleton")]
+[Collection(FoldersProviderCollection.Name)]
 [Trait("Category", "integration")]
 public sealed class MapSampleFolderTests
 {

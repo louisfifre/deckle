@@ -6,7 +6,7 @@ namespace Deckle.Projects.Tests;
 // The runner with a terminal that is not one, a clock moved by hand and a probe
 // that says which shells are alive: no process starts and no timer ticks. The
 // files the wrapper would write are written by the test.
-[Collection("projects provider singleton")]
+[Collection(ProjectsProviderCollection.Name)]
 [Trait("Category", "integration")]
 public sealed class ActionRunnerTests : IDisposable
 {

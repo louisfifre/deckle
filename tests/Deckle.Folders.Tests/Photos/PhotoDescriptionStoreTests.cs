@@ -6,7 +6,7 @@ namespace Deckle.Folders.Tests;
 // The descriptions sit in the module's store, never next to the photos, come
 // back after a restart, and a photo renamed or deleted outside the app breaks
 // nothing.
-[Collection("folders provider singleton")]
+[Collection(FoldersProviderCollection.Name)]
 [Trait("Category", "integration")]
 public sealed class PhotoDescriptionStoreTests
 {
@@ -103,7 +103,7 @@ public sealed class PhotoDescriptionStoreTests
 
 // The model that describes photos is one stored choice; with nothing stored
 // there is none.
-[Collection("folders provider singleton")]
+[Collection(FoldersProviderCollection.Name)]
 [Trait("Category", "integration")]
 public sealed class PhotoDescriptionModelChoiceStoreTests
 {

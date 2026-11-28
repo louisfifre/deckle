@@ -4,7 +4,7 @@ namespace Deckle.Paste.Tests;
 
 // The chosen folder persists in the data directory and survives a missing or
 // broken file.
-[Collection("paste provider singleton")]
+[Collection(PasteProviderCollection.Name)]
 [Trait("Category", "integration")]
 public sealed class PasteFolderStoreTests
 {

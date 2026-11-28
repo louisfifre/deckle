@@ -4,7 +4,7 @@ using Deckle.Core;
 namespace Deckle.FolderMap.Tests;
 
 // The map's two displays of one inventory: flat, and by sections.
-[Collection("folders provider singleton")]
+[Collection(FolderMapProviderCollection.Name)]
 [Trait("Category", "integration")]
 public sealed class MapListOrderTests
 {

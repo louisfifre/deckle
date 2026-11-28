@@ -4,7 +4,7 @@ namespace Deckle.Folders.Tests;
 
 // The self-check's shoot must read as a shoot: photos the tool lists, with
 // the capture data the panel shows, and one scan that holds none.
-[Collection("folders provider singleton")]
+[Collection(FoldersProviderCollection.Name)]
 [Trait("Category", "integration")]
 public sealed class SamplePhotosTests
 {

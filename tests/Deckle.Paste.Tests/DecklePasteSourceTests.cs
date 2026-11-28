@@ -7,7 +7,7 @@ namespace Deckle.Paste.Tests;
 // The provider says how each paste ended, never what was pasted nor where.
 // Each test subscribes its own listener on the provider singleton, so every
 // suite that emits on it shares this collection.
-[Collection("paste provider singleton")]
+[Collection(PasteProviderCollection.Name)]
 [Trait("Category", "observability")]
 public sealed class DecklePasteSourceTests
 {

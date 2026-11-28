@@ -8,7 +8,7 @@ namespace Deckle.Hud.Tests;
 
 // The admission reader is process-wide static state: the collection keeps
 // these tests from racing on it.
-[Collection("Hud operational observability")]
+[Collection(HudObservabilityCollection.Name)]
 [Trait("Category", "observability")]
 public sealed class DeckleHudSourceTests : IDisposable
 {
