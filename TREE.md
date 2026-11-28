@@ -860,6 +860,7 @@ _Generated from `git ls-files` — do not edit by hand._
 │   │   ├── FilterLists.cs
 │   │   ├── History.cs
 │   │   ├── HttpsFirst.cs
+│   │   ├── MediaReading.cs
 │   │   ├── RegistrableDomain.cs
 │   │   ├── RequestKind.cs
 │   │   ├── ResourceMerge.cs
@@ -2895,6 +2896,7 @@ _Generated from `git ls-files` — do not edit by hand._
 │   │   ├── FilterListsTests.cs
 │   │   ├── HistoryTests.cs
 │   │   ├── HttpsFirstTests.cs
+│   │   ├── MediaReadingTests.cs
 │   │   ├── RegistrableDomainTests.cs
 │   │   ├── RequestKindTests.cs
 │   │   ├── ResourceMergeTests.cs
