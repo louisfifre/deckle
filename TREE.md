@@ -864,6 +864,7 @@ _Generated from `git ls-files` — do not edit by hand._
 │   │   ├── RequestKind.cs
 │   │   ├── ResourceMerge.cs
 │   │   ├── SessionStore.cs
+│   │   ├── Shortcuts.cs
 │   │   ├── SiteName.cs
 │   │   ├── SitePermissions.cs
 │   │   └── WebEngine.cs
@@ -2898,6 +2899,7 @@ _Generated from `git ls-files` — do not edit by hand._
 │   │   ├── RequestKindTests.cs
 │   │   ├── ResourceMergeTests.cs
 │   │   ├── SessionStoreTests.cs
+│   │   ├── ShortcutsTests.cs
 │   │   ├── SiteNameTests.cs
 │   │   ├── SitePermissionsTests.cs
 │   │   └── WebEngineTests.cs
