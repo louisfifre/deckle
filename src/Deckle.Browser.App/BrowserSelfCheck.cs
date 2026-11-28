@@ -43,6 +43,8 @@ internal sealed class BrowserWalkContext(
 //   page-preview  the web view's own drawing (CapturePreviewAsync)
 //   tabs          the window with eight pinned sites and a tab, panel open
 //   tabs-rail     the same with the panel in its rail
+//   permission    a site's question for the location, open
+//   downloads     the downloads flyout, empty
 //
 // The tabs walk (TabsWalk.cs) then measures what eight suspended pinned sites
 // cost, how long one takes to wake, that the session survives a restart and
@@ -52,7 +54,7 @@ internal sealed class BrowserWalkContext(
 // log event: a count and a number, no address.
 internal static class BrowserSelfCheck
 {
-    public static readonly string[] Slugs = ["window", "window-rail", "page-xaml", "page-preview", "tabs", "tabs-rail"];
+    public static readonly string[] Slugs = ["window", "window-rail", "page-xaml", "page-preview", "tabs", "tabs-rail", "permission", "downloads"];
 
     private const string PageHtml =
         "<!doctype html><html><head><meta charset=\"utf-8\"><title>Self-check page</title></head>"
@@ -178,6 +180,12 @@ internal static class BrowserSelfCheck
         {
             Step("browser/tabs");
             await TabsWalk.RunAsync(context, browser, Wants("tabs"), Wants("tabs-rail"), loaded);
+        }
+
+        if (only is null or "permission" or "downloads")
+        {
+            Step("browser/security");
+            await SecurityWalk.RunAsync(context, browser, Wants("permission"), Wants("downloads"), loaded);
         }
     }
 
