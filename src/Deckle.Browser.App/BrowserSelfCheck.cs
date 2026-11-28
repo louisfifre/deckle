@@ -1,0 +1,177 @@
+using System.Buffers.Binary;
+using System.Diagnostics;
+using System.Globalization;
+using Deckle.Browser.Views;
+using Deckle.Contributions;
+using Deckle.Hosting.SelfCheck;
+using Deckle.Vision;
+using static Deckle.Hosting.SelfCheck.SelfCheckCapture;
+
+namespace Deckle.Browser.App;
+
+// What the self-check hands the Browser walk: the contract's three members,
+// plus the run's report and capture and the host that builds the window.
+internal sealed class BrowserWalkContext(
+    ContributionHost host,
+    SelfCheckReport report,
+    InterfaceCaptureRun run,
+    string outputFolder,
+    string? targetView,
+    Action<string> step) : IContributionWalkContext
+{
+    public ContributionHost Host { get; } = host;
+    public SelfCheckReport Report { get; } = report;
+    public InterfaceCaptureRun Run { get; } = run;
+    public string OutputFolder { get; } = outputFolder;
+    public string? TargetView { get; } = targetView;
+
+    public void Step(string state) => step(state);
+
+    // The walk of this process reaches its context through the contract.
+    public static BrowserWalkContext From(IContributionWalkContext context) =>
+        (BrowserWalkContext)context;
+}
+
+// The self-check's walk of the Browser window: opened off screen, it
+// navigates to a local page (a file this walk writes, never a real site),
+// waits for the navigation to complete, then photographs it and measures the
+// web view's memory.
+//
+//   window        the window as DWM composed it, panel open
+//   window-rail   the same with the panel in its rail
+//   page-xaml     the window's XAML content rendered by the framework
+//   page-preview  the web view's own drawing (CapturePreviewAsync)
+//
+// The memory figure goes in measures.txt beside the report and in one Verbose
+// log event: a count and a number, no address.
+internal static class BrowserSelfCheck
+{
+    public static readonly string[] Slugs = ["window", "window-rail", "page-xaml", "page-preview"];
+
+    private const string PageHtml =
+        "<!doctype html><html><head><meta charset=\"utf-8\"><title>Self-check page</title></head>"
+        + "<body style=\"margin:0;background:#2b7a78;color:#ffffff;font-family:Segoe UI,sans-serif\">"
+        + "<h1 style=\"margin:0;padding:48px\">Deckle Browser self-check</h1>"
+        + "<p style=\"padding:0 48px\">A local page: a coloured ground and a heading.</p>"
+        + "</body></html>";
+
+    public static async Task WalkAsync(BrowserWalkContext context)
+    {
+        SelfCheckReport report = context.Report;
+        InterfaceCaptureRun run = context.Run;
+        string outputFolder = context.OutputFolder;
+        string captures = Path.Combine(outputFolder, "captures");
+        void Step(string name) => context.Step(name);
+
+        string? only = context.TargetView;
+        if (only is not null && !Slugs.Contains(only))
+        {
+            report.Views = [.. Slugs];
+            return;
+        }
+        bool Wants(string slug) => only is null || only == slug;
+
+        var browser = (BrowserWindow)context.Host.Ensure("browser");
+        OffscreenWindow.ShowInactive(browser);
+        bool loaded = await WaitUntilLoadedAsync(browser);
+
+        // A local page, in a folder under the output folder.
+        string pages = Path.Combine(outputFolder, "pages");
+        Directory.CreateDirectory(pages);
+        string file = Path.Combine(pages, "index.html");
+        await File.WriteAllTextAsync(file, PageHtml);
+
+        var clock = Stopwatch.StartNew();
+        bool navigated = await browser.NavigateAsync(new Uri(file));
+        long loadMs = clock.ElapsedMilliseconds;
+        // The page reaches the screen on the frames after its completion.
+        await Task.Delay(600);
+        Step($"browser (navigated={navigated})");
+
+        if (Wants("window"))
+        {
+            report.Surfaces.Add(await CaptureWindowFrameAsync(
+                run, browser, "browser", "window", "Panel open", loaded && navigated, loadMs));
+            Step("browser/window done");
+        }
+
+        if (Wants("window-rail"))
+        {
+            browser.SetPaneOpen(false);
+            await Task.Delay(600);
+            report.Surfaces.Add(await CaptureWindowFrameAsync(
+                run, browser, "browser", "window-rail", "Panel in its rail", loaded && navigated, loadMs));
+            browser.SetPaneOpen(true);
+            await Task.Delay(300);
+            Step("browser/window-rail done");
+        }
+
+        if (Wants("page-xaml"))
+        {
+            SelfCheckSurface surface = new("browser", "page-xaml", "The window as the framework renders it",
+                loaded, loadMs, null, 0, 0, "page-render");
+            try
+            {
+                ElementImage.Result image = await ElementImage.CapturePageAsync(
+                    browser.ContentRoot, Path.Combine(captures, "browser-page-xaml"));
+                string[] files = [.. image.Files.Select(f => Path.GetRelativePath(outputFolder, f))];
+                surface = surface with
+                {
+                    Png = files[0],
+                    Parts = files.Length > 1 ? files : null,
+                    Width = image.Width,
+                    Height = image.Height,
+                };
+            }
+            catch (Exception ex)
+            {
+                surface = surface with { Error = $"{ex.GetType().Name}: {ex.Message}" };
+            }
+            report.Surfaces.Add(surface);
+            Step("browser/page-xaml done");
+        }
+
+        if (Wants("page-preview"))
+        {
+            string png = Path.Combine(captures, "browser-page-preview.png");
+            SelfCheckSurface surface = new("browser", "page-preview", "The page as the web view draws it",
+                loaded, loadMs, null, 0, 0, "webview-preview");
+            try
+            {
+                Directory.CreateDirectory(captures);
+                await using (var stream = new FileStream(png, FileMode.Create, FileAccess.ReadWrite))
+                    await browser.CapturePagePreviewAsync(stream);
+                (int width, int height) = PngSize(png);
+                surface = surface with
+                {
+                    Png = Path.GetRelativePath(outputFolder, png),
+                    Width = width,
+                    Height = height,
+                };
+            }
+            catch (Exception ex)
+            {
+                surface = surface with { Error = $"{ex.GetType().Name}: {ex.Message}" };
+            }
+            report.Surfaces.Add(surface);
+            Step("browser/page-preview done");
+        }
+
+        (int processes, long bytes) = await browser.MeasureWebViewMemoryAsync();
+        double megabytes = bytes / (1024.0 * 1024.0);
+        await File.WriteAllTextAsync(Path.Combine(outputFolder, "measures.txt"),
+            string.Create(CultureInfo.InvariantCulture,
+                $"web view private memory: {megabytes:0.0} MB in {processes} processes (local page loaded, navigation {loadMs} ms){Environment.NewLine}"));
+        DeckleBrowserAppSource.Log.WebViewMeasured(processes, bytes);
+    }
+
+    // The width and height an IHDR chunk gives, in the first 24 bytes of a PNG.
+    private static (int Width, int Height) PngSize(string path)
+    {
+        Span<byte> head = stackalloc byte[24];
+        using FileStream stream = File.OpenRead(path);
+        return stream.Read(head) == 24
+            ? (BinaryPrimitives.ReadInt32BigEndian(head[16..]), BinaryPrimitives.ReadInt32BigEndian(head[20..]))
+            : (0, 0);
+    }
+}

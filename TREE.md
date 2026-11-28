@@ -845,6 +845,17 @@ _Generated from `git ls-files` — do not edit by hand._
 │   │   ├── AddressInput.cs
 │   │   ├── Deckle.Browser.csproj
 │   │   └── SiteName.cs
+│   ├── Deckle.Browser.App/
+│   │   ├── app.manifest
+│   │   ├── App.SelfCheck.cs
+│   │   ├── App.xaml
+│   │   ├── App.xaml.cs
+│   │   ├── BrowserContribution.cs
+│   │   ├── BrowserSelfCheck.cs
+│   │   ├── Composition.cs
+│   │   ├── Deckle.Browser.App.csproj
+│   │   ├── DeckleBrowserAppSource.cs
+│   │   └── Program.cs
 │   ├── Deckle.Browser.Views/
 │   │   ├── Strings/
 │   │   │   └── en-US/
@@ -2823,6 +2834,10 @@ _Generated from `git ls-files` — do not edit by hand._
 │   ├── Deckle.Autocorrect.Views.Tests/
 │   │   ├── Deckle.Autocorrect.Views.Tests.csproj
 │   │   └── ParagraphCorrectionPageTests.cs
+│   ├── Deckle.Browser.App.Tests/
+│   │   ├── BrowserAppIdentityTests.cs
+│   │   ├── Deckle.Browser.App.Tests.csproj
+│   │   └── DeckleBrowserAppSourceTests.cs
 │   ├── Deckle.Browser.Tests/
 │   │   ├── AddressInputTests.cs
 │   │   ├── Deckle.Browser.Tests.csproj
