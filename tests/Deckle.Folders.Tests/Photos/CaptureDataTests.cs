@@ -6,7 +6,7 @@ namespace Deckle.Folders.Tests;
 // What the camera recorded reaches the details panel, from a JPEG and from a
 // TIFF-based raw, and a file that holds nothing or is not a photo never
 // throws.
-[Collection("folders provider singleton")]
+[Collection(FoldersProviderCollection.Name)]
 [Trait("Category", "integration")]
 public sealed class CaptureDataReaderTests
 {

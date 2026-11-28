@@ -3,7 +3,7 @@ using Xunit;
 namespace Deckle.Projects.Tests;
 
 // The links with a process starter and a terminal that start nothing.
-[Collection("projects provider singleton")]
+[Collection(ProjectsProviderCollection.Name)]
 [Trait("Category", "integration")]
 public sealed class ProjectOpenerTests
 {

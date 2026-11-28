@@ -7,7 +7,7 @@ namespace Deckle.Folders.Tests;
 // A description's events say what ran and how it ended with counts,
 // durations and failure kinds: never a photo's name or path, nor the text
 // the model wrote.
-[Collection("folders provider singleton")]
+[Collection(FoldersProviderCollection.Name)]
 [Trait("Category", "observability")]
 public sealed class PhotoDescriptionEventsTests
 {

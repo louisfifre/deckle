@@ -6,7 +6,7 @@ namespace Deckle.Projects.Tests;
 
 // When git cannot answer, the project reads as "not readable" and the page
 // shows nothing for git; the Warning is one incident, not one per project.
-[Collection("projects provider singleton")]
+[Collection(ProjectsProviderCollection.Name)]
 [Trait("Category", "observability")]
 public sealed class ProjectReaderUnavailableTests
 {

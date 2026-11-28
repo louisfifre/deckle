@@ -8,7 +8,7 @@ namespace Deckle.Folders.Tests;
 
 // A size analysis writes its start and its end, paired by one id, and one
 // Warning when folders could not be read; no event carries a path.
-[Collection("folders provider singleton")]
+[Collection(FoldersProviderCollection.Name)]
 [Trait("Category", "observability")]
 public sealed class SizeScanEventsTests
 {

@@ -5,7 +5,7 @@ namespace Deckle.Folders.Tests;
 
 // The text mode of the address bar: a typed path leads inside an added folder
 // or nowhere, and suggestions complete what is typed.
-[Collection("folders provider singleton")]
+[Collection(FoldersProviderCollection.Name)]
 [Trait("Category", "integration")]
 public sealed class AddressResolverTests
 {

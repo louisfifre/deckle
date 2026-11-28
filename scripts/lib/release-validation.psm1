@@ -318,4 +318,23 @@ function Assert-DeckleReleaseArchive {
     }
 }
 
-Export-ModuleMember -Function Get-DeckleReleaseTags, Assert-DeckleReleaseRepositorySource, Assert-DeckleReleaseSource, Get-DeckleReleaseRecoveryPlan, Assert-DeckleReleaseAssets, Assert-DeckleReleaseArchive, Assert-DeckleReleaseDraft, Publish-DeckleReleaseTag
+# The installer's NativeAOT link runs ILCompiler's findvcvarsall.bat, which
+# calls Visual Studio's vcvars, which calls vswhere.exe by name. Visual Studio
+# installs vswhere beside its installer, a folder it never puts on PATH, so the
+# link fails outside a developer shell. This puts that folder on the PATH of the
+# current process only, when vswhere is not already found.
+function Add-VsWhereToProcessPath {
+    param(
+        [string]$InstallerDir = (Join-Path ${env:ProgramFiles(x86)} 'Microsoft Visual Studio\Installer')
+    )
+    $found = Get-Command 'vswhere.exe' -CommandType Application -ErrorAction SilentlyContinue | Select-Object -First 1
+    if ($found) { return $found.Source }
+    $candidate = Join-Path $InstallerDir 'vswhere.exe'
+    if (-not (Test-Path -LiteralPath $candidate -PathType Leaf)) {
+        throw "vswhere.exe is not on PATH nor in $InstallerDir; the installer's NativeAOT link needs Visual Studio with its C++ tools"
+    }
+    $env:PATH = "$InstallerDir;$env:PATH"
+    return $candidate
+}
+
+Export-ModuleMember -Function Add-VsWhereToProcessPath, Get-DeckleReleaseTags, Assert-DeckleReleaseRepositorySource, Assert-DeckleReleaseSource, Get-DeckleReleaseRecoveryPlan, Assert-DeckleReleaseAssets, Assert-DeckleReleaseArchive, Assert-DeckleReleaseDraft, Publish-DeckleReleaseTag

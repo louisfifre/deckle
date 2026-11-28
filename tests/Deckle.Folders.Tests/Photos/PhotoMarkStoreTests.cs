@@ -5,7 +5,7 @@ namespace Deckle.Folders.Tests;
 
 // Marking a photo changes nothing on the disk next to it, and the marks come
 // back when the folder is opened again.
-[Collection("folders provider singleton")]
+[Collection(FoldersProviderCollection.Name)]
 [Trait("Category", "integration")]
 public sealed class PhotoMarkStoreTests
 {
