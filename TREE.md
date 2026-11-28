@@ -857,8 +857,10 @@ _Generated from `git ls-files` — do not edit by hand._
 │   │   ├── Deckle.Browser.csproj
 │   │   ├── DownloadSafety.cs
 │   │   ├── FaviconCache.cs
+│   │   ├── FilterLists.cs
 │   │   ├── HttpsFirst.cs
 │   │   ├── RegistrableDomain.cs
+│   │   ├── RequestKind.cs
 │   │   ├── SessionStore.cs
 │   │   ├── SiteName.cs
 │   │   ├── SitePermissions.cs
@@ -2869,8 +2871,10 @@ _Generated from `git ls-files` — do not edit by hand._
 │   │   ├── Deckle.Browser.Tests.csproj
 │   │   ├── DownloadSafetyTests.cs
 │   │   ├── FaviconCacheTests.cs
+│   │   ├── FilterListsTests.cs
 │   │   ├── HttpsFirstTests.cs
 │   │   ├── RegistrableDomainTests.cs
+│   │   ├── RequestKindTests.cs
 │   │   ├── SessionStoreTests.cs
 │   │   ├── SiteNameTests.cs
 │   │   ├── SitePermissionsTests.cs
