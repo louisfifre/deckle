@@ -50,9 +50,9 @@
             <NavigationView.PaneCustomContent>
                 <!-- The panel, top to bottom: the button row, the address, the
                      pinned grid, "New Tab", then the tabs, which take the
-                     height left. The pane's custom slot does not bound its
-                     content, so the panel's height is set in code to the
-                     pane's less its foot. -->
+                     height left, and the foot with the settings. The pane's custom
+                     slot does not bound its content, so the panel's height is
+                     set in code to the pane's less what lies above it. -->
                 <Grid x:Name="PanelRoot">
                     <Grid.RowDefinitions>
                         <RowDefinition Height="Auto" />
@@ -60,6 +60,7 @@
                         <RowDefinition Height="Auto" />
                         <RowDefinition Height="Auto" />
                         <RowDefinition Height="*" />
+                        <RowDefinition Height="Auto" />
                     </Grid.RowDefinitions>
 
                     <!-- The button row: pane toggle, back, forward, reload. It
@@ -255,21 +256,21 @@
                             </DataTemplate>
                         </ListView.ItemTemplate>
                     </ListView>
+
+                    <!-- The foot, the last row of the panel: the tabs' list
+                         above it takes the height left. -->
+                    <StackPanel x:Name="PanelFoot" Grid.Row="5" Margin="4,4,4,8">
+                        <Button x:Name="SettingsButton"
+                                x:Uid="BrowserSettingsButton"
+                                Style="{StaticResource SubtleButtonStyle}"
+                                Width="40" Height="32" Padding="0"
+                                HorizontalAlignment="Left"
+                                IsEnabled="False">
+                            <FontIcon Glyph="{StaticResource Icon.Settings}" FontSize="16" />
+                        </Button>
+                    </StackPanel>
                 </Grid>
             </NavigationView.PaneCustomContent>
-
-            <NavigationView.PaneFooter>
-                <StackPanel x:Name="PanelFoot" Margin="4,4,4,8">
-                    <Button x:Name="SettingsButton"
-                            x:Uid="BrowserSettingsButton"
-                            Style="{StaticResource SubtleButtonStyle}"
-                            Width="40" Height="32" Padding="0"
-                            HorizontalAlignment="Left"
-                            IsEnabled="False">
-                        <FontIcon Glyph="{StaticResource Icon.Settings}" FontSize="16" />
-                    </Button>
-                </StackPanel>
-            </NavigationView.PaneFooter>
 
             <!-- The page: a card on the Mica, below the caption buttons. Each
                  item's web view is a child of the host, the selected one alone

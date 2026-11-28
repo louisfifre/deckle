@@ -42,10 +42,6 @@ public sealed partial class BrowserWindow : Window
     private const string WindowKey = "browser";
     private const string ModuleKey = "browser";
 
-    // The pane's foot (the settings button and its margins), used until it has
-    // been measured.
-    private const double DefaultFootHeight = 44;
-
     private readonly IntPtr _hwnd;
     private readonly NavigationPane _pane;
     private readonly BrowserSession _session;
@@ -100,7 +96,7 @@ public sealed partial class BrowserWindow : Window
         _pane = NavigationPane.Attach(Nav, WindowKey);
         _pane.Changed += ApplyPaneState;
         Nav.SizeChanged += (_, _) => FitPanelHeight();
-        PanelFoot.SizeChanged += (_, _) => FitPanelHeight();
+        PanelRoot.Loaded += (_, _) => FitPanelHeight();
         ApplyPaneState();
 
         // The session: what was kept, or one empty tab.
@@ -149,11 +145,13 @@ public sealed partial class BrowserWindow : Window
     }
 
     // The pane's custom slot does not bound what it holds, so the panel takes
-    // the pane's height less its foot: the tabs' list then scrolls inside it.
+    // the height from its own top to the pane's bottom: the foot is the
+    // panel's last row and the tabs' list, the row of height *, scrolls.
     private void FitPanelHeight()
     {
-        double foot = PanelFoot.ActualHeight > 0 ? PanelFoot.ActualHeight : DefaultFootHeight;
-        PanelRoot.Height = Math.Max(0, Nav.ActualHeight - foot);
+        if (Nav.ActualHeight <= 0) return;
+        double top = PanelRoot.TransformToVisual(Nav).TransformPoint(new Windows.Foundation.Point(0, 0)).Y;
+        PanelRoot.Height = Math.Max(0, Nav.ActualHeight - top);
     }
 
     // ── Items ────────────────────────────────────────────────────────────────
