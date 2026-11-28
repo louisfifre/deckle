@@ -2853,6 +2853,7 @@ _Generated from `git ls-files` — do not edit by hand._
 │   │   └── ParagraphCorrectionPageTests.cs
 │   ├── Deckle.Browser.App.Tests/
 │   │   ├── BrowserAppIdentityTests.cs
+│   │   ├── BrowserLoggingGuardTests.cs
 │   │   ├── Deckle.Browser.App.Tests.csproj
 │   │   └── DeckleBrowserAppSourceTests.cs
 │   ├── Deckle.Browser.Tests/
