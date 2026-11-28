@@ -43,6 +43,7 @@ public sealed partial class BrowserWindow : Window
     public BrowserWindow()
     {
         InitializeComponent();
+        RoundedClip.Attach(PageCard, Web);
         _hwnd = WindowNative.GetWindowHandle(this);
 
         // The button row stands in for the title bar; the caption buttons stay

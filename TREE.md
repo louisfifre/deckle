@@ -863,7 +863,8 @@ _Generated from `git ls-files` — do not edit by hand._
 │   │   ├── Views/
 │   │   │   ├── BrowserText.cs
 │   │   │   ├── BrowserWindow.xaml
-│   │   │   └── BrowserWindow.xaml.cs
+│   │   │   ├── BrowserWindow.xaml.cs
+│   │   │   └── RoundedClip.cs
 │   │   ├── Deckle.Browser.Views.csproj
 │   │   └── DeckleBrowserViewsSource.cs
 │   ├── Deckle.Catalog/
