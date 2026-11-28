@@ -295,12 +295,21 @@
 
                     <!-- The foot, the last row of the panel: the tabs' list
                          above it takes the height left. -->
-                    <StackPanel x:Name="PanelFoot" Grid.Row="5" Margin="4,4,4,8"
-                                Orientation="Horizontal" Spacing="2">
+                    <Grid x:Name="PanelFoot" Grid.Row="5" Margin="4,4,4,8" RowSpacing="2">
+                        <Grid.ColumnDefinitions>
+                            <ColumnDefinition Width="Auto" />
+                            <ColumnDefinition Width="*" />
+                            <ColumnDefinition Width="Auto" />
+                        </Grid.ColumnDefinitions>
+                        <Grid.RowDefinitions>
+                            <RowDefinition Height="Auto" />
+                            <RowDefinition Height="Auto" />
+                        </Grid.RowDefinitions>
                         <Button x:Name="DownloadsButton"
                                 x:Uid="BrowserDownloadsButton"
                                 Style="{StaticResource SubtleButtonStyle}"
-                                Width="40" Height="32" Padding="0">
+                                Width="40" Height="32" Padding="0"
+                                Grid.Column="0">
                             <FontIcon Glyph="&#xE896;" FontSize="16" />
                             <Button.Flyout>
                                 <Flyout x:Name="DownloadsFlyout" Placement="Top" Opening="OnDownloadsOpening">
@@ -312,10 +321,11 @@
                                 x:Uid="BrowserSettingsButton"
                                 Style="{StaticResource SubtleButtonStyle}"
                                 Width="40" Height="32" Padding="0"
+                                Grid.Column="2"
                                 IsEnabled="False">
                             <FontIcon Glyph="{StaticResource Icon.Settings}" FontSize="16" />
                         </Button>
-                    </StackPanel>
+                    </Grid>
                 </Grid>
             </NavigationView.PaneCustomContent>
 

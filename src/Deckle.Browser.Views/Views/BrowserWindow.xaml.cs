@@ -170,7 +170,9 @@ public sealed partial class BrowserWindow : Window
         bool open = _pane.IsOpen;
         AddressRow.Visibility = open ? Visibility.Visible : Visibility.Collapsed;
         PrivateLabel.Visibility = _isPrivate && open ? Visibility.Visible : Visibility.Collapsed;
-        PanelFoot.Orientation = open ? Orientation.Horizontal : Orientation.Vertical;
+        // The foot: downloads on the left, settings on the right; in the rail, one above the other.
+        Grid.SetColumn(SettingsButton, open ? 2 : 0);
+        Grid.SetRow(SettingsButton, open ? 0 : 1);
         ButtonStack.Orientation = open ? Orientation.Horizontal : Orientation.Vertical;
         NarrowToggleButton.Visibility = _pane.IsOverPage && !open ? Visibility.Visible : Visibility.Collapsed;
         PinnedLayout.MinItemWidth = open ? 64 : 36;
