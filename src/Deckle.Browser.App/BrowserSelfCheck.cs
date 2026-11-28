@@ -112,8 +112,12 @@ internal static class BrowserSelfCheck
                 loaded, loadMs, null, 0, 0, "page-render");
             try
             {
-                ElementImage.Result image = await ElementImage.CapturePageAsync(
-                    browser.ContentRoot, Path.Combine(captures, "browser-page-xaml"));
+                // The window's whole content, not CapturePageAsync: that one
+                // looks for the first ScrollViewer under the element, which
+                // here is the NavigationView's own pane scroller, and renders
+                // that instead of the window.
+                ElementImage.Result image = await ElementImage.CaptureWindowContentAsync(
+                    browser, Path.Combine(captures, "browser-page-xaml.png"));
                 string[] files = [.. image.Files.Select(f => Path.GetRelativePath(outputFolder, f))];
                 surface = surface with
                 {

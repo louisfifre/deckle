@@ -44,7 +44,8 @@
             <!-- The button row: pane toggle, back, forward, reload. It is the
                  window's drag region (SetTitleBar); in the rail it stands in a
                  column. -->
-            <NavigationView.PaneHeader>
+            <NavigationView.PaneCustomContent>
+<StackPanel>
                 <Grid x:Name="ButtonRow" Background="Transparent" MinHeight="40">
                     <StackPanel x:Name="ButtonStack" Orientation="Horizontal" Spacing="2" Margin="4,4,0,4"
                                 HorizontalAlignment="Left">
@@ -80,17 +81,17 @@
                         </Button>
                     </StackPanel>
                 </Grid>
-            </NavigationView.PaneHeader>
+            
 
             <!-- The address field: the site alone while a page shows, the
                  whole address once it has the focus. Collapsed in the rail. -->
-            <NavigationView.PaneCustomContent>
-                <TextBox x:Name="AddressBox"
+            <TextBox x:Name="AddressBox"
                          x:Uid="BrowserAddressBox"
                          Margin="8,4,8,8"
                          GotFocus="OnAddressGotFocus"
                          LostFocus="OnAddressLostFocus"
                          KeyDown="OnAddressKeyDown" />
+</StackPanel>
             </NavigationView.PaneCustomContent>
 
             <NavigationView.PaneFooter>
