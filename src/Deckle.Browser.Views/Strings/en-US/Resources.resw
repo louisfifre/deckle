@@ -94,6 +94,30 @@
   <data name="BrowserAddressBox.AutomationProperties.Name" xml:space="preserve">
     <value>Address</value>
   </data>
+  <data name="BrowserNewTabText.Text" xml:space="preserve">
+    <value>New Tab</value>
+  </data>
+  <data name="BrowserNewTabButton.AutomationProperties.Name" xml:space="preserve">
+    <value>New Tab</value>
+  </data>
+  <data name="BrowserUnpinItem.Text" xml:space="preserve">
+    <value>Unpin</value>
+  </data>
+  <data name="BrowserPinItem.Text" xml:space="preserve">
+    <value>Pin</value>
+  </data>
+  <data name="BrowserCloseItem.Text" xml:space="preserve">
+    <value>Close</value>
+  </data>
+  <data name="BrowserCloseTabButton.ToolTipService.ToolTip" xml:space="preserve">
+    <value>Close tab</value>
+  </data>
+  <data name="BrowserCloseTabButton.AutomationProperties.Name" xml:space="preserve">
+    <value>Close tab</value>
+  </data>
+  <data name="Tab_Untitled" xml:space="preserve">
+    <value>New Tab</value>
+  </data>
   <data name="BrowserSettingsButton.ToolTipService.ToolTip" xml:space="preserve">
     <value>Settings (coming later)</value>
   </data>

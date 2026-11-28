@@ -2,9 +2,15 @@
     x:Class="Deckle.Browser.Views.BrowserWindow"
     xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
     xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+    xmlns:local="using:Deckle.Browser.Views"
     Title="Deckle Browser">
 
     <Grid x:Name="RootGrid">
+        <Grid.KeyboardAccelerators>
+            <KeyboardAccelerator Key="T" Modifiers="Control" Invoked="OnNewTabAccelerator" />
+            <KeyboardAccelerator Key="W" Modifiers="Control" Invoked="OnCloseTabAccelerator" />
+        </Grid.KeyboardAccelerators>
+
         <!-- No title bar of its own: the panel's button row stands in for it
              (SetTitleBar) and the caption buttons sit at the top right, above
              the page. The pane is Zen's panel: our own controls in the pane's
@@ -41,61 +47,219 @@
                 </ResourceDictionary>
             </NavigationView.Resources>
 
-            <!-- The button row: pane toggle, back, forward, reload. It is the
-                 window's drag region (SetTitleBar); in the rail it stands in a
-                 column. -->
             <NavigationView.PaneCustomContent>
-<StackPanel>
-                <Grid x:Name="ButtonRow" Background="Transparent" MinHeight="40">
-                    <StackPanel x:Name="ButtonStack" Orientation="Horizontal" Spacing="2" Margin="4,4,0,4"
-                                HorizontalAlignment="Left">
-                        <Button x:Name="PaneToggleButton"
-                                x:Uid="BrowserPaneToggleButton"
-                                Style="{StaticResource SubtleButtonStyle}"
-                                Width="40" Height="32" Padding="0"
-                                Click="OnPaneToggleClick">
-                            <FontIcon Glyph="{StaticResource Icon.Browser.Pane}" FontSize="16" />
-                        </Button>
-                        <Button x:Name="BackButton"
-                                x:Uid="BrowserBackButton"
-                                Style="{StaticResource SubtleButtonStyle}"
-                                Width="40" Height="32" Padding="0"
-                                IsEnabled="False"
-                                Click="OnBackClick">
-                            <FontIcon Glyph="{StaticResource Icon.Browser.Back}" FontSize="16" />
-                        </Button>
-                        <Button x:Name="ForwardButton"
-                                x:Uid="BrowserForwardButton"
-                                Style="{StaticResource SubtleButtonStyle}"
-                                Width="40" Height="32" Padding="0"
-                                IsEnabled="False"
-                                Click="OnForwardClick">
-                            <FontIcon Glyph="{StaticResource Icon.Browser.Forward}" FontSize="16" />
-                        </Button>
-                        <Button x:Name="ReloadButton"
-                                x:Uid="BrowserReloadButton"
-                                Style="{StaticResource SubtleButtonStyle}"
-                                Width="40" Height="32" Padding="0"
-                                Click="OnReloadClick">
-                            <FontIcon Glyph="{StaticResource Icon.Refresh}" FontSize="16" />
-                        </Button>
-                    </StackPanel>
-                </Grid>
-            
+                <!-- The panel, top to bottom: the button row, the address, the
+                     pinned grid, "New Tab", then the tabs, which take the
+                     height left. The pane's custom slot does not bound its
+                     content, so the panel's height is set in code to the
+                     pane's less its foot. -->
+                <Grid x:Name="PanelRoot">
+                    <Grid.RowDefinitions>
+                        <RowDefinition Height="Auto" />
+                        <RowDefinition Height="Auto" />
+                        <RowDefinition Height="Auto" />
+                        <RowDefinition Height="Auto" />
+                        <RowDefinition Height="*" />
+                    </Grid.RowDefinitions>
 
-            <!-- The address field: the site alone while a page shows, the
-                 whole address once it has the focus. Collapsed in the rail. -->
-            <TextBox x:Name="AddressBox"
-                         x:Uid="BrowserAddressBox"
-                         Margin="8,4,8,8"
-                         GotFocus="OnAddressGotFocus"
-                         LostFocus="OnAddressLostFocus"
-                         KeyDown="OnAddressKeyDown" />
-</StackPanel>
+                    <!-- The button row: pane toggle, back, forward, reload. It
+                         is the window's drag region (SetTitleBar); in the rail
+                         it stands in a column. -->
+                    <Grid x:Name="ButtonRow" Background="Transparent" MinHeight="40">
+                        <StackPanel x:Name="ButtonStack" Orientation="Horizontal" Spacing="2" Margin="4,4,0,4"
+                                    HorizontalAlignment="Left">
+                            <Button x:Name="PaneToggleButton"
+                                    x:Uid="BrowserPaneToggleButton"
+                                    Style="{StaticResource SubtleButtonStyle}"
+                                    Width="40" Height="32" Padding="0"
+                                    Click="OnPaneToggleClick">
+                                <FontIcon Glyph="{StaticResource Icon.Browser.Pane}" FontSize="16" />
+                            </Button>
+                            <Button x:Name="BackButton"
+                                    x:Uid="BrowserBackButton"
+                                    Style="{StaticResource SubtleButtonStyle}"
+                                    Width="40" Height="32" Padding="0"
+                                    IsEnabled="False"
+                                    Click="OnBackClick">
+                                <FontIcon Glyph="{StaticResource Icon.Browser.Back}" FontSize="16" />
+                            </Button>
+                            <Button x:Name="ForwardButton"
+                                    x:Uid="BrowserForwardButton"
+                                    Style="{StaticResource SubtleButtonStyle}"
+                                    Width="40" Height="32" Padding="0"
+                                    IsEnabled="False"
+                                    Click="OnForwardClick">
+                                <FontIcon Glyph="{StaticResource Icon.Browser.Forward}" FontSize="16" />
+                            </Button>
+                            <Button x:Name="ReloadButton"
+                                    x:Uid="BrowserReloadButton"
+                                    Style="{StaticResource SubtleButtonStyle}"
+                                    Width="40" Height="32" Padding="0"
+                                    Click="OnReloadClick">
+                                <FontIcon Glyph="{StaticResource Icon.Refresh}" FontSize="16" />
+                            </Button>
+                        </StackPanel>
+                    </Grid>
+
+                    <!-- The address field: the site alone while a page shows,
+                         the whole address once it has the focus. Collapsed in
+                         the rail. -->
+                    <TextBox x:Name="AddressBox"
+                             Grid.Row="1"
+                             x:Uid="BrowserAddressBox"
+                             Margin="8,4,8,8"
+                             GotFocus="OnAddressGotFocus"
+                             LostFocus="OnAddressLostFocus"
+                             KeyDown="OnAddressKeyDown" />
+
+                    <!-- The pinned sites: icon tiles, as many columns as the
+                         pane's width holds (min 64, stretched). A tile shows
+                         its site's icon alone; the selected one an accent
+                         outline; a page that plays sound a speaker. -->
+                    <ItemsView x:Name="PinnedGrid"
+                               Grid.Row="2"
+                               Margin="8,0,8,8"
+                               MaxHeight="230"
+                               SelectionMode="None"
+                               IsItemInvokedEnabled="True"
+                               ItemInvoked="OnPinnedInvoked">
+                        <ItemsView.Layout>
+                            <UniformGridLayout x:Name="PinnedLayout"
+                                               MinItemWidth="64" MinItemHeight="48"
+                                               MinRowSpacing="6" MinColumnSpacing="6"
+                                               ItemsStretch="Fill" />
+                        </ItemsView.Layout>
+                        <ItemsView.ItemTemplate>
+                            <DataTemplate x:DataType="local:PanelItem">
+                                <ItemContainer>
+                                    <Grid Height="48"
+                                          Background="{ThemeResource ControlFillColorDefaultBrush}"
+                                          BorderBrush="{ThemeResource CardStrokeColorDefaultBrush}"
+                                          BorderThickness="1"
+                                          CornerRadius="{ThemeResource ControlCornerRadius}"
+                                          ToolTipService.ToolTip="{x:Bind Tooltip, Mode=OneWay}">
+                                        <Grid.ContextFlyout>
+                                            <MenuFlyout>
+                                                <MenuFlyoutItem x:Uid="BrowserUnpinItem" Tag="{x:Bind}" Click="OnUnpinClick" />
+                                            </MenuFlyout>
+                                        </Grid.ContextFlyout>
+                                        <Image Source="{x:Bind Icon, Mode=OneWay}"
+                                               Visibility="{x:Bind IconVisibility, Mode=OneWay}"
+                                               Width="24" Height="24"
+                                               HorizontalAlignment="Center" VerticalAlignment="Center" />
+                                        <FontIcon Glyph="&#xE774;" FontSize="20"
+                                                  Visibility="{x:Bind GlyphVisibility, Mode=OneWay}"
+                                                  Foreground="{ThemeResource TextFillColorSecondaryBrush}"
+                                                  HorizontalAlignment="Center" VerticalAlignment="Center" />
+                                        <FontIcon Glyph="&#xE767;" FontSize="10"
+                                                  Visibility="{x:Bind PlayingVisibility, Mode=OneWay}"
+                                                  Foreground="{ThemeResource AccentTextFillColorPrimaryBrush}"
+                                                  HorizontalAlignment="Right" VerticalAlignment="Top"
+                                                  Margin="0,3,4,0" />
+                                        <Border BorderBrush="{ThemeResource AccentFillColorDefaultBrush}"
+                                                BorderThickness="2"
+                                                CornerRadius="{ThemeResource ControlCornerRadius}"
+                                                IsHitTestVisible="False"
+                                                Visibility="{x:Bind SelectedVisibility, Mode=OneWay}" />
+                                    </Grid>
+                                </ItemContainer>
+                            </DataTemplate>
+                        </ItemsView.ItemTemplate>
+                    </ItemsView>
+
+                    <Button x:Name="NewTabButton"
+                            Grid.Row="3"
+                            x:Uid="BrowserNewTabButton"
+                            Style="{StaticResource SubtleButtonStyle}"
+                            Margin="8,0,8,4"
+                            Padding="8,0,8,0"
+                            Height="36"
+                            HorizontalAlignment="Stretch"
+                            HorizontalContentAlignment="Left"
+                            Click="OnNewTabClick">
+                        <StackPanel Orientation="Horizontal" Spacing="8">
+                            <FontIcon Glyph="&#xE710;" FontSize="14" />
+                            <TextBlock x:Uid="BrowserNewTabText" VerticalAlignment="Center" />
+                        </StackPanel>
+                    </Button>
+
+                    <!-- The tabs: a line is the icon first, the title, a close
+                         button on hover or selection, and a grip on the right
+                         edge. Dragging a line reorders the session's tabs. -->
+                    <ListView x:Name="TabList"
+                              Grid.Row="4"
+                              Margin="4,0,4,0"
+                              SelectionMode="Single"
+                              CanReorderItems="True"
+                              CanDragItems="True"
+                              AllowDrop="True"
+                              SelectionChanged="OnTabSelectionChanged"
+                              DragItemsCompleted="OnTabDragCompleted">
+                        <ListView.ItemContainerStyle>
+                            <Style TargetType="ListViewItem" BasedOn="{StaticResource DefaultListViewItemStyle}">
+                                <Setter Property="Padding" Value="14,0,4,0" />
+                                <Setter Property="MinHeight" Value="36" />
+                                <Setter Property="Margin" Value="0,1,0,1" />
+                                <Setter Property="HorizontalContentAlignment" Value="Stretch" />
+                            </Style>
+                        </ListView.ItemContainerStyle>
+                        <ListView.ItemTemplate>
+                            <DataTemplate x:DataType="local:PanelItem">
+                                <Grid Height="36"
+                                      Background="Transparent"
+                                      ColumnSpacing="8"
+                                      PointerEntered="OnTabPointerEntered"
+                                      PointerExited="OnTabPointerExited"
+                                      PointerPressed="OnTabPointerPressed"
+                                      ToolTipService.ToolTip="{x:Bind Tooltip, Mode=OneWay}">
+                                    <Grid.ColumnDefinitions>
+                                        <ColumnDefinition Width="Auto" />
+                                        <ColumnDefinition Width="*" />
+                                        <ColumnDefinition Width="Auto" />
+                                        <ColumnDefinition Width="Auto" />
+                                    </Grid.ColumnDefinitions>
+                                    <Grid.ContextFlyout>
+                                        <MenuFlyout>
+                                            <MenuFlyoutItem x:Uid="BrowserPinItem" Tag="{x:Bind}" Click="OnPinClick" />
+                                            <MenuFlyoutItem x:Uid="BrowserCloseItem" Tag="{x:Bind}" Click="OnCloseTabClick" />
+                                        </MenuFlyout>
+                                    </Grid.ContextFlyout>
+                                    <Grid Width="16" Height="16" VerticalAlignment="Center">
+                                        <Image Source="{x:Bind Icon, Mode=OneWay}"
+                                               Visibility="{x:Bind IconVisibility, Mode=OneWay}"
+                                               Width="16" Height="16" />
+                                        <FontIcon Glyph="&#xE774;" FontSize="14"
+                                                  Visibility="{x:Bind GlyphVisibility, Mode=OneWay}"
+                                                  Foreground="{ThemeResource TextFillColorSecondaryBrush}" />
+                                    </Grid>
+                                    <TextBlock Grid.Column="1"
+                                               Text="{x:Bind Tooltip, Mode=OneWay}"
+                                               TextTrimming="CharacterEllipsis"
+                                               VerticalAlignment="Center" />
+                                    <Button Grid.Column="2"
+                                            x:Uid="BrowserCloseTabButton"
+                                            Tag="{x:Bind}"
+                                            Style="{StaticResource SubtleButtonStyle}"
+                                            Width="24" Height="24" Padding="0"
+                                            VerticalAlignment="Center"
+                                            Visibility="{x:Bind CloseVisibility, Mode=OneWay}"
+                                            Click="OnCloseTabClick">
+                                        <FontIcon Glyph="&#xE711;" FontSize="10" />
+                                    </Button>
+                                    <FontIcon Grid.Column="3"
+                                              Glyph="&#xE784;" FontSize="14"
+                                              Foreground="{ThemeResource TextFillColorTertiaryBrush}"
+                                              VerticalAlignment="Center"
+                                              Margin="0,0,4,0" />
+                                </Grid>
+                            </DataTemplate>
+                        </ListView.ItemTemplate>
+                    </ListView>
+                </Grid>
             </NavigationView.PaneCustomContent>
 
             <NavigationView.PaneFooter>
-                <StackPanel Margin="4,4,4,8">
+                <StackPanel x:Name="PanelFoot" Margin="4,4,4,8">
                     <Button x:Name="SettingsButton"
                             x:Uid="BrowserSettingsButton"
                             Style="{StaticResource SubtleButtonStyle}"
@@ -107,7 +271,9 @@
                 </StackPanel>
             </NavigationView.PaneFooter>
 
-            <!-- The page: a card on the Mica, below the caption buttons. -->
+            <!-- The page: a card on the Mica, below the caption buttons. Each
+                 item's web view is a child of the host, the selected one alone
+                 visible. -->
             <Grid x:Name="PageArea">
                 <Grid.RowDefinitions>
                     <RowDefinition Height="32" />
@@ -132,7 +298,7 @@
                         BorderBrush="{ThemeResource CardStrokeColorDefaultBrush}"
                         BorderThickness="1"
                         Background="{ThemeResource LayerFillColorDefaultBrush}">
-                    <WebView2 x:Name="Web" />
+                    <Grid x:Name="PageHost" />
                 </Border>
             </Grid>
         </NavigationView>

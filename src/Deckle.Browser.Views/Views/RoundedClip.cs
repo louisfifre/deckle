@@ -13,10 +13,18 @@ namespace Deckle.Browser.Views;
 // WebView2 element's own visual rounds them: seen in the next capture.
 internal static class RoundedClip
 {
-    public static void Attach(Border card, FrameworkElement content)
+    /// <summary>Clips the content to the card's corners. The returned action
+    /// takes the clip off the card's events, for a view that is closed.</summary>
+    public static Action Attach(Border card, FrameworkElement content)
     {
-        card.SizeChanged += (_, _) => Apply(card, content);
-        content.SizeChanged += (_, _) => Apply(card, content);
+        void OnSize(object sender, SizeChangedEventArgs e) => Apply(card, content);
+        card.SizeChanged += OnSize;
+        content.SizeChanged += OnSize;
+        return () =>
+        {
+            card.SizeChanged -= OnSize;
+            content.SizeChanged -= OnSize;
+        };
     }
 
     private static void Apply(Border card, FrameworkElement content)
