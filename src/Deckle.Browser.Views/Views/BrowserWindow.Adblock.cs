@@ -38,6 +38,7 @@ public sealed partial class BrowserWindow
 
     private void OnWebResourceRequested(PanelItem panel, CoreWebView2WebResourceRequestedEventArgs args)
     {
+        BrowserActivity.Request();
         AdblockEngine? engine = BrowserAdblock.Engine;
         if (engine is null || _environment is null) return;
 
@@ -52,6 +53,7 @@ public sealed partial class BrowserWindow
 
         args.Response = _environment.CreateWebResourceResponse(null, 403, "Blocked", "");
         panel.BlockedCount++;
+        BrowserActivity.Blocked();
         if (_shown == panel) UpdateShield();
     }
 

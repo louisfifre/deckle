@@ -48,6 +48,11 @@ public sealed class PanelItem(BrowserItem item) : INotifyPropertyChanged
     public string? CosmeticScriptId { get; set; }
     public int CosmeticTicket { get; set; }
 
+    /// <summary>The pairing id and the start of the navigation under way, for
+    /// the log's start and end of it; null while none is.</summary>
+    public string? NavigationWorkId { get; set; }
+    public long NavigationStartedAt { get; set; }
+
     /// <summary>The environment generation the item's web view was made in: a
     /// browser process failure invalidates the whole generation.</summary>
     public int Generation { get; set; }

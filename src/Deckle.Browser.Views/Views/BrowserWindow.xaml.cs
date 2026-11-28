@@ -109,6 +109,7 @@ public sealed partial class BrowserWindow : Window
         // The ad blocker's engine is built on a background thread, once.
         BrowserAdblock.Converter = ConvertUboResourcesAsync;
         BrowserAdblock.Start();
+        BrowserActivity.Start(DispatcherQueue);
 
         _pane = NavigationPane.Attach(Nav, WindowKey);
         _pane.Changed += ApplyPaneState;
@@ -146,6 +147,7 @@ public sealed partial class BrowserWindow : Window
             _saveTimer.Stop();
             SaveSession();
             DetachEnvironment();
+            BrowserActivity.Flush();
         };
 
         ApplySelection();
@@ -153,7 +155,11 @@ public sealed partial class BrowserWindow : Window
 
     // ── Pane ─────────────────────────────────────────────────────────────────
 
-    private void OnPaneToggleClick(object sender, RoutedEventArgs e) => _pane.Toggle();
+    private void OnPaneToggleClick(object sender, RoutedEventArgs e)
+    {
+        using var gesture = new GestureScope(BrowserGesture.PaneToggle);
+        _pane.Toggle();
+    }
 
     // The rail shows the icons: the button row in a column, the tiles and the
     // lines as far as they fit; the address field needs the open pane. A
@@ -382,12 +388,14 @@ public sealed partial class BrowserWindow : Window
         AdblockWire(panel, core);
         core.DocumentTitleChanged += (_, _) =>
         {
+            BrowserActivity.LabelChanged();
             panel.Item.Title = core.DocumentTitle;
             panel.Title = core.DocumentTitle;
             _session.Touch();
         };
         core.SourceChanged += (_, _) =>
         {
+            BrowserActivity.SourceChanged();
             panel.Item.Url = core.Source;
             LoadCachedIcon(panel);
             if (_shown == panel) UpdateChrome();
@@ -404,7 +412,11 @@ public sealed partial class BrowserWindow : Window
             panel.Loaded.TrySetResult();
             panel.Navigation?.TrySetResult(args.IsSuccess);
         };
-        core.FaviconChanged += (_, _) => _ = ReadFaviconAsync(panel, core);
+        core.FaviconChanged += (_, _) =>
+        {
+            BrowserActivity.IconChanged();
+            _ = ReadFaviconAsync(panel, core);
+        };
         core.IsDocumentPlayingAudioChanged += (_, _) =>
         {
             panel.IsPlaying = core.IsDocumentPlayingAudio;
@@ -521,22 +533,25 @@ public sealed partial class BrowserWindow : Window
 
     private void OnPinnedInvoked(ItemsView sender, ItemsViewItemInvokedEventArgs args)
     {
+        using var gesture = new GestureScope(BrowserGesture.SelectPinned);
         if (args.InvokedItem is PanelItem panel) SelectItem(panel);
     }
 
     private void OnTabSelectionChanged(object sender, SelectionChangedEventArgs e)
     {
         if (_syncing > 0) return;
+        using var gesture = new GestureScope(BrowserGesture.SelectTab);
         if (TabList.SelectedItem is PanelItem panel) SelectItem(panel);
     }
 
     // The list reordered its lines; the session follows.
-    private void OnTabDragCompleted(ListViewBase sender, DragItemsCompletedEventArgs args)
+    private void OnTabDragCompleted(ListViewBase sender, DragItemsCompletedEventArgs args) =>
+        FollowTabOrder(args.Items.OfType<PanelItem>());
+
+    private void FollowTabOrder(IEnumerable<PanelItem> moved)
     {
-        foreach (object dragged in args.Items)
-        {
-            if (dragged is PanelItem panel) _session.Move(panel.Item.Id, _tabItems.IndexOf(panel));
-        }
+        using var gesture = new GestureScope(BrowserGesture.ReorderTab);
+        foreach (PanelItem panel in moved) _session.Move(panel.Item.Id, _tabItems.IndexOf(panel));
         SyncSelectionUi();
     }
 
@@ -551,27 +566,32 @@ public sealed partial class BrowserWindow : Window
     private void OnCloseTabAccelerator(KeyboardAccelerator sender, KeyboardAcceleratorInvokedEventArgs args)
     {
         args.Handled = true;
+        using var gesture = new GestureScope(BrowserGesture.CloseTab);
         if (_shown is { Item.IsPinned: false } tab) CloseItem(tab);
     }
 
     private void NewTab()
     {
+        using var gesture = new GestureScope(BrowserGesture.NewTab);
         AddTab("about:blank");
         if (AddressRow.Visibility == Visibility.Visible) AddressBox.Focus(FocusState.Programmatic);
     }
 
     private void OnPinClick(object sender, RoutedEventArgs e)
     {
+        using var gesture = new GestureScope(BrowserGesture.PinTab);
         if (((FrameworkElement)sender).Tag is PanelItem panel) PinItem(panel);
     }
 
     private void OnUnpinClick(object sender, RoutedEventArgs e)
     {
+        using var gesture = new GestureScope(BrowserGesture.UnpinTab);
         if (((FrameworkElement)sender).Tag is PanelItem panel) UnpinItem(panel);
     }
 
     private void OnCloseTabClick(object sender, RoutedEventArgs e)
     {
+        using var gesture = new GestureScope(BrowserGesture.CloseTab);
         if (((FrameworkElement)sender).Tag is PanelItem panel) CloseItem(panel);
     }
 
@@ -593,8 +613,14 @@ public sealed partial class BrowserWindow : Window
             && e.GetCurrentPoint(element).Properties.IsMiddleButtonPressed)
         {
             e.Handled = true;
-            CloseItem(panel);
+            CloseByMiddleClick(panel);
         }
+    }
+
+    private void CloseByMiddleClick(PanelItem panel)
+    {
+        using var gesture = new GestureScope(BrowserGesture.CloseTabMiddleClick);
+        CloseItem(panel);
     }
 
     // ── Chrome that follows the shown page ───────────────────────────────────
@@ -620,16 +646,19 @@ public sealed partial class BrowserWindow : Window
 
     private void OnBackClick(object sender, RoutedEventArgs e)
     {
+        using var gesture = new GestureScope(BrowserGesture.Back);
         if (ShownCore?.CanGoBack == true) ShownCore.GoBack();
     }
 
     private void OnForwardClick(object sender, RoutedEventArgs e)
     {
+        using var gesture = new GestureScope(BrowserGesture.Forward);
         if (ShownCore?.CanGoForward == true) ShownCore.GoForward();
     }
 
     private void OnReloadClick(object sender, RoutedEventArgs e)
     {
+        using var gesture = new GestureScope(BrowserGesture.Reload);
         if (_shown is { Notice: PageNotice.Crashed } crashed) ReloadAfterCrash(crashed);
         else ShownCore?.Reload();
     }
@@ -659,18 +688,37 @@ public sealed partial class BrowserWindow : Window
         {
             case VirtualKey.Enter:
                 e.Handled = true;
-                if (AddressInput.Resolve(AddressBox.Text) is { } target && _shown is not null)
-                {
-                    if (ShownCore is { } core) core.Navigate(target.AbsoluteUri);
-                    else _shown.Item.Url = target.AbsoluteUri;
-                }
-                _shown?.View?.Focus(FocusState.Programmatic);
+                CommitAddress();
                 break;
             case VirtualKey.Escape:
                 e.Handled = true;
-                _shown?.View?.Focus(FocusState.Programmatic);
+                CancelAddress();
                 break;
         }
+    }
+
+    // Enter in the field: the typed text is resolved and the page goes there.
+    private void CommitAddress()
+    {
+        using var gesture = new GestureScope(BrowserGesture.AddressCommit);
+        if (AddressInput.Resolve(AddressBox.Text) is { } target && _shown is not null)
+        {
+            if (ShownCore is { } core) core.Navigate(target.AbsoluteUri);
+            else _shown.Item.Url = target.AbsoluteUri;
+        }
+        else
+        {
+            gesture.Outcome = "refused";
+        }
+        _shown?.View?.Focus(FocusState.Programmatic);
+    }
+
+    // Escape in the field: the focus goes to the page, and the field, having
+    // lost it, shows the page's address again (OnAddressLostFocus).
+    private void CancelAddress()
+    {
+        using var gesture = new GestureScope(BrowserGesture.AddressCancel);
+        _shown?.View?.Focus(FocusState.Programmatic);
     }
 
     // ── Session ──────────────────────────────────────────────────────────────

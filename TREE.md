@@ -891,6 +891,7 @@ _Generated from `git ls-files` — do not edit by hand._
 │   │   │   └── en-US/
 │   │   │       └── Resources.resw
 │   │   ├── Views/
+│   │   │   ├── BrowserActivity.cs
 │   │   │   ├── BrowserAdblock.cs
 │   │   │   ├── BrowserText.cs
 │   │   │   ├── BrowserWindow.Adblock.cs

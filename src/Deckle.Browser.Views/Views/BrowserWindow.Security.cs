@@ -1,6 +1,7 @@
 using System.Collections.ObjectModel;
 using System.Diagnostics;
 using Deckle.Core;
+using Deckle.Diagnostics;
 using Microsoft.UI.Xaml;
 using Microsoft.UI.Xaml.Controls;
 using Microsoft.UI.Xaml.Input;
@@ -70,6 +71,7 @@ public sealed partial class BrowserWindow
     private void OnPrivateWindowAccelerator(KeyboardAccelerator sender, KeyboardAcceleratorInvokedEventArgs args)
     {
         args.Handled = true;
+        using var gesture = new GestureScope(BrowserGesture.PrivateWindow);
         new BrowserWindow(true).ShowAndActivate();
     }
 
@@ -98,6 +100,7 @@ public sealed partial class BrowserWindow
             return;
         }
 
+        NavigationBegan(panel, args.IsRedirected);
         AdblockNavigationStarting(panel, core, uri, args.IsRedirected);
 
         // A navigation to anywhere but the upgraded address ends what the notice
@@ -130,8 +133,30 @@ public sealed partial class BrowserWindow
         or CoreWebView2WebErrorStatus.CannotConnect
         or CoreWebView2WebErrorStatus.HostNameNotResolved;
 
+    // A top-level navigation is lasting work: its start and its end carry one
+    // id. A redirect is part of the same navigation; one that began while the
+    // last had not ended replaces it, and the first ends as superseded.
+    private static void NavigationBegan(PanelItem panel, bool redirected)
+    {
+        if (redirected && panel.NavigationWorkId is not null) return;
+        EndNavigation(panel, "superseded", "None");
+        panel.NavigationWorkId = WorkId.Next();
+        panel.NavigationStartedAt = Stopwatch.GetTimestamp();
+        BrowserActivity.NavigationBegan();
+        DeckleBrowserViewsSource.Log.NavigationStarted(panel.NavigationWorkId);
+    }
+
+    private static void EndNavigation(PanelItem panel, string outcome, string webError)
+    {
+        if (panel.NavigationWorkId is not { } workId) return;
+        panel.NavigationWorkId = null;
+        DeckleBrowserViewsSource.Log.NavigationEnded(
+            outcome, webError, (long)Stopwatch.GetElapsedTime(panel.NavigationStartedAt).TotalMilliseconds, workId);
+    }
+
     private void OnNavigationCompleted(PanelItem panel, CoreWebView2NavigationCompletedEventArgs args)
     {
+        EndNavigation(panel, args.IsSuccess ? "done" : "failed", args.WebErrorStatus.ToString());
         if (args.IsSuccess)
         {
             panel.UpgradedFrom = null;
@@ -173,6 +198,7 @@ public sealed partial class BrowserWindow
 
     private void OnPageNoticeAction(object sender, RoutedEventArgs e)
     {
+        using var gesture = new GestureScope(BrowserGesture.PageNotice);
         if (_shown is not { } panel) return;
         switch (panel.Notice)
         {
@@ -374,7 +400,12 @@ public sealed partial class BrowserWindow
                 _ => null,
             };
             _permissionOverride = null;
-            if (answer is not { } decision) return PermissionDecision.Block;
+            using var gesture = new GestureScope(BrowserGesture.PermissionAnswer);
+            if (answer is not { } decision)
+            {
+                gesture.Outcome = "dismissed";
+                return PermissionDecision.Block;
+            }
 
             _permissions.Set(origin, kind, decision);
             SavePermissions();
@@ -398,7 +429,11 @@ public sealed partial class BrowserWindow
 
     // ── Site settings ────────────────────────────────────────────────────────
 
-    private void OnSiteSettingsOpening(object sender, object e) => FillSiteSettings();
+    private void OnSiteSettingsOpening(object sender, object e)
+    {
+        using var gesture = new GestureScope(BrowserGesture.SiteSettingsOpen);
+        FillSiteSettings();
+    }
 
     private void FillSiteSettings()
     {
@@ -511,6 +546,7 @@ public sealed partial class BrowserWindow
 
     private void OnDownloadsOpening(object sender, object e)
     {
+        using var gesture = new GestureScope(BrowserGesture.DownloadsOpen);
         DownloadsPanel.Children.Clear();
         if (_downloads.Count == 0)
         {

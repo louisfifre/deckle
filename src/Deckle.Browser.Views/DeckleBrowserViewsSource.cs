@@ -28,6 +28,11 @@ public sealed class DeckleBrowserViewsSource : DeckleEventSource
     public const int EvtAdblockBuildFailed = 10;
     public const int EvtUboResourcesConverted = 11;
     public const int EvtUboResourcesFailed = 12;
+    public const int EvtGestureStarted = 13;
+    public const int EvtGestureEnded = 14;
+    public const int EvtNavigationStarted = 15;
+    public const int EvtNavigationEnded = 16;
+    public const int EvtActivitySummary = 17;
 
     [Event(EvtSessionSaveFailed,
            Level = EventLevel.Warning,
@@ -154,5 +159,75 @@ public sealed class DeckleBrowserViewsSource : DeckleEventSource
     {
         if (IsEnabled(EventLevel.Warning, (EventKeywords)Keywords.Lifecycle))
             WriteEvent(EvtUboResourcesFailed, stage, reason);
+    }
+
+    // A gesture of the person (a click, a key, a drag) begins and ends in the
+    // window: gesture_kind is a BrowserGesture's name, never a page. The end's
+    // duration is the time the window spent on it, so a slow gesture reads
+    // in the file alone.
+    [Event(EvtGestureStarted,
+           Level = EventLevel.Informational,
+           Keywords = (EventKeywords)Keywords.Lifecycle,
+           Tags = ObservationTags.Milestone,
+           Message = "A gesture started")]
+    public void GestureStarted(string gesture_kind, string work_id)
+    {
+        if (IsEnabled(EventLevel.Informational, (EventKeywords)Keywords.Lifecycle))
+            WriteEvent(EvtGestureStarted, gesture_kind, work_id);
+    }
+
+    [Event(EvtGestureEnded,
+           Level = EventLevel.Informational,
+           Keywords = (EventKeywords)Keywords.Lifecycle,
+           Tags = ObservationTags.Milestone,
+           Message = "A gesture ended")]
+    public void GestureEnded(string gesture_kind, string outcome, long duration_ms, string work_id)
+    {
+        if (IsEnabled(EventLevel.Informational, (EventKeywords)Keywords.Lifecycle))
+            WriteEvent(EvtGestureEnded, gesture_kind, outcome, duration_ms, work_id);
+    }
+
+    // A top-level navigation of a page starts and ends: the outcome and the
+    // engine's error status name, never the address.
+    [Event(EvtNavigationStarted,
+           Level = EventLevel.Informational,
+           Keywords = (EventKeywords)Keywords.Lifecycle,
+           Tags = ObservationTags.Milestone,
+           Message = "A page navigation started")]
+    public void NavigationStarted(string work_id)
+    {
+        if (IsEnabled(EventLevel.Informational, (EventKeywords)Keywords.Lifecycle))
+            WriteEvent(EvtNavigationStarted, work_id);
+    }
+
+    [Event(EvtNavigationEnded,
+           Level = EventLevel.Informational,
+           Keywords = (EventKeywords)Keywords.Lifecycle,
+           Tags = ObservationTags.Milestone,
+           Message = "A page navigation ended")]
+    public void NavigationEnded(string outcome, string web_error, long duration_ms, string work_id)
+    {
+        if (IsEnabled(EventLevel.Informational, (EventKeywords)Keywords.Lifecycle))
+            WriteEvent(EvtNavigationEnded, outcome, web_error, duration_ms, work_id);
+    }
+
+    // What the pages did many times a second since the last summary, counted
+    // and never logged one by one: the requests they made, how many the blocker
+    // stopped, the changes of their label, source and icon, the navigations that
+    // began, and the stalls of the window's UI thread (a tick of the 100 ms
+    // watch more than 200 ms late) with the worst lateness. Written every 10 s
+    // while any of it is not zero, and once more as a window closes.
+    [Event(EvtActivitySummary,
+           Level = EventLevel.Verbose,
+           Keywords = (EventKeywords)Keywords.Lifecycle,
+           Tags = ObservationTags.Summary,
+           Message = "interval_ms={0} | web_requests={1} | blocked_requests={2} | label_changes={3} | source_changes={4} | icon_changes={5} | navigations={6} | ui_stalls={7} | worst_stall_ms={8}")]
+    public void ActivitySummary(
+        long interval_ms, long web_requests, long blocked_requests, long label_changes, long source_changes,
+        long icon_changes, long navigations, long ui_stalls, long worst_stall_ms)
+    {
+        if (IsEnabled(EventLevel.Verbose, (EventKeywords)Keywords.Lifecycle))
+            WriteEvent(EvtActivitySummary, interval_ms, web_requests, blocked_requests, label_changes,
+                source_changes, icon_changes, navigations, ui_stalls, worst_stall_ms);
     }
 }
