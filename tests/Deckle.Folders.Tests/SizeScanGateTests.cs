@@ -5,7 +5,7 @@ namespace Deckle.Folders.Tests;
 
 // The gate that holds a scan midway for the self-check: the folders it names
 // wait, the rest is measured, and opening it lets the scan end whole.
-[Collection("folders provider singleton")]
+[Collection(FoldersProviderCollection.Name)]
 [Trait("Category", "integration")]
 public sealed class SizeScanGateTests
 {

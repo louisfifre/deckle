@@ -14,7 +14,7 @@ namespace Deckle.Notifications.Tests;
 // Serialized with DeckleNotificationsSourceTests (shared collection): every
 // Initialize call here emits on the shared provider the observability suite
 // listens to.
-[Collection("notification dispatcher singleton")]
+[Collection(NotificationDispatcherCollection.Name)]
 [Trait("Category", "unit")]
 public class NotificationDispatcherTests
 {

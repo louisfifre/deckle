@@ -12,7 +12,7 @@ namespace Deckle.Notifications.Tests;
 // the failures that follow add nothing, and the first success after them is
 // one recovery. Same collection as the other classes that count events on the
 // shared Deckle-Notifications provider.
-[Collection("notification dispatcher singleton")]
+[Collection(NotificationDispatcherCollection.Name)]
 [Trait("Category", "regression")]
 public class ToastWithdrawIncidentTests
 {

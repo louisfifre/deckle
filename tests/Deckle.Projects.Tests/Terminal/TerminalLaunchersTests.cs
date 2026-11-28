@@ -7,7 +7,7 @@ namespace Deckle.Projects.Tests;
 
 // The launchers with a process starter that starts nothing: the command lines
 // they build, and what they do when wt.exe is missing.
-[Collection("projects provider singleton")]
+[Collection(ProjectsProviderCollection.Name)]
 [Trait("Category", "unit")]
 public sealed class TerminalLaunchersTests
 {

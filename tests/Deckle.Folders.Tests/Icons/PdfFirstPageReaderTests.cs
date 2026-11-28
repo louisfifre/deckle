@@ -8,7 +8,7 @@ namespace Deckle.Folders.Tests;
 // every Windows 10 and 11 ships: the sample's PDF comes back at the size
 // asked, on white, with its coloured blocks; a file Windows cannot read
 // answers null and is told once, with no name or path.
-[Collection("folders provider singleton")]
+[Collection(FoldersProviderCollection.Name)]
 [Trait("Category", "integration")]
 public sealed class PdfFirstPageReaderTests
 {

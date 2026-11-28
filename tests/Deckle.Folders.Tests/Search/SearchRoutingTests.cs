@@ -7,7 +7,7 @@ namespace Deckle.Folders.Tests;
 // What a click on the search button offers, behind a probe the test answers
 // for: Command Palette present, absent, or a package list that cannot be
 // read.
-[Collection("folders provider singleton")]
+[Collection(FoldersProviderCollection.Name)]
 [Trait("Category", "observability")]
 public sealed class SearchRoutingTests
 {

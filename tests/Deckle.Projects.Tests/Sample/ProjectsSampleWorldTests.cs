@@ -6,7 +6,7 @@ namespace Deckle.Projects.Tests;
 // The sample world builds the shapes it promises, which the self-check
 // photographs: counts, tags, the manifest triple of P2, the estimates of P1 and
 // P2. Real repositories are made with git, so these skip without it.
-[Collection("projects provider singleton")]
+[Collection(ProjectsProviderCollection.Name)]
 [Trait("Category", "integration")]
 public sealed class ProjectsSampleWorldTests : IClassFixture<ProjectsSampleWorldTests.Built>
 {

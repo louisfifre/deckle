@@ -8,7 +8,7 @@ namespace Deckle.Vision.Tests;
 
 // Shares Deckle-Vision with the other class that listens to it: a listener sees every
 // emission of the process-wide provider, so the two classes never run side by side.
-[Collection("Vision observability")]
+[Collection(VisionObservabilityCollection.Name)]
 [Trait("Category", "observability")]
 public class DeckleVisionSourceTests
 {
