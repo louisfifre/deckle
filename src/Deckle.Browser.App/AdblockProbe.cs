@@ -38,7 +38,19 @@ internal static class AdblockProbe
             Deckle.Browser.Adblock.CosmeticResources cosmetic = engine.Cosmetic(url);
             await Note($"cosmetic answer for the address: {cosmetic.HideSelectors.Count} selectors, injected script {cosmetic.InjectedScript.Length} characters");
         }
+        (int uboCount, long uboMs) = browser.LastUboConversion;
+        await Note($"uBlock Origin resources converted by the web view in this run: {uboCount} in {uboMs} ms (0 when the kept copy was used)");
+        string ubo = Path.Combine(BrowserAdblock.FiltersDirectory, Deckle.Browser.FilterLists.UboConvertedFileName());
+        if (File.Exists(ubo))
+            await Note($"kept uBlock Origin resources: {System.Text.Json.JsonDocument.Parse(File.ReadAllText(ubo)).RootElement.GetArrayLength()}");
         await Note($"probe address: {url}");
+
+        // YouTube's consent wall: its own "refused" cookie, set in the probe only.
+        if (new Uri(url).Host.EndsWith("youtube.com", StringComparison.OrdinalIgnoreCase))
+        {
+            browser.SetProbeCookie("SOCS", "CAI", ".youtube.com");
+            await Note("consent-refused cookie (SOCS=CAI) set for youtube.com");
+        }
 
         bool navigated = await browser.NavigateAsync(new Uri(url));
         await Note($"navigated={navigated}");

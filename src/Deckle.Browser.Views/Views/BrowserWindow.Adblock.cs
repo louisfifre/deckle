@@ -126,6 +126,16 @@ public sealed partial class BrowserWindow
     /// <summary>Puts an engine of local rules in force in place of the lists'.</summary>
     public static void UseAdblockEngine(AdblockEngine engine) => BrowserAdblock.UseEngine(engine);
 
+    /// <summary>Sets a cookie in the shown page's profile (the by-hand probe's consent cookie).</summary>
+    public void SetProbeCookie(string name, string value, string domain)
+    {
+        CoreWebView2? core = _shown?.View?.CoreWebView2;
+        if (core is null) return;
+        CoreWebView2Cookie cookie = core.CookieManager.CreateCookie(name, value, domain, "/");
+        cookie.IsSecure = true;
+        core.CookieManager.AddOrUpdateCookie(cookie);
+    }
+
     /// <summary>The requests blocked for the shown page so far.</summary>
     public int BlockedCount => _shown?.BlockedCount ?? 0;
 
