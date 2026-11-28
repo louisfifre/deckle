@@ -858,6 +858,7 @@ _Generated from `git ls-files` — do not edit by hand._
 │   │   ├── DownloadSafety.cs
 │   │   ├── FaviconCache.cs
 │   │   ├── FilterLists.cs
+│   │   ├── History.cs
 │   │   ├── HttpsFirst.cs
 │   │   ├── RegistrableDomain.cs
 │   │   ├── RequestKind.cs
@@ -2891,6 +2892,7 @@ _Generated from `git ls-files` — do not edit by hand._
 │   │   ├── DownloadSafetyTests.cs
 │   │   ├── FaviconCacheTests.cs
 │   │   ├── FilterListsTests.cs
+│   │   ├── HistoryTests.cs
 │   │   ├── HttpsFirstTests.cs
 │   │   ├── RegistrableDomainTests.cs
 │   │   ├── RequestKindTests.cs
