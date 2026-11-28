@@ -45,6 +45,7 @@ internal sealed class BrowserWalkContext(
 //   tabs-rail     the same with the panel in its rail
 //   permission    a site's question for the location, open
 //   downloads     the downloads flyout, empty
+//   adblock       a local page whose advertisement the blocker stopped
 //
 // The tabs walk (TabsWalk.cs) then measures what eight suspended pinned sites
 // cost, how long one takes to wake, that the session survives a restart and
@@ -54,7 +55,7 @@ internal sealed class BrowserWalkContext(
 // log event: a count and a number, no address.
 internal static class BrowserSelfCheck
 {
-    public static readonly string[] Slugs = ["window", "window-rail", "page-xaml", "page-preview", "tabs", "tabs-rail", "permission", "downloads"];
+    public static readonly string[] Slugs = ["window", "window-rail", "page-xaml", "page-preview", "tabs", "tabs-rail", "permission", "downloads", "adblock"];
 
     private const string PageHtml =
         "<!doctype html><html><head><meta charset=\"utf-8\"><title>Self-check page</title></head>"
@@ -79,9 +80,24 @@ internal static class BrowserSelfCheck
         }
         bool Wants(string slug) => only is null || only == slug;
 
+        // The blocker's engine is built from one local rule, so the run reaches
+        // no list server; the probe by hand (AdblockProbe) is the one run that
+        // lets the real lists load. Pinned before the window exists, which
+        // would otherwise start loading them.
+        string? probeUrl = AdblockProbe.Url;
+        if (probeUrl is null) BrowserWindow.UseAdblockEngine(AdblockWalk.LocalEngine());
+
         var browser = (BrowserWindow)context.Host.Ensure("browser");
         OffscreenWindow.ShowInactive(browser);
         bool loaded = await WaitUntilLoadedAsync(browser);
+
+        if (probeUrl is not null)
+        {
+            // Only the probe: the other walks expect the local rule's engine.
+            Step("browser/probe");
+            await AdblockProbe.RunAsync(context, browser, probeUrl, loaded);
+            return;
+        }
 
         // A local page, in a folder under the output folder.
         string pages = Path.Combine(outputFolder, "pages");
@@ -186,6 +202,12 @@ internal static class BrowserSelfCheck
         {
             Step("browser/security");
             await SecurityWalk.RunAsync(context, browser, Wants("permission"), Wants("downloads"), loaded);
+        }
+
+        if (only is null or "adblock")
+        {
+            Step("browser/adblock");
+            await AdblockWalk.RunAsync(context, browser, Wants("adblock"), loaded);
         }
     }
 

@@ -98,6 +98,8 @@ public sealed partial class BrowserWindow
             return;
         }
 
+        AdblockNavigationStarting(panel, core, uri, args.IsRedirected);
+
         // A navigation to anywhere but the upgraded address ends what the notice
         // was about.
         bool sameSite = panel.UpgradedFrom is { } from

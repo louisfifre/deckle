@@ -871,6 +871,8 @@ _Generated from `git ls-files` — do not edit by hand._
 │   │   ├── Deckle.Browser.Adblock.csproj
 │   │   └── NativeAdblock.cs
 │   ├── Deckle.Browser.App/
+│   │   ├── AdblockProbe.cs
+│   │   ├── AdblockWalk.cs
 │   │   ├── app.manifest
 │   │   ├── App.SelfCheck.cs
 │   │   ├── App.xaml
@@ -888,7 +890,9 @@ _Generated from `git ls-files` — do not edit by hand._
 │   │   │   └── en-US/
 │   │   │       └── Resources.resw
 │   │   ├── Views/
+│   │   │   ├── BrowserAdblock.cs
 │   │   │   ├── BrowserText.cs
+│   │   │   ├── BrowserWindow.Adblock.cs
 │   │   │   ├── BrowserWindow.Security.cs
 │   │   │   ├── BrowserWindow.xaml
 │   │   │   ├── BrowserWindow.xaml.cs

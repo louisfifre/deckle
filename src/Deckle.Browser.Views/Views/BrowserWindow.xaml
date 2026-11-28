@@ -116,16 +116,27 @@
                         <Grid.ColumnDefinitions>
                             <ColumnDefinition Width="*" />
                             <ColumnDefinition Width="Auto" />
+                            <ColumnDefinition Width="Auto" />
                         </Grid.ColumnDefinitions>
                         <TextBox x:Name="AddressBox"
                                  x:Uid="BrowserAddressBox"
                                  GotFocus="OnAddressGotFocus"
                                  LostFocus="OnAddressLostFocus"
                                  KeyDown="OnAddressKeyDown" />
+                        <!-- The blocker's state: a shield whose tooltip says how
+                             many requests were blocked on this page. A state,
+                             not a toggle. -->
+                        <FontIcon x:Name="AdblockShield"
+                                  Grid.Column="1"
+                                  Glyph="&#xEA18;" FontSize="16"
+                                  Margin="4,0,4,0"
+                                  VerticalAlignment="Center"
+                                  Opacity="0.55"
+                                  Foreground="{ThemeResource AccentTextFillColorPrimaryBrush}" />
                         <!-- Site settings: the answers kept for the page's
                              site, each with a Remove. -->
                         <Button x:Name="SiteSettingsButton"
-                                Grid.Column="1"
+                                Grid.Column="2"
                                 x:Uid="BrowserSiteSettingsButton"
                                 Style="{StaticResource SubtleButtonStyle}"
                                 Width="32" Height="32" Padding="0">

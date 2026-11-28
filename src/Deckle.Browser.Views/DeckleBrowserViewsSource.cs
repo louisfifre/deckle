@@ -23,6 +23,9 @@ public sealed class DeckleBrowserViewsSource : DeckleEventSource
     public const int EvtEngineVersion = 5;
     public const int EvtTrackingPreventionFailed = 6;
     public const int EvtProcessFailed = 7;
+    public const int EvtAdblockEngineBuilt = 8;
+    public const int EvtAdblockListFailed = 9;
+    public const int EvtAdblockBuildFailed = 10;
 
     [Event(EvtSessionSaveFailed,
            Level = EventLevel.Warning,
@@ -95,5 +98,37 @@ public sealed class DeckleBrowserViewsSource : DeckleEventSource
     {
         if (IsEnabled(EventLevel.Warning, (EventKeywords)Keywords.Lifecycle))
             WriteEvent(EvtProcessFailed, process_kind);
+    }
+
+    // The ad blocker's engine was built from the lists kept on disk: two numbers.
+    [Event(EvtAdblockEngineBuilt,
+           Level = EventLevel.Informational,
+           Keywords = (EventKeywords)Keywords.Lifecycle,
+           Message = "rule_count={0} | duration_ms={1}")]
+    public void AdblockEngineBuilt(int rule_count, long duration_ms)
+    {
+        if (IsEnabled(EventLevel.Informational, (EventKeywords)Keywords.Lifecycle))
+            WriteEvent(EvtAdblockEngineBuilt, rule_count, duration_ms);
+    }
+
+    // A filter list could not be fetched: the list's own name (EasyList...), never a page.
+    [Event(EvtAdblockListFailed,
+           Level = EventLevel.Warning,
+           Keywords = (EventKeywords)Keywords.Lifecycle,
+           Message = "A filter list could not be downloaded\nlist_name={0}")]
+    public void AdblockListFailed(string list_name)
+    {
+        if (IsEnabled(EventLevel.Warning, (EventKeywords)Keywords.Lifecycle))
+            WriteEvent(EvtAdblockListFailed, list_name);
+    }
+
+    [Event(EvtAdblockBuildFailed,
+           Level = EventLevel.Error,
+           Keywords = (EventKeywords)Keywords.Lifecycle,
+           Message = "The ad blocker's engine could not be built\nex_type={0}")]
+    public void AdblockBuildFailed(string ex_type)
+    {
+        if (IsEnabled(EventLevel.Error, (EventKeywords)Keywords.Lifecycle))
+            WriteEvent(EvtAdblockBuildFailed, ex_type);
     }
 }

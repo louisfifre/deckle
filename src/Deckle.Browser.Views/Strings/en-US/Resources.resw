@@ -141,6 +141,12 @@
   <data name="BrowserDownloadsButton.AutomationProperties.Name" xml:space="preserve">
     <value>Downloads</value>
   </data>
+  <data name="Adblock_Blocked" xml:space="preserve">
+    <value>{0} blocked on this page</value>
+  </data>
+  <data name="Adblock_Loading" xml:space="preserve">
+    <value>The ad blocker is getting its lists</value>
+  </data>
   <data name="Not_Secure" xml:space="preserve">
     <value>Not secure</value>
   </data>

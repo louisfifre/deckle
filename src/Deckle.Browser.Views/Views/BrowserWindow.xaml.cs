@@ -106,6 +106,9 @@ public sealed partial class BrowserWindow : Window
         string? icoPath = IconAssets.ResolvePath(false);
         if (icoPath is not null) AppWindow.SetIcon(icoPath);
 
+        // The ad blocker's engine is built on a background thread, once.
+        BrowserAdblock.Start();
+
         _pane = NavigationPane.Attach(Nav, WindowKey);
         _pane.Changed += ApplyPaneState;
         Nav.SizeChanged += (_, _) => FitPanelHeight();
@@ -374,6 +377,7 @@ public sealed partial class BrowserWindow : Window
     private void Wire(PanelItem panel, CoreWebView2 core)
     {
         SecurityWire(panel, core);
+        AdblockWire(panel, core);
         core.DocumentTitleChanged += (_, _) =>
         {
             panel.Item.Title = core.DocumentTitle;
@@ -600,6 +604,7 @@ public sealed partial class BrowserWindow : Window
         _current = _shown is not null && Uri.TryCreate(_shown.Item.Url, UriKind.Absolute, out Uri? uri) ? uri : null;
         if (AddressBox.FocusState == FocusState.Unfocused)
             AddressBox.Text = AddressText();
+        UpdateShield();
         SiteSettingsButton.IsEnabled = SiteName.Display(_current).Length > 0;
         UpdateNotice();
         UpdateHistoryButtons();

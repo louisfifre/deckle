@@ -35,6 +35,19 @@ public sealed class PanelItem(BrowserItem item) : INotifyPropertyChanged
     /// Kept in memory for the window only; never logged.</summary>
     public Uri? UpgradedFrom { get; set; }
 
+    /// <summary>The address of the top-level page being loaded or shown, the
+    /// blocker's "source" for every request the page makes. Memory only.</summary>
+    public string PageUrl { get; set; } = "";
+
+    /// <summary>Requests blocked since the page's navigation started.</summary>
+    public int BlockedCount { get; set; }
+
+    /// <summary>The id of the script run at document creation for the cosmetic
+    /// filters of the current navigation, and the ticket that tells a stale
+    /// navigation's script from the current one's.</summary>
+    public string? CosmeticScriptId { get; set; }
+    public int CosmeticTicket { get; set; }
+
     /// <summary>The environment generation the item's web view was made in: a
     /// browser process failure invalidates the whole generation.</summary>
     public int Generation { get; set; }
