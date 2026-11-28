@@ -104,6 +104,13 @@ _Generated from `git ls-files` — do not edit by hand._
 │   ├── secondary.png
 │   └── sheet.html
 ├── native/
+│   ├── Deckle.Browser.Adblock/
+│   │   ├── src/
+│   │   │   └── lib.rs
+│   │   ├── tests/
+│   │   │   └── engine.rs
+│   │   ├── Cargo.lock
+│   │   └── Cargo.toml
 │   ├── Deckle.Shell.Taskbar.Native/
 │   │   ├── patches/
 │   │   │   ├── code_write.cpp

@@ -1,0 +1,17 @@
+[package]
+name = "deckle_adblock"
+version = "0.1.0"
+edition = "2024"
+
+[dependencies]
+adblock = "0.13.6"
+serde_json = "1.0.154"
+
+[lib]
+crate-type = ["cdylib", "rlib"]
+
+[profile.release]
+opt-level = "s"
+lto = true
+panic = "abort"
+strip = true
