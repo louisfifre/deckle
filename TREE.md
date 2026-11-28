@@ -323,6 +323,9 @@ _Generated from `git ls-files` — do not edit by hand._
 │   ├── ambient-lighting/
 │   │   ├── deckle-ambient-lighting.md
 │   │   └── GLOSSARY.md
+│   ├── browser/
+│   │   ├── deckle-browser.md
+│   │   └── GLOSSARY.md
 │   ├── dictation/
 │   │   ├── deckle-dictation.md
 │   │   └── GLOSSARY.md

@@ -33,6 +33,7 @@
 6. [Save what you copied as a file in a folder, with one paste](paste-to-folder/deckle-paste-to-folder.md)
 7. [Light the room with what your screen shows, vivid or realistic, fast or slow](ambient-lighting/deckle-ambient-lighting.md)
 8. [Tell what your home holds in your own words, and keep its whole inventory in your own space](home-inventory/deckle-home-inventory.md)
+9. [Browse the web in a window of your own, with your sites at hand and the ads gone](browser/deckle-browser.md)
 
 ### What every window rests on
 
