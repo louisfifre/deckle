@@ -9,25 +9,29 @@ public sealed class SiteNameTests
     [Theory]
     [InlineData("https://example.com/a/b?c=d", "example.com")]
     [InlineData("http://example.com", "example.com")]
-    [InlineData("https://mail.example.com/", "mail.example.com")]
+    [InlineData("https://mail.example.com/", "example.com")]
+    [InlineData("https://mail.example.co.uk/", "example.co.uk")]
     [InlineData("https://localhost:5000/", "localhost")]
-    public void AWebPageShowsItsHost(string uri, string expected)
-    {
-        Assert.Equal(expected, SiteName.Display(new Uri(uri)));
-    }
-
-    [Theory]
     [InlineData("https://www.example.com/", "example.com")]
-    [InlineData("https://WWW.Example.com/", "example.com")]
-    public void ALeadingWwwIsDropped(string uri, string expected)
+    public void AWebPageShowsItsRegistrableDomainAlone(string uri, string expected)
     {
         Assert.Equal(expected, SiteName.Display(new Uri(uri)));
     }
 
     [Fact]
-    public void WwwInTheMiddleOfAHostStays()
+    public void AHostWithNonAsciiCharactersShowsItsPunycodeForm()
     {
-        Assert.Equal("a.www.example.com", SiteName.Display(new Uri("https://a.www.example.com/")));
+        string shown = SiteName.Display(new Uri("https://www.bücher.example/"));
+        Assert.Equal("xn--bcher-kva.example", shown);
+        Assert.All(shown, c => Assert.True(char.IsAscii(c)));
+    }
+
+    [Fact]
+    public void ALookAlikeInAnotherAlphabetIsNeverShownAsTheHostItImitates()
+    {
+        // Cyrillic "a" in place of the Latin one.
+        string shown = SiteName.Display(new Uri("https://аpple.com/"));
+        Assert.StartsWith("xn--", shown);
     }
 
     [Theory]
@@ -43,5 +47,14 @@ public sealed class SiteNameTests
     public void NoPageShowsNothing()
     {
         Assert.Equal("", SiteName.Display(null));
+    }
+
+    [Theory]
+    [InlineData("http://example.com/", true)]
+    [InlineData("https://example.com/", false)]
+    [InlineData("about:blank", false)]
+    public void OnlyPlainHttpIsNotSecure(string uri, bool expected)
+    {
+        Assert.Equal(expected, SiteName.IsNotSecure(new Uri(uri)));
     }
 }

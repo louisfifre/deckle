@@ -842,13 +842,20 @@ _Generated from `git ls-files` — do not edit by hand._
 │   │   ├── ParagraphCorrectionSection.cs
 │   │   └── SettingsSearch.cs
 │   ├── Deckle.Browser/
+│   │   ├── Data/
+│   │   │   └── public_suffix_list.dat
 │   │   ├── AddressInput.cs
 │   │   ├── BrowserItem.cs
 │   │   ├── BrowserSession.cs
 │   │   ├── Deckle.Browser.csproj
+│   │   ├── DownloadSafety.cs
 │   │   ├── FaviconCache.cs
+│   │   ├── HttpsFirst.cs
+│   │   ├── RegistrableDomain.cs
 │   │   ├── SessionStore.cs
-│   │   └── SiteName.cs
+│   │   ├── SiteName.cs
+│   │   ├── SitePermissions.cs
+│   │   └── WebEngine.cs
 │   ├── Deckle.Browser.App/
 │   │   ├── app.manifest
 │   │   ├── App.SelfCheck.cs
@@ -2849,9 +2856,14 @@ _Generated from `git ls-files` — do not edit by hand._
 │   │   ├── AddressInputTests.cs
 │   │   ├── BrowserSessionTests.cs
 │   │   ├── Deckle.Browser.Tests.csproj
+│   │   ├── DownloadSafetyTests.cs
 │   │   ├── FaviconCacheTests.cs
+│   │   ├── HttpsFirstTests.cs
+│   │   ├── RegistrableDomainTests.cs
 │   │   ├── SessionStoreTests.cs
-│   │   └── SiteNameTests.cs
+│   │   ├── SiteNameTests.cs
+│   │   ├── SitePermissionsTests.cs
+│   │   └── WebEngineTests.cs
 │   ├── Deckle.Catalog.Tests/
 │   │   ├── CubicBezierTests.cs
 │   │   ├── CurveEndpointLimitsTests.cs

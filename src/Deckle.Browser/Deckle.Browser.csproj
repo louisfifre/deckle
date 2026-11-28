@@ -21,4 +21,9 @@
          AnyCPU keeps it loadable from any process, x64 Deckle included. -->
     <PlatformTarget>AnyCPU</PlatformTarget>
   </PropertyGroup>
+
+  <!-- The Public Suffix List (MPL-2.0, see NOTICE.md), read by RegistrableDomain. -->
+  <ItemGroup>
+    <EmbeddedResource Include="Data\public_suffix_list.dat" LogicalName="Deckle.Browser.public_suffix_list.dat" />
+  </ItemGroup>
 </Project>
