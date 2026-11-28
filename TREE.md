@@ -859,7 +859,8 @@ _Generated from `git ls-files` — do not edit by hand._
 │   │   ├── Composition.cs
 │   │   ├── Deckle.Browser.App.csproj
 │   │   ├── DeckleBrowserAppSource.cs
-│   │   └── Program.cs
+│   │   ├── Program.cs
+│   │   └── TabsWalk.cs
 │   ├── Deckle.Browser.Views/
 │   │   ├── Strings/
 │   │   │   └── en-US/

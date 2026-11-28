@@ -41,12 +41,18 @@ internal sealed class BrowserWalkContext(
 //   window-rail   the same with the panel in its rail
 //   page-xaml     the window's XAML content rendered by the framework
 //   page-preview  the web view's own drawing (CapturePreviewAsync)
+//   tabs          the window with eight pinned sites and a tab, panel open
+//   tabs-rail     the same with the panel in its rail
+//
+// The tabs walk (TabsWalk.cs) then measures what eight suspended pinned sites
+// cost, how long one takes to wake, that the session survives a restart and
+// that a page cannot open a window by itself.
 //
 // The memory figure goes in measures.txt beside the report and in one Verbose
 // log event: a count and a number, no address.
 internal static class BrowserSelfCheck
 {
-    public static readonly string[] Slugs = ["window", "window-rail", "page-xaml", "page-preview"];
+    public static readonly string[] Slugs = ["window", "window-rail", "page-xaml", "page-preview", "tabs", "tabs-rail"];
 
     private const string PageHtml =
         "<!doctype html><html><head><meta charset=\"utf-8\"><title>Self-check page</title></head>"
@@ -167,6 +173,12 @@ internal static class BrowserSelfCheck
             string.Create(CultureInfo.InvariantCulture,
                 $"web view private memory: {megabytes:0.0} MB in {processes} processes (local page loaded, navigation {loadMs} ms){Environment.NewLine}"));
         DeckleBrowserAppSource.Log.WebViewMeasured(processes, bytes);
+
+        if (only is null || only is "tabs" or "tabs-rail")
+        {
+            Step("browser/tabs");
+            await TabsWalk.RunAsync(context, browser, Wants("tabs"), Wants("tabs-rail"), loaded);
+        }
     }
 
     // The width and height an IHDR chunk gives, in the first 24 bytes of a PNG.
