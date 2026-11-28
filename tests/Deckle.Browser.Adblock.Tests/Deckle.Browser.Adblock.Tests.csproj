@@ -1,0 +1,7 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <!-- Loads the real deckle_adblock.dll: the engine is built from local rules only, no network.
+       The DLL reaches this suite's output through the project reference (a Content item). -->
+  <ItemGroup>
+    <ProjectReference Include="..\..\src\Deckle.Browser.Adblock\Deckle.Browser.Adblock.csproj" />
+  </ItemGroup>
+</Project>

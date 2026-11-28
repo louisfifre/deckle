@@ -1,0 +1,42 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <!-- Deckle Browser's ad blocking engine: Brave's adblock-rust (native/Deckle.Browser.Adblock,
+       a Rust cdylib behind a C ABI) and its safe managed wrapper. Plain .NET: no WinUI and no
+       WebView2 type, so the engine is testable without a window. The build compiles the crate
+       with cargo and lands deckle_adblock.dll beside every app that references this project. -->
+  <PropertyGroup>
+    <RootNamespace>Deckle.Browser.Adblock</RootNamespace>
+    <NativeCrateDir>$(MSBuildThisFileDirectory)..\..\native\Deckle.Browser.Adblock\</NativeCrateDir>
+    <CargoTargetDir>$([MSBuild]::NormalizeDirectory('$(MSBuildThisFileDirectory)..\..\artifacts\cargo'))</CargoTargetDir>
+    <!-- No trailing backslash on a quoted command-line path: it would escape the closing quote. -->
+    <CargoTargetDirArg>$(CargoTargetDir.TrimEnd('\'))</CargoTargetDirArg>
+    <NativeAdblockDll>$(CargoTargetDir)release\deckle_adblock.dll</NativeAdblockDll>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <NativeCrateInput Include="$(NativeCrateDir)src\**\*.rs;$(NativeCrateDir)Cargo.toml;$(NativeCrateDir)Cargo.lock" />
+  </ItemGroup>
+
+  <!-- The DLL flows to the output directory of this project and, as a Content item, of the
+       project that references it (DeckleBrowser.exe). -->
+  <ItemGroup>
+    <Content Include="$(NativeAdblockDll)" Link="deckle_adblock.dll">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+      <Visible>false</Visible>
+    </Content>
+  </ItemGroup>
+
+  <!-- Incremental: cargo runs only when the crate's sources, Cargo.toml or Cargo.lock are newer
+       than the DLL it produced. -->
+  <Target Name="BuildNativeAdblock"
+          BeforeTargets="BeforeBuild;AssignTargetPaths"
+          Inputs="@(NativeCrateInput)"
+          Outputs="$(NativeAdblockDll)">
+    <Exec Command="cargo --version" ConsoleToMSBuild="true" StandardOutputImportance="low" IgnoreExitCode="true">
+      <Output TaskParameter="ExitCode" PropertyName="_CargoProbeExitCode" />
+    </Exec>
+    <Error Condition="'$(_CargoProbeExitCode)' != '0'"
+           Text="cargo was not found on PATH (exit code $(_CargoProbeExitCode)): Deckle Browser's ad blocker is a Rust crate (native/Deckle.Browser.Adblock) built with cargo. Install the Rust toolchain (rustup) and build again." />
+    <Exec Command="cargo build --release --locked --manifest-path &quot;$(NativeCrateDir)Cargo.toml&quot; --target-dir &quot;$(CargoTargetDirArg)&quot;" />
+    <Touch Files="$(NativeAdblockDll)" />
+  </Target>
+</Project>

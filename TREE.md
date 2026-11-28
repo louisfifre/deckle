@@ -865,6 +865,11 @@ _Generated from `git ls-files` — do not edit by hand._
 │   │   ├── SiteName.cs
 │   │   ├── SitePermissions.cs
 │   │   └── WebEngine.cs
+│   ├── Deckle.Browser.Adblock/
+│   │   ├── .rustc_info.json
+│   │   ├── AdblockEngine.cs
+│   │   ├── Deckle.Browser.Adblock.csproj
+│   │   └── NativeAdblock.cs
 │   ├── Deckle.Browser.App/
 │   │   ├── app.manifest
 │   │   ├── App.SelfCheck.cs
@@ -2860,6 +2865,9 @@ _Generated from `git ls-files` — do not edit by hand._
 │   ├── Deckle.Autocorrect.Views.Tests/
 │   │   ├── Deckle.Autocorrect.Views.Tests.csproj
 │   │   └── ParagraphCorrectionPageTests.cs
+│   ├── Deckle.Browser.Adblock.Tests/
+│   │   ├── AdblockEngineTests.cs
+│   │   └── Deckle.Browser.Adblock.Tests.csproj
 │   ├── Deckle.Browser.App.Tests/
 │   │   ├── BrowserAppIdentityTests.cs
 │   │   ├── BrowserLoggingGuardTests.cs
