@@ -58,6 +58,9 @@ public sealed partial class BrowserWindow
             AddressBox.Text = text;
             TypeAddressNote = "text property (the peer offers no value pattern)";
         }
+        // Typing makes the list of suggestions; a text set from code is not
+        // typing to the box, so the list is made as the typing handler makes it.
+        UpdateSuggestions(text);
         return AddressBox.Text == text;
     }
 
@@ -67,6 +70,8 @@ public sealed partial class BrowserWindow
     /// <summary>Enter in the field. Not a key: the handler's own commit.</summary>
     public void PressEnterInAddressForReview() => CommitAddress();
 
+    // (The walk's choice of a suggestion is in BrowserWindow.ComfortReview.)
+
     /// <summary>Escape in the field. Not a key: the handler's own cancel.</summary>
     public void PressEscapeInAddressForReview() => CancelAddress();
 
@@ -74,7 +79,7 @@ public sealed partial class BrowserWindow
     public string AddressTextForReview => AddressBox.Text;
 
     /// <summary>Whether the address field has the focus.</summary>
-    public bool AddressHasFocusForReview => AddressBox.FocusState != FocusState.Unfocused;
+    public bool AddressHasFocusForReview => AddressFocused;
 
     // ── The button row ───────────────────────────────────────────────────
 

@@ -5,12 +5,10 @@
     xmlns:local="using:Deckle.Browser.Views"
     Title="Deckle Browser">
 
+    <!-- The shortcuts are not XAML accelerators: they do not fire while the
+         web content has the keyboard focus. The window's own key handling
+         (BrowserWindow.Shortcuts) takes them from the Shortcuts table. -->
     <Grid x:Name="RootGrid">
-        <Grid.KeyboardAccelerators>
-            <KeyboardAccelerator Key="T" Modifiers="Control" Invoked="OnNewTabAccelerator" />
-            <KeyboardAccelerator Key="W" Modifiers="Control" Invoked="OnCloseTabAccelerator" />
-            <KeyboardAccelerator Key="N" Modifiers="Control,Shift" Invoked="OnPrivateWindowAccelerator" />
-        </Grid.KeyboardAccelerators>
 
         <!-- No title bar of its own: the panel's button row stands in for it
              (SetTitleBar) and the caption buttons sit at the top right, above
@@ -61,6 +59,7 @@
                         <RowDefinition Height="Auto" />
                         <RowDefinition Height="Auto" />
                         <RowDefinition Height="*" />
+                        <RowDefinition Height="Auto" />
                         <RowDefinition Height="Auto" />
                     </Grid.RowDefinitions>
 
@@ -118,11 +117,30 @@
                             <ColumnDefinition Width="Auto" />
                             <ColumnDefinition Width="Auto" />
                         </Grid.ColumnDefinitions>
-                        <TextBox x:Name="AddressBox"
-                                 x:Uid="BrowserAddressBox"
-                                 GotFocus="OnAddressGotFocus"
-                                 LostFocus="OnAddressLostFocus"
-                                 KeyDown="OnAddressKeyDown" />
+                        <!-- Suggestions come from the pages visited, kept on
+                             this machine: a line is the title and the domain.
+                             Choosing one goes to its address. -->
+                        <AutoSuggestBox x:Name="AddressBox"
+                                        x:Uid="BrowserAddressBox"
+                                        TextMemberPath="Url"
+                                        UpdateTextOnSelect="False"
+                                        GotFocus="OnAddressGotFocus"
+                                        LostFocus="OnAddressLostFocus"
+                                        KeyDown="OnAddressKeyDown"
+                                        TextChanged="OnAddressTextChanged"
+                                        QuerySubmitted="OnAddressQuerySubmitted">
+                            <AutoSuggestBox.ItemTemplate>
+                                <DataTemplate x:DataType="local:SuggestionLine">
+                                    <StackPanel Spacing="0" Padding="0,2,0,2">
+                                        <TextBlock Text="{x:Bind Title}" TextTrimming="CharacterEllipsis" />
+                                        <TextBlock Text="{x:Bind Domain}"
+                                                   Style="{StaticResource CaptionTextBlockStyle}"
+                                                   Foreground="{ThemeResource TextFillColorSecondaryBrush}"
+                                                   TextTrimming="CharacterEllipsis" />
+                                    </StackPanel>
+                                </DataTemplate>
+                            </AutoSuggestBox.ItemTemplate>
+                        </AutoSuggestBox>
                         <!-- The blocker's state: a shield whose tooltip says how
                              many requests were blocked on this page. A state,
                              not a toggle. -->
@@ -295,7 +313,98 @@
 
                     <!-- The foot, the last row of the panel: the tabs' list
                          above it takes the height left. -->
-                    <Grid x:Name="PanelFoot" Grid.Row="5" Margin="4,4,4,8" RowSpacing="2">
+                    <!-- The media card: shown while any page plays sound, above
+                         the foot. A Windows 11 card: the title and who plays
+                         it, how far in, the transport and the page's sound. -->
+                    <Border x:Name="MediaCard"
+                            Grid.Row="5"
+                            Margin="8,4,8,4"
+                            Padding="12,8,12,8"
+                            Visibility="Collapsed"
+                            Background="{ThemeResource CardBackgroundFillColorDefaultBrush}"
+                            BorderBrush="{ThemeResource CardStrokeColorDefaultBrush}"
+                            BorderThickness="1"
+                            CornerRadius="{ThemeResource OverlayCornerRadius}">
+                        <StackPanel Spacing="4">
+                            <Grid ColumnSpacing="4">
+                                <Grid.ColumnDefinitions>
+                                    <ColumnDefinition Width="*" />
+                                    <ColumnDefinition Width="Auto" />
+                                </Grid.ColumnDefinitions>
+                                <!-- The title: a click selects the item that plays. -->
+                                <Button x:Name="MediaTitleButton"
+                                        x:Uid="BrowserMediaTitleButton"
+                                        Style="{StaticResource SubtleButtonStyle}"
+                                        Padding="4,2,4,2"
+                                        HorizontalAlignment="Stretch"
+                                        HorizontalContentAlignment="Left"
+                                        Click="OnMediaTitleClick">
+                                    <StackPanel>
+                                        <TextBlock x:Name="MediaTitleText"
+                                                   Style="{StaticResource BodyStrongTextBlockStyle}"
+                                                   TextTrimming="CharacterEllipsis" />
+                                        <TextBlock x:Name="MediaArtistText"
+                                                   Style="{StaticResource CaptionTextBlockStyle}"
+                                                   Foreground="{ThemeResource TextFillColorSecondaryBrush}"
+                                                   TextTrimming="CharacterEllipsis" />
+                                    </StackPanel>
+                                </Button>
+                                <Button x:Name="MediaCloseButton"
+                                        Grid.Column="1"
+                                        x:Uid="BrowserMediaCloseButton"
+                                        Style="{StaticResource SubtleButtonStyle}"
+                                        Width="28" Height="28" Padding="0"
+                                        VerticalAlignment="Top"
+                                        Click="OnMediaCloseClick">
+                                    <FontIcon Glyph="&#xE711;" FontSize="10" />
+                                </Button>
+                            </Grid>
+                            <ProgressBar x:Name="MediaProgress" Minimum="0" Maximum="1" Value="0" />
+                            <Grid>
+                                <TextBlock x:Name="MediaPositionText"
+                                           Style="{StaticResource CaptionTextBlockStyle}"
+                                           Foreground="{ThemeResource TextFillColorSecondaryBrush}" />
+                                <TextBlock x:Name="MediaDurationText"
+                                           HorizontalAlignment="Right"
+                                           Style="{StaticResource CaptionTextBlockStyle}"
+                                           Foreground="{ThemeResource TextFillColorSecondaryBrush}" />
+                            </Grid>
+                            <StackPanel Orientation="Horizontal" HorizontalAlignment="Center" Spacing="2">
+                                <Button x:Name="MediaPreviousButton" x:Uid="BrowserMediaPreviousButton"
+                                        Style="{StaticResource SubtleButtonStyle}"
+                                        Width="36" Height="32" Padding="0"
+                                        Click="OnMediaPreviousClick">
+                                    <FontIcon Glyph="&#xE892;" FontSize="14" />
+                                </Button>
+                                <Button x:Name="MediaPlayPauseButton" x:Uid="BrowserMediaPlayPauseButton"
+                                        Style="{StaticResource SubtleButtonStyle}"
+                                        Width="36" Height="32" Padding="0"
+                                        Click="OnMediaPlayPauseClick">
+                                    <FontIcon x:Name="MediaPlayPauseIcon" Glyph="&#xE769;" FontSize="16" />
+                                </Button>
+                                <Button x:Name="MediaNextButton" x:Uid="BrowserMediaNextButton"
+                                        Style="{StaticResource SubtleButtonStyle}"
+                                        Width="36" Height="32" Padding="0"
+                                        Click="OnMediaNextClick">
+                                    <FontIcon Glyph="&#xE893;" FontSize="14" />
+                                </Button>
+                                <Button x:Name="MediaMuteButton" x:Uid="BrowserMediaMuteButton"
+                                        Style="{StaticResource SubtleButtonStyle}"
+                                        Width="36" Height="32" Padding="0"
+                                        Click="OnMediaMuteClick">
+                                    <FontIcon x:Name="MediaMuteIcon" Glyph="&#xE767;" FontSize="14" />
+                                </Button>
+                                <Button x:Name="MediaPipButton" x:Uid="BrowserMediaPipButton"
+                                        Style="{StaticResource SubtleButtonStyle}"
+                                        Width="36" Height="32" Padding="0"
+                                        Click="OnMediaPipClick">
+                                    <FontIcon Glyph="&#xEE49;" FontSize="14" />
+                                </Button>
+                            </StackPanel>
+                        </StackPanel>
+                    </Border>
+
+                    <Grid x:Name="PanelFoot" Grid.Row="6" Margin="4,4,4,8" RowSpacing="2">
                         <Grid.ColumnDefinitions>
                             <ColumnDefinition Width="Auto" />
                             <ColumnDefinition Width="*" />
@@ -382,6 +491,52 @@
                             </InfoBar.ActionButton>
                         </InfoBar>
                         <Grid x:Name="PageHost" Grid.Row="1" />
+                        <!-- Find in page (Ctrl+F): at the top right of the card.
+                             Typing searches, Enter goes to the next match,
+                             Shift+Enter to the previous, Escape closes. -->
+                        <Border x:Name="FindBar"
+                                Grid.Row="1"
+                                Visibility="Collapsed"
+                                HorizontalAlignment="Right"
+                                VerticalAlignment="Top"
+                                Margin="0,8,16,0"
+                                Padding="8,6,6,6"
+                                Background="{ThemeResource SolidBackgroundFillColorSecondaryBrush}"
+                                BorderBrush="{ThemeResource CardStrokeColorDefaultBrush}"
+                                BorderThickness="1"
+                                CornerRadius="{ThemeResource OverlayCornerRadius}">
+                            <StackPanel Orientation="Horizontal" Spacing="4">
+                                <TextBox x:Name="FindBox"
+                                         x:Uid="BrowserFindBox"
+                                         Width="200"
+                                         VerticalAlignment="Center"
+                                         TextChanged="OnFindTextChanged"
+                                         KeyDown="OnFindKeyDown" />
+                                <TextBlock x:Name="FindCountText"
+                                           MinWidth="56"
+                                           HorizontalTextAlignment="Center"
+                                           VerticalAlignment="Center"
+                                           Foreground="{ThemeResource TextFillColorSecondaryBrush}" />
+                                <Button x:Name="FindPreviousButton" x:Uid="BrowserFindPreviousButton"
+                                        Style="{StaticResource SubtleButtonStyle}"
+                                        Width="32" Height="32" Padding="0"
+                                        Click="OnFindPreviousClick">
+                                    <FontIcon Glyph="&#xE70E;" FontSize="12" />
+                                </Button>
+                                <Button x:Name="FindNextButton" x:Uid="BrowserFindNextButton"
+                                        Style="{StaticResource SubtleButtonStyle}"
+                                        Width="32" Height="32" Padding="0"
+                                        Click="OnFindNextClick">
+                                    <FontIcon Glyph="&#xE70D;" FontSize="12" />
+                                </Button>
+                                <Button x:Name="FindCloseButton" x:Uid="BrowserFindCloseButton"
+                                        Style="{StaticResource SubtleButtonStyle}"
+                                        Width="32" Height="32" Padding="0"
+                                        Click="OnFindCloseClick">
+                                    <FontIcon Glyph="&#xE711;" FontSize="12" />
+                                </Button>
+                            </StackPanel>
+                        </Border>
                     </Grid>
                 </Border>
             </Grid>

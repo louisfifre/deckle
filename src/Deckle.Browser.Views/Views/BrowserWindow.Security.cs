@@ -68,9 +68,8 @@ public sealed partial class BrowserWindow
 
     // ── Private window ───────────────────────────────────────────────────────
 
-    private void OnPrivateWindowAccelerator(KeyboardAccelerator sender, KeyboardAcceleratorInvokedEventArgs args)
+    private void OpenPrivateWindow()
     {
-        args.Handled = true;
         using var gesture = new GestureScope(BrowserGesture.PrivateWindow);
         new BrowserWindow(true).ShowAndActivate();
     }

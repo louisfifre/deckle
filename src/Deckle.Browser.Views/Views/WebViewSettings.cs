@@ -15,6 +15,10 @@ internal static class WebViewSettings
         settings.IsWebMessageEnabled = false;
         settings.IsGeneralAutofillEnabled = false;
         settings.IsPasswordAutosaveEnabled = false;
+        // The browser's own accelerator keys (Ctrl+F, F5, Ctrl+W...) would be
+        // taken by the page's process: off, the window's own key handling
+        // (BrowserWindow.Shortcuts) runs the shortcuts, with the page focused too.
+        settings.AreBrowserAcceleratorKeysEnabled = false;
 #if DEBUG
         settings.AreDevToolsEnabled = true;
 #else

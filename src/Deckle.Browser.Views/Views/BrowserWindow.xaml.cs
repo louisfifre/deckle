@@ -52,6 +52,10 @@ public sealed partial class BrowserWindow : Window
     private readonly Dictionary<Guid, PanelItem> _byId = [];
     private readonly Dictionary<Guid, Action> _detachClip = [];
     private readonly Microsoft.UI.Dispatching.DispatcherQueueTimer _saveTimer;
+    private readonly string _historyPath = Path.Combine(AppPaths.GetModuleDirectory(ModuleKey), "history.json");
+    private readonly History _history;
+    private readonly Microsoft.UI.Dispatching.DispatcherQueueTimer _historyTimer;
+    private readonly ClosedTabs _closedTabs = new();
     private CoreWebView2Environment? _environment;
     private PanelItem? _shown;
     private Uri? _current;
@@ -142,8 +146,28 @@ public sealed partial class BrowserWindow : Window
             _saveTimer.Stop();
             _saveTimer.Start();
         };
+
+        // The pages visited, for the address field's suggestions: kept apart
+        // from the session, saved 2 s after the last change; a private window
+        // keeps none.
+        _history = _isPrivate ? new History() : HistoryStore.Load(_historyPath);
+        _historyTimer = DispatcherQueue.CreateTimer();
+        _historyTimer.Interval = TimeSpan.FromSeconds(2);
+        _historyTimer.IsRepeating = false;
+        _historyTimer.Tick += (_, _) => SaveHistory();
+        _history.Changed += (_, _) =>
+        {
+            _historyTimer.Stop();
+            _historyTimer.Start();
+        };
+        WireKeys();
+        WireMedia();
+
         Closed += (_, _) =>
         {
+            _historyTimer.Stop();
+            SaveHistory();
+            StopMediaTimer();
             if (BrowserAdblock.Converter is { } mine && ReferenceEquals(mine.Target, this)) BrowserAdblock.Converter = null;
             _saveTimer.Stop();
             SaveSession();
@@ -179,6 +203,7 @@ public sealed partial class BrowserWindow : Window
         if (_isPrivate) PinnedGrid.Visibility = Visibility.Collapsed;
         PinnedGrid.Margin = open ? new Thickness(8, 0, 8, 8) : new Thickness(4, 0, 4, 8);
         NewTabButton.Margin = open ? new Thickness(8, 0, 8, 4) : new Thickness(4, 0, 4, 4);
+        UpdateMediaCard();
     }
 
     // The pane's custom slot does not bound what it holds, so the panel takes
@@ -256,7 +281,9 @@ public sealed partial class BrowserWindow : Window
     private void CloseItem(PanelItem panel)
     {
         if (panel.Item.IsPinned) return;
+        _closedTabs.Push(panel.Item.Url, panel.Item.Title);
         _session.Close(panel.Item.Id);
+        ForgetMedia(panel);
         _syncing++;
         _tabItems.Remove(panel);
         _syncing--;
@@ -287,6 +314,7 @@ public sealed partial class BrowserWindow : Window
         PanelItem? next = _session.SelectedId is { } id && _byId.TryGetValue(id, out PanelItem? found) ? found : null;
         PanelItem? previous = _shown;
         _shown = next;
+        if (previous != next) CloseFind();
         SyncSelectionUi();
 
         if (previous is not null && previous != next && previous.View is { } hidden)
@@ -394,6 +422,7 @@ public sealed partial class BrowserWindow : Window
             BrowserActivity.LabelChanged();
             panel.Item.Title = core.DocumentTitle;
             panel.Title = core.DocumentTitle;
+            if (!_isPrivate) _history.Retitle(core.Source, core.DocumentTitle);
             _session.Touch();
         };
         core.SourceChanged += (_, _) =>
@@ -411,6 +440,7 @@ public sealed partial class BrowserWindow : Window
         core.NavigationCompleted += (_, args) =>
         {
             OnNavigationCompleted(panel, args);
+            if (args.IsSuccess && !_isPrivate) _history.Record(core.Source, core.DocumentTitle, DateTimeOffset.UtcNow);
             if (_shown == panel) UpdateHistoryButtons();
             panel.Loaded.TrySetResult();
             panel.Navigation?.TrySetResult(args.IsSuccess);
@@ -423,6 +453,7 @@ public sealed partial class BrowserWindow : Window
         core.IsDocumentPlayingAudioChanged += (_, _) =>
         {
             panel.IsPlaying = core.IsDocumentPlayingAudio;
+            OnPlayingChanged(panel);
             if (!panel.IsPlaying && _shown != panel) _ = SuspendIfIdleAsync(panel);
         };
         core.NewWindowRequested += (_, args) => OnNewWindowRequested(panel, args);
@@ -560,15 +591,8 @@ public sealed partial class BrowserWindow : Window
 
     private void OnNewTabClick(object sender, RoutedEventArgs e) => NewTab();
 
-    private void OnNewTabAccelerator(KeyboardAccelerator sender, KeyboardAcceleratorInvokedEventArgs args)
+    private void CloseShownTab()
     {
-        args.Handled = true;
-        NewTab();
-    }
-
-    private void OnCloseTabAccelerator(KeyboardAccelerator sender, KeyboardAcceleratorInvokedEventArgs args)
-    {
-        args.Handled = true;
         using var gesture = new GestureScope(BrowserGesture.CloseTab);
         if (_shown is { Item.IsPinned: false } tab) CloseItem(tab);
     }
@@ -633,8 +657,7 @@ public sealed partial class BrowserWindow : Window
     private void UpdateChrome()
     {
         _current = _shown is not null && Uri.TryCreate(_shown.Item.Url, UriKind.Absolute, out Uri? uri) ? uri : null;
-        if (AddressBox.FocusState == FocusState.Unfocused)
-            AddressBox.Text = AddressText();
+        if (!AddressFocused) AddressBox.Text = AddressText();
         UpdateShield();
         SiteSettingsButton.IsEnabled = SiteName.Display(_current).Length > 0;
         UpdateNotice();
@@ -647,19 +670,25 @@ public sealed partial class BrowserWindow : Window
         ForwardButton.IsEnabled = ShownCore?.CanGoForward == true;
     }
 
-    private void OnBackClick(object sender, RoutedEventArgs e)
+    private void OnBackClick(object sender, RoutedEventArgs e) => GoBack();
+
+    private void GoBack()
     {
         using var gesture = new GestureScope(BrowserGesture.Back);
         if (ShownCore?.CanGoBack == true) ShownCore.GoBack();
     }
 
-    private void OnForwardClick(object sender, RoutedEventArgs e)
+    private void OnForwardClick(object sender, RoutedEventArgs e) => GoForward();
+
+    private void GoForward()
     {
         using var gesture = new GestureScope(BrowserGesture.Forward);
         if (ShownCore?.CanGoForward == true) ShownCore.GoForward();
     }
 
-    private void OnReloadClick(object sender, RoutedEventArgs e)
+    private void OnReloadClick(object sender, RoutedEventArgs e) => ReloadShown();
+
+    private void ReloadShown()
     {
         using var gesture = new GestureScope(BrowserGesture.Reload);
         if (_shown is { Notice: PageNotice.Crashed } crashed) ReloadAfterCrash(crashed);
@@ -668,13 +697,23 @@ public sealed partial class BrowserWindow : Window
 
     // ── Address field ────────────────────────────────────────────────────────
 
+    // The field is an AutoSuggestBox: the focus rests on the text box in its
+    // template, which is found once the template is applied.
+    private TextBox? AddressInner => FindAll<TextBox>(AddressBox).FirstOrDefault();
+
+    private bool AddressFocused => AddressInner is { FocusState: not FocusState.Unfocused };
+
     private void OnAddressGotFocus(object sender, RoutedEventArgs e)
     {
         AddressBox.Text = _current is { } uri && uri.AbsoluteUri != "about:blank" ? uri.AbsoluteUri : "";
-        AddressBox.SelectAll();
+        AddressInner?.SelectAll();
     }
 
-    private void OnAddressLostFocus(object sender, RoutedEventArgs e) => AddressBox.Text = AddressText();
+    private void OnAddressLostFocus(object sender, RoutedEventArgs e)
+    {
+        AddressBox.Text = AddressText();
+        AddressBox.ItemsSource = null;
+    }
 
     // The registrable domain alone; a page over plain http says so in words.
     private string AddressText()
@@ -685,26 +724,40 @@ public sealed partial class BrowserWindow : Window
             : domain;
     }
 
+    // Enter is the box's own QuerySubmitted; Escape is ours.
     private void OnAddressKeyDown(object sender, KeyRoutedEventArgs e)
     {
-        switch (e.Key)
+        if (e.Key == VirtualKey.Escape)
         {
-            case VirtualKey.Enter:
-                e.Handled = true;
-                CommitAddress();
-                break;
-            case VirtualKey.Escape:
-                e.Handled = true;
-                CancelAddress();
-                break;
+            e.Handled = true;
+            CancelAddress();
         }
     }
 
-    // Enter in the field: the typed text is resolved and the page goes there.
-    private void CommitAddress()
+    // Typing makes the list of suggestions from the pages visited: local only,
+    // nothing is sent anywhere. A change the window made itself is not typing.
+    private void OnAddressTextChanged(AutoSuggestBox sender, AutoSuggestBoxTextChangedEventArgs args)
     {
-        using var gesture = new GestureScope(BrowserGesture.AddressCommit);
-        if (AddressInput.Resolve(AddressBox.Text) is { } target && _shown is not null)
+        if (args.Reason == AutoSuggestionBoxTextChangeReason.UserInput) UpdateSuggestions(sender.Text);
+    }
+
+    private void UpdateSuggestions(string typed)
+    {
+        BrowserActivity.SuggestionsMade();
+        AddressBox.ItemsSource = _history.Suggest(typed).Select(s => new SuggestionLine(s)).ToList();
+    }
+
+    // Enter in the field, or a suggestion chosen: the page goes there.
+    private void OnAddressQuerySubmitted(AutoSuggestBox sender, AutoSuggestBoxQuerySubmittedEventArgs args) =>
+        CommitAddress(args.ChosenSuggestion as SuggestionLine);
+
+    // The typed text is resolved (or the chosen suggestion's address taken)
+    // and the page goes there.
+    private void CommitAddress(SuggestionLine? chosen = null)
+    {
+        using var gesture = new GestureScope(chosen is null ? BrowserGesture.AddressCommit : BrowserGesture.AddressSuggestionChosen);
+        Uri? target = chosen is not null ? new Uri(chosen.Url) : AddressInput.Resolve(AddressBox.Text);
+        if (target is not null && _shown is not null)
         {
             if (ShownCore is { } core) core.Navigate(target.AbsoluteUri);
             else _shown.Item.Url = target.AbsoluteUri;
@@ -722,6 +775,18 @@ public sealed partial class BrowserWindow : Window
     {
         using var gesture = new GestureScope(BrowserGesture.AddressCancel);
         _shown?.View?.Focus(FocusState.Programmatic);
+    }
+
+    // ── History ──────────────────────────────────────────────────────────────
+
+    private void SaveHistory()
+    {
+        if (_isPrivate) return;
+        try { HistoryStore.Save(_history, _historyPath); }
+        catch (Exception ex) when (ex is IOException or UnauthorizedAccessException)
+        {
+            DeckleBrowserViewsSource.Log.SessionSaveFailed(ex.GetType().Name);
+        }
     }
 
     // ── Session ──────────────────────────────────────────────────────────────

@@ -27,6 +27,22 @@ public enum BrowserGesture
     PageNotice,
     PermissionAnswer,
     PrivateWindow,
+    AddressSuggestionChosen,
+    FocusAddress,
+    ReopenClosedTab,
+    NextTab,
+    PreviousTab,
+    FindOpen,
+    FindNext,
+    FindPrevious,
+    FindClose,
+    MediaPlayPause,
+    MediaPrevious,
+    MediaNext,
+    MediaMute,
+    MediaPictureInPicture,
+    MediaClose,
+    MediaSelect,
 }
 
 // ─── What the window observes of itself ──────────────────────────────────────
@@ -52,17 +68,32 @@ internal static class BrowserActivity
 
     private static readonly object Gate = new();
     private static long _requests, _blocked, _labels, _sources, _icons, _navigations, _stalls, _worstStallMs;
+    private static long _suggestions, _findSearches, _mediaReads, _requestsTotal;
     private static long _stallsTotal, _worstStallTotalMs;
     private static long _sinceTicks = Stopwatch.GetTimestamp();
     private static long _lastTickTicks;
     private static DispatcherQueueTimer? _tick, _summary;
 
-    public static void Request() => Interlocked.Increment(ref _requests);
+    public static void Request()
+    {
+        Interlocked.Increment(ref _requests);
+        Interlocked.Increment(ref _requestsTotal);
+    }
+
+    /// <summary>Every request the pages made since the process began (the summary's count restarts, this does not).</summary>
+    public static long RequestsTotal => Interlocked.Read(ref _requestsTotal);
     public static void Blocked() => Interlocked.Increment(ref _blocked);
     public static void LabelChanged() => Interlocked.Increment(ref _labels);
     public static void SourceChanged() => Interlocked.Increment(ref _sources);
     public static void IconChanged() => Interlocked.Increment(ref _icons);
     public static void NavigationBegan() => Interlocked.Increment(ref _navigations);
+
+    // The comfort's bursts: a list of suggestions made per keystroke in the
+    // address field, a find started per keystroke in the find bar, a read of the
+    // playing page's media each second while the card shows.
+    public static void SuggestionsMade() => Interlocked.Increment(ref _suggestions);
+    public static void FindSearched() => Interlocked.Increment(ref _findSearches);
+    public static void MediaRead() => Interlocked.Increment(ref _mediaReads);
 
     /// <summary>The UI thread's stalls since the process began: how many ticks
     /// came more than 200 ms late, and the worst lateness in milliseconds.</summary>
@@ -120,6 +151,9 @@ internal static class BrowserActivity
         long sources = Interlocked.Exchange(ref _sources, 0);
         long icons = Interlocked.Exchange(ref _icons, 0);
         long navigations = Interlocked.Exchange(ref _navigations, 0);
+        long suggestions = Interlocked.Exchange(ref _suggestions, 0);
+        long findSearches = Interlocked.Exchange(ref _findSearches, 0);
+        long mediaReads = Interlocked.Exchange(ref _mediaReads, 0);
         long stalls, worst;
         lock (Gate)
         {
@@ -132,10 +166,10 @@ internal static class BrowserActivity
         long now = Stopwatch.GetTimestamp();
         long intervalMs = (now - _sinceTicks) * 1000 / Stopwatch.Frequency;
         _sinceTicks = now;
-        if (requests + blocked + labels + sources + icons + navigations + stalls == 0) return;
+        if (requests + blocked + labels + sources + icons + navigations + suggestions + findSearches + mediaReads + stalls == 0) return;
 
         DeckleBrowserViewsSource.Log.ActivitySummary(
-            intervalMs, requests, blocked, labels, sources, icons, navigations, stalls, worst);
+            intervalMs, requests, blocked, labels, sources, icons, navigations, suggestions, findSearches, mediaReads, stalls, worst);
     }
 }
 

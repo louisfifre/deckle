@@ -214,20 +214,23 @@ public sealed class DeckleBrowserViewsSource : DeckleEventSource
     // What the pages did many times a second since the last summary, counted
     // and never logged one by one: the requests they made, how many the blocker
     // stopped, the changes of their label, source and icon, the navigations that
-    // began, and the stalls of the window's UI thread (a tick of the 100 ms
+    // began, the lists of suggestions, the finds and the reads of a playing page's
+    // media (the comfort's bursts), and the stalls of the window's UI thread (a tick of the 100 ms
     // watch more than 200 ms late) with the worst lateness. Written every 10 s
     // while any of it is not zero, and once more as a window closes.
     [Event(EvtActivitySummary,
            Level = EventLevel.Verbose,
            Keywords = (EventKeywords)Keywords.Lifecycle,
            Tags = ObservationTags.Summary,
-           Message = "interval_ms={0} | web_requests={1} | blocked_requests={2} | label_changes={3} | source_changes={4} | icon_changes={5} | navigations={6} | ui_stalls={7} | worst_stall_ms={8}")]
+           Message = "interval_ms={0} | web_requests={1} | blocked_requests={2} | label_changes={3} | source_changes={4} | icon_changes={5} | navigations={6} | suggestion_lists={7} | find_searches={8} | media_reads={9} | ui_stalls={10} | worst_stall_ms={11}")]
     public void ActivitySummary(
         long interval_ms, long web_requests, long blocked_requests, long label_changes, long source_changes,
-        long icon_changes, long navigations, long ui_stalls, long worst_stall_ms)
+        long icon_changes, long navigations, long suggestion_lists, long find_searches, long media_reads,
+        long ui_stalls, long worst_stall_ms)
     {
         if (IsEnabled(EventLevel.Verbose, (EventKeywords)Keywords.Lifecycle))
             WriteEvent(EvtActivitySummary, interval_ms, web_requests, blocked_requests, label_changes,
-                source_changes, icon_changes, navigations, ui_stalls, worst_stall_ms);
+                source_changes, icon_changes, navigations, suggestion_lists, find_searches, media_reads,
+                ui_stalls, worst_stall_ms);
     }
 }

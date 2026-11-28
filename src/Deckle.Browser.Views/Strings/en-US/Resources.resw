@@ -267,4 +267,94 @@
   <data name="External_Cancel" xml:space="preserve">
     <value>Cancel</value>
   </data>
+  <data name="BrowserMediaTitleButton.ToolTipService.ToolTip" xml:space="preserve">
+    <value>Show the page that plays</value>
+  </data>
+  <data name="BrowserMediaTitleButton.AutomationProperties.Name" xml:space="preserve">
+    <value>Show the page that plays</value>
+  </data>
+  <data name="BrowserMediaCloseButton.ToolTipService.ToolTip" xml:space="preserve">
+    <value>Stop and hide</value>
+  </data>
+  <data name="BrowserMediaCloseButton.AutomationProperties.Name" xml:space="preserve">
+    <value>Stop and hide</value>
+  </data>
+  <data name="BrowserMediaPreviousButton.ToolTipService.ToolTip" xml:space="preserve">
+    <value>Previous</value>
+  </data>
+  <data name="BrowserMediaPreviousButton.AutomationProperties.Name" xml:space="preserve">
+    <value>Previous</value>
+  </data>
+  <data name="BrowserMediaPlayPauseButton.ToolTipService.ToolTip" xml:space="preserve">
+    <value>Play or pause</value>
+  </data>
+  <data name="BrowserMediaPlayPauseButton.AutomationProperties.Name" xml:space="preserve">
+    <value>Play or pause</value>
+  </data>
+  <data name="BrowserMediaNextButton.ToolTipService.ToolTip" xml:space="preserve">
+    <value>Next</value>
+  </data>
+  <data name="BrowserMediaNextButton.AutomationProperties.Name" xml:space="preserve">
+    <value>Next</value>
+  </data>
+  <data name="BrowserMediaMuteButton.ToolTipService.ToolTip" xml:space="preserve">
+    <value>Mute</value>
+  </data>
+  <data name="BrowserMediaMuteButton.AutomationProperties.Name" xml:space="preserve">
+    <value>Mute</value>
+  </data>
+  <data name="BrowserMediaPipButton.ToolTipService.ToolTip" xml:space="preserve">
+    <value>Picture in picture</value>
+  </data>
+  <data name="BrowserMediaPipButton.AutomationProperties.Name" xml:space="preserve">
+    <value>Picture in picture</value>
+  </data>
+  <data name="BrowserFindPreviousButton.ToolTipService.ToolTip" xml:space="preserve">
+    <value>Previous match</value>
+  </data>
+  <data name="BrowserFindPreviousButton.AutomationProperties.Name" xml:space="preserve">
+    <value>Previous match</value>
+  </data>
+  <data name="BrowserFindNextButton.ToolTipService.ToolTip" xml:space="preserve">
+    <value>Next match</value>
+  </data>
+  <data name="BrowserFindNextButton.AutomationProperties.Name" xml:space="preserve">
+    <value>Next match</value>
+  </data>
+  <data name="BrowserFindCloseButton.ToolTipService.ToolTip" xml:space="preserve">
+    <value>Close find</value>
+  </data>
+  <data name="BrowserFindCloseButton.AutomationProperties.Name" xml:space="preserve">
+    <value>Close find</value>
+  </data>
+  <data name="BrowserFindBox.PlaceholderText" xml:space="preserve">
+    <value>Find in page</value>
+  </data>
+  <data name="BrowserFindBox.AutomationProperties.Name" xml:space="preserve">
+    <value>Find in page</value>
+  </data>
+  <data name="Find_Count" xml:space="preserve">
+    <value>{0} of {1}</value>
+  </data>
+  <data name="Find_None" xml:space="preserve">
+    <value>No match</value>
+  </data>
+  <data name="Media_Play" xml:space="preserve">
+    <value>Play</value>
+  </data>
+  <data name="Media_Pause" xml:space="preserve">
+    <value>Pause</value>
+  </data>
+  <data name="Media_Mute" xml:space="preserve">
+    <value>Mute</value>
+  </data>
+  <data name="Media_Unmute" xml:space="preserve">
+    <value>Unmute</value>
+  </data>
+  <data name="Media_Previous" xml:space="preserve">
+    <value>Previous</value>
+  </data>
+  <data name="Media_Restart" xml:space="preserve">
+    <value>Restart</value>
+  </data>
 </root>
