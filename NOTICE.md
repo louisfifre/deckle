@@ -16,6 +16,20 @@ Deckle depends on the following third-party components and data sources. This fi
 - License : MIT, Copyright (c) 2025 Ilya Stupakov. The license text ships beside the file, as `parakeet-onnx-asr.LICENSE.txt`.
 - Used as : `nemo128.onnx`, the mel-spectrogram graph bundled in onnx-asr 0.12.0, copied unchanged from the package (138,824 bytes, SHA-256 `5B4A84C52EEAA615DC46D781CC7E4598F9B432184831D57493C48ADCD01371A9`) into `src/Deckle.Transcription.Parakeet/MelFrontEnd` and run as the Parakeet backend's front end, so that its features match the reference implementation the backend is measured against.
 
+### adblock-rust (Deckle Browser's ad blocker)
+
+- Repository : https://github.com/brave/adblock-rust
+- License : MPL-2.0, Copyright Brave Software. Not modified: it is the `adblock` crate 0.13.6, a dependency of the small Rust library `native/Deckle.Browser.Adblock`, which exposes it through a C ABI and is built into `deckle_adblock.dll` by `src/Deckle.Browser.Adblock`.
+- Used as : the engine that parses filter lists and decides which requests a page makes are blocked and which elements it hides. The other Rust crates it pulls in are listed with their versions in `native/Deckle.Browser.Adblock/Cargo.lock`; their licenses are those of each crate.
+
+### Filter lists and resources (downloaded, not shipped)
+
+Deckle Browser downloads these at run time into its own data folder (`FilterLists` in `src/Deckle.Browser`); no list is committed to this repository or bundled in a build.
+
+- adblock-resources, https://github.com/brave/adblock-resources, MPL-2.0 (its `LICENSE`), Brave Software. The scriptlets and redirect resources (`resources.json`) the engine runs for `##+js(...)` rules.
+- EasyList and EasyPrivacy, https://easylist.to, dual licensed under GPL-3.0-or-later and Creative Commons Attribution-ShareAlike 3.0 Unported (https://easylist.to/pages/licence.html), the EasyList authors.
+- uBlock Origin's uAssets lists (`filters`, `quick-fixes`, `privacy`), https://github.com/uBlockOrigin/uAssets, GPL-3.0 (its `LICENSE`), Raymond Hill and contributors.
+
 ## Referenced implementations
 
 ### RawInput.Touchpad
