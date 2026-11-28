@@ -68,6 +68,12 @@
     <x:String x:Key="Icon.OpenExternal">&#xE8A7;</x:String>
     <x:String x:Key="Icon.Cancel">&#xE711;</x:String>
 
+    <!-- ─── Browser cluster (the panel's button row) ────────────── -->
+    <x:String x:Key="Icon.Browser.Back">&#xE72B;</x:String>
+    <x:String x:Key="Icon.Browser.Forward">&#xE72A;</x:String>
+    <!-- Segoe Fluent "GlobalNavigationButton" (E700), the pane toggle. -->
+    <x:String x:Key="Icon.Browser.Pane">&#xE700;</x:String>
+
     <!-- ─── Transcription specifics ──────────────────────── -->
     <x:String x:Key="Icon.Tokens">&#xE8B2;</x:String>
     <x:String x:Key="Icon.Tuning">&#xE9CA;</x:String>

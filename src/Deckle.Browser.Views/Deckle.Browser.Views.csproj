@@ -1,0 +1,34 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <!-- The window of Deckle Browser: its panel and its web view. The domain
+       (what is typed, what a page is called) is Deckle.Browser, which holds
+       no WebView2 type; this project is the one that does. The WebView2 SDK
+       is the one Windows App SDK brings (Microsoft.Web.WebView2, transitively):
+       no other version is referenced here. -->
+  <PropertyGroup>
+    <RootNamespace>Deckle.Browser.Views</RootNamespace>
+    <UseWinUI>true</UseWinUI>
+    <DefaultLanguage>en-US</DefaultLanguage>
+    <!-- Generates the lib's own .pri so x:Uid lookups resolve against
+         Deckle.Browser.Views/Strings. -->
+    <EnableMsixTooling>true</EnableMsixTooling>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <PackageReference Include="Microsoft.WindowsAppSDK" />
+    <PackageReference Include="Microsoft.Windows.SDK.BuildTools" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\Deckle.Browser\Deckle.Browser.csproj" />
+    <ProjectReference Include="..\Deckle.Catalog\Deckle.Catalog.csproj" />
+    <ProjectReference Include="..\Deckle.Localization\Deckle.Localization.csproj" />
+    <ProjectReference Include="..\Deckle.Core\Deckle.Core.csproj" />
+    <ProjectReference Include="..\Deckle.Diagnostics\Deckle.Diagnostics.csproj" />
+    <ProjectReference Include="..\Deckle.Shell\Deckle.Shell.csproj" />
+    <ProjectReference Include="..\Deckle.Shell.WindowChrome\Deckle.Shell.WindowChrome.csproj" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <InternalsVisibleTo Include="Deckle.Browser.Views.Tests" />
+  </ItemGroup>
+</Project>

@@ -845,6 +845,16 @@ _Generated from `git ls-files` — do not edit by hand._
 │   │   ├── AddressInput.cs
 │   │   ├── Deckle.Browser.csproj
 │   │   └── SiteName.cs
+│   ├── Deckle.Browser.Views/
+│   │   ├── Strings/
+│   │   │   └── en-US/
+│   │   │       └── Resources.resw
+│   │   ├── Views/
+│   │   │   ├── BrowserText.cs
+│   │   │   ├── BrowserWindow.xaml
+│   │   │   └── BrowserWindow.xaml.cs
+│   │   ├── Deckle.Browser.Views.csproj
+│   │   └── DeckleBrowserViewsSource.cs
 │   ├── Deckle.Catalog/
 │   │   ├── Composer/
 │   │   │   ├── AxisTicks.cs

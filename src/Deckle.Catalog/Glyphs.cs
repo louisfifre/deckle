@@ -96,6 +96,14 @@ public static class Glyphs
         public const string Info = "";
     }
 
+    // The Browser panel's button row (Icons.xaml, Browser cluster).
+    public static class Browser
+    {
+        public const string Back = "";
+        public const string Forward = "";
+        public const string Pane = "";
+    }
+
     // The Mail window (Icons.xaml, Mail cluster). Written as escapes: the
     // code points are listed there with their names.
     public static class Mail
