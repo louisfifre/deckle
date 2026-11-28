@@ -49,6 +49,8 @@ internal sealed class BrowserWalkContext(
 //   permission    a site's question for the location, open
 //   downloads     the downloads flyout, empty
 //   adblock       a local page whose advertisement the blocker stopped
+//   find          the find bar over a page that holds a word three times
+//   media         the media card while a local tone plays
 //
 // The gestures walk (GesturesWalk.cs) presses the window's gestures through
 // their controls and times each; at the end of a full run the measures of every
@@ -62,7 +64,7 @@ internal sealed class BrowserWalkContext(
 // log event: a count and a number, no address.
 internal static class BrowserSelfCheck
 {
-    public static readonly string[] Slugs = ["window", "window-rail", "page-xaml", "page-preview", "tabs", "tabs-rail", "permission", "downloads", "adblock"];
+    public static readonly string[] Slugs = ["window", "window-rail", "page-xaml", "page-preview", "tabs", "tabs-rail", "permission", "downloads", "adblock", "find", "media"];
 
     private const string PageHtml =
         "<!doctype html><html><head><meta charset=\"utf-8\"><title>Self-check page</title></head>"
@@ -232,6 +234,12 @@ internal static class BrowserSelfCheck
             {
                 Step("browser/gestures");
                 await GesturesWalk.RunAsync(context, browser);
+            }
+
+            if (only is null or "find" or "media")
+            {
+                Step("browser/comfort");
+                await ComfortWalk.RunAsync(context, browser, Wants("find"), Wants("media"), loaded);
             }
 
             if (only is null or "adblock")

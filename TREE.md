@@ -883,6 +883,7 @@ _Generated from `git ls-files` — do not edit by hand._
 │   │   ├── App.xaml.cs
 │   │   ├── BrowserContribution.cs
 │   │   ├── BrowserSelfCheck.cs
+│   │   ├── ComfortWalk.cs
 │   │   ├── Composition.cs
 │   │   ├── Deckle.Browser.App.csproj
 │   │   ├── DeckleBrowserAppSource.cs
@@ -900,6 +901,7 @@ _Generated from `git ls-files` — do not edit by hand._
 │   │   │   ├── BrowserAdblock.cs
 │   │   │   ├── BrowserText.cs
 │   │   │   ├── BrowserWindow.Adblock.cs
+│   │   │   ├── BrowserWindow.ComfortReview.cs
 │   │   │   ├── BrowserWindow.Gestures.cs
 │   │   │   ├── BrowserWindow.Security.cs
 │   │   │   ├── BrowserWindow.Ubo.cs
