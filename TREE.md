@@ -883,9 +883,11 @@ _Generated from `git ls-files` — do not edit by hand._
 │   │   ├── Composition.cs
 │   │   ├── Deckle.Browser.App.csproj
 │   │   ├── DeckleBrowserAppSource.cs
+│   │   ├── GesturesWalk.cs
 │   │   ├── Program.cs
 │   │   ├── SecurityWalk.cs
-│   │   └── TabsWalk.cs
+│   │   ├── TabsWalk.cs
+│   │   └── WalkMeasures.cs
 │   ├── Deckle.Browser.Views/
 │   │   ├── Strings/
 │   │   │   └── en-US/

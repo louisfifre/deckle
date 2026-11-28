@@ -25,6 +25,9 @@ internal sealed class BrowserWalkContext(
     public string OutputFolder { get; } = outputFolder;
     public string? TargetView { get; } = targetView;
 
+    // What the whole walk measures, appended to the history at its end.
+    public WalkMeasures Measures { get; } = new();
+
     public void Step(string state) => step(state);
 
     // The walk of this process reaches its context through the contract.
@@ -46,6 +49,10 @@ internal sealed class BrowserWalkContext(
 //   permission    a site's question for the location, open
 //   downloads     the downloads flyout, empty
 //   adblock       a local page whose advertisement the blocker stopped
+//
+// The gestures walk (GesturesWalk.cs) presses the window's gestures through
+// their controls and times each; at the end of a full run the measures of every
+// walk are appended as one line to the history (WalkMeasures.cs).
 //
 // The tabs walk (TabsWalk.cs) then measures what eight suspended pinned sites
 // cost, how long one takes to wake, that the session survives a restart and
@@ -85,11 +92,21 @@ internal static class BrowserSelfCheck
         // lets the real lists load. Pinned before the window exists, which
         // would otherwise start loading them.
         string? probeUrl = AdblockProbe.Url;
-        if (probeUrl is null) BrowserWindow.UseAdblockEngine(AdblockWalk.LocalEngine());
+        if (probeUrl is null)
+        {
+            var build = Stopwatch.StartNew();
+            Deckle.Browser.Adblock.AdblockEngine local = AdblockWalk.LocalEngine();
+            context.Measures.EngineBuildMs = build.Elapsed.TotalMilliseconds;
+            context.Measures.EngineRules = AdblockWalk.LocalRule.Split((char)10, StringSplitOptions.RemoveEmptyEntries).Length;
+            context.Measures.EngineSource = "local-rule";
+            BrowserWindow.UseAdblockEngine(local);
+        }
 
         var browser = (BrowserWindow)context.Host.Ensure("browser");
         OffscreenWindow.ShowInactive(browser);
         bool loaded = await WaitUntilLoadedAsync(browser);
+        using (Process self = Process.GetCurrentProcess())
+            context.Measures.LaunchToWindowReadyMs = (DateTime.Now - self.StartTime).TotalMilliseconds;
 
         if (probeUrl is not null)
         {
@@ -108,6 +125,7 @@ internal static class BrowserSelfCheck
         var clock = Stopwatch.StartNew();
         bool navigated = await browser.NavigateAsync(new Uri(file));
         long loadMs = clock.ElapsedMilliseconds;
+        context.Measures.LocalPageMs = clock.Elapsed.TotalMilliseconds;
         // The page reaches the screen on the frames after its completion.
         await Task.Delay(600);
         Step($"browser (navigated={navigated})");
@@ -187,27 +205,55 @@ internal static class BrowserSelfCheck
 
         (int processes, long bytes) = await browser.MeasureWebViewMemoryAsync();
         double megabytes = bytes / (1024.0 * 1024.0);
+        context.Measures.WebViewMb = megabytes;
+        context.Measures.WebViewProcesses = processes;
         await File.WriteAllTextAsync(Path.Combine(outputFolder, "measures.txt"),
             string.Create(CultureInfo.InvariantCulture,
                 $"web view private memory: {megabytes:0.0} MB in {processes} processes (local page loaded, navigation {loadMs} ms){Environment.NewLine}"));
         DeckleBrowserAppSource.Log.WebViewMeasured(processes, bytes);
 
-        if (only is null || only is "tabs" or "tabs-rail")
+        // The walks after this one may fail on a check; the figures they got
+        // before it are kept all the same, with the outcome saying so.
+        try
         {
-            Step("browser/tabs");
-            await TabsWalk.RunAsync(context, browser, Wants("tabs"), Wants("tabs-rail"), loaded);
-        }
+            if (only is null || only is "tabs" or "tabs-rail")
+            {
+                Step("browser/tabs");
+                await TabsWalk.RunAsync(context, browser, Wants("tabs"), Wants("tabs-rail"), loaded);
+            }
 
-        if (only is null or "permission" or "downloads")
-        {
-            Step("browser/security");
-            await SecurityWalk.RunAsync(context, browser, Wants("permission"), Wants("downloads"), loaded);
-        }
+            if (only is null or "permission" or "downloads")
+            {
+                Step("browser/security");
+                await SecurityWalk.RunAsync(context, browser, Wants("permission"), Wants("downloads"), loaded);
+            }
 
-        if (only is null or "adblock")
+            if (only is null)
+            {
+                Step("browser/gestures");
+                await GesturesWalk.RunAsync(context, browser);
+            }
+
+            if (only is null or "adblock")
+            {
+                Step("browser/adblock");
+                await AdblockWalk.RunAsync(context, browser, Wants("adblock"), loaded);
+            }
+
+            context.Measures.Outcome = "passed";
+        }
+        finally
         {
-            Step("browser/adblock");
-            await AdblockWalk.RunAsync(context, browser, Wants("adblock"), loaded);
+            // A full run only: a run of one view has not measured the rest.
+            if (only is null)
+            {
+                (long stalls, long worst) = browser.UiStallsForReview;
+                context.Measures.UiStalls = stalls;
+                context.Measures.WorstStallMs = worst;
+                string history = context.Measures.AppendToHistory(outputFolder, DateTimeOffset.UtcNow);
+                await File.AppendAllTextAsync(Path.Combine(outputFolder, "measures.txt"),
+                    $"history line appended to {history}{Environment.NewLine}");
+            }
         }
     }
 

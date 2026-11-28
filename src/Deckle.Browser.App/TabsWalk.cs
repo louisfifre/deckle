@@ -38,10 +38,12 @@ internal static class TabsWalk
         Uri[] pages = WritePages(Path.Combine(outputFolder, "pages"));
         Guid firstTab = browser.Session.Tabs[0].Id;
 
+        double lastMegabytes = 0;
         async Task<string> Measure(string label)
         {
             (int processes, long bytes) = await browser.MeasureWebViewMemoryAsync();
             double megabytes = bytes / (1024.0 * 1024.0);
+            lastMegabytes = megabytes;
             return string.Create(CultureInfo.InvariantCulture, $"{label}: {megabytes:0.0} MB in {processes} processes");
         }
 
@@ -62,11 +64,13 @@ internal static class TabsWalk
         Guid tab = await browser.OpenTabAsync(pages[8]);
         await Task.Delay(1500);
         await Note(await Measure("8 loaded pinned + 1 tab, none suspended"));
+        context.Measures.Pinned8LoadedMb = lastMegabytes;
 
         browser.SuspendsHidden = true;
         await browser.SuspendHiddenAsync();
         await Task.Delay(3000);
         string suspended = await Measure("8 suspended pinned + 1 tab");
+        context.Measures.Pinned8SuspendedMb = lastMegabytes;
         await Note($"{suspended} ({browser.SuspendedCount} web views suspended)");
         if (browser.SuspendedCount != 8) failures.Add($"suspension: {browser.SuspendedCount} web views suspended, 8 expected");
         context.Step("browser/tabs measured");
@@ -79,6 +83,7 @@ internal static class TabsWalk
             await browser.SelectAsync(tab);
             await Task.Delay(2000);
         }
+        context.Measures.WakeMs = wakes.Average();
         await Note(string.Create(CultureInfo.InvariantCulture,
             $"wake one suspended pinned: {wakes.Average():0} ms (average of {string.Join(", ", wakes.Select(w => w.ToString("0", CultureInfo.InvariantCulture)))})"));
         context.Step("browser/tabs woken");
