@@ -843,7 +843,11 @@ _Generated from `git ls-files` — do not edit by hand._
 │   │   └── SettingsSearch.cs
 │   ├── Deckle.Browser/
 │   │   ├── AddressInput.cs
+│   │   ├── BrowserItem.cs
+│   │   ├── BrowserSession.cs
 │   │   ├── Deckle.Browser.csproj
+│   │   ├── FaviconCache.cs
+│   │   ├── SessionStore.cs
 │   │   └── SiteName.cs
 │   ├── Deckle.Browser.App/
 │   │   ├── app.manifest
@@ -2841,7 +2845,10 @@ _Generated from `git ls-files` — do not edit by hand._
 │   │   └── DeckleBrowserAppSourceTests.cs
 │   ├── Deckle.Browser.Tests/
 │   │   ├── AddressInputTests.cs
+│   │   ├── BrowserSessionTests.cs
 │   │   ├── Deckle.Browser.Tests.csproj
+│   │   ├── FaviconCacheTests.cs
+│   │   ├── SessionStoreTests.cs
 │   │   └── SiteNameTests.cs
 │   ├── Deckle.Catalog.Tests/
 │   │   ├── CubicBezierTests.cs
