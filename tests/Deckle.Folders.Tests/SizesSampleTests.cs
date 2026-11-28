@@ -4,7 +4,7 @@ namespace Deckle.Folders.Tests;
 
 // The sizes part of the sample gives the sizes tool something to compare,
 // without weighing on the disk the self-check runs on.
-[Collection("folders provider singleton")]
+[Collection(FoldersProviderCollection.Name)]
 [Trait("Category", "integration")]
 public sealed class SizesSampleTests
 {

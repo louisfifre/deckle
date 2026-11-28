@@ -6,7 +6,7 @@ namespace Deckle.Folders.Tests;
 // to the Recycle Bin, kept and unmarked photos do not change (12.6, 12.22).
 // The bin is the IRecycleBin seam, played here by a stand-in that moves files
 // aside, so the step is exercised without the shell.
-[Collection("folders provider singleton")]
+[Collection(FoldersProviderCollection.Name)]
 [Trait("Category", "integration")]
 public sealed class MarksApplierTests
 {

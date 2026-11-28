@@ -4,7 +4,7 @@ namespace Deckle.Projects.Tests;
 
 // The rules that cross the parts, with a terminal that is not one, a reader of
 // folders that answers what the test says and a menu reader that starts no shell.
-[Collection("projects provider singleton")]
+[Collection(ProjectsProviderCollection.Name)]
 [Trait("Category", "integration")]
 public sealed class ProjectsWorkspaceTests : IDisposable
 {

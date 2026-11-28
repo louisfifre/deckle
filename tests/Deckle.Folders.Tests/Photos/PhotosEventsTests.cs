@@ -7,7 +7,7 @@ namespace Deckle.Folders.Tests;
 // The photo tool's events say what happened without carrying a name, a path
 // or a value read in a photo (spec, Behaviours: no photo metadata leaves the
 // machine, and the log travels).
-[Collection("folders provider singleton")]
+[Collection(FoldersProviderCollection.Name)]
 [Trait("Category", "observability")]
 public sealed class PhotosEventsTests
 {

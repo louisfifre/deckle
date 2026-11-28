@@ -15,7 +15,7 @@ namespace Deckle.Notifications.Tests;
 // NotificationDispatcher singleton, whose Initialize emits on the shared
 // provider — running the classes in parallel makes each listener see the
 // other class's emissions.
-[Collection("notification dispatcher singleton")]
+[Collection(NotificationDispatcherCollection.Name)]
 [Trait("Category", "observability")]
 public class DeckleNotificationsSourceTests
 {
@@ -301,9 +301,9 @@ public class DeckleNotificationsSourceTests
 
     // ── helpers ────────────────────────────────────────────────────────────
 
-    // The provider is a process-wide singleton, so concurrent tests in other
-    // suites can emit onto the same listener. Selecting by EventId keeps each
-    // assertion robust to that without serializing the run.
+    // The provider is a process-wide singleton. The classes that emit on it
+    // share this collection, so none runs beside these tests; selecting by
+    // EventId keeps each assertion off the other events of the same test.
     private static EventWrittenEventArgs Single(TestEventListener listener, int eventId)
         => Assert.Single(listener.Events, e => e.EventId == eventId);
 

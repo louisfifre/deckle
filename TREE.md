@@ -323,9 +323,6 @@ _Generated from `git ls-files` — do not edit by hand._
 │   ├── ambient-lighting/
 │   │   ├── deckle-ambient-lighting.md
 │   │   └── GLOSSARY.md
-│   ├── browser/
-│   │   ├── deckle-browser.md
-│   │   └── GLOSSARY.md
 │   ├── dictation/
 │   │   ├── deckle-dictation.md
 │   │   └── GLOSSARY.md
@@ -2918,6 +2915,7 @@ _Generated from `git ls-files` — do not edit by hand._
 │   ├── Deckle.FolderMap.Tests/
 │   │   ├── Deckle.FolderMap.Tests.csproj
 │   │   ├── DeckleFolderMapSourceEventIdTests.cs
+│   │   ├── FolderMapProviderCollection.cs
 │   │   ├── MapEventsTests.cs
 │   │   ├── MapGraphLayoutTests.cs
 │   │   ├── MapInventoryTests.cs
@@ -2982,6 +2980,7 @@ _Generated from `git ls-files` — do not edit by hand._
 │   │   ├── FolderListingTests.cs
 │   │   ├── FolderPaneBugNotes.md
 │   │   ├── FoldersEventIdBugNotes.md
+│   │   ├── FoldersProviderCollection.cs
 │   │   ├── HeaviestFilesTests.cs
 │   │   ├── MapSampleFolderTests.cs
 │   │   ├── MessageTemplateDoctrineTests.cs
@@ -3036,6 +3035,7 @@ _Generated from `git ls-files` — do not edit by hand._
 │   │   ├── DeckleHudSourceTests.cs
 │   │   ├── HudHidePolicyTests.cs
 │   │   ├── HudMessageFitTests.cs
+│   │   ├── HudObservabilityCollection.cs
 │   │   ├── HudShippedValuesTests.cs
 │   │   ├── MessageTemplateDoctrineTests.cs
 │   │   ├── MilestoneClosersTests.cs
@@ -3242,6 +3242,7 @@ _Generated from `git ls-files` — do not edit by hand._
 │   │   ├── FakeNotificationChannel.cs
 │   │   ├── MessageTemplateDoctrineTests.cs
 │   │   ├── NotificationCatalogTests.cs
+│   │   ├── NotificationDispatcherCollection.cs
 │   │   ├── NotificationDispatcherTests.cs
 │   │   ├── ToastChannelBugNotes.md
 │   │   ├── ToastElevationIncidentTests.cs
@@ -3284,6 +3285,7 @@ _Generated from `git ls-files` — do not edit by hand._
 │   │   ├── PasteFolderStoreTests.cs
 │   │   ├── PasteHistoryTests.cs
 │   │   ├── PasteNamesTests.cs
+│   │   ├── PasteProviderCollection.cs
 │   │   ├── PasteSaverTests.cs
 │   │   ├── PasteWindowDragBugNotes.md
 │   │   ├── ScratchFolder.cs
@@ -3337,6 +3339,7 @@ _Generated from `git ls-files` — do not edit by hand._
 │   │   ├── Deckle.Projects.Tests.csproj
 │   │   ├── DeckleProjectsSourceEventIdTests.cs
 │   │   ├── MessageTemplateDoctrineTests.cs
+│   │   ├── ProjectsProviderCollection.cs
 │   │   ├── ScratchFolder.cs
 │   │   ├── TestDoubles.cs
 │   │   └── Tools.cs
@@ -3575,9 +3578,11 @@ _Generated from `git ls-files` — do not edit by hand._
 │   │   ├── MessageTemplateDoctrineTests.cs
 │   │   ├── MilestoneClosersTests.cs
 │   │   ├── SamplingGridTests.cs
+│   │   ├── VisionObservabilityCollection.cs
 │   │   └── WarpRig.cs
 │   ├── Directory.Build.props
-│   └── GLOSSARY.md  — glossary-deckle-tests Test taxonomy. It names the four categories inside the automatic scope (unit, i…
+│   ├── GLOSSARY.md  — glossary-deckle-tests Test taxonomy. It names the four categories inside the automatic scope (unit, i…
+│   └── process-wide-events.md
 ├── .editorconfig
 ├── .gitattributes
 ├── .gitignore
