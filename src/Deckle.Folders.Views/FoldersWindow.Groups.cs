@@ -104,6 +104,7 @@ public sealed partial class FoldersWindow
             Text = FoldersText.Get("Folders_GroupMenu"),
             Icon = new FontIcon { Glyph = GroupGlyph },
         };
+        AutomationProperties.SetAutomationId(sub, GroupSubMenuId);
         const string radioSet = "folder-group";
         string? current = _folders.Find(folderPath)?.GroupId;
         bool inKnownGroup = current is not null && _folders.Groups.Any(g => g.Id == current);
@@ -111,6 +112,7 @@ public sealed partial class FoldersWindow
         RadioMenuFlyoutItem Choice(string text, string? groupId, bool isChecked)
         {
             var radio = new RadioMenuFlyoutItem { Text = text, GroupName = radioSet, IsChecked = isChecked };
+            AutomationProperties.SetAutomationId(radio, GroupChoiceId(groupId));
             radio.Click += (_, _) => MoveFolderToGroup(folderPath, groupId);
             return radio;
         }
@@ -120,6 +122,7 @@ public sealed partial class FoldersWindow
             sub.Items.Add(Choice(group.Name, group.Id, inKnownGroup && group.Id == current));
         sub.Items.Add(new MenuFlyoutSeparator());
         var newGroup = new MenuFlyoutItem { Text = FoldersText.Get("Folders_NewGroup") };
+        AutomationProperties.SetAutomationId(newGroup, NewGroupChoiceId);
         newGroup.Click += (_, _) => _ = NewGroupAsync(folderPath);
         sub.Items.Add(newGroup);
         return sub;
@@ -135,10 +138,13 @@ public sealed partial class FoldersWindow
     {
         string groupId = parts.Group.Id;
         var menu = new MenuFlyout();
-        menu.Items.Add(MenuItem(FoldersText.Get("Folders_RenameGroup"), RenameGroupGlyph,
-            () => _ = RenameGroupAsync(groupId)));
+        MenuFlyoutItem rename = MenuItem(FoldersText.Get("Folders_RenameGroup"), RenameGroupGlyph,
+            () => _ = RenameGroupAsync(groupId));
+        AutomationProperties.SetAutomationId(rename, RenameGroupEntryId);
+        menu.Items.Add(rename);
         menu.Items.Add(new MenuFlyoutSeparator());
         MenuFlyoutItem remove = MenuItem(FoldersText.Get("Folders_RemoveGroup"), RemoveGlyph, () => RemoveGroup(groupId));
+        AutomationProperties.SetAutomationId(remove, RemoveGroupEntryId);
         string hint = FoldersText.Get("Folders_RemoveGroupHint");
         ToolTipService.SetToolTip(remove, hint);
         AutomationProperties.SetHelpText(remove, hint);
@@ -150,6 +156,11 @@ public sealed partial class FoldersWindow
     {
         if (!_folders.Groups.Any(g => g.Id == parts.Group.Id)) return;
         MenuFlyout menu = BuildGroupMenu(parts);
+        if (_reviewMenusInWindow)
+        {
+            ShowReviewMenu(menu, anchor, FlyoutPlacementMode.BottomEdgeAlignedRight);
+            return;
+        }
         if (at is { } position) menu.ShowAt(anchor, new FlyoutShowOptions { Position = position });
         else menu.ShowAt(anchor, new FlyoutShowOptions { Placement = FlyoutPlacementMode.BottomEdgeAlignedRight });
     }
@@ -198,9 +209,10 @@ public sealed partial class FoldersWindow
 
     // ── What the self-check drives ───────────────────────────────────────
 
-    // One gesture each, down the path the person's takes: the dialog's Create,
-    // the radio item of a folder's menu, a click that folds a group, the
-    // group menu's Remove.
+    // Shortcuts to a state the walk then photographs: what the dialog's
+    // Create does, and what the radio item of a folder's menu does. The
+    // gestures themselves (a click that folds a group, its menu, the "Group"
+    // submenu) are pressed through their controls (FoldersWindow.Gestures).
     public string CreateGroupForReview(string name) => CreateGroup(name, null).Id;
 
     public bool MoveFolderToGroupForReview(string path, string? groupId)
@@ -210,15 +222,8 @@ public sealed partial class FoldersWindow
         return _folders.Find(normalized)?.GroupId == groupId;
     }
 
-    public void RemoveGroupForReview(string groupId) => RemoveGroup(groupId);
-
-    public void SetGroupExpandedForReview(string groupId, bool expanded)
-    {
-        if (_groupItems.FirstOrDefault(g => g.Group.Id == groupId) is not { } parts) return;
-        parts.Item.IsExpanded = expanded;
-        if (expanded) _collapsedGroups.Remove(groupId);
-        else _collapsedGroups.Add(groupId);
-    }
+    // The group a folder is in, as the store keeps it; null in no group.
+    public string? FolderGroupIdForReview(string path) => _folders.Find(FolderPaths.Normalize(path))?.GroupId;
 
     public bool IsGroupExpandedForReview(string groupId) =>
         _groupItems.FirstOrDefault(g => g.Group.Id == groupId)?.Item.IsExpanded == true;

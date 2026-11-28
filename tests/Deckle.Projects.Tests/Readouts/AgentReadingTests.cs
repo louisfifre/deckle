@@ -5,7 +5,7 @@ namespace Deckle.Projects.Tests;
 
 // The estimate is the map's own startup total: the always-read files plus the
 // names and descriptions of the skills.
-[Collection("projects provider singleton")]
+[Collection(ProjectsProviderCollection.Name)]
 [Trait("Category", "integration")]
 public sealed class AgentReadingTests
 {

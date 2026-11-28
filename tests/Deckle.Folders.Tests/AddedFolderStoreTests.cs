@@ -5,7 +5,7 @@ namespace Deckle.Folders.Tests;
 
 // The added folders persist under the module's data folder and survive a
 // broken file.
-[Collection("folders provider singleton")]
+[Collection(FoldersProviderCollection.Name)]
 [Trait("Category", "integration")]
 public sealed class AddedFolderStoreTests
 {

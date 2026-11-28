@@ -7,7 +7,7 @@ namespace Deckle.Folders.Tests;
 
 // The Sizes engine on folders made for each test: totals, links, unreadable
 // folders, cancelling, running again, the heaviest files and moving down.
-[Collection("folders provider singleton")]
+[Collection(FoldersProviderCollection.Name)]
 [Trait("Category", "integration")]
 public sealed class SizeScanTests
 {

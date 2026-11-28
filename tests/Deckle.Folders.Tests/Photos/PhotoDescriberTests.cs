@@ -4,7 +4,7 @@ namespace Deckle.Folders.Tests;
 
 // The describer hands the model a reduced picture and the one prompt, and
 // answers each failure as a type a view can word.
-[Collection("folders provider singleton")]
+[Collection(FoldersProviderCollection.Name)]
 [Trait("Category", "integration")]
 public sealed class PhotoDescriberTests
 {

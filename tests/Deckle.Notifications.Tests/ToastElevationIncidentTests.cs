@@ -10,7 +10,7 @@ namespace Deckle.Notifications.Tests;
 // The process cannot be elevated in a test: the seam is what the constructor
 // calls once it found the process elevated. Same collection as the classes
 // that listen to Deckle-Notifications, so they do not hear this Warning.
-[Collection("notification dispatcher singleton")]
+[Collection(NotificationDispatcherCollection.Name)]
 [Trait("Category", "observability")]
 public sealed class ToastElevationIncidentTests
 {

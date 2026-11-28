@@ -6,7 +6,7 @@ namespace Deckle.Projects.Tests;
 
 // The store writes counts and error types, never a project's path or name, a
 // category's title or an action's id, and a save that fails is one Warning.
-[Collection("projects provider singleton")]
+[Collection(ProjectsProviderCollection.Name)]
 [Trait("Category", "observability")]
 public sealed class ProjectStoreEventsTests
 {

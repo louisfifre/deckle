@@ -6,7 +6,7 @@ namespace Deckle.FolderMap.Tests;
 
 // The map writes under its own provider, Deckle-FolderMap: a folder it cannot
 // read is one Warning with the reason, and no event carries a path.
-[Collection("foldermap provider singleton")]
+[Collection(FolderMapProviderCollection.Name)]
 [Trait("Category", "observability")]
 public sealed class MapEventsTests
 {
