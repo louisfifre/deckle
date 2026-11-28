@@ -156,7 +156,8 @@ public sealed partial class BrowserWindow
 
     private void OnNavigationCompleted(PanelItem panel, CoreWebView2NavigationCompletedEventArgs args)
     {
-        EndNavigation(panel, args.IsSuccess ? "done" : "failed", args.WebErrorStatus.ToString());
+        EndNavigation(panel, args.IsSuccess ? "done" : "failed", args.IsSuccess ? "None" : args.WebErrorStatus.ToString());
+        _completedNavigations++;
         if (args.IsSuccess)
         {
             panel.UpgradedFrom = null;

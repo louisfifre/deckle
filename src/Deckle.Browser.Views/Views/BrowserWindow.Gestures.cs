@@ -16,16 +16,16 @@ namespace Deckle.Browser.Views;
 // The method is the one Folders uses (FoldersWindow.Gestures): a gesture is
 // pressed through the control's own UI Automation peer, the path a screen
 // reader takes and the one a click ends in. A button is invoked, a text field
-// takes its value through its value pattern, a menu is opened as the pointer
-// opens it and its entry invoked, a dialog's button is the template's own
-// button. Nothing here sets what a gesture changes: the window's handlers do,
+// takes its text (its peer offers no value pattern), a menu is opened as the
+// pointer opens it and its entry invoked, a dialog's button is the template's
+// own button. Nothing here sets what a gesture changes: the window's handlers do,
 // and the walk then reads what the window shows.
 //
 // What no peer can do is said at each method. The window is shown with
 // WS_EX_NOACTIVATE and never takes the keyboard (the run happens while the
 // maintainer types), so a key is not pressed: Enter and Escape in the address
 // field run the handler's own commit and cancel, after the text was typed
-// through the field's value pattern. A routed pointer event cannot be built
+// (its text set, as typing sets it). A routed pointer event cannot be built
 // outside the framework, so the middle click runs the handler's own close,
 // and a drag of a tab moves the list's items as the ListView does while it
 // reorders them, then runs the handler its DragItemsCompleted ends in.
@@ -40,17 +40,29 @@ public sealed partial class BrowserWindow
 
     // ── The address field ────────────────────────────────────────────────
 
-    /// <summary>The field takes the focus and the text through its value
-    /// pattern, as typing leaves it. False when the field does not hold
+    /// <summary>The field takes the focus and the text, as typing leaves it. False when the field does not hold
     /// the text.</summary>
     public bool TypeAddressForReview(string text)
     {
-        if (AddressRow.Visibility != Visibility.Visible) return false;
+        if (AddressRow.Visibility != Visibility.Visible) { TypeAddressNote = "the address row is hidden"; return false; }
         AddressBox.Focus(FocusState.Programmatic);
-        if (PeerOf(AddressBox)?.GetPattern(PatternInterface.Value) is not IValueProvider value) return false;
-        value.SetValue(text);
+        // The value pattern first; this peer offers none (seen 2026-11-28), and
+        // the text is then set as typing sets it.
+        if (PeerOf(AddressBox)?.GetPattern(PatternInterface.Value) is IValueProvider value)
+        {
+            value.SetValue(text);
+            TypeAddressNote = "value pattern";
+        }
+        else
+        {
+            AddressBox.Text = text;
+            TypeAddressNote = "text property (the peer offers no value pattern)";
+        }
         return AddressBox.Text == text;
     }
+
+    /// <summary>What the last typing found, for a failure's words.</summary>
+    public string TypeAddressNote { get; private set; } = "";
 
     /// <summary>Enter in the field. Not a key: the handler's own commit.</summary>
     public void PressEnterInAddressForReview() => CommitAddress();
@@ -135,15 +147,24 @@ public sealed partial class BrowserWindow
     }
 
     /// <summary>The tab's own context menu (a right click on its line), its entries once drawn.</summary>
-    public Task<IReadOnlyList<ReviewMenuEntry>> OpenTabMenuForReviewAsync(Guid id) => OpenContextMenuAsync(id, TabList);
+    public Task<IReadOnlyList<ReviewMenuEntry>> OpenTabMenuForReviewAsync(Guid id) =>
+        OpenContextMenuAsync(id, panel => FindAll<Grid>(TabList).FirstOrDefault(g => ReferenceEquals(g.DataContext, panel) && g.ContextFlyout is not null));
 
     /// <summary>The pinned tile's context menu, its entries once drawn.</summary>
-    public Task<IReadOnlyList<ReviewMenuEntry>> OpenTileMenuForReviewAsync(Guid id) => OpenContextMenuAsync(id, PinnedGrid);
+    public Task<IReadOnlyList<ReviewMenuEntry>> OpenTileMenuForReviewAsync(Guid id) =>
+        OpenContextMenuAsync(id, panel => TileOf(panel)?.Child as Grid);
 
-    private async Task<IReadOnlyList<ReviewMenuEntry>> OpenContextMenuAsync(Guid id, DependencyObject list)
+    // The item container the grid has realized for a pinned item, if it has.
+    private ItemContainer? TileOf(PanelItem panel)
+    {
+        int index = _pinnedItems.IndexOf(panel);
+        return index >= 0 ? FindAll<ItemsRepeater>(PinnedGrid).FirstOrDefault()?.TryGetElement(index) as ItemContainer : null;
+    }
+
+    private async Task<IReadOnlyList<ReviewMenuEntry>> OpenContextMenuAsync(Guid id, Func<PanelItem, Grid?> lineOf)
     {
         if (!_byId.TryGetValue(id, out PanelItem? panel)) return [];
-        Grid? line = FindAll<Grid>(list).FirstOrDefault(g => ReferenceEquals(g.DataContext, panel) && g.ContextFlyout is not null);
+        Grid? line = lineOf(panel);
         if (line?.ContextFlyout is not FlyoutBase flyout) return [];
         CloseMenusForReview();
         flyout.ShouldConstrainToRootBounds = true;
@@ -171,7 +192,7 @@ public sealed partial class BrowserWindow
     public bool ClickPinnedTileForReview(Guid id)
     {
         if (!_byId.TryGetValue(id, out PanelItem? panel)) return false;
-        ItemContainer? tile = FindAll<ItemContainer>(PinnedGrid).FirstOrDefault(c => ReferenceEquals(c.DataContext, panel));
+        ItemContainer? tile = TileOf(panel);
         return tile is not null && InvokeByAutomation(tile);
     }
 
@@ -282,6 +303,28 @@ public sealed partial class BrowserWindow
         if (_permissionDialog is not { IsLoaded: true } dialog) return false;
         Button? button = FindAll<Button>(dialog).FirstOrDefault(b => b.Name == (allow ? "PrimaryButton" : "SecondaryButton"));
         return button is not null && InvokeByAutomation(button);
+    }
+
+    // ── What the walk reads ──────────────────────────────────────────────
+
+    /// <summary>How many top-level navigations of any page of this window completed.</summary>
+    public int CompletedNavigationsForReview => _completedNavigations;
+
+    /// <summary>Whether the pinned tile of the item is laid out in the grid.</summary>
+    public bool PinnedTileDrawnForReview(Guid id) =>
+        _byId.TryGetValue(id, out PanelItem? panel)
+        && TileOf(panel) is { ActualWidth: > 0, ActualHeight: > 0 };
+
+    /// <summary>The UI thread's stalls since the process began: ticks of the
+    /// 100 ms watch that came more than 200 ms late, and the worst lateness.</summary>
+    public (long Count, long WorstMs) UiStallsForReview => BrowserActivity.Stalls;
+
+    /// <summary>Forgets the answer kept for a site's permission, as the
+    /// site settings' Remove does.</summary>
+    public void ForgetPermissionForReview(string origin, PermissionKind kind)
+    {
+        _permissions.Remove(origin, kind);
+        SavePermissions();
     }
 
     // ── UI Automation and the tree ───────────────────────────────────────

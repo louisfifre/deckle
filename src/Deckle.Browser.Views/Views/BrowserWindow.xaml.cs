@@ -56,6 +56,7 @@ public sealed partial class BrowserWindow : Window
     private PanelItem? _shown;
     private Uri? _current;
     private int _syncing;
+    private int _completedNavigations;
 
     // One environment for the process, created on first use over the module's
     // own user data folder.
