@@ -21,6 +21,7 @@
 5. The [address field](GLOSSARY.md#address-field) tells them which [site](GLOSSARY.md#site) they are really on.
 6. Little to set: the browser behaves well by itself.
 7. Nothing they visit is written anywhere but in what the browser keeps for them.
+8. The browser stays light and answers at once: performance is among the reasons the [user](../GLOSSARY.md#user) leaves the browser they use today.
 
 ## Journey
 
