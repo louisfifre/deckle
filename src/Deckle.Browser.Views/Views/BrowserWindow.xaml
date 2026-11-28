@@ -177,7 +177,7 @@
                                           ToolTipService.ToolTip="{x:Bind Tooltip, Mode=OneWay}">
                                         <Grid.ContextFlyout>
                                             <MenuFlyout>
-                                                <MenuFlyoutItem x:Uid="BrowserUnpinItem" Tag="{x:Bind}" Click="OnUnpinClick" />
+                                                <MenuFlyoutItem x:Uid="BrowserUnpinItem" AutomationProperties.AutomationId="TileMenu_Unpin" Tag="{x:Bind}" Click="OnUnpinClick" />
                                             </MenuFlyout>
                                         </Grid.ContextFlyout>
                                         <Image Source="{x:Bind Icon, Mode=OneWay}"
@@ -257,8 +257,8 @@
                                     </Grid.ColumnDefinitions>
                                     <Grid.ContextFlyout>
                                         <MenuFlyout>
-                                            <MenuFlyoutItem x:Uid="BrowserPinItem" Tag="{x:Bind}" Click="OnPinClick" />
-                                            <MenuFlyoutItem x:Uid="BrowserCloseItem" Tag="{x:Bind}" Click="OnCloseTabClick" />
+                                            <MenuFlyoutItem x:Uid="BrowserPinItem" AutomationProperties.AutomationId="TabMenu_Pin" Tag="{x:Bind}" Click="OnPinClick" />
+                                            <MenuFlyoutItem x:Uid="BrowserCloseItem" AutomationProperties.AutomationId="TabMenu_Close" Tag="{x:Bind}" Click="OnCloseTabClick" />
                                         </MenuFlyout>
                                     </Grid.ContextFlyout>
                                     <Grid Width="16" Height="16" VerticalAlignment="Center">

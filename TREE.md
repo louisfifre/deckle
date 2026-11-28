@@ -895,6 +895,7 @@ _Generated from `git ls-files` — do not edit by hand._
 │   │   │   ├── BrowserAdblock.cs
 │   │   │   ├── BrowserText.cs
 │   │   │   ├── BrowserWindow.Adblock.cs
+│   │   │   ├── BrowserWindow.Gestures.cs
 │   │   │   ├── BrowserWindow.Security.cs
 │   │   │   ├── BrowserWindow.Ubo.cs
 │   │   │   ├── BrowserWindow.xaml
