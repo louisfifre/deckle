@@ -10,8 +10,8 @@
     Log window and the small Transcribe and rewrite and Paste to folder
     windows, probes the microphone once and exits (see
     src/Deckle.App/App.SelfCheck.cs for what it composes and why). With -App
-    mail, folders or projects the run is the separate app's own walk
-    (DeckleMail.exe, DeckleFolders.exe, DeckleProjects.exe), which the
+    mail, folders, projects or browser the run is the separate app's own walk
+    (DeckleMail.exe, DeckleFolders.exe, DeckleProjects.exe, DeckleBrowser.exe), which the
     published Deckle no longer holds.
 
     It runs beside the maintainer's resident Deckle: it takes no mutex of the
@@ -28,12 +28,12 @@
 .PARAMETER App
     Which app of the suite: deckle (the published Deckle, the default), mail
     (DeckleMail.exe), folders (DeckleFolders.exe) or projects
-    (DeckleProjects.exe). Each has its own data root, so the fresh root of the
-    run isolates all four alike.
+    (DeckleProjects.exe) or browser (DeckleBrowser.exe). Each has its own data root,
+    so the fresh root of the run isolates all five alike.
 .PARAMETER Only
     Check one thing instead of everything: a window (for the published Deckle
     settings, log, transcribe-rewrite, paste-to-folder; for -App folders,
-    folders; for -App mail, mail; for -App projects, projects) or one view
+    folders; for -App mail, mail; for -App projects, projects; for -App browser, browser) or one view
     of Settings, Deckle Folders, Projects or a small window's states, named
     as its image is in a full run: settings/general,
     folders/photos-gallery, projects/p3, paste-to-folder/full (its states:
@@ -70,6 +70,7 @@
     action: Self-check Mail | -App mail
     action: Self-check Folders | -App folders
     action: Self-check Projects | -App projects
+    action: Self-check Browser | -App browser
 #>
 
 [CmdletBinding()]
@@ -89,15 +90,16 @@ param(
 )
 
 $ErrorActionPreference = 'Stop'
-if ($App -notin 'deckle', 'mail', 'folders', 'projects') { [Console]::Error.WriteLine("-App is deckle, mail, folders or projects, not '$App'."); exit 1 }
+if ($App -notin 'deckle', 'mail', 'folders', 'projects', 'browser') { [Console]::Error.WriteLine("-App is deckle, mail, folders, projects or browser, not '$App'."); exit 1 }
 
 $RepoRoot = if ($Target) { (Resolve-Path -LiteralPath $Target).Path } else { Split-Path -Parent $PSScriptRoot }
-# The four executables of the suite: project folder, executable name.
+# The five executables of the suite: project folder, executable name.
 $apps = @{
     deckle   = @{ Project = 'Deckle.App'; Exe = 'Deckle.exe' }
     mail     = @{ Project = 'Deckle.Mail.App'; Exe = 'DeckleMail.exe' }
     folders  = @{ Project = 'Deckle.Folders.App'; Exe = 'DeckleFolders.exe' }
     projects = @{ Project = 'Deckle.Projects.App'; Exe = 'DeckleProjects.exe' }
+    browser  = @{ Project = 'Deckle.Browser.App'; Exe = 'DeckleBrowser.exe' }
 }
 $AppProject = $apps[$App].Project
 $ProcessName = [System.IO.Path]::GetFileNameWithoutExtension($apps[$App].Exe)

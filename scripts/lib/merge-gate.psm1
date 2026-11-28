@@ -3,12 +3,13 @@
 # reaches, which checks proved unstable on the same tree, and the three-state
 # table that ends every gate run.
 
-# The four executables of the suite, as scripts/self-check.ps1 names them.
+# The five executables of the suite, as scripts/self-check.ps1 names them.
 $script:GateApps = [ordered]@{
     deckle   = 'Deckle.App'
     folders  = 'Deckle.Folders.App'
     mail     = 'Deckle.Mail.App'
     projects = 'Deckle.Projects.App'
+    browser  = 'Deckle.Browser.App'
 }
 
 # The project names an app compiles in: its own and every project its
@@ -35,7 +36,7 @@ function Get-GateProjectClosure {
 # A file under src/<Project>/ reaches every app whose closure holds <Project>;
 # a project no app references reaches the published Deckle, the host that
 # composes the modules. A build file at the root of the repository or of src/
-# reaches all four. Anything else (tests, scripts, docs) reaches none: the
+# reaches all five. Anything else (tests, scripts, docs) reaches none: the
 # suites cover it, and no window changes.
 function Get-GateTouchedApps {
     param([Parameter(Mandatory)][string]$RepoRoot, [string[]]$ChangedPaths = @())

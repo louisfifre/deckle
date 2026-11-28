@@ -19,7 +19,7 @@ try {
 
     # Each app of the suite, with no build: the run fails at once and names the
     # executable it looked for.
-    $exes = [ordered]@{ deckle = 'Deckle.exe'; mail = 'DeckleMail.exe'; folders = 'DeckleFolders.exe'; projects = 'DeckleProjects.exe' }
+    $exes = [ordered]@{ deckle = 'Deckle.exe'; mail = 'DeckleMail.exe'; folders = 'DeckleFolders.exe'; projects = 'DeckleProjects.exe'; browser = 'DeckleBrowser.exe' }
     foreach ($app in $exes.Keys) {
         $result = Invoke-SelfCheck @('-App', $app, '-Target', $target)
         Assert-True ($result.ExitCode -eq 1) "$app with no build exits 1"
@@ -35,7 +35,7 @@ try {
     $result = Invoke-SelfCheck @('-App', 'nonsense', '-Target', $target)
     Assert-True ($result.ExitCode -eq 1) 'an unknown app exits 1'
     Assert-True ($result.Text -match 'nonsense') 'the refusal names the value given'
-    Assert-True ($result.Text -match 'deckle, mail, folders or projects') 'the refusal lists the apps that exist'
+    Assert-True ($result.Text -match 'deckle, mail, folders, projects or browser') 'the refusal lists the apps that exist'
     Assert-True ($result.Text -notmatch 'no built app') 'an unknown app is refused before any build is looked for'
 
     Write-Host 'self-check.tests.ps1: PASS' -ForegroundColor Green

@@ -9,7 +9,7 @@ Run one with `pwsh -NoProfile -File scripts/<path> [arguments]`. An action names
 - `build-locked.ps1` — Run one dotnet build or test under the machine-wide Deckle build lock. (not in the menu)
   - Parameters: -Project <string> (required), -Test, -Configuration <string>, -DotnetArgs <string[]>
 - `build-run.ps1` — **Build the app.** Build Deckle for the chosen configuration (x64) and, unless told not to, launch the fresh build.
-  - Actions: Build & run · Build (no run) `-NoRun` · Build & run Mail `-App mail` · Build & run Folders `-App folders` · Build & run Projects `-App projects`
+  - Actions: Build & run · Build (no run) `-NoRun` · Build & run Mail `-App mail` · Build & run Folders `-App folders` · Build & run Projects `-App projects` · Build & run Browser `-App browser`
   - Parameters: -App <string>, -NoRun, -Wait, -Configuration Release|Debug, -Target <string>, -NoAutoRestart, -HudZOrderSelfTest
 - `build-server-watchdog.ps1` — Shut the .NET build servers down after five idle minutes. (not in the menu)
   - Parameters: -StateDir <string>, -Arm, -Run, -IdleMinutes <int>, -TickSeconds <int>
@@ -24,7 +24,7 @@ Run one with `pwsh -NoProfile -File scripts/<path> [arguments]`. An action names
 - `inspect-processes.ps1` — **Show running builds and Deckle instances.** Lists, read-only, the Deckle instances running on this machine with the folder each runs from, then the dotnet builds and tests in progress with their project and age, the build scripts waiting for a slot, and the .NET build servers left behind.
   - Actions: Inspect / processes
 - `launch-app.ps1` — **Launch the freshest built app.** Replace the running Deckle instance with the freshest already-built executable of the chosen configuration.
-  - Actions: Launch · Launch Mail `-App mail` · Launch Folders `-App folders`
+  - Actions: Launch · Launch Mail `-App mail` · Launch Folders `-App folders` · Launch Browser `-App browser`
   - Parameters: -App <string>, -Configuration Release|Debug, -Target <string>, -Wait
 - `menu.ps1` — Entry of the repository's terminal menu. (not in the menu)
 - `merge-branch.ps1` — **Merge a branch into main behind the merge gate.** The one way a branch enters main.
@@ -34,7 +34,7 @@ Run one with `pwsh -NoProfile -File scripts/<path> [arguments]`. An action names
   - Actions: Inspect / log · Inspect / trace `-Trace`
   - Parameters: -Trace, -Last <int>, -Level <string>, -SinceMinutes <int>, -Match <string>, -Payload, -DataRoot <string>
 - `self-check.ps1` — **Self-check the built app.** Runs a built app of the suite once in its self-check mode and judges its report.
-  - Actions: Self-check · Self-check Mail `-App mail` · Self-check Folders `-App folders` · Self-check Projects `-App projects`
+  - Actions: Self-check · Self-check Mail `-App mail` · Self-check Folders `-App folders` · Self-check Projects `-App projects` · Self-check Browser `-App browser`
   - Parameters: -App <string>, -Only <string>, -Configuration Debug|Release, -Target <string>, -TimeoutSeconds <int>, -OutputFolder <string>, -LinkModels, -KeepData
 - `stats.ps1` — **Repository statistics.** Walk every project under src\ and build one file inventory per Deckle module, with line counts.
   - Actions: Statistics / repository

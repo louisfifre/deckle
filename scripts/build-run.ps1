@@ -6,8 +6,8 @@
     launch the fresh build. The build-only variant never stops the running
     instance: when it runs from this build's output directory the build is
     refused before compiling.
-    -App mail, folders or projects builds and starts DeckleMail.exe,
-    DeckleFolders.exe or DeckleProjects.exe instead: separate apps with their
+    -App mail, folders, projects or browser builds and starts DeckleMail.exe,
+    DeckleFolders.exe, DeckleProjects.exe or DeckleBrowser.exe instead: separate apps with their
     own resident mutex and data root, so the running Deckle is never stopped
     nor touched (only a previous instance of the same small app is replaced).
 .NOTES
@@ -18,13 +18,14 @@
     action: Build & run Mail | -App mail
     action: Build & run Folders | -App folders
     action: Build & run Projects | -App projects
+    action: Build & run Browser | -App browser
 #>
 
 [CmdletBinding()]
 param(
     # Which app of the suite: deckle (the published Deckle), mail (DeckleMail.exe),
-    # folders (DeckleFolders.exe) or projects (DeckleProjects.exe).
-    # deckle, mail, folders or projects; checked below, not a [ValidateSet]: the script's one
+    # folders (DeckleFolders.exe), projects (DeckleProjects.exe) or browser (DeckleBrowser.exe).
+    # deckle, mail, folders, projects or browser; checked below, not a [ValidateSet]: the script's one
     # enumerated parameter is Configuration, which the launcher reads as its variant.
     [string]$App = 'deckle',
     # Build only. The running Deckle instance is never stopped; when it runs
@@ -49,7 +50,7 @@ param(
 )
 
 $ErrorActionPreference = 'Stop'
-if ($App -notin 'deckle', 'mail', 'folders', 'projects') { [Console]::Error.WriteLine("-App is deckle, mail, folders or projects, not '$App'."); exit 1 }
+if ($App -notin 'deckle', 'mail', 'folders', 'projects', 'browser') { [Console]::Error.WriteLine("-App is deckle, mail, folders, projects or browser, not '$App'."); exit 1 }
 $ScriptDir  = $PSScriptRoot                                  # scripts/
 $LibDir = Join-Path $ScriptDir 'lib'
 . (Join-Path $LibDir 'action-summary.ps1')
@@ -92,8 +93,8 @@ if ($Target) {
 
 Write-OutputText -Text "Repo: $RepoRoot" -Role Muted
 
-$AppProject  = @{ deckle = 'Deckle.App'; mail = 'Deckle.Mail.App'; folders = 'Deckle.Folders.App'; projects = 'Deckle.Projects.App' }[$App]
-$ExeName     = @{ deckle = 'Deckle.exe'; mail = 'DeckleMail.exe'; folders = 'DeckleFolders.exe'; projects = 'DeckleProjects.exe' }[$App]
+$AppProject  = @{ deckle = 'Deckle.App'; mail = 'Deckle.Mail.App'; folders = 'Deckle.Folders.App'; projects = 'Deckle.Projects.App'; browser = 'Deckle.Browser.App' }[$App]
+$ExeName     = @{ deckle = 'Deckle.exe'; mail = 'DeckleMail.exe'; folders = 'DeckleFolders.exe'; projects = 'DeckleProjects.exe'; browser = 'DeckleBrowser.exe' }[$App]
 $ProcessName = [System.IO.Path]::GetFileNameWithoutExtension($ExeName)
 $ProjectDir = Join-Path $RepoRoot "src\$AppProject"
 $Csproj     = Join-Path $ProjectDir "$AppProject.csproj"

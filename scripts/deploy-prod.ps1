@@ -166,17 +166,18 @@ if ($LASTEXITCODE -ne 0) { throw "The Release build failed (exit code $LASTEXITC
 $output = Join-Path $BuildTree 'artifacts\bin\Deckle.App\release'
 if ((Get-BuildCommit $output) -ne $Commit) { throw "The build output under $output is not commit $Commit." }
 
-# Prod is the published Deckle alone: Mail and Deckle Folders are separate apps
-# (DeckleMail.exe, DeckleFolders.exe) the maintainer tests from a checkout. The
+# Prod is the published Deckle alone: Mail, Deckle Folders and Deckle Browser are
+# separate apps (DeckleMail.exe, DeckleFolders.exe, DeckleBrowser.exe) the maintainer tests from a checkout. The
 # guard test in Deckle.App.Tests (PublishedClosureTests) covers the references;
 # this checks the artifact itself, which is what would reach the maintainer.
-# The apps' own assemblies are named DeckleMail and DeckleFolders, so the
-# libraries to look for are the Deckle.Mail* and Deckle.Folders* ones.
+# The apps' own assemblies are named DeckleMail, DeckleFolders and DeckleBrowser,
+# so the libraries to look for are the Deckle.Mail*, Deckle.Folders* and
+# Deckle.Browser* ones.
 $unpublished = @(Get-ChildItem -LiteralPath $output -File |
-    Where-Object { $_.Name -like 'Deckle.Mail*' -or $_.Name -like 'Deckle.Folders*' -or $_.Name -like 'DeckleMail*' -or $_.Name -like 'DeckleFolders*' } |
+    Where-Object { $_.Name -like 'Deckle.Mail*' -or $_.Name -like 'Deckle.Folders*' -or $_.Name -like 'DeckleMail*' -or $_.Name -like 'DeckleFolders*' -or $_.Name -like 'Deckle.Browser*' -or $_.Name -like 'DeckleBrowser*' } |
     ForEach-Object { $_.Name })
 if ($unpublished.Count -gt 0) {
-    throw "The Release build holds files of an unpublished app: $($unpublished -join ', '). Mail and Deckle Folders are not part of the published Deckle; nothing was staged."
+    throw "The Release build holds files of an unpublished app: $($unpublished -join ', '). Mail, Deckle Folders and Deckle Browser are not part of the published Deckle; nothing was staged."
 }
 
 if (-not $SkipSelfCheck) {

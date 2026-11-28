@@ -34,19 +34,20 @@ try {
     New-Project 'Deckle.Folders.App' @('Deckle.Folders.Views')
     New-Project 'Deckle.Mail.App' @('Deckle.Core')
     New-Project 'Deckle.Projects.App' @('Deckle.Core')
+    New-Project 'Deckle.Browser.App' @('Deckle.Core')
 
     $apps = @(Get-GateTouchedApps -RepoRoot $repo -ChangedPaths @('src/Deckle.Folders.Views/Groups.cs'))
     Assert-True ($apps.Count -eq 1 -and $apps[0].App -eq 'folders') 'a views project reaches the one app that references it, through a project between'
     Assert-True ($apps[0].Because -eq 'src/Deckle.Folders.Views/Groups.cs') 'the app names the path that reached it'
 
     $apps = @(Get-GateTouchedApps -RepoRoot $repo -ChangedPaths @('src\Deckle.Core\Clock.cs'))
-    Assert-True (($apps.App -join ',') -eq 'deckle,folders,mail,projects') 'a project under every app reaches all four, read with either slash'
+    Assert-True (($apps.App -join ',') -eq 'deckle,folders,mail,projects,browser') 'a project under every app reaches all five, read with either slash'
 
     $apps = @(Get-GateTouchedApps -RepoRoot $repo -ChangedPaths @('src/Deckle.Lone/Thing.cs'))
     Assert-True (($apps.App -join ',') -eq 'deckle') 'a project no app references reaches the published Deckle'
 
     $apps = @(Get-GateTouchedApps -RepoRoot $repo -ChangedPaths @('Directory.Packages.props'))
-    Assert-True ($apps.Count -eq 4) 'a build file at the root reaches all four apps'
+    Assert-True ($apps.Count -eq 5) 'a build file at the root reaches all five apps'
 
     $apps = @(Get-GateTouchedApps -RepoRoot $repo -ChangedPaths @('scripts/self-check.ps1', 'tests/Deckle.Core.Tests/ClockTests.cs', 'AGENTS.md'))
     Assert-True ($apps.Count -eq 0) 'scripts, tests and docs reach no app'
